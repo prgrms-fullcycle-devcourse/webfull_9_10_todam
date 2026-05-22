@@ -1,0 +1,29 @@
+name: Web CI
+
+on:
+  pull_request:
+    paths:
+      - "apps/web/**"
+      - "apps/admin/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - "turbo.json"
+  push:
+    branches:
+      - main
+
+jobs:
+  web-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @todam/web typecheck
+      - run: pnpm --filter @todam/web lint
+      - run: pnpm --filter @todam/web test
+
