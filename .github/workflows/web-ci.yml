@@ -10,7 +10,7 @@ on:
       - "turbo.json"
   push:
     branches:
-      - main
+      - dev
 
 jobs:
   web-ci:
