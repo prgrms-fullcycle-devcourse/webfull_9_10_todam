@@ -1,6 +1,10 @@
 {
-  "extends": "@todam/typescript-config/base.json",
+  "extends": "@todam/typescript-config/base",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true
+  },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
 }
-
