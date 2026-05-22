@@ -1,5 +1,1 @@
-# .husky/pre-push
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 pnpm turbo typecheck

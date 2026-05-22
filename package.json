@@ -1,0 +1,27 @@
+{
+  "name": "todam",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "build": "turbo build --concurrency=1",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "apps/api/**/*.ts": ["eslint --fix", "prettier --write"],
+    "apps/web/**/*.{ts,tsx}": ["eslint --fix", "prettier --write"],
+    "apps/admin/**/*.{ts,tsx}": ["eslint --fix", "prettier --write"],
+    "packages/**/*.ts": ["prettier --write"]
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
+    "prettier": "^3.8.3",
+    "turbo": "^2.9.14"
+  }
+}

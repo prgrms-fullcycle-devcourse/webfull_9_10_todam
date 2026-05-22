@@ -1,9 +1,9 @@
-import { createApiEnv } from '@todam/config'
-const env = createApiEnv()  // env.DATABASE_URL 타입 자동 추론
+import 'dotenv/config';
+import { createApiEnv } from '@todam/config';
 
-async function bootstrap() {
-  // NestJS bootstrap will be wired after dependencies are installed.
+async function bootstrap(): Promise<void> {
+    const env = createApiEnv();
+    console.warn('PORT:', env.PORT);
 }
 
 void bootstrap();
-

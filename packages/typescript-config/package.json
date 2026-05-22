@@ -10,8 +10,12 @@
   ],
   "exports": {
     "./base": "./base.json",
+    "./base.json": "./base.json",
     "./nest": "./nest.json",
+    "./nest.json": "./nest.json",
     "./nextjs": "./nextjs.json",
-    "./react-library": "./react-library.json"
+    "./nextjs.json": "./nextjs.json",
+    "./react-library": "./react-library.json",
+    "./react-library.json": "./react-library.json"
   }
 }

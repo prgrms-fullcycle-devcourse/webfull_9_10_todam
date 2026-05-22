@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "@todam/typescript-config": "workspace:*"
+  }
 }
 
