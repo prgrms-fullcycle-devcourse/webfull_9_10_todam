@@ -1,0 +1,17 @@
+{
+  "name": "@todam/typescript-config",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "base.json",
+    "nest.json",
+    "nextjs.json",
+    "react-library.json"
+  ],
+  "exports": {
+    "./base": "./base.json",
+    "./nest": "./nest.json",
+    "./nextjs": "./nextjs.json",
+    "./react-library": "./react-library.json"
+  }
+}
