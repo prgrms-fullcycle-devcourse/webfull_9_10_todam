@@ -1,0 +1,32 @@
+{
+  "name": "@todam/eslint-config",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./base.js",
+  "files": [
+    "base.js",
+    "next.js",
+    "nest.js"
+  ],
+  "exports": {
+    "./base": "./base.js",
+    "./nest": "./nest.js",
+    "./next": "./next.js"
+  },
+  "peerDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^8.57.0 || ^9.0.0",
+    "eslint-config-next": "^14.0.0 || ^15.0.0"
+  },
+  "peerDependenciesMeta": {
+    "eslint-config-next": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0"
+  }
+}
