@@ -13,7 +13,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY apps/api ./apps/api
 
-RUN pnpm --filter @todam/api prisma generate
+RUN DATABASE_URL="postgresql://user:password@localhost:5432/todam" pnpm --filter @todam/api exec prisma generate
 RUN pnpm --filter @todam/api build
 
 EXPOSE 4000

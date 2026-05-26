@@ -1,0 +1,13 @@
+.git
+.turbo
+
+**/node_modules
+**/dist
+**/.next
+**/coverage
+
+**/.env
+**/.env.local
+**/.env.production
+
+apps/api/src/generated
