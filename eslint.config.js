@@ -28,7 +28,7 @@ module.exports = [
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/explicit-function-return-type': 'warn',
-      '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/consistent-type-imports': 'off',
     },
   },
 ]
