@@ -22,3 +22,7 @@ pnpm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# 로컬
+.claude
+.vscode
