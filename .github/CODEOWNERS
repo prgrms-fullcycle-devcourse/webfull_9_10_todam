@@ -9,3 +9,6 @@
 
 # 디자인 시스템
 *.css @nogglee
+
+# 인프라
+/.github/workflows/ @nogglee @taesongxxxx
