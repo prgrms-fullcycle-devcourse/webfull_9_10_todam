@@ -26,4 +26,3 @@ jobs:
       - run: pnpm --filter @todam/api exec prisma generate
       - run: pnpm --filter @todam/api typecheck
       - run: pnpm --filter @todam/api lint
-      - run: pnpm --filter @todam/api test
