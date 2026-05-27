@@ -12,7 +12,7 @@ async function bootstrap(): Promise<void> {
 
     await app.listen(env.PORT);
 
-    console.log(`API server listening on http://localhost:${env.PORT}`);
+    console.warn(`API server listening on http://localhost:${env.PORT}`);
 }
 
 void bootstrap();
