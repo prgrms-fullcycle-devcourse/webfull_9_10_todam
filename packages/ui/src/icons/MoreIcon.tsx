@@ -1,0 +1,20 @@
+import type { IconProps } from "./types";
+
+export function MoreIcon({ size = 24, color, className, style, ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`text-foreground${className ? ` ${className}` : ""}`}
+      style={color ? { color, ...style } : style}
+      {...props}
+    >
+      <path d="M12.0098 10.874C12.6311 10.874 13.1348 11.3777 13.1348 11.999V12.0088C13.1348 12.6301 12.6311 13.1338 12.0098 13.1338H12C11.3787 13.1338 10.875 12.6301 10.875 12.0088V11.999C10.875 11.3777 11.3787 10.874 12 10.874H12.0098Z" fill="currentColor"/>
+      <path d="M12.0098 3.87402C12.6311 3.87402 13.1348 4.3777 13.1348 4.99902V5.00879C13.1348 5.63011 12.6311 6.13379 12.0098 6.13379H12C11.3787 6.13379 10.875 5.63011 10.875 5.00879V4.99902C10.875 4.3777 11.3787 3.87402 12 3.87402H12.0098Z" fill="currentColor"/>
+      <path d="M12.0098 17.874C12.6311 17.874 13.1348 18.3777 13.1348 18.999V19.0088C13.1348 19.6301 12.6311 20.1338 12.0098 20.1338H12C11.3787 20.1338 10.875 19.6301 10.875 19.0088V18.999C10.875 18.3777 11.3787 17.874 12 17.874H12.0098Z" fill="currentColor"/>
+    </svg>
+  );
+}
