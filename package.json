@@ -10,7 +10,11 @@
     "test": "turbo test",
     "typecheck": "turbo typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
-    "prepare": "husky"
+    "prepare": "husky",
+    "api": "turbo dev --filter=@todam/api",
+    "web": "turbo dev --filter=@todam/web",
+    "admin": "turbo dev --filter=@todam/admin",
+    "storybook": "turbo dev --filter=@todam/storybook"
   },
   "lint-staged": {
     "apps/api/**/*.ts": ["eslint --fix", "prettier --write"],
