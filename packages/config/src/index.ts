@@ -15,6 +15,9 @@ const apiSchema = z.object({
     JWT_SECRET: z.string(),
     S3_BUCKET_NAME: z.string(),
     S3_REGION: z.string().default('ap-northeast-2'),
+    CORS_ORIGINS: z
+        .string()
+        .default('http://localhost:3000,https://todam.app,https://www.todam.app'),
 });
 
 // ─── Web 환경변수 스키마 ──────────────────────────────────
