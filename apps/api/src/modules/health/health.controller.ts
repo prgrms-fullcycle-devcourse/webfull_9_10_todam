@@ -6,9 +6,9 @@ export class HealthController {
     constructor(private readonly prisma: PrismaService) {}
 
     @Get('db')
-    async checkDatabase(): Promise<{ ok: boolean; version: string }> {
+    async checkDatabase(): Promise<{ ok: boolean }> {
         await this.prisma.$queryRaw`SELECT 1`;
 
-        return { ok: true, version: 'deploy-test-1' };
+        return { ok: true };
     }
 }

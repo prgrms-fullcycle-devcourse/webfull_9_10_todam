@@ -62,5 +62,5 @@ jobs:
             docker run -d \
               --name todam-api \
               --env-file .env.api \
-              -p 4000:4000 \
+              -p 127.0.0.1:4000:4000 \
               ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:latest
