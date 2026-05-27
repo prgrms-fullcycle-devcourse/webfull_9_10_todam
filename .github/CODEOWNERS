@@ -2,10 +2,10 @@
 * @nogglee @codingguri @yundlab @taesongxxxx @chocofanta01
 
 # 백엔드
-/api/ @taesongxxxx @chocofanta01
+/apps/api/ @taesongxxxx @chocofanta01
 
 # 프론트엔드
-/web/ @nogglee @codingguri @yundlab
+/apps/web/ @nogglee @codingguri @yundlab
 
 # 디자인 시스템
 *.css @nogglee
