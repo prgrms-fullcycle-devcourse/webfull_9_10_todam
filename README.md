@@ -40,27 +40,8 @@ pnpm install
 
 ### 2. 환경변수 설정
 
-각 앱 폴더에 `.env` 파일을 생성해요.
+`.env.example`을 참고하여 각 앱 폴더에 `.env` 파일을 생성해요.
 
-```bash
-# apps/api/.env
-NODE_ENV=development
-PORT=4000
-DATABASE_URL=postgresql://todam:todam@localhost:5432/todam
-JWT_SECRET=local-secret-key
-```
-
-```bash
-# apps/web/.env
-NODE_ENV=development
-NEXT_PUBLIC_API_URL=http://localhost:80/api
-```
-
-```bash
-# apps/admin/.env
-NODE_ENV=development
-NEXT_PUBLIC_API_URL=http://localhost:80/api
-```
 
 ### 3. 인프라 실행 (postgres, redis, minio)
 
@@ -71,9 +52,11 @@ docker compose -f docker/compose/local.yml up -d
 ### 4. 앱 실행
 
 ```bash
-pnpm --filter @todam/api dev    # API  → localhost:4000
-pnpm --filter @todam/web dev    # Web  → localhost:3000
-pnpm --filter @todam/admin dev  # Admin → localhost:3001
+pnpm api        # API  → localhost:4000
+pnpm web        # Web  → localhost:3000
+pnpm admin      # Admin → localhost:3001
+pnpm storybook  # StoryBook -> localhost:6006
+
 ```
 
 > 앱은 Docker 없이 로컬에서 직접 실행해요. 코드 수정이 즉시 반영되고 디버깅이 편해요.

@@ -2,10 +2,18 @@
 * @nogglee @codingguri @yundlab @taesongxxxx @chocofanta01
 
 # 백엔드
-/api/ @taesongxxxx @chocofanta01
+/apps/api/ @taesongxxxx @chocofanta01
 
 # 프론트엔드
-/web/ @nogglee @codingguri @yundlab
+/apps/web/ @nogglee @codingguri @yundlab
 
 # 디자인 시스템
 *.css @nogglee
+DESIGN.md @nogglee
+/packages/ui/src/components/ @nogglee
+/packages/ui/src/icons/ @nogglee
+/packages/ui/src/styles/ @nogglee
+/apps/storybook/ @nogglee
+
+# 인프라
+/.github/workflows/ @nogglee @taesongxxxx
