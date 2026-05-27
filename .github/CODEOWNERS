@@ -9,6 +9,11 @@
 
 # 디자인 시스템
 *.css @nogglee
+DESIGN.md @nogglee
+/packages/ui/src/components/ @nogglee
+/packages/ui/src/icons/ @nogglee
+/packages/ui/src/styles/ @nogglee
+/apps/storybook/ @nogglee
 
 # 인프라
 /.github/workflows/ @nogglee @taesongxxxx
