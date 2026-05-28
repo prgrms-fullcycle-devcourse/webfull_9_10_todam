@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { Header } from '../components/Header';
+import { BottomNav } from '../widgets/bottom-navigation';
 
 import '../styles/globals.css';
 
@@ -25,8 +25,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
                     graphic placeholder
                 </div>
                 <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-surface">
-                    <Header type="home" />
                     {children}
+                    <BottomNav />
                     <div id="toast-root" />
                     <div id="modal-root" />
                     <div id="sheet-root" />
