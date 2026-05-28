@@ -1,10 +1,10 @@
 const sections = [
-    { title: '대기 중인 예약', count: 4 },
-    { title: '오늘의 일정', count: 4 },
-    { title: '제작 중인 작품', count: 4 },
+    { title: '추천 공방', count: 4 },
+    { title: '인기 클래스', count: 4 },
+    { title: '새로 열린 공방', count: 4 },
 ];
 
-export default function PartnerHomePage() {
+export default function HomePage() {
     return (
         <>
             <main className="flex-1 overflow-y-auto">
