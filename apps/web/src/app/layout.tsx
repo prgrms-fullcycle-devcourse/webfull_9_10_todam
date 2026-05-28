@@ -1,14 +1,13 @@
-import type { Viewport } from 'next';
 import type { ReactNode } from 'react';
 
 import { Header } from '../components/Header';
 
 import './globals.css';
 
-export const viewport: Viewport = {
+export const viewport = {
     width: 'device-width',
     initialScale: 1,
-    viewportFit: 'cover',
+    viewportFit: 'cover' as const,
 };
 
 type RootLayoutProps = {
