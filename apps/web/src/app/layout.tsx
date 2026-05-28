@@ -1,6 +1,15 @@
+import type { Viewport } from 'next';
 import type { ReactNode } from 'react';
 
+import { Header } from '../components/Header';
+
 import './globals.css';
+
+export const viewport: Viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    viewportFit: 'cover',
+};
 
 type RootLayoutProps = {
     children: ReactNode;
@@ -9,7 +18,21 @@ type RootLayoutProps = {
 export default function RootLayout({ children }: RootLayoutProps) {
     return (
         <html lang="ko">
-            <body>{children}</body>
+            <body className="flex h-dvh justify-center bg-background text-foreground">
+                <div
+                    aria-hidden
+                    className="hidden w-[500px] shrink-0 items-center justify-center bg-primary text-foreground-inverse/70 lg:flex"
+                >
+                    graphic placeholder
+                </div>
+                <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-surface">
+                    <Header />
+                    {children}
+                    <div id="toast-root" />
+                    <div id="modal-root" />
+                    <div id="sheet-root" />
+                </div>
+            </body>
         </html>
     );
 }
