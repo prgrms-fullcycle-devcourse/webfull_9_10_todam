@@ -1,7 +1,5 @@
 'use client';
 
-import React from 'react';
-
 import { CalendarIcon, HomeIcon, SearchIcon, SettingIcon, ThreeDIcon, UserIcon } from '@todam/ui';
 import type { IconProps } from '@todam/ui';
 import { usePathname } from 'next/navigation';
