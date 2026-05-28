@@ -5,5 +5,5 @@ type SubLayoutProps = {
 };
 
 export default function SubLayout({ children }: SubLayoutProps) {
-    return <main className="flex-1 overflow-y-auto">{children}</main>;
+    return <>{children}</>;
 }

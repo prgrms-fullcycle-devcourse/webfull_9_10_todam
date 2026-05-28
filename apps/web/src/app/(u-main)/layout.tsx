@@ -9,7 +9,7 @@ type MainLayoutProps = {
 export default function MainLayout({ children }: MainLayoutProps) {
     return (
         <>
-            <main className="flex-1 overflow-y-auto">{children}</main>
+            {children}
             <BottomNav />
         </>
     );
