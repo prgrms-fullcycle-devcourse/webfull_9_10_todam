@@ -26,7 +26,8 @@
     "overrides": {
       "@typescript-eslint/eslint-plugin": ">=8.0.0 <8.59.0",
       "@typescript-eslint/parser": ">=8.0.0 <8.59.0",
-      "@typescript-eslint/scope-manager": ">=8.0.0 <8.59.0"
+      "@typescript-eslint/scope-manager": ">=8.0.0 <8.59.0",
+      "typescript": "5.9.3"
     }
   },
   "devDependencies": {
