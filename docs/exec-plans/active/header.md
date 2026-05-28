@@ -100,8 +100,15 @@ DESIGN.md 규칙 — Figma variant property 기준 확정 전 코딩 불가.
 ## Decision Log
 
 - 2026-05-28: Route Group(`(main)`/`(sub)`)은 BottomNav 기준으로만 분리. Header 구성은 Route Group과 독립적으로 결정.
+- 2026-05-28: props 설계 → Figma 단일 `type` enum (`home|main|mainText|sub|subText|popup|search`). 축별 분리 대신 Figma variant property와 1:1 매핑.
+- 2026-05-28: Header 배치 → page 단 배치. root layout에서 제거, 각 page가 `<Header type="..."/>` 직접 렌더링. layout은 shell만 담당.
+- 2026-05-28: 18px padding → `px-[18px]` arbitrary 예외 처리 (main/mainText title zone).
+- 2026-05-28: 로고 → `packages/ui/src/components/Logo.tsx` 인라인 SVG 컴포넌트. color: `brand|black|white`.
+- 2026-05-28: 검색/팝업 별도 분리 없음 → 단일 Header 컴포넌트의 type variant.
 
 ## Outcome
 
-- Status: 계획 완료, 미결 사항 확정 대기
-- Follow-up: 없음
+- Status: 구현 완료
+- 생성 파일: `packages/ui/src/components/Logo.tsx`, `packages/ui/src/components/Header.tsx`, `apps/storybook/src/stories/Header.stories.tsx`
+- 변경 파일: `packages/ui/src/components/index.ts`, `apps/web/src/app/layout.tsx`, `apps/web/src/app/(main)/layout.tsx`, `apps/web/src/app/(main)/page.tsx`, `apps/web/src/app/(sub)/layout.tsx`, `apps/web/src/components/Header.tsx`
+- Follow-up: Storybook에서 전 variant 시각 검수 필요

@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { Header } from '../components/Header';
-
-import './globals.css';
+import '../styles/globals.css';
 
 export const viewport = {
     width: 'device-width',
@@ -25,7 +23,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
                     graphic placeholder
                 </div>
                 <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-surface">
-                    <Header />
                     {children}
                     <div id="toast-root" />
                     <div id="modal-root" />
