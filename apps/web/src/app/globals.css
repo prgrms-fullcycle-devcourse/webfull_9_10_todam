@@ -3,3 +3,18 @@
 @import "@todam/ui/styles/primitives.css";
 @import "@todam/ui/styles/semantic.css";
 @import "@todam/ui/styles/fonts.css";
+
+@layer base {
+    body {
+        overscroll-behavior: none;
+    }
+}
+
+@layer utilities {
+    .pt-safe {
+        padding-top: env(safe-area-inset-top);
+    }
+    .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
