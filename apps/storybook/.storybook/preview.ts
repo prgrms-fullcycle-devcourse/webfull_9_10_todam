@@ -10,7 +10,14 @@ const preview: Preview = {
       },
     },
     layout: "fullscreen",
+    backgrounds: { disable: true },
   },
+  decorators: [
+    (Story) => {
+      document.body.classList.add("bg-background");
+      return Story();
+    },
+  ],
 };
 
 export default preview;

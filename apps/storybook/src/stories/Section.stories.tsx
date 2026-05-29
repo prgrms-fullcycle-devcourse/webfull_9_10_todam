@@ -25,9 +25,9 @@ export const Default: Story = {
   name: "기본 (gap-3 / items-center)",
   render: () => (
     <Section>
-      <div className="rounded p-3 w-full text-center">첫 번째</div>
-      <div className="rounded p-3 w-full text-center">두 번째</div>
-      <div className="rounded p-3 w-full text-center">세 번째</div>
+      <div style={{ background: "white", borderRadius: 6, padding: "12px", width: "100%", textAlign: "center" }}>첫 번째</div>
+      <div style={{ background: "white", borderRadius: 6, padding: "12px", width: "100%", textAlign: "center" }}>두 번째</div>
+      <div style={{ background: "white", borderRadius: 6, padding: "12px", width: "100%", textAlign: "center" }}>세 번째</div>
     </Section>
   ),
 };
@@ -36,9 +36,9 @@ export const CustomGap: Story = {
   name: "gap 커스텀 (gap-5)",
   render: () => (
     <Section gap="gap-5">
-      <div className="rounded p-3 w-full text-center">첫 번째</div>
-      <div className="rounded p-3 w-full text-center">두 번째</div>
-      <div className="rounded p-3 w-full text-center">세 번째</div>
+      <div style={{ background: "white", borderRadius: 6, padding: "12px", width: "100%", textAlign: "center" }}>첫 번째</div>
+      <div style={{ background: "white", borderRadius: 6, padding: "12px", width: "100%", textAlign: "center" }}>두 번째</div>
+      <div style={{ background: "white", borderRadius: 6, padding: "12px", width: "100%", textAlign: "center" }}>세 번째</div>
     </Section>
   ),
 };
@@ -47,9 +47,9 @@ export const AlignStart: Story = {
   name: "align 커스텀 (items-start)",
   render: () => (
     <Section align="items-start">
-      <div className="rounded p-3 text-center">짧은 콘텐츠</div>
-      <div className="rounded p-3 w-48 text-center">중간 콘텐츠</div>
-      <div className="rounded p-3 w-full text-center">긴 콘텐츠</div>
+      <div style={{ background: "white", borderRadius: 6, padding: "12px", textAlign: "center" }}>짧은 콘텐츠</div>
+      <div style={{ background: "white", borderRadius: 6, padding: "12px", width: 192, textAlign: "center" }}>중간 콘텐츠</div>
+      <div style={{ background: "white", borderRadius: 6, padding: "12px", width: "100%", textAlign: "center" }}>긴 콘텐츠</div>
     </Section>
   ),
 };
