@@ -10,6 +10,7 @@ export * from './Modal';
 export * from './Pagination';
 export * from './ProgressBar';
 export * from './Radio';
+export * from './RadioInput';
 export * from './Section';
 export * from './SectionTitle';
 export * from './SegmentedControl';
