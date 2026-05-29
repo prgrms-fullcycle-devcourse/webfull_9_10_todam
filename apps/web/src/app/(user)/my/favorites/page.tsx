@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import { LikeToggleButton } from '../../../../features/toggle-like';
 
 type LikedStore = { id: string; name: string; address: string; imageSrc?: string };
@@ -14,12 +16,14 @@ export default function FavoritesPage() {
         <main className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6">
             {MOCK.map((store) => (
                 <div key={store.id} className="flex w-full items-center gap-3">
-                    <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted">
+                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted">
                         {store.imageSrc && (
-                            <img
+                            <Image
                                 src={store.imageSrc}
                                 alt={store.name}
-                                className="h-full w-full object-cover"
+                                fill
+                                sizes="80px"
+                                className="object-cover"
                             />
                         )}
                     </div>

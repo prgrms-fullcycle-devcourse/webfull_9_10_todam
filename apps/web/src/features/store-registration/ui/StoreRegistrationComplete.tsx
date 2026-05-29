@@ -84,9 +84,9 @@ export function StoreRegistrationComplete({
                                     사업자・공방 정보 확인
                                 </span>
                             </div>
-                            {/* TODO(보류): Badge에 색 variant prop 없음 → 반려 danger 색 미적용(기본 info).
-                                Badge에 status/tone prop 추가되면 반려=danger 연결. 현재 컴포넌트 수정 안 함. */}
-                            <Badge icon={<DotIcon />}>{rejected ? '반려' : '검토 중'}</Badge>
+                            <Badge tone={rejected ? 'danger' : 'info'} icon={<DotIcon />}>
+                                {rejected ? '반려' : '검토 중'}
+                            </Badge>
                         </div>
 
                         {rejected && (
