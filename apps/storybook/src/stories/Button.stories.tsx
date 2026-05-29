@@ -3,7 +3,7 @@ import { Button } from "@todam/ui";
 import { ScannerIcon } from "@todam/ui";
 
 const meta: Meta<typeof Button> = {
-  title: "Components/Button",
+  title: "Components/Form/Button",
   component: Button,
   parameters: { layout: "centered" },
   argTypes: {

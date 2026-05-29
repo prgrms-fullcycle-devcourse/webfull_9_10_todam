@@ -9,7 +9,7 @@ import {
 import { ResultTable } from "../../../web/src/shared/ui";
 
 const meta: Meta<typeof ResultTable> = {
-  title: "Components/ResultTable",
+  title: "Components/Data Display/ResultTable",
   component: ResultTable,
   parameters: { layout: "centered" },
   argTypes: {
