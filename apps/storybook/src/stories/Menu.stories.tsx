@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Menu } from "@todam/ui";
 
 const meta: Meta<typeof Menu> = {
-  title: "Components/Menu",
+  title: "Components/Data Display/Menu",
   component: Menu,
   parameters: { layout: "centered" },
   decorators: [

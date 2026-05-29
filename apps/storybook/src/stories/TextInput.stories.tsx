@@ -3,7 +3,7 @@ import { useState } from "react";
 import { TextInput, SearchIcon } from "@todam/ui";
 
 const meta: Meta<typeof TextInput> = {
-  title: "Components/TextInput",
+  title: "Components/Form/TextInput",
   component: TextInput,
   parameters: { layout: "centered" },
   decorators: [

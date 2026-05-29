@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Checkbox } from "@todam/ui";
 
 const meta: Meta<typeof Checkbox> = {
-  title: "Components/Checkbox",
+  title: "Components/Form/Checkbox",
   component: Checkbox,
   parameters: { layout: "centered" },
   argTypes: {
