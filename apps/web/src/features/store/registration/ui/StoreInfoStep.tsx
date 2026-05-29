@@ -145,11 +145,13 @@ export function StoreInfoStep() {
 
             <TextInput
                 label="전화번호"
+                type="tel"
+                inputMode="numeric"
                 placeholder="수강생 연락을 받을 공방 번호를 입력해 주세요"
                 value={store.phone}
                 error={!!phoneError}
                 helperText={phoneError}
-                onChange={(e) => patchStore({ phone: e.target.value })}
+                onChange={(e) => patchStore({ phone: e.target.value.replace(/[^0-9-]/g, '') })}
             />
 
             <TextArea

@@ -71,9 +71,12 @@ export function BusinessStep() {
 
             <TextInput
                 label="사업자 등록번호"
+                inputMode="numeric"
                 placeholder="000-00-00000"
                 value={business.businessNumber}
-                onChange={(e) => patchBusiness({ businessNumber: e.target.value })}
+                onChange={(e) =>
+                    patchBusiness({ businessNumber: e.target.value.replace(/[^0-9-]/g, '') })
+                }
             />
             <TextInput
                 label="상호명"
