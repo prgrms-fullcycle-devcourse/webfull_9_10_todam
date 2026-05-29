@@ -1,6 +1,6 @@
 'use client';
 
-import { Checkbox } from '@todam/ui';
+import { CheckboxInput } from '@todam/ui';
 
 import { useStoreRegistrationStore } from '../model/store';
 import { CONVENIENCE_OPTIONS, DAY_CHIPS } from '../model/types';
@@ -127,14 +127,13 @@ export function OperatingStep() {
                 </span>
                 <div className="flex flex-col gap-2">
                     {CONVENIENCE_OPTIONS.map(({ key, label }) => (
-                        <div
+                        <CheckboxInput
                             key={key}
-                            onClick={() => toggleConvenience(key)}
-                            className="flex h-12 cursor-pointer items-center gap-2 rounded-xl border border-border-subtle bg-surface px-3"
-                        >
-                            <Checkbox checked={convenienceInfo[key]} />
-                            <span className="text-base text-foreground-secondary">{label}</span>
-                        </div>
+                            label={label}
+                            bordered
+                            checked={convenienceInfo[key]}
+                            onCheckedChange={() => toggleConvenience(key)}
+                        />
                     ))}
                 </div>
             </div>

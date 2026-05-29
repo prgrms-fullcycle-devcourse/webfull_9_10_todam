@@ -2,6 +2,7 @@ export * from './Badge';
 export * from './BottomBar';
 export * from './Button';
 export * from './Checkbox';
+export * from './CheckboxInput';
 export * from './Divider';
 export * from './FormBottomSheet';
 export * from './Logo';
