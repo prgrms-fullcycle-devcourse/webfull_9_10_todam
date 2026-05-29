@@ -3,6 +3,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { PartnerGuard } from '../../common/guards/partner.guard';
+import { TokenService } from './application/token.service';
+import { LoginUseCase } from './application/use-cases/login.use-case';
 import { SendEmailCodeUseCase } from './application/use-cases/send-email-code.use-case';
 import { SignupUseCase } from './application/use-cases/signup.use-case';
 import { VerifyEmailCodeUseCase } from './application/use-cases/verify-email-code.use-case';
@@ -21,7 +23,17 @@ import { AuthController } from './presentation/controllers/auth.controller';
         }),
     ],
     controllers: [AuthController],
-    providers: [JwtAccessStrategy, AuthGuard, PartnerGuard, EmailService, SendEmailCodeUseCase, VerifyEmailCodeUseCase, SignupUseCase],
+    providers: [
+        JwtAccessStrategy,
+        AuthGuard,
+        PartnerGuard,
+        TokenService,
+        EmailService,
+        SendEmailCodeUseCase,
+        VerifyEmailCodeUseCase,
+        SignupUseCase,
+        LoginUseCase,
+    ],
     exports: [JwtModule, AuthGuard, PartnerGuard],
 })
 export class AuthModule {}
