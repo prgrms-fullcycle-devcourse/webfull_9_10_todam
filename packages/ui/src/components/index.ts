@@ -1,6 +1,7 @@
 export * from './Button';
 export * from './Checkbox';
 export * from './Logo';
+export * from './Menu';
 export * from './Radio';
 export * from './Toggle';
 export * from './Tooltip';
