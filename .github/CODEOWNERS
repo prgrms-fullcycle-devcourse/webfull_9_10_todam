@@ -4,7 +4,17 @@
 # 프론트엔드
 /apps/web/ @nogglee @codingguri @yundlab
 
-# 디자인 시스템
+# 루트 설정·의존성 (라이브러리/패키지 추가 시 전원 리뷰)
+/package.json @nogglee @codingguri @yundlab @taesongxxxx @chocofanta01
+/pnpm-lock.yaml @nogglee @codingguri @yundlab @taesongxxxx @chocofanta01
+/pnpm-workspace.yaml @nogglee @codingguri @yundlab @taesongxxxx @chocofanta01
+/turbo.json @nogglee @codingguri @yundlab @taesongxxxx @chocofanta01
+/eslint.config.js @nogglee @codingguri @yundlab @taesongxxxx @chocofanta01
+
+# 공유·설정 패키지 + 신규 패키지 (전 영역 영향 → 전원 리뷰)
+/packages/ @nogglee @codingguri @yundlab @taesongxxxx @chocofanta01
+
+# 디자인 시스템 (위 /packages/ 보다 뒤에 둬야 ui 가 @nogglee 우선 적용)
 *.css @nogglee
 DESIGN.md @nogglee
 /packages/ui/src/components/ @nogglee
