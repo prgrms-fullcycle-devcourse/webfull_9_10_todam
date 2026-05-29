@@ -17,6 +17,7 @@ export * from './SectionTitle';
 export * from './SegmentedControl';
 export * from './SpaceBlock';
 export * from './StandardBottomSheet';
+export * from './Counter';
 export * from './TextArea';
 export * from './TextInput';
 export * from './Toast';
