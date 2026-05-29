@@ -1,6 +1,6 @@
 'use client';
 
-import { phoneSchema, slugSchema } from '@todam/shared';
+import { formatPhone, phoneSchema, slugSchema } from '@todam/shared';
 import { CameraIcon, CloseIcon, TextArea, TextInput } from '@todam/ui';
 import { useEffect, useRef, useState } from 'react';
 
@@ -85,7 +85,7 @@ export function StoreInfoStep() {
                                 type="button"
                                 onClick={() => removeImage(i)}
                                 aria-label="이미지 삭제"
-                                className="absolute right-2 top-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-inverse/60 text-foreground-inverse"
+                                className="absolute -right-1 -top-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-emphasis text-foreground-inverse"
                             >
                                 <CloseIcon size={14} />
                             </button>
@@ -113,22 +113,24 @@ export function StoreInfoStep() {
             {/* 공방 URL: leadem.com/ 프리픽스 고정 */}
             <div className="flex w-full flex-col gap-2">
                 <label className="px-[5px] text-sm font-semibold text-foreground-tertiary">
-                    공방 URL
+                    공방 URL (선택)
                 </label>
                 <div
                     className={[
-                        'flex h-12 w-full items-center rounded-xl border bg-surface px-4',
+                        'group flex h-12 w-full items-center rounded-xl border bg-surface px-4 transition-colors',
                         slugFormatError || (store.slugChecked && !store.slugAvailable)
                             ? 'border-danger'
-                            : 'border-border-subtle',
+                            : 'border-border-subtle focus-within:border-primary',
                     ].join(' ')}
                 >
-                    <span className="shrink-0 text-base text-foreground-tertiary">leadem.com/</span>
+                    <span className="shrink-0 text-base text-foreground-tertiary group-focus-within:text-primary">
+                        leadem.com/
+                    </span>
                     <input
                         value={store.slug}
                         placeholder="공방아이디"
                         onChange={(e) => patchStore({ slug: e.target.value.toLowerCase() })}
-                        className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-foreground-tertiary"
+                        className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-foreground-tertiary focus:text-primary focus:placeholder:text-primary"
                     />
                 </div>
                 <p
@@ -151,7 +153,7 @@ export function StoreInfoStep() {
                 value={store.phone}
                 error={!!phoneError}
                 helperText={phoneError}
-                onChange={(e) => patchStore({ phone: e.target.value.replace(/[^0-9-]/g, '') })}
+                onChange={(e) => patchStore({ phone: formatPhone(e.target.value) })}
             />
 
             <TextArea
