@@ -24,4 +24,4 @@ export {
 
 export { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from './constants/pagination';
 
-export { PHONE_REGEX, BUSINESS_NUMBER_REGEX } from './constants/regex';
+export { PHONE_REGEX, BUSINESS_NUMBER_REGEX, EMAIL_REGEX, PASSWORD_REGEX } from './constants/regex';
