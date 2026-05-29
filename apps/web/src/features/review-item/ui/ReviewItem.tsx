@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Rating } from '@todam/ui';
 
 export type ReviewImage = {
@@ -40,12 +41,18 @@ export function ReviewItem({
                 {images && images.length > 0 && (
                     <div className="flex gap-2">
                         {images.map((image, index) => (
-                            <img
+                            <div
                                 key={index}
-                                src={image.src}
-                                alt={image.alt ?? ''}
-                                className="h-32 w-32 shrink-0 rounded-2xl bg-muted object-cover"
-                            />
+                                className="relative h-32 w-32 shrink-0 overflow-hidden rounded-2xl bg-muted"
+                            >
+                                <Image
+                                    src={image.src}
+                                    alt={image.alt ?? ''}
+                                    fill
+                                    sizes="128px"
+                                    className="object-cover"
+                                />
+                            </div>
                         ))}
                     </div>
                 )}

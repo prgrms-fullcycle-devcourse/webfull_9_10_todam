@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Button, HeartFillIcon } from '@todam/ui';
 
 export type LikedStoreItemProps = {
@@ -19,12 +20,14 @@ export function LikedStoreItem({
 }: LikedStoreItemProps) {
     return (
         <div className={['flex w-full items-center gap-3', className].filter(Boolean).join(' ')}>
-            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted">
+            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted">
                 {imageSrc && (
-                    <img
+                    <Image
                         src={imageSrc}
                         alt={imageAlt ?? storeName}
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="80px"
+                        className="object-cover"
                     />
                 )}
             </div>
