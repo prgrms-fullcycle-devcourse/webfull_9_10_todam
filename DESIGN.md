@@ -37,7 +37,7 @@ Figma variant property를 기준으로 props를 설계하되 두 가지를 구�
 - Route Group: `(main)/` — BottomNav 포함, `(sub)/` — BottomNav 없음. 새 페이지가 BottomNav 탭에서 직접 접근 가능하면 `(main)`, 아니면 `(sub)`.
 - BottomNav 활성 탭은 `usePathname()`으로 결정. zustand 사용 안 한다.
 - Header는 현재 root layout 임시 배치. props 설계 미결 상태 — `docs/exec-plans/active/header.md` 확인 후 수정.
-- 오버레이(Toast · Modal · BottomSheet)는 `app-container` 안에만 렌더링. portal target `#toast-root` · `#modal-root` · `#sheet-root`가 `app-container` 하단에 위치. 구현 계획은 `docs/exec-plans/active/toast-modal-sheet.md`.
+- 오버레이(Toast · Modal · BottomSheet)는 `app-container` 안에 직접 렌더링한다. `AppToast` · `AppModal` · `AppSheet`는 store 구독과 애니메이션만 담당하고, `portal` target은 두지 않는다. 구현 결과는 `docs/exec-plans/completed/toast-modal-sheet.md`.
 - PWA: viewport는 `export const viewport: Viewport`로 선언(`viewportFit: 'cover'` 포함). safe-area는 `.pt-safe`(Header), `.pb-safe`(BottomNav) 유틸 클래스로 처리.
 
 ## 컴포넌트 작업 후 Storybook 등록 규칙
