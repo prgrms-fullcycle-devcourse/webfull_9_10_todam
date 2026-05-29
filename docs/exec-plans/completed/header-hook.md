@@ -96,9 +96,12 @@ BottomNav hidden → `sub` or page-managed.
   - `onBack` 기본 동작.
   - popup / search: page-managed Header 정상 렌더링.
 
-## Status
+## Outcome
 
-- 구현 완료.
-- lint/typecheck 통과.
-- 생성 파일: `apps/web/src/widgets/header/model/useHeader.ts`, `apps/web/src/widgets/header/ui/Header.tsx`, `apps/web/src/widgets/header/index.ts`
-- 변경 파일: `apps/web/src/app/layout.tsx` (Header 추가), `apps/web/src/app/page.tsx`, `apps/web/src/app/partner/page.tsx` (Header 제거)
+- 구현 완료. lint/typecheck 통과.
+- 생성: `apps/web/src/widgets/header/{model/useHeader.ts, ui/Header.tsx, index.ts}`.
+- 변경: `apps/web/src/app/layout.tsx` (Header 추가), `apps/web/src/app/page.tsx`, `apps/web/src/app/partner/page.tsx` (Header 제거).
+
+### 후속 작업 (조건부, tech-debt-tracker 추적)
+
+- Header+BottomNav visible path set을 shared config 1곳으로 분리 — 트리거: 두 widget path 중복 관리 부담 생길 때.

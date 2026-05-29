@@ -91,4 +91,9 @@ const handleRemove = (i: number) => {
 ## Status
 
 - StepperItemChild 편집모드 UI: 구현 완료, typecheck 통과.
-- 업로드 엔드포인트 / hook / wiring: **미착수 (이 문서 메모)**.
+- 업로드 엔드포인트 / hook / wiring: **미착수**.
+
+### 남은 작업 트리거
+
+1. 백엔드 `POST /uploads/presign` (+ 삭제 엔드포인트) — 트리거: 미디어 업로드 실연동 착수 시(작품 관리 화면 작업).
+2. 프론트 `usePresignedUpload` 훅 + 호출부 wiring — 트리거: **1번 엔드포인트 완성 후**(선행 의존).
