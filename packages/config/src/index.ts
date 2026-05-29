@@ -12,7 +12,8 @@ const apiSchema = z.object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     PORT: z.string().default(String(DEFAULT_API_PORT)),
     DATABASE_URL: z.string(),
-    JWT_SECRET: z.string(),
+    JWT_ACCESS_SECRET: z.string(),
+    JWT_REFRESH_SECRET: z.string(),
     S3_BUCKET_NAME: z.string(),
     S3_REGION: z.string().default('ap-northeast-2'),
     CORS_ORIGINS: z
