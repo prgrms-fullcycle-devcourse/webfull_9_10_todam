@@ -278,7 +278,7 @@ model Reservation {
   shippingAddress   String?                   @map("shipping_address")
   status            ReservationStatus         @default(PENDING)
   requestMemo       String?                   @map("request_memo")
-  memo              String?
+  internalMemo      String?                   @map("internal_memo")
   source            ReservationSource
   canceledBy        String?                   @map("canceled_by") @db.Uuid
   cancelReason      String?                   @map("cancel_reason")
@@ -302,7 +302,7 @@ model Artwork {
   id                   String         @id @default(uuid()) @db.Uuid
   reservationId        String         @unique @map("reservation_id") @db.Uuid
   title                String         @default("내 작품") @db.VarChar(200)
-  memo                 String?
+  internalMemo         String?        @map("internal_memo")
   customerMemo         String?        @map("customer_memo")
   status               ArtworkStatus  @default(RESERVED)
   estimatedCompletedAt DateTime?      @map("estimated_completed_at") @db.Date
@@ -406,7 +406,7 @@ model Review {
   userId        String        @map("user_id") @db.Uuid
   storeId       String        @map("store_id") @db.Uuid
   rating        Int           @db.SmallInt
-  body          String?
+  content       String?
   isVisible     Boolean       @default(true) @map("is_visible")
   createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)

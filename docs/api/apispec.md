@@ -388,8 +388,8 @@
       "convenienceInfo": { "parking": true, "pet": false, "wifi": true },
       "autoConfirm": false,
       "status": "PUBLISHED",
-      "rejectionReason": null,
-      "suspensionReason": null,
+      "rejectedReason": null,
+      "suspendedReason": null,
       "operatingHours": [
         {
           "dayOfWeek": "MON",
@@ -1235,10 +1235,10 @@
   "materials": "앞치마 (공방 제공), 편한 복장",
   "caution": "체험 당일 취소는 불가합니다.",
   "price": 45000,
-  "duration": 120,
+  "durationMinutes": 120,
   "capacity": 6,
   "leadTimeDays": 30,
-  "receiveOption": "CUSTOMER_CHOICE"
+  "deliveryOption": "CUSTOMER_SELECT"
 }
 ```
 
@@ -1942,9 +1942,9 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 ```json
 {
   "programId": "prog-uuid-001",
-  "experienceAt": "2026-06-05T14:00:00.000Z",
-  "participantName": "박현장",
-  "participantPhone": "010-9876-5432",
+  "scheduledAt": "2026-06-05T14:00:00.000Z",
+  "reserverName": "박현장",
+  "reserverPhone": "010-9876-5432",
   "participantCount": 1,
   "initialStatus": "CONFIRMED",
   "internalMemo": "현장 방문 예약"
@@ -1982,7 +1982,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
   "data": {
     "reservation": {
       "id": "res-uuid-002",
-      "participantName": "박현장",
+      "reserverName": "박현장",
       "status": "CONFIRMED",
       "source": "PARTNER_MANUAL",
       "artworkId": "artwork-uuid-002",
@@ -2053,7 +2053,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 ```json
 {
-  "suspensionReason": "허위 정보 게재로 인한 노출 중단 조치입니다."
+  "suspendedReason": "허위 정보 게재로 인한 노출 중단 조치입니다."
 }
 ```
 
@@ -2065,7 +2065,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 - 어드민 인증 토큰을 검증한다.
 - `storeId`로 공방을 조회하고 `PUBLISHED` 상태인지 확인한다.
-- `stores.status = 'SUSPENDED'`, `suspension_reason`을 저장한다.
+- `stores.status = 'SUSPENDED'`, `suspended_reason`을 저장한다.
 - `Partner.status`는 변경하지 않는다.
 - 파트너에게 노출 중단 사유 알림을 발송한다.
 - 중단 완료 응답을 반환한다.
@@ -2089,7 +2089,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
     "store": {
       "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
       "status": "SUSPENDED",
-      "suspensionReason": "허위 정보 게재로 인한 노출 중단 조치입니다."
+      "suspendedReason": "허위 정보 게재로 인한 노출 중단 조치입니다."
     }
   },
   "error": null
@@ -2384,10 +2384,10 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
       "materials": "앞치마 (공방 제공), 편한 복장",
       "caution": "체험 당일 취소는 불가합니다.",
       "price": 45000,
-      "duration": 120,
+      "durationMinutes": 120,
       "capacity": 6,
       "leadTimeDays": 30,
-      "receiveOption": "CUSTOMER_CHOICE",
+      "deliveryOption": "CUSTOMER_SELECT",
       "status": "ACTIVE",
       "images": [
         {
@@ -2775,7 +2775,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 ```json
 {
-  "suspensionReason": "서비스 운영 정책 위반으로 인한 강제 정지 조치입니다."
+  "suspendedReason": "서비스 운영 정책 위반으로 인한 강제 정지 조치입니다."
 }
 ```
 
@@ -2787,7 +2787,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 - 어드민 인증 토큰을 검증한다.
 - `partnerId`로 파트너를 조회하고 `APPROVED` 상태인지 확인한다.
-- `suspensionReason` 필수 여부를 검증한다.
+- `suspendedReason` 필수 여부를 검증한다.
 - 해당 파트너의 `PENDING` 예약을 자동 취소 처리하고 고객에게 취소 알림을 발송한다.
 - `partners.status = 'SUSPENDED'`로 갱신한다.
 - 연결된 모든 `stores.status = 'SUSPENDED'`로 cascade 전이한다.
@@ -2928,8 +2928,8 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
       {
         "id": "res-uuid-001",
         "programTitle": "물레 체험 기초반",
-        "experienceAt": "2026-06-01T10:00:00.000Z",
-        "participantName": "김토담",
+        "scheduledAt": "2026-06-01T10:00:00.000Z",
+        "reserverName": "김토담",
         "participantCount": 2,
         "status": "CONFIRMED",
         "source": "CUSTOMER",
@@ -3138,11 +3138,11 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
       "storeName": "토담 공방",
       "programId": "prog-uuid-001",
       "programTitle": "물레 체험 기초반",
-      "experienceAt": "2026-06-01T10:00:00.000Z",
-      "participantName": "김토담",
-      "participantPhone": "010-1234-5678",
+      "scheduledAt": "2026-06-01T10:00:00.000Z",
+      "reserverName": "김토담",
+      "reserverPhone": "010-1234-5678",
       "participantCount": 2,
-      "receiveMethod": "DELIVERY",
+      "deliveryMethod": "DELIVERY",
       "shippingAddress": "서울특별시 마포구 월드컵북로 12, 101호",
       "requestMemo": "왼손잡이라 주의 부탁드립니다.", // 메모 필드 없어도 됨, 배송 정보 필요
       "status": "IN_PROGRESS",
@@ -3836,7 +3836,7 @@ Content-Disposition: attachment; filename="qr-label-res-uuid-001.pdf"
 
 - 어드민 인증 토큰을 검증한다.
 - `storeId`로 공방을 조회하고 `SUSPENDED` 상태인지 확인한다.
-- `stores.status = 'PUBLISHED'`, `suspension_reason = null`로 갱신한다.
+- `stores.status = 'PUBLISHED'`, `suspended_reason = null`로 갱신한다.
 - 파트너에게 노출 재개 알림을 발송한다.
 - 재개 완료 응답을 반환한다.
 
@@ -4359,7 +4359,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 
 ```json
 {
-  "rejectionReason": "사업자등록증 이미지가 불명확합니다. 선명한 이미지로 재업로드해주세요."
+  "rejectedReason": "사업자등록증 이미지가 불명확합니다. 선명한 이미지로 재업로드해주세요."
 }
 ```
 
@@ -4371,8 +4371,8 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 
 - 어드민 인증 토큰을 검증한다.
 - `storeId`로 공방을 조회하고 `PENDING` 상태인지 확인한다.
-- `rejectionReason` 필수 여부를 검증한다.
-- `stores.status = 'DRAFT'`, `rejection_reason`을 저장한다.
+- `rejectedReason` 필수 여부를 검증한다.
+- `stores.status = 'DRAFT'`, `rejected_reason`을 저장한다.
 - 첫 번째 공방인 경우 `partners.status = 'PENDING'`을 유지한다.
 - 파트너에게 반려 사유를 포함한 알림을 발송한다.
 - 반려 완료 응답을 반환한다.
@@ -4396,7 +4396,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
     "store": {
       "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
       "status": "DRAFT",
-      "rejectionReason": "사업자등록증 이미지가 불명확합니다. 선명한 이미지로 재업로드해주세요."
+      "rejectedReason": "사업자등록증 이미지가 불명확합니다. 선명한 이미지로 재업로드해주세요."
     }
   },
   "error": null
@@ -5182,7 +5182,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
         "id": "res-uuid-001",
         "storeName": "토담 공방",
         "programTitle": "물레 체험 기초반",
-        "experienceAt": "2026-06-01T10:00:00.000Z",
+        "scheduledAt": "2026-06-01T10:00:00.000Z",
         "participantCount": 2,
         "status": "IN_PROGRESS",
         "displayState": {
@@ -5925,7 +5925,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
     "artwork": {
       "id": "artwork-uuid-001",
       "reservationId": "res-uuid-001",
-      "participantName": "김토담",
+      "reserverName": "김토담",
       "status": "DRYING",
       "displayState": {
         "label": "제작 중",
@@ -6047,10 +6047,10 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
         "title": "물레 체험 기초반",
         "description": "처음 도자기를 접하는 분들을 위한 물레 체험입니다.",
         "price": 45000,
-        "duration": 120,
+        "durationMinutes": 120,
         "capacity": 6,
         "leadTimeDays": 30,
-        "receiveOption": "CUSTOMER_CHOICE",
+        "deliveryOption": "CUSTOMER_SELECT",
         "thumbnailUrl": "https://cdn.todam.app/programs/prog-uuid-001/thumb.jpg",
         "status": "ACTIVE",
         "sortOrder": 1
@@ -7743,10 +7743,10 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 {
   "programId": "prog-uuid-001",
   "slotId": "slot-uuid-001",
-  "participantName": "김토담",
-  "participantPhone": "010-1234-5678",
+  "reserverName": "김토담",
+  "reserverPhone": "010-1234-5678",
   "participantCount": 2,
-  "receiveMethod": "DELIVERY",
+  "deliveryMethod": "DELIVERY",
   "shippingAddress": "서울특별시 마포구 월드컵북로 12, 101호",
   "requestMemo": "왼손잡이라 주의 부탁드립니다."
 }
@@ -7789,7 +7789,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
       "id": "res-uuid-001",
       "programId": "prog-uuid-001",
       "slotId": "slot-uuid-001",
-      "participantName": "김토담",
+      "reserverName": "김토담",
       "participantCount": 2,
       "status": "PENDING",
       "displayState": {
@@ -8223,7 +8223,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
     "artworks": [
       {
         "id": "artwork-uuid-001",
-        "participantName": "김토담",
+        "reserverName": "김토담",
         "status": "DRYING",
         "estimatedCompletedAt": "2026-07-01T00:00:00.000Z",
         "thumbnailUrl": "https://cdn.todam.app/artworks/artwork-uuid-001/thumb.jpg",
