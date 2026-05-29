@@ -19,7 +19,7 @@ export function FilterDropdown({
     <button
       type={type}
       className={[
-        "inline-flex h-8 items-center gap-1 rounded-r-full border border-border-strong bg-surface pl-1 pr-2 text-sm font-medium text-foreground",
+        "inline-flex h-8 items-center gap-1 rounded-r-full border-y border-r border-border-strong bg-surface pl-1 pr-2 text-sm font-medium text-foreground",
         className,
       ]
         .filter(Boolean)
