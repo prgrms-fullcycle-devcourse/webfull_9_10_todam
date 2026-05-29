@@ -1049,11 +1049,11 @@
   "timestamp": "2026-05-25T19:50:00.000Z",
   "path": "/reservations/res-uuid-001/cancel",
   "message": "예약이 성공적으로 취소되었습니다.",
-  "data": {
+  "data": { 
     "reservation": {
       "id": "res-uuid-001",
       "status": "CANCELED",
-      "canceledBy": "CUSTOMER",
+      "canceledBy": "user-uuid-001",
       "cancelReason": "개인 사정으로 인한 취소",
       "canceledAt": "2026-05-25T19:50:00.000Z"
     }
@@ -1411,9 +1411,8 @@
         "createdAt": "2026-05-26T09:00:00.000Z",
         "partner": {
           "partnerId": "partner-uuid-101",
-          "name": "김파트너",
+          "nickname": "김파트너",
           "email": "partner@example.com",
-          "phone": "010-9999-8888"
         },
         "businessDocument": {
           "documentId": "doc-uuid-001",
@@ -2746,7 +2745,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 ---
 
-## /admin/stores/{storeId}/restore
+## /admin/partners/{PartnerId}/suspend
 
 ## 요구사항
 
@@ -3359,7 +3358,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 - 요청 헤더의 Access Token 유효성을 검증하고 파트너 capability 권한을 확인한다.
 - 파트너 계정과 연동된 소유 공방 정보를 대조한다. (만약 `storeId` 파라미터가 명시적으로 존재한다면, 파트너 소유의 공방이 맞는지 소유 권한을 철저히 검증한다.)
 - `artworks` 테이블에서 해당 공방 ID를 참조하며, 작품 상태가 `CANCELED`가 아닌 활성 레코드들을 색인한다.
-- 작품 제작 단계 필드(예: `DRYING` (건조), `FIRST_FIRING` (초벌), `GLAZING` (유약), `SECOND_FIRING` (재벌))별로 SQL Group By 집계를 통해 실시간 작품 수 카운트를 계산한다.
+- 작품 제작 단계 필드(예: `DRYING` (건조), `BISQUE_FIRING` (초벌), `GLAZING` (유약), `GLAZE_FIRING` (재벌))별로 SQL Group By 집계를 통해 실시간 작품 수 카운트를 계산한다.
 - 단계별 누적 작품 수 리스트를 정갈한 Key-Value 데이터 구조로 가공하여 성공 응답을 반환한다.
 
 ---
@@ -3379,9 +3378,9 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
   "message": "제작단계별 작품 수 조회가 완료되었습니다.",
   "data": {
     "drying": 12,
-    "firstFiring": 8,
+    "bisqueFiring": 8,
     "glazing": 4,
-    "secondFiring": 2
+    "glazeFiring": 2
   },
   "error": null
 }
@@ -4883,7 +4882,6 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
       "filename": "pottery_drying.jpg",
       "fileSize": 1048576,
       "contentType": "image/jpeg",
-      "memo": "건조 중인 작품입니다."
     }
   ]
 }
@@ -4900,7 +4898,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 - 조회된 작품 상태가 `CANCELED`가 아닌지 검증한다.
 - 요청된 파일 정보(한 번에 최대 5장, 용량 5MB 이하, 파일 형식 JPG/PNG/HEIC)가 올바른지 유효성을 검증한다.
 - 고유 파일명(UUID 기반) 및 S3 Key(`artworks/{artworkId}/photos/{uuid}_{filename}`)를 생성한다.
-- `artwork_photos` 테이블에 원본 이미지 CDN 주소, 메모(`memo`), 상태값 `PENDING`으로 즉시 레코드를 삽입한다.
+- `artwork_photos` 테이블에 원본 이미지 CDN 주소, 상태값 `PENDING`으로 즉시 레코드를 삽입한다.
 - S3 SDK를 호출하여 PutObject 방식의 Presigned URL(유효기간 10분)을 생성한다.
 - 생성된 S3 Key, Presigned URL 및 DB에서 생성된 사진 고유 UUID(`photoId`) 목록을 성공 응답으로 반환한다.
 
@@ -5339,7 +5337,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 ## 요구사항
 
 - 인증된 사용자가 특정 프로그램의 예약 가능한 날짜 및 시간대 목록을 조회한다.
-- 공방 운영시간, 휴게시간, 기존 예약 수, `BlockedSlot` 여부를 종합하여 예약 가능 여부를 계산한다.
+- 공방 운영시간, 휴게시간, 기존 예약 수, `program_time_slots.status = 'CLOSED'` 여부를 종합하여 예약 가능 여부를 계산한다.
 
 ---
 
@@ -5370,7 +5368,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 - `programId`로 `ACTIVE` 상태의 프로그램을 조회한다.
 - 해당 공방의 운영시간, 휴게시간, 예약 시간 간격을 기반으로 해당 월의 시간 슬롯 목록을 생성한다.
 - `program_time_slots`에서 각 슬롯의 `reserved_count`와 `capacity`를 비교하여 잔여 정원을 계산한다.
-- `blocked_slots` 테이블에서 차단된 슬롯을 필터링한다.
+- `program_time_slots.status = 'CLOSED'` 슬롯을 필터링한다.
 - 예약 가능 여부(`OPEN`/`CLOSED`)가 표시된 슬롯 목록을 반환한다.
 
 ---
@@ -5949,7 +5947,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
           "toStatus": "DRYING",
           "changedByNickname": "토담공방",
           "memo": "건조 시작",
-          "changedAt": "2026-06-02T10:00:00.000Z"
+          "createdAt": "2026-06-02T10:00:00.000Z"
         }
       ]
     }
@@ -6138,7 +6136,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 - 작품 상태가 `COMPLETED` 또는 `CANCELED`가 아닌지 검증한다.
 - 목표 상태가 현재 상태의 직후 또는 직전 단계인지 검증한다.
 - `artworks.status`를 갱신하고 `updated_at`을 기록한다.
-- `artwork_logs` row를 생성한다 (`from_status`, `to_status`, `changed_by`, `memo`, `changed_at`).
+- `artwork_logs` row를 생성한다 (`from_status`, `to_status`, `changed_by`, `memo`, `created_at`).
 - 고객 알림 큐에 등록한다 (내부 상태를 고객 노출 문구로 치환하여 발송).
 - 변경 완료 응답을 반환한다.
 
@@ -6545,7 +6543,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 
 - 인증 토큰으로 파트너 capability를 검증한다.
 - 공방 소유 권한 및 프로그램 소속 여부를 확인한다.
-- 가격·정원·리드타임이 변경되고 기존 예약이 1건 이상 존재하면, 신규 `program_snapshots` row를 생성하고 `programs.current_snapshot_id`를 갱신한다.
+- 가격·정원·리드타임이 변경되고 기존 예약이 1건 이상 존재하면, 신규 `program_snapshots` row를 생성하고 `program_snapshots`에 새 레코드를 생성한다.
 - 나머지 필드를 `programs` row에 반영하고 `updated_at`을 갱신한다.
 - 수정 완료 응답을 반환한다.
 
@@ -7119,7 +7117,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
     "reservation": {
       "id": "res-uuid-001",
       "status": "CANCELED",
-      "canceledBy": "PARTNER",
+      "canceledBy": "partner-user-uuid-001",
       "cancelReason": "공방 사정으로 인한 취소",
       "canceledAt": "2026-05-25T20:10:00.000Z"
     }
@@ -7761,7 +7759,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 - 인증 토큰으로 사용자를 식별한다.
 - `programId`와 `slotId`로 클래스 및 시간 슬롯의 상태를 검증한다.
 - 잔여 정원(`capacity - reserved_count`)이 `participantCount` 이상인지 확인한다 (동시성 안전 처리).
-- `BlockedSlot` 여부를 확인한다.
+- `program_time_slots.status = 'CLOSED'` 여부를 확인한다.
 - 예약자가 해당 공방의 파트너인지 확인하여 자기거래를 차단한다.
 - `reservations` row를 생성한다 (`status = 'PENDING'`, `source = 'CUSTOMER'`).
 - `program_time_slots.reserved_count`를 `participantCount`만큼 증가시킨다.
@@ -7976,7 +7974,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 
 - 인증된 파트너(공방 사장님)가 특정 프로그램에 대해 예약 가능한 일자 및 시간대 슬롯(Time Slot)을 생성한다.
 - 운영 편의성을 위해 단일 생성뿐만 아니라 여러 날짜와 여러 시간대를 배열 구조로 묶어 **벌크 일괄 생성(Bulk Creation)** 할 수 있도록 지원한다.
-- 생성하고자 하는 시간 슬롯은 해당 공방의 정기 휴무일이나 차단 슬롯(`Blocked Slot`) 영역과 겹치지 않아야 한다.
+- 생성하고자 하는 시간 슬롯은 해당 공방의 정기 휴무일이나 차단 슬롯(`program_time_slots.status = 'CLOSED'`) 영역과 겹치지 않아야 한다.
 - 이미 동일한 날짜 및 시작/종료 시간으로 해당 프로그램에 타임슬롯이 생성되어 있다면 충돌(`409 Conflict`) 오류를 반환한다.
 
 ---
