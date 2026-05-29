@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { PartnerGuard } from '../../common/guards/partner.guard';
 import { SendEmailCodeUseCase } from './application/use-cases/send-email-code.use-case';
+import { VerifyEmailCodeUseCase } from './application/use-cases/verify-email-code.use-case';
 import { EmailService } from './infrastructure/email/email.service';
 import { JwtAccessStrategy } from './infrastructure/strategies/jwt-access.strategy';
 import { AuthController } from './presentation/controllers/auth.controller';
@@ -19,7 +20,7 @@ import { AuthController } from './presentation/controllers/auth.controller';
         }),
     ],
     controllers: [AuthController],
-    providers: [JwtAccessStrategy, AuthGuard, PartnerGuard, EmailService, SendEmailCodeUseCase],
+    providers: [JwtAccessStrategy, AuthGuard, PartnerGuard, EmailService, SendEmailCodeUseCase, VerifyEmailCodeUseCase],
     exports: [JwtModule, AuthGuard, PartnerGuard],
 })
 export class AuthModule {}
