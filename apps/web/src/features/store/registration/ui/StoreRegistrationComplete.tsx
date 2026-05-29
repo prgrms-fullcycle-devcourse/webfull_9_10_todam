@@ -44,7 +44,7 @@ export function StoreRegistrationComplete({
             <div className="flex flex-1 flex-col overflow-y-auto">
                 {/* hero */}
                 <section
-                    className="flex h-60 flex-col items-center justify-end gap-7 px-4 pb-2"
+                    className="flex h-[240px] shrink-0 flex-col items-center justify-end gap-7 px-4 pb-2"
                     style={{
                         background: rejected
                             ? 'linear-gradient(180deg, rgba(246,125,119,0.6) 0%, rgba(255,255,255,0) 100%)'
