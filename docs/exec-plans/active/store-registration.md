@@ -72,7 +72,15 @@ apps/web/src/
 
 - 운영자 검수(승인/반려) admin — 승인 시 USER→PARTNER + Store PUBLISHED.
 - 반려 → 정보 수정 링크 연결.
-- 바텀시트 타임피커, Badge 색 variant(반려 danger).
+
+- **폼 이탈 방지 (unsaved guard)**
+  - 대상: 라우트 이탈만. 스텝 내부 `prev()`는 폼 유지되니 제외.
+    - 새로고침 / 탭 닫기 → `beforeunload` 브라우저 기본 경고
+    - 앱 내 뒤로가기 / 맥 스와이프(popstate) → 확인 모달
+    - 첫 스텝 닫기(X 버튼) → 확인 모달
+  - 조건: 폼 dirty(초기값과 다름)일 때만. 빈 폼·제출 완료 후엔 비활성.
+  - 모달: `useModal().open(<Modal .../>)` — store API는 `open(ReactNode)/close` (`show` 아님).
+  - 카피: "작성을 중단하시겠어요? / 입력한 내용은 저장되지 않아요." · [계속 작성] [나가기].
 
 ## Decision Log
 
@@ -84,5 +92,6 @@ apps/web/src/
 
 ## Outcome
 
+- 바텀시트 타임피커, Badge 색 variant(반려 danger).
 - Status: UI/플로우/mock 완료. 타입체크 통과. 실 API·외부연동 후행.
 - Follow-up: 위 실연동 체크리스트 8항목 + admin 검수.
