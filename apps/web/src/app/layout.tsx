@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { AppToast } from '../components/AppToast';
 import { BottomNav } from '../widgets/bottom-navigation';
 import { Header } from '../widgets/header';
 
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
                     <div id="toast-root" />
                     <div id="modal-root" />
                     <div id="sheet-root" />
+                    <AppToast />
                 </div>
             </body>
         </html>

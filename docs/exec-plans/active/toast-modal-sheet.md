@@ -45,38 +45,55 @@ Toast · Modal · BottomSheet 모두 `app-container` 안에 constrain.
 
 ```
 packages/ui/src/components/
-  Toast.tsx           — 개별 토스트 item UI (type별 색상)
-  Modal.tsx           — 다이얼로그 UI (backdrop + dialog box)
-  BottomSheet.tsx     — 시트 UI (backdrop + slide-up panel)
+  Toast.tsx           ✅ — 순수 UI (type=icon|button, currentColor 아이콘 상속)
+  Modal.tsx           ⬜ — 다이얼로그 UI (backdrop + dialog box)
+  BottomSheet.tsx     ⬜ — 시트 UI (backdrop + slide-up panel)
 
 apps/web/src/
   store/
-    toast.ts          — zustand: toasts[], push(), dismiss()
-    modal.ts          — zustand: isOpen, content, open(), close()
-    sheet.ts          — zustand: isOpen, content, open(), close()
+    toast.ts          ✅ — zustand: toasts[], push()→id, dismiss(), useToast()
+    modal.ts          ⬜ — zustand: isOpen, content, open(), close()
+    sheet.ts          ⬜ — zustand: isOpen, content, open(), close()
   components/
-    AppToast.tsx      — 'use client' | store 구독 + portal to #toast-root
-    AppModal.tsx      — 'use client' | store 구독 + portal to #modal-root
-    AppBottomSheet.tsx — 'use client' | store 구독 + portal to #sheet-root
+    AppToast.tsx      ✅ — 'use client' | store 구독 + portal to #toast-root
+    AppModal.tsx      ⬜ — 'use client' | store 구독 + portal to #modal-root
+    AppBottomSheet.tsx ⬜ — 'use client' | store 구독 + portal to #sheet-root
   app/
-    layout.tsx        — portal target div 삽입, App* 컴포넌트 마운트
+    layout.tsx        ✅ — portal target div 3종 + AppToast 마운트
+
+apps/storybook/src/stories/
+  Toast.stories.tsx   ✅ — Playground + TypeIcon + TypeButton + AllVariants
 ```
 
 ### Store 인터페이스
 
 ```ts
-// toast.ts
+// toast.ts — Figma variant 기준 (type = 레이아웃, 색상 단일)
 type ToastItem = {
   id: string
-  message: string
-  type?: 'default' | 'success' | 'error'
-  duration?: number   // default 3000ms
+  message: ReactNode
+  type?: 'icon' | 'button'        // Figma variant: icon | button
+  icon?: ReactElement<{ size?: number }>
+  actionLabel?: string            // type='button' 액션 라벨 (default '취소')
+  onAction?: () => void
+  duration?: number               // default 3000ms
 }
 type ToastStore = {
-  toasts: ToastItem[]
-  push: (toast: Omit<ToastItem, 'id'>) => void
+  toasts: ToastItem[]             // 최대 3개, 새것이 배열 앞
+  push: (toast: Omit<ToastItem, 'id'>) => string  // id 반환
   dismiss: (id: string) => void
 }
+
+// 편의 훅 — store 직접 import 없이 사용
+function useToast(): { push, dismiss }
+```
+
+**사용 예시:**
+```tsx
+const { push } = useToast();
+
+push({ message: '저장됐어요', type: 'icon', icon: <NotiIcon /> });
+push({ message: '삭제했어요', type: 'button', actionLabel: '취소', onAction: handleUndo });
 ```
 
 ```ts
@@ -99,10 +116,13 @@ type OverlayStore = {
 |------|-----|
 | 위치 | app-container 하단, BottomNav 위 (`bottom-20`) |
 | 스택 | 최대 3개, 새것이 위 |
-| 자동 dismiss | 3000ms (type별 override 가능) |
-| type: default | `bg-inverse` · `text-foreground-inverse` |
-| type: success | `bg-success-subtle` · `text-success-darker` |
-| type: error | `bg-danger-subtle` · `text-danger-darker` |
+| 자동 dismiss | 3000ms (item별 override 가능) |
+| 컨테이너 | `bg-inverse/90` · `rounded-xl` · `px-4 py-3 gap-2` |
+| 텍스트 | `text-base leading-5 text-foreground-inverse` |
+| type=icon | 아이콘(16px) + 메시지 |
+| type=button | 아이콘 + 메시지 + 액션버튼(`text-sm` underline, 우측) |
+
+> Figma variant `type`는 **레이아웃**(icon/button)이지 색상 아님. success/error 색상 variant는 Figma 미존재 → 시안 추가 시 별도 prop으로 확장.
 
 **Modal**
 
@@ -124,29 +144,33 @@ type OverlayStore = {
 
 ## Plan
 
-1. `layout.tsx` — `viewport-fit=cover` 메타, safe-area-inset, overscroll-behavior 적용
-2. `packages/ui` — `Toast.tsx` 구현 + `Toast.stories.tsx`
-3. `packages/ui` — `Modal.tsx` 구현 + `Modal.stories.tsx`
-4. `packages/ui` — `BottomSheet.tsx` 구현 + `BottomSheet.stories.tsx`
-5. `apps/web/store` — `toast.ts` · `modal.ts` · `sheet.ts` (zustand)
-6. `apps/web/components` — `AppToast.tsx` · `AppModal.tsx` · `AppBottomSheet.tsx`
-7. `apps/web/layout.tsx` — portal target div 삽입 + App* 마운트
-8. Validation
+1. ✅ `layout.tsx` — `viewport-fit=cover` 메타 적용, portal target div 3종 삽입
+2. ✅ `packages/ui` — `Toast.tsx` 구현 + `Toast.stories.tsx`
+3. ⬜ `packages/ui` — `Modal.tsx` 구현 + `Modal.stories.tsx`
+4. ⬜ `packages/ui` — `BottomSheet.tsx` 구현 + `BottomSheet.stories.tsx`
+5. ✅ `apps/web/store` — `toast.ts` (zustand + `useToast` 훅) / `modal.ts` · `sheet.ts` ⬜
+6. ✅ `apps/web/components` — `AppToast.tsx` / `AppModal.tsx` · `AppBottomSheet.tsx` ⬜
+7. ✅ `apps/web/layout.tsx` — `<AppToast />` 마운트
+8. ⬜ Validation (store unit test, iOS safe-area 실기기)
 
 ## Risks
 
-- **SSR hydration**: `createPortal`은 클라이언트 전용 — `useEffect` 마운트 후 portal 활성화 필요 (`mounted` state guard)
-- **ReactNode in store**: zustand devtools 직렬화 불가 — 허용하되 추후 content-key 방식으로 전환 가능
-- **safe-area 미적용 시**: BottomNav + Toast가 홈 인디케이터에 겹침 (step 1이 전제 조건)
-- **스택 overflow**: 토스트 3개 초과 시 오래된 것부터 자동 제거 처리 필요
+- **SSR hydration**: ✅ 해결 — `AppToast`에 `mounted` state guard (`useEffect` 후 portal 활성화)
+- **ReactNode in store**: 허용 유지 — zustand devtools 직렬화 불가, 추후 content-key 방식 전환 가능
+- **safe-area 미적용 시**: BottomNav + Toast가 홈 인디케이터에 겹침 → iOS 실기기 검증 필요
+- **스택 overflow**: ✅ 해결 — `push()`에서 `[new, ...prev].slice(0, 3)` 처리
 
 ## Validation
 
-- Tests: 각 store unit test (push/dismiss/open/close 동작)
+- Tests: ⬜ 각 store unit test (push/dismiss/open/close 동작)
 - Manual checks:
-  - [ ] 토스트 3개 동시 push → 최대 3개 유지
-  - [ ] 모달 backdrop 탭 → 닫힘
-  - [ ] 바텀시트 backdrop 탭 → 닫힘
+  - [x] Storybook — type=icon / type=button / 아이콘 없음 3종 렌더 정상
+  - [x] 아이콘 색상 텍스트와 동일 (currentColor 상속)
+  - [ ] 토스트 3개 동시 push → 최대 3개 유지, 새것이 위
+  - [ ] 3000ms 후 자동 dismiss
+  - [ ] framer-motion enter/exit 애니메이션
+  - [ ] 모달 backdrop 탭 → 닫힘 (⬜ 미구현)
+  - [ ] 바텀시트 backdrop 탭 → 닫힘 (⬜ 미구현)
   - [ ] 모든 오버레이가 app-container(430px) 안에 constrain
   - [ ] iOS 실기기 safe-area — BottomNav·Toast가 홈 인디케이터와 겹치지 않음
 - Observability: 없음 (클라이언트 전용 UI 레이어)
@@ -158,8 +182,10 @@ type OverlayStore = {
 - 2026-05-28: store는 apps/web에 위치. packages/ui는 순수 UI만 담당. admin 시점에 store 위치 재검토.
 - 2026-05-28: 애니메이션 → Framer Motion 채택. 이유: exit 애니메이션 코드 간결화 + 향후 BottomSheet 드래그 제스처(useMotionValue·PanInfo) 확장 시 필수 의존성. 35KB는 PWA 캐싱으로 허용.
 - 2026-05-28: store content → ReactNode 직접 저장. 이유: 초기 개발 단계에서 모달 타입 미확정. content-key 방식은 새 타입마다 store 타입 + 렌더러 맵 이중 수정 필요. devtools 직렬화 불가는 클라이언트 전용 UI에서 허용.
+- 2026-05-29: Figma `type` variant = 레이아웃(icon/button), 색상 단일. 계획서의 success/error 색상 type은 Figma 미존재 → Figma 구조 그대로 채택. success/error는 시안 생기면 별도 prop으로 확장.
+- 2026-05-29: `useToast()` 편의 훅을 `store/toast.ts`에 동거. 단순 push/dismiss 노출 수준이라 별도 파일 분리 불필요. 로직 늘어나면 재검토.
 
 ## Outcome
 
-- Status: 계획 완료, 구현 대기
-- Follow-up: 드래그 제스처(BottomSheet), 애니메이션 라이브러리 선택, admin 오버레이 설계
+- Status: **Toast 구현 완료** (UI + store + AppToast + layout 마운트, Storybook 검증). Modal · BottomSheet 구현 대기.
+- Follow-up: Modal · BottomSheet 구현, Toast success/error 색상 시안, 드래그 제스처(BottomSheet), store unit test, admin 오버레이 설계
