@@ -10,6 +10,7 @@ export * from './Divider';
 export * from './FormBottomSheet';
 export * from './InfoTable';
 export * from './Logo';
+export * from './MenuTable';
 export * from './Modal';
 export * from './ResultTable';
 export * from './Section';
