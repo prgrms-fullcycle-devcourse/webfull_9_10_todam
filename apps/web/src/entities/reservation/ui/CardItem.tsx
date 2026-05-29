@@ -1,6 +1,6 @@
 import { Badge, ClockIcon } from '@todam/ui';
 
-export type ReservationCardItemProps = {
+export type CardItemProps = {
     date: string;
     day: string;
     status: string;
@@ -12,7 +12,7 @@ export type ReservationCardItemProps = {
     className?: string;
 };
 
-export function ReservationCardItem({
+export function CardItem({
     date,
     day,
     status,
@@ -22,7 +22,7 @@ export function ReservationCardItem({
     time,
     statusMessage,
     className,
-}: ReservationCardItemProps) {
+}: CardItemProps) {
     return (
         <div
             className={[

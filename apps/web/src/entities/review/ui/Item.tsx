@@ -1,22 +1,22 @@
 import Image from 'next/image';
 import { Rating } from '@todam/ui';
 
-export type ReviewImage = {
+export type ItemImage = {
     src: string;
     alt?: string;
 };
 
-export type ReviewItemProps = {
+export type ItemProps = {
     rating: number;
     ratingLabel?: string;
     userId: string;
     contents: string;
-    images?: ReviewImage[];
+    images?: ItemImage[];
     tagLabel?: string;
     className?: string;
 };
 
-export function ReviewItem({
+export function Item({
     rating,
     ratingLabel,
     userId,
@@ -24,7 +24,7 @@ export function ReviewItem({
     images,
     tagLabel,
     className,
-}: ReviewItemProps) {
+}: ItemProps) {
     return (
         <div className={['flex w-full flex-col gap-4', className].filter(Boolean).join(' ')}>
             <div className="flex flex-col gap-1">

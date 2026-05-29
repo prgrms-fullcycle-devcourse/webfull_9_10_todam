@@ -1,26 +1,26 @@
 import Image from 'next/image';
 import { Rating } from '@todam/ui';
 
-export type ReviewCardImage = {
+export type CardImage = {
     src: string;
     alt?: string;
 };
 
-export type ReviewCardItemProps = {
+export type CardItemProps = {
     rating: number;
     contents?: string;
-    image?: ReviewCardImage;
+    image?: CardImage;
     emptyText?: string;
     className?: string;
 };
 
-export function ReviewCardItem({
+export function CardItem({
     rating,
     contents,
     image,
     emptyText = '작성한 내용이 없습니다.',
     className,
-}: ReviewCardItemProps) {
+}: CardItemProps) {
     const hasContents = Boolean(contents && contents.trim());
 
     return (

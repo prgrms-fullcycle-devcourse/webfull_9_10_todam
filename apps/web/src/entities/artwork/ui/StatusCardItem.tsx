@@ -1,7 +1,7 @@
 import { Badge, RightIcon } from '@todam/ui';
 import type { ReactElement } from 'react';
 
-export type ArtworkStatusCardItemProps = {
+export type StatusCardItemProps = {
     status: string;
     statusIcon?: ReactElement<{ size?: number }>;
     statusMessage: string;
@@ -11,7 +11,7 @@ export type ArtworkStatusCardItemProps = {
     className?: string;
 };
 
-export function ArtworkStatusCardItem({
+export function StatusCardItem({
     status,
     statusIcon,
     statusMessage,
@@ -19,7 +19,7 @@ export function ArtworkStatusCardItem({
     remainingText,
     onDetailClick,
     className,
-}: ArtworkStatusCardItemProps) {
+}: StatusCardItemProps) {
     const clampedProgress = Math.min(100, Math.max(0, progress));
 
     return (
