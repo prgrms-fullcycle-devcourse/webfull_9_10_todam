@@ -3,6 +3,7 @@ export * from './Checkbox';
 export * from './Logo';
 export * from './Menu';
 export * from './Radio';
+export * from './SegmentedControl';
 export * from './Toggle';
 export * from './TextArea';
 export * from './TextInput';
