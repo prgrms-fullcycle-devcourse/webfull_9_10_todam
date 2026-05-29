@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 
-import { useModalStore } from '../store/modal';
+import { useModalStore } from '../model/modal';
 
 export function AppModal() {
     const { isOpen, content } = useModalStore();

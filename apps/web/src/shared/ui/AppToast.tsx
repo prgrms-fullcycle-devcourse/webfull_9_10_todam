@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Toast } from '@todam/ui';
 
-import { useToastStore, type ToastItem } from '../store/toast';
+import { useToastStore, type ToastItem } from '../model/toast';
 
 function ToastView({ item }: { item: ToastItem }) {
     const dismiss = useToastStore((s) => s.dismiss);

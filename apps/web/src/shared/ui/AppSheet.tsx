@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 
-import { useSheetStore } from '../store/sheet';
+import { useSheetStore } from '../model/sheet';
 
 export function AppSheet() {
     const { isOpen, content, close } = useSheetStore();
