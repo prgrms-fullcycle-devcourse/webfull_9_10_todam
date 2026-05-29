@@ -18,3 +18,4 @@ export * from './StandardBottomSheet';
 export * from './Toast';
 export * from './Tag';
 export * from './Rating';
+export * from './StatusFilterChip';
