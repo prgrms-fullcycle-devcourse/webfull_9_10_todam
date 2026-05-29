@@ -494,9 +494,8 @@ enum PartnerStatus {
 
 enum OcrStatus {
   PENDING
-  SUCCESS
-  FAILED
-  VERIFIED // [S-8]
+  VERIFIED
+  FAILED // [S-8]
 }
 
 enum StoreStatus {
