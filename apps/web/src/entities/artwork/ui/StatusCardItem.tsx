@@ -47,7 +47,7 @@ export function StatusCardItem({
                     <button
                         type="button"
                         onClick={onDetailClick}
-                        className="flex shrink-0 items-center text-xs text-foreground-secondary"
+                        className="flex shrink-0 cursor-pointer items-center text-xs text-foreground-secondary"
                     >
                         자세히보기
                         <RightIcon size={16} />

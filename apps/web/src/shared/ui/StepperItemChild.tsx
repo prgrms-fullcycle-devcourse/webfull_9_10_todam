@@ -58,7 +58,7 @@ export function StepperItemChild({
                                     type="button"
                                     aria-label="이미지 삭제"
                                     onClick={() => onRemoveImage(index)}
-                                    className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-foreground-secondary text-foreground-inverse"
+                                    className="absolute -right-1 -top-1 grid h-5 w-5 cursor-pointer place-items-center rounded-full bg-foreground-secondary text-foreground-inverse"
                                 >
                                     <CloseIcon size={12} />
                                 </button>
@@ -70,7 +70,7 @@ export function StepperItemChild({
                             type="button"
                             aria-label="사진 추가"
                             onClick={onAddMedia}
-                            className="grid h-16 w-16 shrink-0 place-items-center rounded-lg border border-dashed border-border text-foreground-tertiary"
+                            className="grid h-16 w-16 shrink-0 cursor-pointer place-items-center rounded-lg border border-dashed border-border text-foreground-tertiary"
                         >
                             <CameraIcon size={24} />
                         </button>

@@ -19,7 +19,7 @@ export function StatusFilterChip({
       type={type}
       aria-pressed={selected}
       className={[
-        "inline-flex h-8 items-center gap-1 rounded-full px-3 text-sm",
+        "inline-flex h-8 items-center gap-1 rounded-full px-3 text-sm cursor-pointer disabled:cursor-not-allowed",
         selected
           ? "bg-inverse font-medium text-foreground-inverse"
           : "border border-border bg-surface font-normal text-foreground-secondary",

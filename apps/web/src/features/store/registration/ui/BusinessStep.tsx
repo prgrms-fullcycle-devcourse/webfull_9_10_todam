@@ -60,7 +60,7 @@ export function BusinessStep() {
                 <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
-                    className="flex h-20 w-28 flex-col items-center justify-center gap-2 rounded-2xl border border-border text-foreground-tertiary"
+                    className="flex h-20 w-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-border text-foreground-tertiary"
                 >
                     <CameraIcon size={24} />
                     {fileName && (

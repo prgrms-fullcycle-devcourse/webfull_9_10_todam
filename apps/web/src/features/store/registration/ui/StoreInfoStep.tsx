@@ -85,7 +85,7 @@ export function StoreInfoStep() {
                                 type="button"
                                 onClick={() => removeImage(i)}
                                 aria-label="이미지 삭제"
-                                className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-inverse/60 text-foreground-inverse"
+                                className="absolute right-2 top-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-inverse/60 text-foreground-inverse"
                             >
                                 <CloseIcon size={14} />
                             </button>
@@ -95,7 +95,7 @@ export function StoreInfoStep() {
                         <button
                             type="button"
                             onClick={() => imgRef.current?.click()}
-                            className="flex aspect-[4/3] flex-col items-center justify-center rounded-2xl border border-dashed border-border text-foreground-tertiary"
+                            className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border text-foreground-tertiary"
                         >
                             <CameraIcon size={24} />
                         </button>

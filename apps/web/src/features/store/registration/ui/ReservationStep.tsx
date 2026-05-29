@@ -63,7 +63,7 @@ export function ReservationStep() {
                                 aria-pressed={selected}
                                 onClick={() => patchReservation({ intervalMinutes: value })}
                                 className={[
-                                    'flex h-12 items-center justify-center rounded-2xl px-4 text-base transition-colors',
+                                    'flex h-12 cursor-pointer items-center justify-center rounded-2xl px-4 text-base transition-colors',
                                     selected
                                         ? 'bg-inverse font-semibold text-foreground-inverse'
                                         : 'border border-border-subtle bg-surface text-foreground-secondary',

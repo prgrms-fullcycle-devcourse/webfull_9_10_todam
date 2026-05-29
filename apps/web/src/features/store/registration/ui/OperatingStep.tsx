@@ -107,7 +107,7 @@ export function OperatingStep() {
                                 aria-pressed={selected}
                                 onClick={() => toggleBusinessDay(value)}
                                 className={[
-                                    'flex h-12 w-12 items-center justify-center rounded-2xl text-base font-semibold transition-colors',
+                                    'flex h-12 w-12 cursor-pointer items-center justify-center rounded-2xl text-base font-semibold transition-colors',
                                     selected
                                         ? 'bg-inverse text-foreground-inverse'
                                         : 'border border-border-subtle bg-surface text-foreground',

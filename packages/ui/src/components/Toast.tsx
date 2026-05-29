@@ -30,7 +30,7 @@ export function Toast({
         <button
           type="button"
           onClick={onAction}
-          className="shrink-0 text-sm leading-[18px] text-foreground-inverse underline underline-offset-2"
+          className="shrink-0 cursor-pointer text-sm leading-[18px] text-foreground-inverse underline underline-offset-2"
         >
           {actionLabel}
         </button>

@@ -171,7 +171,7 @@ function HeaderView({
                             {searchValue && (
                                 <button
                                     type="button"
-                                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted"
+                                    className="flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-full bg-muted"
                                     onClick={onSearchClear}
                                     aria-label="검색어 지우기"
                                 >

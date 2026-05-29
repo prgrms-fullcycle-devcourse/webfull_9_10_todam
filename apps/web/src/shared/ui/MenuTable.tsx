@@ -31,7 +31,7 @@ export function MenuTable({
                     key={index}
                     type="button"
                     onClick={row.onClick}
-                    className="flex items-center justify-between gap-3 py-3 border-b border-border-subtle last:border-b-0 text-left"
+                    className="flex items-center justify-between gap-3 py-3 border-b border-border-subtle last:border-b-0 text-left cursor-pointer"
                 >
                     <span className="flex-1 text-xs font-semibold text-foreground">
                         {row.label}

@@ -180,7 +180,7 @@ export default function SignupPage() {
                                 <button
                                     type="button"
                                     onClick={sendCode}
-                                    className="text-xs font-semibold text-foreground-secondary"
+                                    className="cursor-pointer text-xs font-semibold text-foreground-secondary"
                                 >
                                     인증번호 재전송
                                 </button>
