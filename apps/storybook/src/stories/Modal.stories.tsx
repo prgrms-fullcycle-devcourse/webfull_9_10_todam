@@ -25,7 +25,7 @@ const meta: Meta<typeof Modal> = {
   },
   decorators: [
     (Story) => (
-      <div className="relative h-[400px] w-[430px] overflow-hidden bg-surface">
+      <div className="relative overflow-hidden bg-surface" style={{ width: 430, height: 400 }}>
         <Story />
       </div>
     ),
@@ -53,7 +53,7 @@ export const Danger: Story = {
 function ModalAnimationDemo() {
   const [open, setOpen] = useState(false);
   return (
-    <div className="relative flex h-[500px] w-[430px] items-center justify-center bg-surface">
+    <div className="relative flex items-center justify-center bg-surface" style={{ width: 430, height: 500 }}>
       <button
         onClick={() => setOpen(true)}
         className="rounded-lg bg-gray-700 px-4 py-2 text-sm text-white"

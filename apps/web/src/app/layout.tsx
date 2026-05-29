@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AppModal } from '../components/AppModal';
+import { AppSheet } from '../components/AppSheet';
 import { AppToast } from '../components/AppToast';
 import { BottomNav } from '../widgets/bottom-navigation';
 import { Header } from '../widgets/header';
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
                     {children}
                     <BottomNav />
                     <AppModal />
+                    <AppSheet />
                     <AppToast />
                 </div>
             </body>
