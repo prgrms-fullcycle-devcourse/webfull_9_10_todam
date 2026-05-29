@@ -12,6 +12,7 @@ model User {
   email                String               @unique @db.VarChar(255)
   password             String?              @db.VarChar(255)
   isPartner            Boolean              @default(false) @map("is_partner")
+  emailVerified        Boolean              @default(false) @map("email_verified") // [S-5]
   status               UserStatus           @default(ACTIVE)
   createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -27,6 +28,7 @@ model User {
   reservations         Reservation[]        @relation("ReservationUser")
   reviews              Review[]
   consents             UserConsent[]
+  favoriteStores       FavoriteStore[] // [S-6]
 
   @@map("users")
 }
@@ -87,6 +89,7 @@ model Partner {
   rejectedReason  String?            @map("rejected_reason")
   suspendedReason String?            @map("suspended_reason")
   approvedAt      DateTime?          @map("approved_at") @db.Timestamptz(6)
+  suspendedAt     DateTime?          @map("suspended_at") @db.Timestamptz(6) // [S-9]
   createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
   terminatedAt    DateTime?          @map("terminated_at") @db.Timestamptz(6)
@@ -98,20 +101,20 @@ model Partner {
 }
 
 model BusinessDocument {
-  id                 String     @id @default(uuid()) @db.Uuid
-  partnerId          String     @map("partner_id") @db.Uuid
-  storeId            String     @map("store_id") @db.Uuid
-  documentUrl        String     @map("document_url") @db.VarChar(1000)
-  representativeName String     @map("representative_name") @db.VarChar(100)
-  businessName       String     @map("business_name") @db.VarChar(200)
-  businessNumber     String     @map("business_number") @db.VarChar(20)
-  businessAddress    String     @map("business_address") @db.VarChar(500)
-  ocrStatus          OcrStatus? @map("ocr_status")
-  ocrRaw             Json?      @map("ocr_raw")
-  verifiedAt         DateTime?  @map("verified_at") @db.Timestamptz(6)
-  createdAt          DateTime?  @map("created_at") @db.Timestamptz(6)
-  partner            Partner    @relation(fields: [partnerId], references: [id])
-  store              Store      @relation(fields: [storeId], references: [id])
+  id              String     @id @default(uuid()) @db.Uuid
+  partnerId       String     @map("partner_id") @db.Uuid
+  storeId         String     @map("store_id") @db.Uuid
+  documentUrl     String     @map("document_url") @db.VarChar(1000)
+  ownerName       String     @map("owner_name") @db.VarChar(100) // [S-4] representativeName → ownerName
+  businessName    String     @map("business_name") @db.VarChar(200)
+  businessNumber  String     @map("business_number") @db.VarChar(20)
+  businessAddress String     @map("business_address") @db.VarChar(500)
+  ocrStatus       OcrStatus? @map("ocr_status")
+  ocrRaw          Json?      @map("ocr_raw")
+  verifiedAt      DateTime?  @map("verified_at") @db.Timestamptz(6)
+  createdAt       DateTime?  @map("created_at") @db.Timestamptz(6)
+  partner         Partner    @relation(fields: [partnerId], references: [id])
+  store           Store      @relation(fields: [storeId], references: [id])
 
   @@map("business_documents")
 }
@@ -140,6 +143,7 @@ model Store {
   images          StoreImage[]
   operatingHours  StoreOperatingHour[]
   partner         Partner              @relation(fields: [partnerId], references: [id])
+  favoriteStores  FavoriteStore[] // [S-6]
 
   @@index([slug])
   @@index([partnerId])
@@ -148,13 +152,14 @@ model Store {
 }
 
 model StoreOperatingHour {
-  id        String   @id @default(uuid()) @db.Uuid
-  storeId   String   @map("store_id") @db.Uuid
-  dayOfWeek Int      @map("day_of_week")
-  openTime  DateTime @map("open_time") @db.Time(6)
-  closeTime DateTime @map("close_time") @db.Time(6)
-  breakTime DateTime @map("break_time") @db.Time(6)
-  store     Store    @relation(fields: [storeId], references: [id])
+  id        String    @id @default(uuid()) @db.Uuid
+  storeId   String    @map("store_id") @db.Uuid
+  dayOfWeek DayOfWeek @map("day_of_week") // [S-1] Int → DayOfWeek enum
+  openTime  DateTime  @map("open_time") @db.Time(6)
+  closeTime DateTime  @map("close_time") @db.Time(6)
+  breakStart DateTime? @map("break_start") @db.Time(6) // [S-2] breakTime 분리
+  breakEnd   DateTime? @map("break_end") @db.Time(6)   // [S-2] breakTime 분리
+  store     Store     @relation(fields: [storeId], references: [id])
 
   @@map("store_operating_hours")
 }
@@ -165,11 +170,24 @@ model StoreImage {
   imageUrl     String   @map("image_url") @db.VarChar(1000)
   thumbnailUrl String?  @map("thumbnail_url") @db.VarChar(1000)
   sortOrder    Int      @default(0) @map("sort_order")
-  isPrimary    Boolean  @default(false) @map("is_primary")
+  isThumbnail  Boolean  @default(false) @map("is_thumbnail") // [S-3] isPrimary → isThumbnail
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   store        Store    @relation(fields: [storeId], references: [id])
 
   @@map("store_images")
+}
+
+model FavoriteStore {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  storeId   String   @map("store_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id])
+  store     Store    @relation(fields: [storeId], references: [id])
+
+  @@unique([userId, storeId])
+  @@index([userId])
+  @@map("favorite_stores")
 }
 
 model Program {
@@ -185,15 +203,30 @@ model Program {
   leadTimeDays    Int                   @default(30) @map("lead_time_days")
   deliveryOption  ProgramDeliveryOption @default(CUSTOMER_SELECT) @map("delivery_option")
   status          ProgramStatus         @default(DRAFT)
-  thumbnailUrl    String?               @map("thumbnail_url") @db.VarChar(1000)
+  sortOrder       Int                   @default(0) @map("sort_order") // [S-10]
   createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
   snapshots       ProgramSnapshot[]
   timeSlots       ProgramTimeSlot[]
   store           Store                 @relation(fields: [storeId], references: [id])
   reservations    Reservation[]
+  images          ProgramImage[] // [S-7]
 
   @@map("programs")
+}
+
+model ProgramImage {
+  id           String   @id @default(uuid()) @db.Uuid
+  programId    String   @map("program_id") @db.Uuid
+  imageUrl     String   @map("image_url") @db.VarChar(1000)
+  thumbnailUrl String?  @map("thumbnail_url") @db.VarChar(1000)
+  sortOrder    Int      @default(0) @map("sort_order")
+  isThumbnail  Boolean  @default(false) @map("is_thumbnail")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  program      Program  @relation(fields: [programId], references: [id])
+
+  @@index([programId])
+  @@map("program_images")
 }
 
 model ProgramSnapshot {
@@ -427,6 +460,20 @@ model UserConsent {
   @@map("user_consents")
 }
 
+// ──────────────────────────────────────────
+// Enums
+// ──────────────────────────────────────────
+
+enum DayOfWeek {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
 enum UserStatus {
   ACTIVE
   WITHDRAWN
@@ -449,6 +496,7 @@ enum OcrStatus {
   PENDING
   SUCCESS
   FAILED
+  VERIFIED // [S-8]
 }
 
 enum StoreStatus {
