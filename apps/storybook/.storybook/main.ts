@@ -10,6 +10,10 @@ const config: StorybookConfig = {
   },
   viteFinal: async (config) => {
     config.plugins = [...(config.plugins ?? []), tailwindcss()];
+    config.resolve = {
+      ...config.resolve,
+      dedupe: ["react", "react-dom", "framer-motion"],
+    };
     return config;
   },
 };
