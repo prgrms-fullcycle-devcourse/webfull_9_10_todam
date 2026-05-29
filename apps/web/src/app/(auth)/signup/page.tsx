@@ -4,13 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Button, TextInput, BottomBar, LeftIcon, InformationIcon } from '@todam/ui';
+import { EMAIL_REGEX, PASSWORD_REGEX } from '@todam/shared';
 import { useToast } from '../../../shared/model';
 
 type Step = 'email' | 'code' | 'password';
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// 영문 + 숫자 + 특수문자 조합, 8~32자
-const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,32}$/;
 const CODE_LENGTH = 6;
 const VERIFY_SECONDS = 300; // 5:00
 
