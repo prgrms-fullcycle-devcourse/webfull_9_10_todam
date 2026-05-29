@@ -1,4 +1,4 @@
-import { ClockIcon } from '@todam/ui';
+import { Badge, ClockIcon } from '@todam/ui';
 
 export type ReservationCardItemProps = {
     date: string;
@@ -38,10 +38,9 @@ export function ReservationCardItem({
                         <span className="text-base font-semibold text-foreground">{date}</span>
                         <span className="text-base text-foreground-tertiary">{day}</span>
                     </div>
-                    <span className="inline-flex h-5 shrink-0 items-center gap-1 rounded-full bg-primary-subtle px-2 text-primary-darker">
-                        <ClockIcon size={12} />
-                        <span className="text-[10px] font-medium leading-[15px]">{status}</span>
-                    </span>
+                    <Badge tone="primary" icon={<ClockIcon />} className="shrink-0">
+                        {status}
+                    </Badge>
                 </div>
                 <div className="flex flex-col gap-1">
                     <p className="text-sm font-semibold text-foreground">{lessonName}</p>
