@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@todam/config": "workspace:*",
+    "@todam/shared": "workspace:*",
     "@todam/ui": "workspace:*",
     "framer-motion": "^12.40.0",
     "next": "^16.2.6",
