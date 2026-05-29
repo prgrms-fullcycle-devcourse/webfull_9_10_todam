@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class SignupDto {
     @ApiProperty({ example: 'user@example.com' })
@@ -12,11 +12,12 @@ export class SignupDto {
     @MaxLength(100)
     password!: string;
 
-    @ApiProperty({ example: '도예인' })
+    @ApiPropertyOptional({ example: '도예인', description: '미입력 시 랜덤 닉네임 자동 생성' })
+    @IsOptional()
     @IsString()
     @MinLength(2, { message: '닉네임은 2자 이상이어야 합니다.' })
     @MaxLength(100)
-    nickname!: string;
+    nickname?: string;
 }
 
 export class SignupResponseDto {

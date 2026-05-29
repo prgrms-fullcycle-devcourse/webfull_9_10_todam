@@ -7,10 +7,14 @@ import type { RequestUser } from '../../../../common/types/request-user.type';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
 import { LogoutUseCase } from '../../application/use-cases/logout.use-case';
 import { RefreshUseCase } from '../../application/use-cases/refresh.use-case';
+import { ResetPasswordRequestUseCase } from '../../application/use-cases/reset-password-request.use-case';
+import { ResetPasswordUseCase } from '../../application/use-cases/reset-password.use-case';
 import { SendEmailCodeUseCase } from '../../application/use-cases/send-email-code.use-case';
 import { SignupUseCase } from '../../application/use-cases/signup.use-case';
 import { VerifyEmailCodeUseCase } from '../../application/use-cases/verify-email-code.use-case';
 import { LoginDto, LoginResponseDto } from '../dto/login.dto';
+import { ResetPasswordRequestDto } from '../dto/reset-password-request.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { SendCodeDto } from '../dto/send-code.dto';
 import { SignupDto, SignupResponseDto } from '../dto/signup.dto';
 import { VerifyCodeDto } from '../dto/verify-code.dto';
@@ -25,6 +29,8 @@ export class AuthController {
         private readonly loginUseCase: LoginUseCase,
         private readonly refreshUseCase: RefreshUseCase,
         private readonly logoutUseCase: LogoutUseCase,
+        private readonly resetPasswordRequestUseCase: ResetPasswordRequestUseCase,
+        private readonly resetPasswordUseCase: ResetPasswordUseCase,
     ) {}
 
     @Post('email/send-code')
@@ -82,5 +88,19 @@ export class AuthController {
     ): Promise<void> {
         const token = req.cookies['refresh_token'] as string | undefined;
         await this.logoutUseCase.execute(user.id, token, res);
+    }
+
+    @Post('password/reset-request')
+    @HttpCode(HttpStatus.OK)
+    @ApiOkResponse({ description: '비밀번호 재설정 이메일 발송 (이메일 존재 여부와 무관하게 200 반환)' })
+    async resetPasswordRequest(@Body() dto: ResetPasswordRequestDto): Promise<void> {
+        await this.resetPasswordRequestUseCase.execute(dto.email);
+    }
+
+    @Post('password/reset')
+    @HttpCode(HttpStatus.OK)
+    @ApiOkResponse({ description: '비밀번호 재설정 성공' })
+    async resetPassword(@Body() dto: ResetPasswordDto): Promise<void> {
+        await this.resetPasswordUseCase.execute(dto);
     }
 }

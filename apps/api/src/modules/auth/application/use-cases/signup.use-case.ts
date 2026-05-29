@@ -8,6 +8,10 @@ import type { SignupDto, SignupResponseDto } from '../../presentation/dto/signup
 
 const BCRYPT_ROUNDS = 10;
 
+function generateRandomNickname(): string {
+    return `사용자_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+}
+
 @Injectable()
 export class SignupUseCase {
     constructor(
@@ -32,8 +36,10 @@ export class SignupUseCase {
 
         const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
 
+        const nickname = dto.nickname ?? generateRandomNickname();
+
         const user = await this.prisma.user.create({
-            data: { email: dto.email, password: passwordHash, nickname: dto.nickname },
+            data: { email: dto.email, password: passwordHash, nickname },
             select: { id: true },
         });
 
