@@ -1,7 +1,11 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
+import { AuthGuard } from '../../../../common/guards/auth.guard';
+import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
+import type { RequestUser } from '../../../../common/types/request-user.type';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
+import { LogoutUseCase } from '../../application/use-cases/logout.use-case';
 import { RefreshUseCase } from '../../application/use-cases/refresh.use-case';
 import { SendEmailCodeUseCase } from '../../application/use-cases/send-email-code.use-case';
 import { SignupUseCase } from '../../application/use-cases/signup.use-case';
@@ -20,6 +24,7 @@ export class AuthController {
         private readonly signupUseCase: SignupUseCase,
         private readonly loginUseCase: LoginUseCase,
         private readonly refreshUseCase: RefreshUseCase,
+        private readonly logoutUseCase: LogoutUseCase,
     ) {}
 
     @Post('email/send-code')
@@ -64,5 +69,18 @@ export class AuthController {
     ): Promise<{ accessToken: string }> {
         const token = req.cookies['refresh_token'] as string | undefined;
         return this.refreshUseCase.execute(token, res);
+    }
+
+    @Post('logout')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiOkResponse({ description: '로그아웃 성공' })
+    async logout(
+        @CurrentUser() user: RequestUser,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<void> {
+        const token = req.cookies['refresh_token'] as string | undefined;
+        await this.logoutUseCase.execute(user.id, token, res);
     }
 }
