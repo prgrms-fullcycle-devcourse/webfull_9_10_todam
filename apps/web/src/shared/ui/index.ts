@@ -5,6 +5,7 @@ export * from './StepperIcon';
 export * from './StepperItem';
 export * from './StepperItemChild';
 export * from './MenuTable';
+export * from './LikedStoreItem';
 export * from './AppModal';
 export * from './AppSheet';
 export * from './AppToast';
