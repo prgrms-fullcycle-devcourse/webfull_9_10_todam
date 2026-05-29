@@ -3,7 +3,7 @@ import { ClockIcon, CalendarIcon, UserIcon } from "@todam/ui";
 import { InfoTable } from "../../../web/src/shared/ui";
 
 const meta: Meta<typeof InfoTable> = {
-  title: "Components/InfoTable",
+  title: "Components/Data Display/InfoTable",
   component: InfoTable,
   parameters: { layout: "centered" },
 };

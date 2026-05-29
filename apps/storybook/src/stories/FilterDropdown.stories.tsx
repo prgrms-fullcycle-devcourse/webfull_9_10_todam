@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { FilterDropdown, StatusIcon } from "@todam/ui";
 
 const meta: Meta<typeof FilterDropdown> = {
-  title: "Components/FilterDropdown",
+  title: "Components/Data Display/FilterDropdown",
   component: FilterDropdown,
   parameters: { layout: "centered" },
   argTypes: {

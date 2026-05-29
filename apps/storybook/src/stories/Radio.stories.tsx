@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Radio } from "@todam/ui";
 
 const meta: Meta<typeof Radio> = {
-  title: "Components/Radio",
+  title: "Components/Form/Radio",
   component: Radio,
   parameters: { layout: "centered" },
   argTypes: {

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Toggle } from "@todam/ui";
 
 const meta: Meta<typeof Toggle> = {
-  title: "Components/Toggle",
+  title: "Components/Form/Toggle",
   component: Toggle,
   parameters: { layout: "centered" },
   argTypes: {

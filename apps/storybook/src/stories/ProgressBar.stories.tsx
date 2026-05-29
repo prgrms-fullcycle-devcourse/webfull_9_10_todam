@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { ProgressBar } from "@todam/ui";
 
 const meta: Meta<typeof ProgressBar> = {
-  title: "Components/ProgressBar",
+  title: "Components/Data Display/ProgressBar",
   component: ProgressBar,
   parameters: { layout: "padded" },
   argTypes: {

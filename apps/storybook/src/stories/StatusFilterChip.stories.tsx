@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { StatusFilterChip } from "@todam/ui";
 
 const meta: Meta<typeof StatusFilterChip> = {
-  title: "Components/StatusFilterChip",
+  title: "Components/Data Display/StatusFilterChip",
   component: StatusFilterChip,
   parameters: { layout: "centered" },
   argTypes: {
