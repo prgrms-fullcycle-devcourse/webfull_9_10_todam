@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { MenuTable } from "@todam/ui";
+import { MenuTable } from "../../../web/src/shared/ui";
 
 const meta: Meta<typeof MenuTable> = {
   title: "Components/MenuTable",

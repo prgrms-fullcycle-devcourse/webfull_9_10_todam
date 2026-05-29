@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { InfoTable, ClockIcon, CalendarIcon, UserIcon } from "@todam/ui";
+import { ClockIcon, CalendarIcon, UserIcon } from "@todam/ui";
+import { InfoTable } from "../../../web/src/shared/ui";
 
 const meta: Meta<typeof InfoTable> = {
   title: "Components/InfoTable",

@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import {
-  ResultTable,
   CalendarIcon,
   ClockIcon,
   UserIcon,
   NametagIcon,
   FlagIcon,
 } from "@todam/ui";
+import { ResultTable } from "../../../web/src/shared/ui";
 
 const meta: Meta<typeof ResultTable> = {
   title: "Components/ResultTable",
