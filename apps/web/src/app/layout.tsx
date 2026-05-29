@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { AppModal } from '../components/AppModal';
-import { AppSheet } from '../components/AppSheet';
-import { AppToast } from '../components/AppToast';
+import { AppModal, AppSheet, AppToast } from '../shared/ui';
 import { BottomNav } from '../widgets/bottom-navigation';
 import { Header } from '../widgets/header';
 
