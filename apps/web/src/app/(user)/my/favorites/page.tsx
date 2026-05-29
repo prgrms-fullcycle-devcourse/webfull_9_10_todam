@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 
-import { LikeToggleButton } from '../../../../features/toggle-like';
+import { LikeToggleButton } from '../../../../features/store/toggle-like';
 
 type LikedStore = { id: string; name: string; address: string; imageSrc?: string };
 

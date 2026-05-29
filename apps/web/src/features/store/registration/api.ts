@@ -7,7 +7,7 @@ import {
     type SlugAvailabilityResult,
 } from '@todam/shared';
 
-import { apiFetch } from '../../shared/api';
+import { apiFetch } from '../../../shared/api';
 
 import type { StoreRegistrationForm } from './model/types';
 

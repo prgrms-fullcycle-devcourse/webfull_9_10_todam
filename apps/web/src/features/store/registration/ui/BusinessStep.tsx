@@ -3,8 +3,8 @@
 import { CameraIcon, DescriptionBlock, TextInput } from '@todam/ui';
 import { useRef, useState } from 'react';
 
-import { openPostcode } from '../../../shared/lib/daumPostcode';
-import { useToast } from '../../../shared/model';
+import { openPostcode } from '../../../../shared/lib/daumPostcode';
+import { useToast } from '../../../../shared/model';
 import { useStoreRegistrationStore } from '../model/store';
 import { useGeocode } from '../queries';
 
