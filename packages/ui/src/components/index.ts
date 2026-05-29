@@ -25,3 +25,4 @@ export * from './StatusFilterChip';
 export * from './FilterDropdown';
 export * from './Toggle';
 export * from './Tooltip';
+export * from './DescriptionBlock';
