@@ -1,4 +1,5 @@
 import type { HTMLAttributes } from 'react';
+import Image from 'next/image';
 import { CameraIcon, CloseIcon } from '@todam/ui';
 
 export type StepperItemChildImage = {
@@ -47,11 +48,16 @@ export function StepperItemChild({
             {hasMedia && (
                 <div className={editable ? 'flex flex-wrap gap-4' : 'flex gap-2'}>
                     {items.map((image, index) => (
-                        <div key={index} className="relative h-16 w-16 shrink-0">
-                            <img
+                        <div
+                            key={index}
+                            className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted"
+                        >
+                            <Image
                                 src={image.src}
                                 alt={image.alt ?? ''}
-                                className="h-full w-full rounded-lg bg-muted object-cover"
+                                fill
+                                sizes="64px"
+                                className="object-cover"
                             />
                             {editable && onRemoveImage && (
                                 <button
