@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Toast } from '@todam/ui';
 
@@ -41,23 +40,14 @@ function ToastView({ item }: { item: ToastItem }) {
 
 export function AppToast() {
     const toasts = useToastStore((s) => s.toasts);
-    const [mounted, setMounted] = useState(false);
 
-    useEffect(() => setMounted(true), []);
-
-    if (!mounted) return null;
-
-    const root = document.getElementById('toast-root');
-    if (!root) return null;
-
-    return createPortal(
+    return (
         <div className="pointer-events-none absolute inset-x-4 bottom-20 z-50 flex flex-col gap-2">
             <AnimatePresence initial={false}>
                 {toasts.map((item) => (
                     <ToastView key={item.id} item={item} />
                 ))}
             </AnimatePresence>
-        </div>,
-        root,
+        </div>
     );
 }

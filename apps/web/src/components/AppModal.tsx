@@ -1,23 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { useModalStore } from '../store/modal';
 
 export function AppModal() {
     const { isOpen, content } = useModalStore();
-    const [mounted, setMounted] = useState(false);
 
-    useEffect(() => setMounted(true), []);
-
-    if (!mounted) return null;
-
-    const root = document.getElementById('modal-root');
-    if (!root) return null;
-
-    return createPortal(
+    return (
         <AnimatePresence>
             {isOpen && (
                 <motion.div
@@ -30,7 +20,6 @@ export function AppModal() {
                     {content}
                 </motion.div>
             )}
-        </AnimatePresence>,
-        root,
+        </AnimatePresence>
     );
 }
