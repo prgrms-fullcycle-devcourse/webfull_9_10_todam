@@ -3,7 +3,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { PartnerGuard } from '../../common/guards/partner.guard';
+import { SendEmailCodeUseCase } from './application/use-cases/send-email-code.use-case';
+import { EmailService } from './infrastructure/email/email.service';
 import { JwtAccessStrategy } from './infrastructure/strategies/jwt-access.strategy';
+import { AuthController } from './presentation/controllers/auth.controller';
 
 @Module({
     imports: [
@@ -15,7 +18,8 @@ import { JwtAccessStrategy } from './infrastructure/strategies/jwt-access.strate
             }),
         }),
     ],
-    providers: [JwtAccessStrategy, AuthGuard, PartnerGuard],
+    controllers: [AuthController],
+    providers: [JwtAccessStrategy, AuthGuard, PartnerGuard, EmailService, SendEmailCodeUseCase],
     exports: [JwtModule, AuthGuard, PartnerGuard],
 })
 export class AuthModule {}
