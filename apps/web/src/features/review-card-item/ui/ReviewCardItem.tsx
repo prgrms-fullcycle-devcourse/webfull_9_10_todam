@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Rating } from '@todam/ui';
 
 export type ReviewCardImage = {
@@ -32,11 +33,13 @@ export function ReviewCardItem({
                 .join(' ')}
         >
             {image && (
-                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
-                    <img
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+                    <Image
                         src={image.src}
                         alt={image.alt ?? ''}
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="56px"
+                        className="object-cover"
                     />
                 </div>
             )}
