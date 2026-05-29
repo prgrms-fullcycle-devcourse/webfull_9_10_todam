@@ -25,3 +25,4 @@ export * from './FilterDropdown';
 export * from './ArtworkStatusFilters';
 export * from './Toggle';
 export * from './Tooltip';
+export * from './DescriptionBlock';
