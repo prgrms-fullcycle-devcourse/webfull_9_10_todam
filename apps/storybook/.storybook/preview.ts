@@ -11,6 +11,16 @@ const preview: Preview = {
     },
     layout: "fullscreen",
     backgrounds: { disable: true },
+    options: {
+      storySort: {
+        order: [
+          "Design System",
+          ["Colors", "Icons"],
+          "Components",
+          ["Form", "Data Display", "Feedback", "Layout"],
+        ],
+      },
+    },
   },
   decorators: [
     (Story) => {

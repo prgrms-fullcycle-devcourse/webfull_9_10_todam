@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { ArtworkStatusFilters } from "../../../web/src/features/artwork/status-filter";
 
 const meta: Meta<typeof ArtworkStatusFilters> = {
-  title: "Domain/ArtworkStatusFilters",
+  title: "Components/Data Display/ArtworkStatusFilters",
   component: ArtworkStatusFilters,
   parameters: { layout: "padded" },
   args: {

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { DescriptionBlock } from "@todam/ui";
 
 const meta: Meta<typeof DescriptionBlock> = {
-  title: "Components/DescriptionBlock",
+  title: "Components/Data Display/DescriptionBlock",
   component: DescriptionBlock,
   parameters: { layout: "padded" },
   argTypes: {
