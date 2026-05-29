@@ -1,0 +1,5 @@
+export enum PolicyType {
+    PRIVACY_POLICY = 'PRIVACY_POLICY',
+    TERMS_OF_SERVICE = 'TERMS_OF_SERVICE',
+    MARKETING = 'MARKETING',
+}

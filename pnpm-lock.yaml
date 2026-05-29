@@ -35,6 +35,9 @@ importers:
       '@todam/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@todam/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       next:
         specifier: ^16.2.6
         version: 16.2.6(@babel/core@7.29.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -105,6 +108,9 @@ importers:
       '@todam/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@todam/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -203,6 +209,9 @@ importers:
       '@todam/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@todam/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@todam/ui':
         specifier: workspace:*
         version: link:../../packages/ui
