@@ -7,6 +7,8 @@ import { TokenService } from './application/token.service';
 import { LoginUseCase } from './application/use-cases/login.use-case';
 import { LogoutUseCase } from './application/use-cases/logout.use-case';
 import { RefreshUseCase } from './application/use-cases/refresh.use-case';
+import { ResetPasswordRequestUseCase } from './application/use-cases/reset-password-request.use-case';
+import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
 import { SendEmailCodeUseCase } from './application/use-cases/send-email-code.use-case';
 import { SignupUseCase } from './application/use-cases/signup.use-case';
 import { VerifyEmailCodeUseCase } from './application/use-cases/verify-email-code.use-case';
@@ -37,6 +39,8 @@ import { AuthController } from './presentation/controllers/auth.controller';
         LoginUseCase,
         RefreshUseCase,
         LogoutUseCase,
+        ResetPasswordRequestUseCase,
+        ResetPasswordUseCase,
     ],
     exports: [JwtModule, AuthGuard, PartnerGuard],
 })
