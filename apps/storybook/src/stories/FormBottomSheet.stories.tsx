@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { FormBottomSheet } from "@todam/ui";
 
 const meta: Meta<typeof FormBottomSheet> = {
-  title: "Components/FormBottomSheet",
+  title: "Components/Feedback/FormBottomSheet",
   component: FormBottomSheet,
   parameters: { layout: "padded" },
   argTypes: {

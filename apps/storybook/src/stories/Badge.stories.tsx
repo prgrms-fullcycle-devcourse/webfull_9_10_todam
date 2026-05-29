@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Badge, DeliveryIcon } from "@todam/ui";
 
 const meta: Meta<typeof Badge> = {
-  title: "Components/Badge",
+  title: "Components/Data Display/Badge",
   component: Badge,
   parameters: { layout: "centered" },
   argTypes: {

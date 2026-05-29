@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { MenuTable } from "../../../web/src/shared/ui";
 
 const meta: Meta<typeof MenuTable> = {
-  title: "Components/MenuTable",
+  title: "Components/Data Display/MenuTable",
   component: MenuTable,
   parameters: { layout: "centered" },
 };
