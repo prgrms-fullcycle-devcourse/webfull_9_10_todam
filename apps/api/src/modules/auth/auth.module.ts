@@ -5,6 +5,7 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { PartnerGuard } from '../../common/guards/partner.guard';
 import { TokenService } from './application/token.service';
 import { LoginUseCase } from './application/use-cases/login.use-case';
+import { RefreshUseCase } from './application/use-cases/refresh.use-case';
 import { SendEmailCodeUseCase } from './application/use-cases/send-email-code.use-case';
 import { SignupUseCase } from './application/use-cases/signup.use-case';
 import { VerifyEmailCodeUseCase } from './application/use-cases/verify-email-code.use-case';
@@ -33,6 +34,7 @@ import { AuthController } from './presentation/controllers/auth.controller';
         VerifyEmailCodeUseCase,
         SignupUseCase,
         LoginUseCase,
+        RefreshUseCase,
     ],
     exports: [JwtModule, AuthGuard, PartnerGuard],
 })

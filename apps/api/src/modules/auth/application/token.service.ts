@@ -27,11 +27,13 @@ export class TokenService {
         const tokenHash = await bcrypt.hash(token, BCRYPT_ROUNDS);
         const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_DAYS * MS_PER_DAY);
 
-        await this.prisma.refreshToken.create({
+        const { id } = await this.prisma.refreshToken.create({
             data: { userId, tokenHash, expiresAt },
+            select: { id: true },
         });
 
-        res.cookie('refresh_token', token, {
+        // 쿠키 값: "<dbId>.<rawToken>" → refresh 시 id로 DB 바로 조회, rawToken만 bcrypt 비교
+        res.cookie('refresh_token', `${id}.${token}`, {
             httpOnly: true,
             secure: process.env['NODE_ENV'] === 'production',
             sameSite: 'strict',
