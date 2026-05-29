@@ -8,7 +8,6 @@ export * from './Menu';
 export * from './Modal';
 export * from './Pagination';
 export * from './ProgressBar';
-export * from './ProgressBarWrapper';
 export * from './Radio';
 export * from './Section';
 export * from './SectionTitle';
