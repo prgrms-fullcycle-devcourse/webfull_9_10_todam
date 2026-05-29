@@ -83,8 +83,13 @@ apps/web/src/widgets/bottom-navigation/model/bottomNavigationStore.ts
   - allowlist route: BottomNav 표시.
   - `/search`, auth, 상세 route: BottomNav 숨김.
 
-## Status
+## Outcome
 
-- 구현 완료.
-- lint/typecheck 통과.
-- 기존 `postcss.config.mjs` anonymous default export warning 1개 남음.
+- 구현 완료. lint/typecheck 통과.
+- 생성: `widgets/bottom-navigation/{model/useBottomNavigation.ts, ui/BottomNav.tsx, index.ts}`.
+- 기존 `postcss.config.mjs` anonymous default export warning 1개 남음 (무관).
+
+### 후속 작업 (조건부, tech-debt-tracker 추적)
+
+- BottomNav Zustand store 도입 — 트리거: 로그인 role/session·선택공방·권한/온보딩 기반 nav 변동, 여러 widget 공유 중 하나 발생 시. 현재 pathname 계산으로 충분.
+- visible path set을 Header와 공유하는 shared config로 분리 (header-hook.md와 공통).
