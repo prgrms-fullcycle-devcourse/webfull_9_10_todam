@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
-import { Menu } from "@todam/ui";
+import { Menu, CheckIcon } from "@todam/ui";
+
+const check = <CheckIcon size={20} />;
 
 const meta: Meta<typeof Menu> = {
   title: "Components/Data Display/Menu",
@@ -31,7 +33,16 @@ export const Playground: Story = {
           i === index ? { ...item, selected: !item.selected } : item,
         ),
       );
-    return <Menu title="타이틀" items={items} onItemSelect={toggle} />;
+    return (
+      <Menu
+        title="타이틀"
+        items={items.map((item) => ({
+          ...item,
+          icon: item.selected ? check : undefined,
+        }))}
+        onItemSelect={toggle}
+      />
+    );
   },
 };
 
@@ -41,9 +52,9 @@ export const AllSelected: Story = {
     <Menu
       title="타이틀"
       items={[
-        { label: "메뉴 아이템", selected: true },
-        { label: "메뉴 아이템", selected: true },
-        { label: "메뉴 아이템", selected: true },
+        { label: "메뉴 아이템", selected: true, icon: check },
+        { label: "메뉴 아이템", selected: true, icon: check },
+        { label: "메뉴 아이템", selected: true, icon: check },
       ]}
     />
   ),
@@ -55,7 +66,7 @@ export const SingleSelected: Story = {
     <Menu
       title="정렬"
       items={[
-        { label: "최신순", selected: true },
+        { label: "최신순", selected: true, icon: check },
         { label: "인기순" },
         { label: "가격순" },
       ]}

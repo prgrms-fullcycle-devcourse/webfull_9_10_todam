@@ -1,9 +1,10 @@
-import type { HTMLAttributes } from "react";
-import { CheckIcon } from "../icons";
+import type { HTMLAttributes, ReactNode } from "react";
 
 export type MenuItem = {
   label: string;
   selected?: boolean;
+  /** 우측 트레일링 슬롯. 선택 표시 등 아이콘을 자유롭게 전달한다. */
+  icon?: ReactNode;
 };
 
 export type MenuProps = {
@@ -31,7 +32,7 @@ export function Menu({
       {...props}
     >
       {title && (
-        <p className="px-5 py-4 text-center text-xs font-normal text-foreground-tertiary">
+        <p className="p-1 text-center text-xs font-normal leading-4 text-foreground-tertiary">
           {title}
         </p>
       )}
@@ -42,14 +43,12 @@ export function Menu({
           role="menuitemcheckbox"
           aria-checked={item.selected ?? false}
           onClick={() => onItemSelect?.(index)}
-          className="flex items-center justify-between gap-4 px-5 py-4 text-sm text-foreground transition-colors duration-200 ease-in-out cursor-pointer hover:bg-muted"
+          className="flex items-center px-1 py-1 cursor-pointer"
         >
-          <span>{item.label}</span>
-          {item.selected && (
-            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-inverse text-foreground-inverse">
-              <CheckIcon size={18} />
-            </span>
-          )}
+          <span className="flex h-8 flex-1 items-center justify-between gap-2.5 rounded-lg px-2 text-sm font-normal leading-[18px] text-foreground transition-colors duration-200 ease-in-out hover:bg-muted">
+            <span>{item.label}</span>
+            {item.icon && <span className="flex shrink-0">{item.icon}</span>}
+          </span>
         </button>
       ))}
     </div>
