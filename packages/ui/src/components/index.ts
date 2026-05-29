@@ -8,6 +8,7 @@ export * from './StepperItemChild';
 export * from './Pagination';
 export * from './Divider';
 export * from './FormBottomSheet';
+export * from './InfoTable';
 export * from './Logo';
 export * from './Modal';
 export * from './ResultTable';
