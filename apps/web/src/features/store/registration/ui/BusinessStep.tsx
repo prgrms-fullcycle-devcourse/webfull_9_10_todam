@@ -1,6 +1,7 @@
 'use client';
 
-import { CameraIcon, DescriptionBlock, TextInput } from '@todam/ui';
+import { formatBusinessNumber } from '@todam/shared';
+import { CameraIcon, CloseIcon, DescriptionBlock, TextInput } from '@todam/ui';
 import { useRef, useState } from 'react';
 
 import { openPostcode } from '../../../../shared/lib/daumPostcode';
@@ -57,16 +58,29 @@ export function BusinessStep() {
                     className="hidden"
                     onChange={handleFile}
                 />
-                <button
-                    type="button"
-                    onClick={() => fileRef.current?.click()}
-                    className="flex h-20 w-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-border text-foreground-tertiary"
-                >
-                    <CameraIcon size={24} />
-                    {fileName && (
-                        <span className="max-w-24 truncate px-1 text-[10px]">{fileName}</span>
+                <div className="grid grid-cols-2 gap-3">
+                    {fileName ? (
+                        <div className="relative flex aspect-[4/3] items-center justify-center rounded-2xl bg-muted px-2 text-xs text-foreground-tertiary">
+                            <span className="truncate px-2">{fileName}</span>
+                            <button
+                                type="button"
+                                onClick={() => patchBusiness({ documentUrl: null })}
+                                aria-label="사업자 등록증 삭제"
+                                className="absolute -right-1 -top-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-emphasis text-foreground-inverse"
+                            >
+                                <CloseIcon size={14} />
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => fileRef.current?.click()}
+                            className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border text-foreground-tertiary"
+                        >
+                            <CameraIcon size={24} />
+                        </button>
                     )}
-                </button>
+                </div>
             </div>
 
             <TextInput
@@ -75,7 +89,7 @@ export function BusinessStep() {
                 placeholder="000-00-00000"
                 value={business.businessNumber}
                 onChange={(e) =>
-                    patchBusiness({ businessNumber: e.target.value.replace(/[^0-9-]/g, '') })
+                    patchBusiness({ businessNumber: formatBusinessNumber(e.target.value) })
                 }
             />
             <TextInput
@@ -121,7 +135,7 @@ export function BusinessStep() {
 
             <div className="h-2" />
 
-            <DescriptionBlock type="default" title="파트너 신청 안내">
+            <DescriptionBlock title="파트너 신청 안내">
                 이미 등록된 사업자 번호는 중복 신청할 수 없어요. 공방이 이미 다른 계정에 연결되어
                 있다면 고객센터로 문의해주세요.
             </DescriptionBlock>
