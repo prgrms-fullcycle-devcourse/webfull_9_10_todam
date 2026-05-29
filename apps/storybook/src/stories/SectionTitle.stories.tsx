@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { SectionTitle, PinIcon } from "@todam/ui";
 
 const meta: Meta<typeof SectionTitle> = {
-  title: "Components/SectionTitle",
+  title: "Components/Layout/SectionTitle",
   component: SectionTitle,
   parameters: { layout: "centered" },
   argTypes: {

@@ -5,7 +5,7 @@ import { SegmentedControl } from "@todam/ui";
 const OPTIONS = ["Label", "Label", "Label", "Label"];
 
 const meta: Meta<typeof SegmentedControl> = {
-  title: "Components/SegmentedControl",
+  title: "Components/Form/SegmentedControl",
   component: SegmentedControl,
   parameters: { layout: "centered" },
   decorators: [

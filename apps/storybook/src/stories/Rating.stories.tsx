@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Rating } from "@todam/ui";
 
 const meta: Meta<typeof Rating> = {
-  title: "Components/Rating",
+  title: "Components/Data Display/Rating",
   component: Rating,
   parameters: { layout: "centered" },
   argTypes: {
