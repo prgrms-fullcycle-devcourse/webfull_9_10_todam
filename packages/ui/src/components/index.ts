@@ -23,6 +23,5 @@ export * from './Tag';
 export * from './Rating';
 export * from './StatusFilterChip';
 export * from './FilterDropdown';
-export * from './ArtworkStatusFilters';
 export * from './Toggle';
 export * from './Tooltip';
