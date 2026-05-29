@@ -1,3 +1,4 @@
+export * from './BottomBar';
 export * from './Button';
 export * from './Divider';
 export * from './FormBottomSheet';
