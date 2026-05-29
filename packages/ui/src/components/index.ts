@@ -1,3 +1,4 @@
+export * from './Badge';
 export * from './BottomBar';
 export * from './Button';
 export * from './Checkbox';
@@ -17,5 +18,10 @@ export * from './StandardBottomSheet';
 export * from './TextArea';
 export * from './TextInput';
 export * from './Toast';
+export * from './Tag';
+export * from './Rating';
+export * from './StatusFilterChip';
+export * from './FilterDropdown';
+export * from './ArtworkStatusFilters';
 export * from './Toggle';
 export * from './Tooltip';
