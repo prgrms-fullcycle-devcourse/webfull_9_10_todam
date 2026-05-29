@@ -169,12 +169,14 @@ export function isStepValid(form: StoreRegistrationForm, step: StoreRegistration
         }
         case StoreRegistrationStep.StoreInfo: {
             const s = form.store;
+            // slug 는 선택값(미입력 시 백엔드 자동 생성). 입력했을 때만 형식·중복 검사.
+            const slugOk =
+                s.slug.trim().length === 0 ||
+                (ok(slugSchema, s.slug) && s.slugChecked && s.slugAvailable);
             return (
                 s.images.length > 0 &&
                 s.name.trim().length > 0 &&
-                ok(slugSchema, s.slug) &&
-                s.slugChecked &&
-                s.slugAvailable &&
+                slugOk &&
                 ok(phoneSchema, s.phone)
             );
         }
