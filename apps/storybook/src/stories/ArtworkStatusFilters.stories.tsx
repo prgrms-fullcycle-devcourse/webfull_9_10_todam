@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { ArtworkStatusFilters } from "../../../web/src/features/artwork-status-filter";
+import { ArtworkStatusFilters } from "../../../web/src/features/artwork/status-filter";
 
 const meta: Meta<typeof ArtworkStatusFilters> = {
   title: "Domain/ArtworkStatusFilters",
