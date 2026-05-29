@@ -1,4 +1,5 @@
 export * from './Button';
+export * from './Divider';
 export * from './FormBottomSheet';
 export * from './Logo';
 export * from './Modal';
