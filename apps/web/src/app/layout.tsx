@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 
-import { Header } from '../components/Header';
+import { BottomNav } from '../widgets/bottom-navigation';
+import { Header } from '../widgets/header';
 
-import './globals.css';
+import '../styles/globals.css';
 
 export const viewport = {
     width: 'device-width',
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-surface">
                     <Header />
                     {children}
+                    <BottomNav />
                     <div id="toast-root" />
                     <div id="modal-root" />
                     <div id="sheet-root" />

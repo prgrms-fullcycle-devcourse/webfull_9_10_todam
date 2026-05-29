@@ -22,6 +22,14 @@
     "apps/admin/**/*.{ts,tsx}": ["eslint --fix", "prettier --write"],
     "packages/**/*.ts": ["prettier --write"]
   },
+  "pnpm": {
+    "overrides": {
+      "@typescript-eslint/eslint-plugin": ">=8.0.0 <8.59.0",
+      "@typescript-eslint/parser": ">=8.0.0 <8.59.0",
+      "@typescript-eslint/scope-manager": ">=8.0.0 <8.59.0",
+      "typescript": "5.9.3"
+    }
+  },
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^17.0.5",
