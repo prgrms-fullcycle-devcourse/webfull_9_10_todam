@@ -508,6 +508,7 @@ enum StoreStatus {
   DRAFT
   PENDING
   PUBLISHED
+  REJECTED
   SUSPENDED
 }
 

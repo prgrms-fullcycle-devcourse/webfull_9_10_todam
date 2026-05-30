@@ -1354,7 +1354,7 @@
 
 ### Query Parameters
 
-- `status`: 공방 심사 상태 필터 (선택, `PENDING`, `APPROVED`, `REJECTED`, `SUSPENDED` 중 하나, 기본값: `PENDING`)
+- `status`: 공방 심사 상태 필터 (선택, `PENDING`, `PUBLISHED`, `REJECTED`, `SUSPENDED` 중 하나, 기본값: `PENDING`)
 - `page`: 조회할 페이지 번호 (선택, 기본값: 1)
 - `limit`: 한 페이지에 노출할 공방 개수 (선택, 기본값: 10, 최대: 100)
 
@@ -3209,7 +3209,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 ## 요구사항
 
-- 인증된 파트너가 `DRAFT` 상태의 공방을 어드민 검수 대기(`PENDING`) 상태로 제출한다.
+- 인증된 파트너가 `DRAFT` 또는 `REJECTED` 상태의 공방을 어드민 검수 대기(`PENDING`) 상태로 제출한다.
 - 제출 전 필수 정보(공방명, 주소, 대표 이미지, 사업자등록번호, 사업자등록증 이미지)가 모두 입력되어 있어야 한다.
 
 ---
@@ -3234,7 +3234,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 - 인증 토큰으로 파트너 capability를 검증한다.
 - `storeId`로 공방을 조회하고 소유 권한을 확인한다.
-- 공방 상태가 `DRAFT`인지 검증한다.
+- 공방 상태가 `DRAFT` 또는 `REJECTED`인지 검증한다.
 - 필수 항목(이름, 주소, 대표 이미지 1장 이상, 사업자 서류)이 모두 갖춰졌는지 검증한다.
 - `stores.status = 'PENDING'`으로 전이한다.
 - 어드민 검수 대기 알림을 발송한다.
@@ -3305,7 +3305,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
   "statusCode": 409,
   "timestamp": "2026-05-25T18:25:05.000Z",
   "path": "/partner/stores/a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d/submit",
-  "message": "DRAFT 상태의 공방만 제출할 수 있습니다.",
+  "message": "DRAFT 또는 REJECTED 상태의 공방만 제출할 수 있습니다.",
   "data": null,
   "error": "INVALID_STORE_STATUS"
 }
@@ -4334,7 +4334,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 
 ## 요구사항
 
-- 어드민이 `PENDING` 상태의 공방을 반려하여 `DRAFT`로 전이한다.
+- 어드민이 `PENDING` 상태의 공방을 반려하여 `REJECTED`로 전이한다.
 - 반려 사유를 필수로 입력해야 하며, 파트너에게 반려 사유를 전달한다.
 
 ---
@@ -4371,7 +4371,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 - 어드민 인증 토큰을 검증한다.
 - `storeId`로 공방을 조회하고 `PENDING` 상태인지 확인한다.
 - `rejectedReason` 필수 여부를 검증한다.
-- `stores.status = 'DRAFT'`, `rejected_reason`을 저장한다.
+- `stores.status = 'REJECTED'`, `rejected_reason`을 저장한다.
 - 첫 번째 공방인 경우 `partners.status = 'PENDING'`을 유지한다.
 - 파트너에게 반려 사유를 포함한 알림을 발송한다.
 - 반려 완료 응답을 반환한다.
@@ -4394,7 +4394,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
   "data": {
     "store": {
       "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
-      "status": "DRAFT",
+      "status": "REJECTED",
       "rejectedReason": "사업자등록증 이미지가 불명확합니다. 선명한 이미지로 재업로드해주세요."
     }
   },
@@ -5659,7 +5659,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 ## 요구사항
 
 - 인증된 파트너가 본인이 운영 중인 공방 목록을 조회한다.
-- 공방 상태(DRAFT, PENDING, PUBLISHED, SUSPENDED)에 관계없이 본인 소유 공방 전체를 반환한다.
+- 공방 상태(DRAFT, PENDING, PUBLISHED, REJECTED, SUSPENDED)에 관계없이 본인 소유 공방 전체를 반환한다.
 
 ---
 
