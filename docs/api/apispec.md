@@ -5474,7 +5474,8 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 ```json
 {
   "fileName": "program_01.png",
-  "fileType": "image/png"
+  "fileType": "image/png",
+  "isThumbnail": true
 }
 ```
 
@@ -5486,7 +5487,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 
 - 인증 토큰으로 파트너 권한 및 프로그램 소속 여부를 확인한다.
 - S3 객체 키를 생성하고 Pre-signed PUT URL을 발급한다.
-- `program_images` 테이블에 row를 선 생성한다.
+- `program_images` 테이블에 row를 선 생성한다 (`image_url` 및 `is_thumbnail` 기록).
 - 발급된 URL과 이미지 정보를 반환한다.
 
 ---
