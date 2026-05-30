@@ -11,7 +11,9 @@
     "test": "echo \"No tests yet\"",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
   "devDependencies": {
     "@todam/typescript-config": "workspace:*"
   }

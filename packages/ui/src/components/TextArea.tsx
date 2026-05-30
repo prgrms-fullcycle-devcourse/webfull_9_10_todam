@@ -74,11 +74,11 @@ export function TextArea({
           onChange?.(e);
         }}
         className={[
-          "min-h-[120px] w-full resize-none rounded-xl border-2 bg-surface px-4 py-3 text-base text-foreground outline-none transition-colors duration-200 ease-in-out",
+          "min-h-[120px] w-full resize-none rounded-xl border bg-surface px-4 py-3 text-base text-foreground outline-none transition-colors duration-200 ease-in-out",
           "placeholder:text-foreground-tertiary",
           "focus:border-primary focus:shadow-[0_0_20px_rgba(59,69,84,0.04)]",
           "disabled:cursor-not-allowed disabled:bg-muted disabled:text-foreground-secondary",
-          error ? "border-danger" : "border-border",
+          error ? "border-danger" : "border-border-subtle",
           className,
         ]
           .filter(Boolean)

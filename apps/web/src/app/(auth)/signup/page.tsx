@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Button, TextInput, BottomBar, LeftIcon, InformationIcon } from '@todam/ui';
-import { EMAIL_REGEX, PASSWORD_REGEX } from '@todam/shared';
+import { CODE_LENGTH, emailSchema, passwordSchema, verifyCodeSchema } from '@todam/shared';
 import { useToast } from '../../../shared/model';
 
 type Step = 'email' | 'code' | 'password';
 
-const CODE_LENGTH = 6;
+// UI 타이머(검증 아님) → 로컬 상수 유지. CODE_LENGTH·검증은 @todam/shared
 const VERIFY_SECONDS = 300; // 5:00
 
 const STEP_CTA: Record<Step, string> = {
@@ -36,9 +36,9 @@ export default function SignupPage() {
     const [passwordError, setPasswordError] = useState(false);
     const [secondsLeft, setSecondsLeft] = useState(VERIFY_SECONDS);
 
-    const emailValid = EMAIL_REGEX.test(email);
-    const codeValid = code.length === CODE_LENGTH;
-    const passwordValid = PASSWORD_REGEX.test(password);
+    const emailValid = emailSchema.safeParse(email).success;
+    const codeValid = verifyCodeSchema.safeParse(code).success;
+    const passwordValid = passwordSchema.safeParse(password).success;
 
     // 인증번호 단계 타이머
     useEffect(() => {
