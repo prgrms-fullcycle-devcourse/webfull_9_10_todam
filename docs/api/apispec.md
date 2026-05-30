@@ -1412,7 +1412,7 @@
         "partner": {
           "partnerId": "partner-uuid-101",
           "nickname": "김파트너",
-          "email": "partner@example.com",
+          "email": "partner@example.com"
         },
         "businessDocument": {
           "documentId": "doc-uuid-001",
@@ -4885,7 +4885,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
     {
       "filename": "pottery_drying.jpg",
       "fileSize": 1048576,
-      "contentType": "image/jpeg",
+      "contentType": "image/jpeg"
     }
   ]
 }
