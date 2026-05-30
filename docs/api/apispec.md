@@ -5025,7 +5025,8 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 {
   "action": "SHIP",
   "trackingNumber": "1234567890123",
-  "carrier": "CJ_LOGISTICS"
+  "carrier": "CJ_LOGISTICS",
+  "shippedAt": "2026-05-25"
 }
 ```
 
@@ -5059,7 +5060,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 - `artworkId`로 작품을 조회하고 공방 소유 권한을 확인한다.
 - `Artwork.status = 'COMPLETED'`인지 검증한다.
 - `action`에 따라 분기 처리한다.
-    - `SHIP`: `artworks`에 운송장 번호·택배사·발송일을 저장하고 연결된 `reservations.status = 'SHIPPED'`로 갱신. 고객에게 배송 시작 알림 발송. 7일 후 자동 `DELIVERED` 전이 스케줄러 등록.
+    - `SHIP`: `deliveries` 레코드에 운송장 번호·택배사·발송일(`shippedAt`)을 기록하고 연결된 `reservations.status = 'SHIPPED'`로 갱신. 고객에게 배송 시작 알림 발송. 발송일 기준 7일 후 자동 `DELIVERED` 전이 스케줄러 등록.
     - `PICKUP_READY`: `reservations.status = 'PICKUP_READY'`로 갱신. 고객에게 픽업 가능 알림 발송.
     - `PICKUP_DONE`: `reservations.status = 'PICKUP_DONE'`으로 갱신.
 - 처리 완료 응답을 반환한다.
@@ -5085,7 +5086,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
       "status": "SHIPPED",
       "trackingNumber": "1234567890123",
       "carrier": "CJ_LOGISTICS",
-      "shippedAt": "2026-05-25T20:45:00.000Z"
+      "shippedAt": "2026-05-25"
     }
   },
   "error": null
@@ -7762,6 +7763,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 - `program_time_slots.status = 'CLOSED'` 여부를 확인한다.
 - 예약자가 해당 공방의 파트너인지 확인하여 자기거래를 차단한다.
 - `reservations` row를 생성한다 (`status = 'PENDING'`, `source = 'CUSTOMER'`).
+- 배송(`deliveryMethod = 'DELIVERY'`) 선택 시 `deliveries` row를 생성하고 `shippingAddress`를 저장한다.
 - `program_time_slots.reserved_count`를 `participantCount`만큼 증가시킨다.
 - `auto_confirm = true`인 공방이면 즉시 `CONFIRMED` 전이 후 `artworks` row를 자동 생성하고 QR 토큰을 발급한다.
 - 고객에게 예약 접수 알림, 파트너에게 새 예약 알림을 발송한다.

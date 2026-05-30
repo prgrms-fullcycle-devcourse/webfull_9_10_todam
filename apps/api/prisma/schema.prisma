@@ -155,14 +155,14 @@ model Store {
 }
 
 model StoreOperatingHour {
-  id        String    @id @default(uuid()) @db.Uuid
-  storeId   String    @map("store_id") @db.Uuid
-  dayOfWeek DayOfWeek @map("day_of_week") // [S-1] Int → DayOfWeek enum
-  openTime  DateTime  @map("open_time") @db.Time(6)
-  closeTime DateTime  @map("close_time") @db.Time(6)
+  id         String    @id @default(uuid()) @db.Uuid
+  storeId    String    @map("store_id") @db.Uuid
+  dayOfWeek  DayOfWeek @map("day_of_week") // [S-1] Int → DayOfWeek enum
+  openTime   DateTime  @map("open_time") @db.Time(6)
+  closeTime  DateTime  @map("close_time") @db.Time(6)
   breakStart DateTime? @map("break_start") @db.Time(6) // [S-2] breakTime 분리
-  breakEnd   DateTime? @map("break_end") @db.Time(6)   // [S-2] breakTime 분리
-  store     Store     @relation(fields: [storeId], references: [id])
+  breakEnd   DateTime? @map("break_end") @db.Time(6) // [S-2] breakTime 분리
+  store      Store     @relation(fields: [storeId], references: [id])
 
   @@map("store_operating_hours")
 }
@@ -251,8 +251,8 @@ model ProgramTimeSlot {
   id            String                @id @default(uuid()) @db.Uuid
   programId     String                @map("program_id") @db.Uuid
   storeId       String                @map("store_id") @db.Uuid
-  startAt      DateTime              @map("start_at") @db.Timestamptz(6)
-  endAt        DateTime              @map("end_at") @db.Timestamptz(6)
+  startAt       DateTime              @map("start_at") @db.Timestamptz(6)
+  endAt         DateTime              @map("end_at") @db.Timestamptz(6)
   capacity      Int
   reservedCount Int                   @default(0) @map("reserved_count")
   status        ProgramTimeSlotStatus @default(OPEN)
@@ -280,7 +280,6 @@ model Reservation {
   reserverPhone     String                    @map("reserver_phone") @db.VarChar(20)
   participantCount  Int                       @default(1) @map("participant_count")
   deliveryMethod    ReservationDeliveryMethod @map("delivery_method")
-  shippingAddress   String?                   @map("shipping_address")
   status            ReservationStatus         @default(PENDING)
   requestMemo       String?                   @map("request_memo")
   internalMemo      String?                   @map("internal_memo")
@@ -291,6 +290,7 @@ model Reservation {
   createdAt         DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
   artwork           Artwork?
+  delivery          Delivery?
   notifications     Notification[]
   canceledByUser    User?                     @relation("ReservationCanceledBy", fields: [canceledBy], references: [id])
   program           Program                   @relation(fields: [programId], references: [id])
@@ -311,8 +311,6 @@ model Artwork {
   customerMemo         String?        @map("customer_memo")
   status               ArtworkStatus  @default(RESERVED)
   estimatedCompletedAt DateTime?      @map("estimated_completed_at") @db.Date
-  trackingNumber       String?        @map("tracking_number") @db.VarChar(100)
-  carrier              String?        @db.VarChar(50)
   createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
   logs                 ArtworkLog[]
@@ -323,6 +321,20 @@ model Artwork {
   @@index([reservationId])
   @@index([status])
   @@map("artworks")
+}
+
+model Delivery {
+  id              String      @id @default(uuid()) @db.Uuid
+  reservationId   String      @unique @map("reservation_id") @db.Uuid
+  shippingAddress String?     @map("shipping_address")
+  trackingNumber  String?     @map("tracking_number") @db.VarChar(100)
+  carrier         String?     @db.VarChar(50)
+  shippedAt       DateTime?   @map("shipped_at") @db.Date
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  reservation     Reservation @relation(fields: [reservationId], references: [id])
+
+  @@map("deliveries")
 }
 
 model ArtworkLog {
@@ -599,7 +611,7 @@ enum PolicyType {
 }
 
 enum ImageUploadStatus {
-  PENDING   // presigned URL 발급 후 업로드 대기
-  UPLOADED  // S3 업로드 완료
-  FAILED    // 업로드 실패 또는 만료
+  PENDING // presigned URL 발급 후 업로드 대기
+  UPLOADED // S3 업로드 완료
+  FAILED // 업로드 실패 또는 만료
 }
