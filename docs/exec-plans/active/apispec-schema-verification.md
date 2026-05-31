@@ -230,3 +230,61 @@
 | A-6~9 | Reservation 필드명 다수 | 높음 | Apispec |
 | T-1 | canceledBy 타입 의미 | 높음 | 팀 협의 |
 | T-4 | currentSnapshotId | 중간 | 팀 협의 |
+
+---
+
+## 2차 검증 및 반영 (2026-05-30)
+
+apispec(전체 ~8,600줄) ↔ schema 전수 재대조 후 아래 항목을 실제 코드에 반영함.
+
+### 1차 목록 처리 결과
+- **S-1~S-10**: 전부 schema 반영 완료
+- **A-1~A-10**: apispec 필드명을 schema 기준으로 수정 (단 A-5 Review는 `content` 유지로 결정)
+- **T-1**: `canceledBy`를 user UUID로 노출 (apispec)
+- **T-4**: `currentSnapshotId` 미추가 → 최신 `program_snapshots` 조회 방식으로 apispec 설명 수정
+- **T-2 / T-3 / T-5**: DTO 매핑 / `ProgramTimeSlot.status = CLOSED` 활용 / `createdAt` 노출로 정리
+
+### 추가 발견·반영 (1차 목록 외)
+
+#### 신규 필드·모델 (Schema)
+- `Store.latitude` / `longitude` 추가 — 좌표 기반 검색·거리순 정렬 지원
+- `Partner.email` 추가 — 회원가입 이메일과 별개인 파트너 등록용 이메일
+- `ImageUploadStatus` enum(`PENDING`/`UPLOADED`/`FAILED`) + `StoreImage`·`ProgramImage`·`ArtworkPhoto.status` — presigned URL 업로드 상태 추적
+
+#### N 시리즈 (2차 검증 발견)
+- **N-1**: `NotificationType` `STATUS_CHANGED` → `ARTWORK_STATUS`
+- **N-2**: `ArtworkLog` apispec `changedAt` → `createdAt`
+- **N-3**: `ArtworkPhoto` apispec `memo` 제거 (ArtworkLog에 memo 존재, 중복)
+- **N-5**: `ProgramTimeSlot` 응답 `startAt`/`endAt` (apispec, `s` 제거)
+- **N-6**: `/admin/stores` 응답 `partner.name` → `nickname`, `phone` 제거 (apispec)
+- **N-7**: `ReportTargetType` `CLASS` → `PROGRAM`
+- **N-8**: `count-by-step` 설명 `FIRST/SECOND_FIRING` → `BISQUE/GLAZE_FIRING` (apispec)
+
+#### M 시리즈 (정합성 정리)
+- **M1**: JSON trailing comma 2곳 제거 (apispec, cosmetic)
+- **M2**: `ProgramTimeSlot` `@map("starts_at"/"ends_at")` → `start_at`/`end_at` (필드명-컬럼명 일관성)
+
+#### D 시리즈 (구조 결정)
+- **D1**: `StoreStatus`에 `REJECTED` 추가. 승인→`PUBLISHED`, 반려→`REJECTED`. reject 엔드포인트 `DRAFT`→`REJECTED`, submit이 `DRAFT` 또는 `REJECTED` 재제출 허용 (schema+apispec)
+- **D2**: 수동예약을 **슬롯 기반**으로 정렬. 요청 `scheduledAt`→`slotId`, `shippingAddress` 추가 / `reserved_count` 차감(통계, 정원 초과·CLOSED 검증 생략) / 과거 일자 슬롯 허용 (apispec). `programTimeSlotId`는 NOT NULL 유지
+- **D3**: 배송 정보를 **`Delivery` 테이블로 분리**. `shippingAddress`(←Reservation), `trackingNumber`·`carrier`(←Artwork) 이동 + `shippedAt` 추가. Reservation엔 `deliveryMethod`만 유지. `Delivery` 1:1 `Reservation`, DELIVERY 예약일 때만 생성 (schema+apispec)
+- **D4**: 프로그램 이미지 업로드 요청에 `isThumbnail` 추가 (apispec, 공방 업로드와 일관성)
+
+### 🟣 후속 팀 협의 필요 (PR 리뷰 시 결정)
+
+수동예약(`/partner/stores/{storeId}/reservations`)이 `Reservation`의 NOT NULL 필드 2개를 채우는 방식 미결:
+
+- **`deliveryMethod`** — 수동예약 요청에 없음. 프로그램 `deliveryOption`이 `CUSTOMER_SELECT`면 파트너가 대신 골라야 함.
+  - 선택지: (a) 요청에 `deliveryMethod` 추가  (b) 배송지 입력 시 `DELIVERY`, 아니면 `PICKUP` 자동 판정
+- **`userId`** — 현장·전화 손님은 계정이 없을 수 있는데 `Reservation.userId`는 NOT NULL.
+  - 선택지: (a) 게스트 User 생성·연결  (b) `userId` nullable로 변경  (c) 대리 등록 파트너의 `userId` 연결
+
+### ⚠️ 마이그레이션 주의 (데이터 손실 가능)
+- `Reservation.shipping_address`, `Artwork.tracking_number`/`carrier` DROP
+- `ProgramTimeSlot` `starts_at`/`ends_at` → `start_at`/`end_at` (Prisma는 rename을 DROP+ADD로 인식)
+- `NotificationType`, `ReportTargetType` enum 값 교체
+- dev DB에 실데이터 없으면 무방. 데이터 있으면 `migrate dev` 경고 확인 필요
+
+### Status
+- 2차 검증: **DONE (2026-05-30)**
+- 잔여: 위 팀 협의 2건(`deliveryMethod`, `userId`) → PR에서 결정

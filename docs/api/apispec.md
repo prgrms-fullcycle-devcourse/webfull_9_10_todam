@@ -387,6 +387,7 @@
       "longitude": 127.0556,
       "convenienceInfo": { "parking": true, "pet": false, "wifi": true },
       "autoConfirm": false,
+      "cancelDeadlineDays": 1,
       "status": "PUBLISHED",
       "rejectedReason": null,
       "suspendedReason": null,
@@ -410,6 +411,7 @@
       ],
       "businessDocument": {
         "ownerName": "김토담",
+        "email": "partner@example.com",
         "businessName": "토담 공방",
         "businessNumber": "123-45-67890",
         "businessAddress": "서울특별시 성동구 성수이로 12길 34",
@@ -707,6 +709,7 @@
     "wifi": true
   },
   "autoConfirm": false,
+  "cancelDeadlineDays": 1,
   "operatingHours": [
     {
       "dayOfWeek": "MON",
@@ -719,6 +722,7 @@
   "businessDocument": {
     "documentUrl": "https://s3.amazonaws.com/todam/docs/business-license.jpg",
     "ownerName": "김토담",
+    "email": "partner@example.com",
     "businessName": "토담 공방",
     "businessNumber": "123-45-67890",
     "businessAddress": "서울특별시 성동구 성수이로 12길 34"
@@ -1411,14 +1415,14 @@
         "createdAt": "2026-05-26T09:00:00.000Z",
         "partner": {
           "partnerId": "partner-uuid-101",
-          "nickname": "김파트너",
-          "email": "partner@example.com"
+          "nickname": "김파트너"
         },
         "businessDocument": {
           "documentId": "doc-uuid-001",
           "businessName": "토담 도예",
           "businessNumber": "123-45-67890",
           "ownerName": "김파트너",
+          "email": "partner@example.com",
           "documentUrl": "https://cdn.todam.app/documents/business-license_01.jpg",
           "ocrStatus": "VERIFIED"
         }
@@ -6384,7 +6388,8 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
     "parking": true,
     "pet": true,
     "wifi": true
-  }
+  },
+  "cancelDeadlineDays": 1
 }
 ```
 
