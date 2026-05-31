@@ -4,6 +4,8 @@ import type { Request, Response } from 'express';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import type { RequestUser } from '../../../../common/types/request-user.type';
+import { GoogleOAuthUseCase } from '../../application/use-cases/google-oauth.use-case';
+import { KakaoOAuthUseCase } from '../../application/use-cases/kakao-oauth.use-case';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
 import { LogoutUseCase } from '../../application/use-cases/logout.use-case';
 import { RefreshUseCase } from '../../application/use-cases/refresh.use-case';
@@ -13,6 +15,8 @@ import { SendEmailCodeUseCase } from '../../application/use-cases/send-email-cod
 import { SignupUseCase } from '../../application/use-cases/signup.use-case';
 import { VerifyEmailCodeUseCase } from '../../application/use-cases/verify-email-code.use-case';
 import { LoginDto, LoginResponseDto } from '../dto/login.dto';
+import { OAuthCodeDto } from '../dto/oauth-code.dto';
+import { OAuthResponseDto } from '../dto/oauth-response.dto';
 import { ResetPasswordRequestDto } from '../dto/reset-password-request.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { SendCodeDto } from '../dto/send-code.dto';
@@ -31,6 +35,8 @@ export class AuthController {
         private readonly logoutUseCase: LogoutUseCase,
         private readonly resetPasswordRequestUseCase: ResetPasswordRequestUseCase,
         private readonly resetPasswordUseCase: ResetPasswordUseCase,
+        private readonly kakaoOAuthUseCase: KakaoOAuthUseCase,
+        private readonly googleOAuthUseCase: GoogleOAuthUseCase,
     ) {}
 
     @Post('email/send-code')
@@ -102,5 +108,25 @@ export class AuthController {
     @ApiOkResponse({ description: '비밀번호 재설정 성공' })
     async resetPassword(@Body() dto: ResetPasswordDto): Promise<void> {
         await this.resetPasswordUseCase.execute(dto);
+    }
+
+    @Post('oauth/kakao')
+    @HttpCode(HttpStatus.OK)
+    @ApiOkResponse({ description: '카카오 소셜 로그인 성공', type: OAuthResponseDto })
+    async kakaoOAuth(
+        @Body() dto: OAuthCodeDto,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<OAuthResponseDto> {
+        return this.kakaoOAuthUseCase.execute(dto.code, res);
+    }
+
+    @Post('oauth/google')
+    @HttpCode(HttpStatus.OK)
+    @ApiOkResponse({ description: '구글 소셜 로그인 성공', type: OAuthResponseDto })
+    async googleOAuth(
+        @Body() dto: OAuthCodeDto,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<OAuthResponseDto> {
+        return this.googleOAuthUseCase.execute(dto.code, res);
     }
 }

@@ -4,6 +4,9 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { PartnerGuard } from '../../common/guards/partner.guard';
 import { TokenService } from './application/token.service';
+import { OAuthService } from './application/oauth.service';
+import { GoogleOAuthUseCase } from './application/use-cases/google-oauth.use-case';
+import { KakaoOAuthUseCase } from './application/use-cases/kakao-oauth.use-case';
 import { LoginUseCase } from './application/use-cases/login.use-case';
 import { LogoutUseCase } from './application/use-cases/logout.use-case';
 import { RefreshUseCase } from './application/use-cases/refresh.use-case';
@@ -41,6 +44,9 @@ import { AuthController } from './presentation/controllers/auth.controller';
         LogoutUseCase,
         ResetPasswordRequestUseCase,
         ResetPasswordUseCase,
+        OAuthService,
+        KakaoOAuthUseCase,
+        GoogleOAuthUseCase,
     ],
     exports: [JwtModule, AuthGuard, PartnerGuard],
 })

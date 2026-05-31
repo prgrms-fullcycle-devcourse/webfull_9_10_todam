@@ -20,6 +20,12 @@ const apiSchema = z.object({
     CORS_ORIGINS: z
         .string()
         .default('http://localhost:3000,https://todam.app,https://www.todam.app'),
+    KAKAO_CLIENT_ID: z.string(),
+    KAKAO_CLIENT_SECRET: z.string(),
+    KAKAO_REDIRECT_URI: z.string(),
+    GOOGLE_CLIENT_ID: z.string(),
+    GOOGLE_CLIENT_SECRET: z.string(),
+    GOOGLE_REDIRECT_URI: z.string(),
 });
 
 // ─── Web 환경변수 스키마 ──────────────────────────────────
