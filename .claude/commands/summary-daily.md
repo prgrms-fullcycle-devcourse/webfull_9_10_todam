@@ -1,14 +1,14 @@
 ---
-description: 오늘 ai_logs로 Daily Scrum 요약 생성 후 Notion Daily Scrum DB에 작성
+description: 어제 ai_logs로 Daily Scrum 요약 생성 후 Notion Daily Scrum DB에 작성
 ---
 
-오늘(KST) AI 작업로그를 요약해 Notion Daily Scrum DB에 작성한다.
+어제(KST) AI 작업로그를 요약해 Notion Daily Scrum DB에 작성한다 (아침 스크럼 기준).
 특정 날짜를 요약하려면 인자로 `YYYY-MM-DD`를 받는다 (`$ARGUMENTS`).
 
 ## 절차
 
 1. **로그 수집**
-   `node .claude/scripts/scrum-fetch.mjs $ARGUMENTS` 실행.
+   `node .claude/scripts/scrum-fetch.mjs $ARGUMENTS` 실행. (인자 없으면 어제 KST)
    → `{ date, count, logs[] }` JSON 반환. `logs`는 시간순(asc).
    count가 0이면 "해당 날짜 로그 없음" 보고하고 중단.
 

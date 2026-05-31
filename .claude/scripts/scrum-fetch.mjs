@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// 오늘(KST) ai_logs를 Supabase에서 읽어 stdout으로 출력. service_role 사용.
-// 사용: node scrum-fetch.mjs [YYYY-MM-DD]   (인자 없으면 오늘 KST)
+// ai_logs를 Supabase에서 읽어 stdout으로 출력. service_role 사용.
+// 사용: node scrum-fetch.mjs [YYYY-MM-DD]   (인자 없으면 어제 KST — 아침 스크럼 기준)
 
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -39,11 +39,13 @@ if (arg && /^\d{4}-\d{2}-\d{2}$/.test(arg)) {
   endUtc = new Date(`${arg}T23:59:59.999+09:00`).toISOString();
   dateLabel = arg;
 } else {
+  // 인자 없으면 어제(KST) 하루 전체 — 아침 스크럼 기준
   const KST = 9 * 60 * 60 * 1000;
   const nowKst = new Date(Date.now() + KST);
-  const y = nowKst.getUTCFullYear(), m = nowKst.getUTCMonth(), d = nowKst.getUTCDate();
+  const yest = new Date(Date.UTC(nowKst.getUTCFullYear(), nowKst.getUTCMonth(), nowKst.getUTCDate() - 1));
+  const y = yest.getUTCFullYear(), m = yest.getUTCMonth(), d = yest.getUTCDate();
   startUtc = new Date(Date.UTC(y, m, d) - KST).toISOString();
-  endUtc = new Date().toISOString();
+  endUtc = new Date(Date.UTC(y, m, d, 23, 59, 59, 999) - KST).toISOString();
   dateLabel = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
