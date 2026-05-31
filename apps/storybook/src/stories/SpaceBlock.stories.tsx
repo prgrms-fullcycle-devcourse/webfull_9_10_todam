@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { SpaceBlock } from "@todam/ui";
 
 const meta: Meta<typeof SpaceBlock> = {
-  title: "Components/SpaceBlock",
+  title: "Components/Layout/SpaceBlock",
   component: SpaceBlock,
   parameters: { layout: "centered" },
   argTypes: {

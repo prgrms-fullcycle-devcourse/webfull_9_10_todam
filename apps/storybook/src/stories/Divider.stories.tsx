@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Divider } from "@todam/ui";
 
 const meta: Meta<typeof Divider> = {
-  title: "Components/Divider",
+  title: "Components/Layout/Divider",
   component: Divider,
   parameters: { layout: "centered" },
 };

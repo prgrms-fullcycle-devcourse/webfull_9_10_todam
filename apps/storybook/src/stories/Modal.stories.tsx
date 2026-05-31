@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Modal } from "@todam/ui";
 
 const meta: Meta<typeof Modal> = {
-  title: "Components/Modal",
+  title: "Components/Feedback/Modal",
   component: Modal,
   parameters: { layout: "padded" },
   argTypes: {

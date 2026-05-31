@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Pagination } from "@todam/ui";
 
 const meta: Meta<typeof Pagination> = {
-  title: "Components/Pagination",
+  title: "Components/Data Display/Pagination",
   component: Pagination,
   parameters: { layout: "centered" },
   argTypes: {

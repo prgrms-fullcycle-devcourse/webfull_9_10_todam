@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { StandardBottomSheet } from "@todam/ui";
 
 const meta: Meta<typeof StandardBottomSheet> = {
-  title: "Components/StandardBottomSheet",
+  title: "Components/Feedback/StandardBottomSheet",
   component: StandardBottomSheet,
   parameters: { layout: "padded" },
   argTypes: {

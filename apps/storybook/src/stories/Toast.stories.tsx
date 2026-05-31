@@ -5,7 +5,7 @@ import { Toast } from "@todam/ui";
 import { NotiIcon } from "@todam/ui";
 
 const meta: Meta<typeof Toast> = {
-  title: "Components/Toast",
+  title: "Components/Feedback/Toast",
   component: Toast,
   parameters: { layout: "centered" },
   argTypes: {

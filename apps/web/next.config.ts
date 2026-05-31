@@ -1,5 +1,5 @@
 const nextConfig = {
-    transpilePackages: ['@todam/ui'],
+    transpilePackages: ['@todam/ui', '@todam/shared'],
 };
 
 export default nextConfig;

@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { ArtworkStatusFilters } from "@todam/ui";
+import { ArtworkStatusFilters } from "../../../web/src/features/artwork/status-filter";
 
 const meta: Meta<typeof ArtworkStatusFilters> = {
-  title: "Components/ArtworkStatusFilters",
+  title: "Domain/ArtworkStatusFilters",
   component: ArtworkStatusFilters,
   parameters: { layout: "padded" },
   args: {

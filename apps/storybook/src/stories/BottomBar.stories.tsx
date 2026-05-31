@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { BottomBar, Button } from "@todam/ui";
 
 const meta: Meta<typeof BottomBar> = {
-  title: "Components/BottomBar",
+  title: "Components/Layout/BottomBar",
   component: BottomBar,
   parameters: { layout: "fullscreen" },
 };

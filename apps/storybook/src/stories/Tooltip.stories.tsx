@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Tooltip } from "@todam/ui";
 
 const meta: Meta<typeof Tooltip> = {
-  title: "Components/Tooltip",
+  title: "Components/Feedback/Tooltip",
   component: Tooltip,
   parameters: { layout: "centered" },
   argTypes: {

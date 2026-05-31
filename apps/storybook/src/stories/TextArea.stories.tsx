@@ -3,7 +3,7 @@ import { useState } from "react";
 import { TextArea } from "@todam/ui";
 
 const meta: Meta<typeof TextArea> = {
-  title: "Components/TextArea",
+  title: "Components/Form/TextArea",
   component: TextArea,
   parameters: { layout: "centered" },
   decorators: [

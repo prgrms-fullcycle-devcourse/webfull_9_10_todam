@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 
-import { AppModal } from '../components/AppModal';
-import { AppSheet } from '../components/AppSheet';
-import { AppToast } from '../components/AppToast';
+import { MswProvider } from '../mocks/MswProvider';
+import { AppModal, AppSheet, AppToast } from '../shared/ui';
+import { QueryProvider } from './QueryProvider';
 import { BottomNav } from '../widgets/bottom-navigation';
 import { Header } from '../widgets/header';
 
@@ -28,14 +28,18 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 >
                     graphic placeholder
                 </div>
-                <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-surface">
-                    <Header />
-                    {children}
-                    <BottomNav />
-                    <AppModal />
-                    <AppSheet />
-                    <AppToast />
-                </div>
+                <MswProvider>
+                    <QueryProvider>
+                        <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-background">
+                            <Header />
+                            {children}
+                            <BottomNav />
+                            <AppModal />
+                            <AppSheet />
+                            <AppToast />
+                        </div>
+                    </QueryProvider>
+                </MswProvider>
             </body>
         </html>
     );
