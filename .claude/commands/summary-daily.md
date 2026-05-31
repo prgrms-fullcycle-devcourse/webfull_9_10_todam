@@ -24,18 +24,19 @@ description: 어제 ai_logs로 Daily Scrum 요약 생성 후 Notion Daily Scrum 
    ```json
    {
      "date": "YYYY-MM-DD",
-     "summary": "사람별·기능별 작업 내용과 진행도. 어제 대비 어디까지 왔는지 팀이 싱크 맞출 수 있게.",
-     "decisions": "내려진 결정사항 (설계/도메인 변경 등). 없으면 '없음'.",
-     "issues": "이슈·블로커·미해결 질문. 없으면 '없음'.",
-     "contributors": ["참여자 user_name 배열"]
+     "summary": "초압축 한 줄 요약 (Notion Summary 컬럼용). 예: 'AI 로깅 파이프라인 구축 + 스크럼 자동화'",
+     "features": ["추론한 feature 배열, features.md 어휘만. 여러 개 가능. 모호하면 unknown"],
+     "contributors": ["참여자 user_name 배열"],
+     "body_markdown": "## 요약\n- 기능별 작업 내용과 진행도\n\n## 결정사항\n- 내려진 결정 (없으면 '없음')\n\n## 이슈\n- 블로커·미해결 (없으면 '없음')"
    }
    ```
-   summary는 기능(feature)별로 묶어 서술. 진행도가 드러나야 함 (예: "reservation: 예약 상세 UI 완료, API 연동 진행 중").
+   - `summary`: **아주 짧게** (한 줄). 상세 내용 넣지 말 것.
+   - `body_markdown`: 가독성 위해 마크다운. 기능(feature)별로 묶어 진행도 드러나게 (예: "reservation: 예약 상세 UI 완료, API 연동 진행 중"). 결정사항·이슈도 본문 섹션으로.
+   - 지원 마크다운: `#`/`##`/`###` 제목, `-`/`*` 불릿, `1.` 넘버, 일반 문단, `**굵게**`.
 
 5. **Notion 작성**
-   위 JSON을 stdin으로 전달:
-   `echo '<JSON>' | node .claude/scripts/scrum-write.mjs`
-   (긴 JSON은 임시파일에 쓴 뒤 `node .claude/scripts/scrum-write.mjs < /tmp/scrum.json` 사용)
+   JSON을 임시파일에 쓴 뒤 stdin 전달:
+   `node .claude/scripts/scrum-write.mjs < /tmp/scrum.json`
 
 6. 작성된 Notion URL을 사용자에게 보고.
 
