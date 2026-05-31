@@ -1,5 +1,5 @@
 export enum OcrStatus {
     PENDING = 'PENDING',
-    SUCCESS = 'SUCCESS',
+    VERIFIED = 'VERIFIED',
     FAILED = 'FAILED',
 }
