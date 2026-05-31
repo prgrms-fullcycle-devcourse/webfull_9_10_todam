@@ -81,10 +81,11 @@ async function main() {
   const record = {
     project: env.PROJECT || "todam",
     user_name: env.USER_NAME || sh("git config user.name"),
-    agent: env.AGENT || "claude",
+    agent: env.AGENT_ROLE || null, // 서브에이전트 역할(planner/reviewer 등). 없으면 null.
     event_type: event,
     content,
     metadata: {
+      tool: env.TOOL || "claude", // 어떤 CLI: claude | codex
       session_id: data.session_id ?? null,
       branch: branch || null,
       cwd: data.cwd ?? null,
