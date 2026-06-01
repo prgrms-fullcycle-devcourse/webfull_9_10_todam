@@ -3,6 +3,12 @@ import { randomUUID } from 'crypto';
 import { BusinessException } from '../exceptions/business.exception';
 import { ErrorCode } from '../constants/error-code';
 
+export const CDN_BASE = 'https://cdn.todam.app';
+
+export function keyFromImageUrl(imageUrl: string): string {
+    return imageUrl.startsWith(`${CDN_BASE}/`) ? imageUrl.slice(CDN_BASE.length + 1) : imageUrl;
+}
+
 const ALLOWED_TYPES: Record<string, string> = {
     'image/jpeg': 'jpg',
     'image/png': 'png',
