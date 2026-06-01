@@ -6,9 +6,9 @@ export class ResetPasswordDto {
     @IsEmail({}, { message: '유효한 이메일을 입력해주세요.' })
     email!: string;
 
-    @ApiProperty({ description: '이메일로 받은 재설정 토큰' })
+    @ApiProperty({ description: '이메일로 받은 6자리 인증코드' })
     @IsString()
-    token!: string;
+    code!: string;
 
     @ApiProperty({ example: 'newpassword1234' })
     @IsString()

@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 import { PrismaService } from '../../../../database/prisma.service';
 import { RedisService } from '../../../../redis/redis.service';
 import { EmailService } from '../../infrastructure/email/email.service';
 
-const RESET_TOKEN_TTL_SECONDS = 900; // 15분
+const RESET_CODE_TTL_SECONDS = 300; // 5분
+
+function generateCode(): string {
+    return String(Math.floor(100000 + Math.random() * 900000));
+}
 
 @Injectable()
 export class ResetPasswordRequestUseCase {
@@ -24,8 +27,8 @@ export class ResetPasswordRequestUseCase {
         // (이메일 존재 여부를 응답으로 노출하지 않음 - 이메일 열거 공격 방지)
         if (!user || !user.password) return;
 
-        const token = randomUUID();
-        await this.redis.set(`password:reset:${email}`, token, RESET_TOKEN_TTL_SECONDS);
-        await this.emailService.sendPasswordResetToken(email, token);
+        const code = generateCode();
+        await this.redis.set(`password:reset:${email}`, code, RESET_CODE_TTL_SECONDS);
+        await this.emailService.sendPasswordResetCode(email, code);
     }
 }

@@ -14,11 +14,11 @@ export class ResetPasswordUseCase {
     ) {}
 
     async execute(dto: ResetPasswordDto): Promise<void> {
-        const { email, token, newPassword } = dto;
+        const { email, code, newPassword } = dto;
 
         const stored = await this.redis.get(`password:reset:${email}`);
-        if (!stored || stored !== token) {
-            throw new BadRequestException('유효하지 않거나 만료된 토큰입니다.');
+        if (!stored || stored !== code) {
+            throw new BadRequestException('유효하지 않거나 만료된 인증코드입니다.');
         }
 
         const user = await this.prisma.user.findUnique({
@@ -26,7 +26,7 @@ export class ResetPasswordUseCase {
             select: { id: true },
         });
         if (!user) {
-            throw new BadRequestException('유효하지 않거나 만료된 토큰입니다.');
+            throw new BadRequestException('유효하지 않거나 만료된 인증코드입니다.');
         }
 
         const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
