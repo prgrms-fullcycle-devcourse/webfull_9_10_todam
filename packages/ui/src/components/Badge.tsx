@@ -1,7 +1,13 @@
 import { cloneElement } from "react";
 import type { HTMLAttributes, ReactElement, ReactNode } from "react";
 
-export type BadgeTone = "info" | "primary" | "success" | "danger" | "warning";
+export type BadgeTone =
+  | "info"
+  | "primary"
+  | "success"
+  | "danger"
+  | "warning"
+  | "neutral";
 
 const toneClasses: Record<BadgeTone, string> = {
   info: "bg-info-subtle text-info-darker",
@@ -9,6 +15,7 @@ const toneClasses: Record<BadgeTone, string> = {
   success: "bg-success-subtle text-success-darker",
   danger: "bg-danger-subtle text-danger-darker",
   warning: "bg-warning-subtle text-warning-darker",
+  neutral: "bg-muted text-foreground-secondary",
 };
 
 export type BadgeProps = {
