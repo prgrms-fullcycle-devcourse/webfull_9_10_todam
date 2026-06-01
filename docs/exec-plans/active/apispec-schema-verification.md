@@ -270,14 +270,14 @@ apispec(전체 ~8,600줄) ↔ schema 전수 재대조 후 아래 항목을 실�
 - **D3**: 배송 정보를 **`Delivery` 테이블로 분리**. `shippingAddress`(←Reservation), `trackingNumber`·`carrier`(←Artwork) 이동 + `shippedAt` 추가. Reservation엔 `deliveryMethod`만 유지. `Delivery` 1:1 `Reservation`, DELIVERY 예약일 때만 생성 (schema+apispec)
 - **D4**: 프로그램 이미지 업로드 요청에 `isThumbnail` 추가 (apispec, 공방 업로드와 일관성)
 
-### 🟣 후속 팀 협의 필요 (PR 리뷰 시 결정)
+### ✅ 팀 협의 완료 (2026-05-31 결정)
 
-수동예약(`/partner/stores/{storeId}/reservations`)이 `Reservation`의 NOT NULL 필드 2개를 채우는 방식 미결:
+수동예약(`/partner/stores/{storeId}/reservations`)의 `Reservation` 필드 처리 방식 확정:
 
-- **`deliveryMethod`** — 수동예약 요청에 없음. 프로그램 `deliveryOption`이 `CUSTOMER_SELECT`면 파트너가 대신 골라야 함.
-  - 선택지: (a) 요청에 `deliveryMethod` 추가  (b) 배송지 입력 시 `DELIVERY`, 아니면 `PICKUP` 자동 판정
-- **`userId`** — 현장·전화 손님은 계정이 없을 수 있는데 `Reservation.userId`는 NOT NULL.
-  - 선택지: (a) 게스트 User 생성·연결  (b) `userId` nullable로 변경  (c) 대리 등록 파트너의 `userId` 연결
+- **`deliveryMethod`** — **선택지 (a) 채택**. 요청에 `deliveryMethod`를 두되, 프로그램 `deliveryOption === CUSTOMER_SELECT`일 때만 **요청 필수**, 그 외에는 서버가 **`PICKUP` 강제**. (파트너가 클래스 생성 시 '택배 가능 여부'를 결정하므로. 배송지는 예약 확정 이후 입력)
+  - 반영: schema `deliveryMethod`는 NOT NULL 유지(서버가 항상 채움), apispec 요청 바디·요구사항·시스템처리 갱신
+- **`userId`** — **선택지 (b) 채택**. `Reservation.userId`를 nullable로 변경하되, **`source = 'PARTNER_MANUAL'`일 때만 `null` 허용** 제약.
+  - 반영: schema `userId String?` + 관계 `User?`, 제약은 애플리케이션 레이어(또는 DB check)에서 강제. apispec 요구사항·시스템처리 갱신
 
 ### ⚠️ 마이그레이션 주의 (데이터 손실 가능)
 - `Reservation.shipping_address`, `Artwork.tracking_number`/`carrier` DROP
@@ -287,4 +287,4 @@ apispec(전체 ~8,600줄) ↔ schema 전수 재대조 후 아래 항목을 실�
 
 ### Status
 - 2차 검증: **DONE (2026-05-30)**
-- 잔여: 위 팀 협의 2건(`deliveryMethod`, `userId`) → PR에서 결정
+- 팀 협의 2건(`deliveryMethod`, `userId`): **결정 완료 및 반영 (2026-05-31)**

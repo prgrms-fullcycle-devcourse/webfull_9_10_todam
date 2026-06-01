@@ -121,33 +121,33 @@ model BusinessDocument {
 }
 
 model Store {
-  id              String               @id @default(uuid()) @db.Uuid
-  partnerId       String               @map("partner_id") @db.Uuid
-  name            String               @db.VarChar(200)
-  slug            String               @unique @db.VarChar(100)
-  convenienceInfo Json?                @map("convenience_info")
-  rejectedReason  String?              @map("rejected_reason")
-  suspendedReason String?              @map("suspended_reason")
-  description     String?
-  address         String?              @db.VarChar(500)
-  latitude        Float?               @map("latitude")
-  longitude       Float?               @map("longitude")
-  phone           String?              @db.VarChar(20)
-  autoConfirm     Boolean              @default(false) @map("auto_confirm")
-  cancelDeadlineDays Int?              @map("cancel_deadline_days")
-  status          StoreStatus          @default(DRAFT)
-  publishedAt     DateTime?            @map("published_at") @db.Timestamptz(6)
-  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
-  businessDocs    BusinessDocument[]
-  timeSlots       ProgramTimeSlot[]
-  programs        Program[]
-  reservations    Reservation[]
-  reviews         Review[]
-  images          StoreImage[]
-  operatingHours  StoreOperatingHour[]
-  partner         Partner              @relation(fields: [partnerId], references: [id])
-  favoriteStores  FavoriteStore[] // [S-6]
+  id                 String               @id @default(uuid()) @db.Uuid
+  partnerId          String               @map("partner_id") @db.Uuid
+  name               String               @db.VarChar(200)
+  slug               String               @unique @db.VarChar(100)
+  convenienceInfo    Json?                @map("convenience_info")
+  rejectedReason     String?              @map("rejected_reason")
+  suspendedReason    String?              @map("suspended_reason")
+  description        String?
+  address            String?              @db.VarChar(500)
+  latitude           Float?               @map("latitude")
+  longitude          Float?               @map("longitude")
+  phone              String?              @db.VarChar(20)
+  autoConfirm        Boolean              @default(false) @map("auto_confirm")
+  cancelDeadlineDays Int?                 @map("cancel_deadline_days")
+  status             StoreStatus          @default(DRAFT)
+  publishedAt        DateTime?            @map("published_at") @db.Timestamptz(6)
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  businessDocs       BusinessDocument[]
+  timeSlots          ProgramTimeSlot[]
+  programs           Program[]
+  reservations       Reservation[]
+  reviews            Review[]
+  images             StoreImage[]
+  operatingHours     StoreOperatingHour[]
+  partner            Partner              @relation(fields: [partnerId], references: [id])
+  favoriteStores     FavoriteStore[] // [S-6]
 
   @@index([slug])
   @@index([partnerId])
@@ -271,7 +271,7 @@ model ProgramTimeSlot {
 
 model Reservation {
   id                String                    @id @default(uuid()) @db.Uuid
-  userId            String                    @map("user_id") @db.Uuid
+  userId            String?                   @map("user_id") @db.Uuid // null은 source=PARTNER_MANUAL(비회원 현장 예약)일 때만 허용
   programId         String                    @map("program_id") @db.Uuid
   storeId           String                    @map("store_id") @db.Uuid
   programTimeSlotId String                    @map("program_time_slot_id") @db.Uuid
@@ -298,7 +298,7 @@ model Reservation {
   programSnapshot   ProgramSnapshot           @relation(fields: [programSnapshotId], references: [id])
   programTimeSlot   ProgramTimeSlot           @relation(fields: [programTimeSlotId], references: [id])
   store             Store                     @relation(fields: [storeId], references: [id])
-  user              User                      @relation("ReservationUser", fields: [userId], references: [id])
+  user              User?                     @relation("ReservationUser", fields: [userId], references: [id])
   review            Review?
 
   @@map("reservations")

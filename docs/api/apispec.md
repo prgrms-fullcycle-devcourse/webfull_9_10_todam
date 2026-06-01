@@ -1922,6 +1922,8 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 - 인증된 파트너가 현장·전화 예약 등을 대신 입력하는 수동 예약을 등록한다.
 - `PENDING` 단계 없이 `CONFIRMED` 또는 `IN_PROGRESS` 상태로 직접 생성된다.
 - `program_time_slots` 슬롯 상태(`CLOSED`) 검증 및 정원 초과 검증은 생략하며, 고객 예약과 달리 과거 일자의 슬롯도 선택할 수 있다.
+- `deliveryMethod`는 프로그램 `deliveryOption`이 `CUSTOMER_SELECT`일 때만 요청 필수이며, 그 외에는 서버가 `PICKUP`으로 강제한다. (배송지는 예약 확정 이후 입력)
+- 현장·전화 손님은 회원 계정이 없을 수 있으므로 `userId`는 비워둘 수 있다 (`source = 'PARTNER_MANUAL'`인 경우에만 `null` 허용).
 
 ---
 
@@ -1949,7 +1951,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
   "reserverName": "박현장",
   "reserverPhone": "010-9876-5432",
   "participantCount": 1,
-  "shippingAddress": "서울시 마포구 와우산로 12길 34",
+  "deliveryMethod": "PICKUP",
   "initialStatus": "CONFIRMED",
   "internalMemo": "현장 방문 예약"
 }
@@ -1966,8 +1968,8 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 - `slotId`로 타임슬롯을 조회한다 (과거 일자 슬롯 허용, `CLOSED` 및 정원 초과 검증은 생략).
 - `program_time_slots.reserved_count`를 `participantCount`만큼 증가시킨다 (통계 목적, 정원 초과 허용).
 - 프로그램의 최신 `program_snapshots`를 연결한다 (`programSnapshotId`).
-- `reservations` row를 생성한다 (`source = 'PARTNER_MANUAL'`, 상태는 `initialStatus`, 선택한 슬롯을 `programTimeSlotId`로 연결).
-- 배송지(`shippingAddress`)가 입력된 경우 `deliveries` row를 생성한다.
+- `deliveryMethod`를 결정한다: 프로그램 `deliveryOption`이 `CUSTOMER_SELECT`이면 요청의 `deliveryMethod`(이 경우 필수)를 사용하고, 그 외에는 서버가 `PICKUP`으로 강제한다. (배송지는 예약 확정 이후 별도 입력)
+- `reservations` row를 생성한다 (`source = 'PARTNER_MANUAL'`, 상태는 `initialStatus`, 선택한 슬롯을 `programTimeSlotId`로 연결, `userId`는 비회원 현장 예약이므로 `null`).
 - `artworks` row를 자동 생성하고 QR 토큰을 발급한다.
 - 등록 완료 응답을 반환한다.
 
