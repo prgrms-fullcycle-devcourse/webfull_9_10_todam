@@ -24,6 +24,10 @@ const routeConfig: Record<string, HeaderConfig> = {
 // 동적 경로(파라미터 포함)는 정확 일치로 못 잡으므로 패턴으로 매칭.
 const patternConfig: Array<{ test: RegExp; config: HeaderConfig }> = [
     { test: /^\/partner\/classes\/[^/]+$/, config: { type: 'sub', title: '클래스 미리보기' } },
+    {
+        test: /^\/my\/reservations\/[^/]+$/,
+        config: { type: 'sub', title: '예약 자세히보기' },
+    },
 ];
 
 export type UseHeaderResult =

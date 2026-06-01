@@ -43,6 +43,7 @@ export * from './contracts/store-list';
 export * from './contracts/program-edit';
 export * from './contracts/store-programs';
 export * from './contracts/reservation-list';
+export * from './contracts/reservation-detail';
 
 export * from './utils/format-scheduled';
 export * from './utils/format';
