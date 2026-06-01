@@ -14,9 +14,10 @@
   - 동작: 사업자 정보 → 공방 정보 → 영업 정보 → 예약 정보 4단계 폼 → 신청하기 제출 → 검수 완료 화면
   - 예외: slug 중복 / 필수값 누락 / 검수 반려 시 반려 사유 노출
   - 비고: 첫 공방 등록 = 파트너 온보딩 플로우. 승인 시 USER → PARTNER 권한 승격.
-- API명세: 아래 엔드포인트 3종 (API명세 DB `5852ee66b06c838bb8ec01c6bf4f2e25`에서 select)
+- API명세: 아래 엔드포인트 4종 (API명세 DB `5852ee66b06c838bb8ec01c6bf4f2e25`에서 select)
   - `POST /stores` — 공방 초안 생성 (파트너 신청 포함)
   - `POST /partner/stores/{storeId}/images` — 공방 이미지 presigned URL 발급
+  - `PATCH /partner/stores/{storeId}/images/{imageId}/confirm` — 이미지 업로드 완료 확인 (PENDING → UPLOADED)
   - `POST /partner/stores/{storeId}/submit` — 공방 심사 제출 (DRAFT → PENDING)
 - Relevant design docs: DESIGN.md (작업 시작 조건 — 단계별 진행 indicator, 폼 필드 size 토큰, 상태 Badge variant enum 확보 필요)
 - Open decisions:
@@ -45,6 +46,7 @@
 | `convenienceInfo` | object | `{ parking: boolean, pet: boolean, wifi: boolean }` |
 | `autoConfirm` | boolean | 자동 예약 확정 여부 |
 | `cancelDeadlineDays` | number | 취소 가능 기한(d-day) |
+| `reservationIntervalMinutes` | number | 예약 시간 간격(분). `60`/`90`/`120`/`180` 중 하나. 추후 프로그램 타임슬롯 생성 기준 |
 | `operatingHours` | array | 영업 요일·시간 (아래 참조) |
 | `status` | enum | `DRAFT` \| `PENDING` \| `PUBLISHED` \| `REJECTED` \| `SUSPENDED` |
 
@@ -57,6 +59,18 @@
 | `closeTime` | string | HH:mm 형식 |
 | `breakStart` | string \| null | 휴식 시작 (선택) |
 | `breakEnd` | string \| null | 휴식 종료 (선택) |
+
+#### businessDocument 항목 (사용자 직접 입력)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `businessNumber` | string | 사업자등록번호. 하이픈 없이 숫자 10자리 |
+| `businessName` | string | 상호명 (최대 200자) |
+| `ownerName` | string | 대표자명 (최대 100자) |
+| `businessAddress` | string | 사업장 주소 (최대 500자) |
+| `email` | string \| null | 사업자 이메일 (선택) |
+
+> `documentUrl`(사업자등록증 파일), `ocrStatus`/`verifiedAt`(국세청 진위 확인)는 **백로그**. 스키마상 `document_url`은 nullable로 변경됨.
 
 ---
 
@@ -79,6 +93,7 @@
     "convenienceInfo": { "parking": true, "pet": false, "wifi": true },
     "autoConfirm": false,
     "cancelDeadlineDays": 1,
+    "reservationIntervalMinutes": 60,
     "operatingHours": [
       {
         "dayOfWeek": "MON",
@@ -87,10 +102,17 @@
         "breakStart": "13:00",
         "breakEnd": "14:00"
       }
-    ]
+    ],
+    "businessDocument": {
+      "businessNumber": "5555555555",
+      "businessName": "흙담",
+      "ownerName": "김리듬",
+      "businessAddress": "서울특별시 성동구 둑섬로 273(성수동)",
+      "email": "leadem@studio.com"
+    }
   }
   ```
-- 시스템 처리: slug 중복 검증 → 카카오맵으로 위경도 변환 → `stores` row 생성(`status = DRAFT`) → `store_operating_hours` 저장 → 첫 공방이면 `partners` row 자동 생성(`status = PENDING`)
+- 시스템 처리: slug 중복 검증 → 사업자등록번호 형식 검증(숫자 10자리) → **파트너 분기**(레코드 없음 → 첫 공방, `partners` 자동 생성 `status = PENDING` / 레코드 있고 `APPROVED` → 추가 공방 허용 / 그 외 status → 403 차단) → 카카오맵으로 위경도 변환 → `stores` row 생성(`status = DRAFT`) → `store_operating_hours` + `business_documents` 저장
 - Response `201 Created`:
   ```json
   {
@@ -112,8 +134,9 @@
   }
   ```
 - 에러:
-  - `400 BAD_REQUEST` — 필수 필드 누락 / slug 형식 오류
+  - `400 BAD_REQUEST` — 필수 필드 누락 / slug 형식 오류 / 사업자번호 형식 오류
   - `401 UNAUTHORIZED` — 인증 필요
+  - `403 PARTNER_NOT_APPROVED` — 승인되지 않은 파트너의 추가 공방 등록 시도
   - `409 SLUG_CONFLICT` — slug 중복
 
 ---
@@ -153,7 +176,37 @@
 
 ---
 
-#### 3. `POST /partner/stores/{storeId}/submit` — 공방 심사 제출 (DRAFT → PENDING)
+#### 3. `PATCH /partner/stores/{storeId}/images/{imageId}/confirm` — 이미지 업로드 완료 확인
+
+- 가드: `AuthGuard` (공방 소유 권한 검증)
+- Request Headers: `Authorization: Bearer {accessToken}`
+- Path Params: `storeId` (UUID), `imageId` (UUID)
+- Request Body: 없음
+- 시스템 처리: 소유권 검증 → imageId로 store_images row 조회 → status `PENDING` 검증 → `UPLOADED`로 전이. 이미 `UPLOADED`면 409.
+- Response `200 OK`:
+  ```json
+  {
+    "statusCode": 200,
+    "timestamp": "2026-06-01T00:00:00.000Z",
+    "path": "/partner/stores/{storeId}/images/{imageId}/confirm",
+    "message": "이미지 업로드가 확인되었습니다.",
+    "data": {
+      "image": {
+        "id": "img-uuid-001",
+        "status": "UPLOADED"
+      }
+    },
+    "error": null
+  }
+  ```
+- 에러:
+  - `401 UNAUTHORIZED` / `403 FORBIDDEN`
+  - `404 NOT_FOUND` — 이미지 없음
+  - `409 ALREADY_UPLOADED` — 이미 업로드 확인된 이미지
+
+---
+
+#### 4. `POST /partner/stores/{storeId}/submit` — 공방 심사 제출 (DRAFT → PENDING)
 
 - 가드: `AuthGuard` (공방 소유 권한 검증)
 - Request Headers: `Authorization: Bearer {accessToken}`
@@ -192,7 +245,7 @@
   - UI: 4단계 폼(공방 정보 / 영업 정보 / 이미지 업로드 / 예약 정보) + 제출 완료(검토중 / 반려) 화면. (`apps/web/src/features/store-registration` 기존 UI가 존재하므로 실 API 연동 집중.)
   - 연동: 실 API로 mock 전환 (`.env.local` `NEXT_PUBLIC_API_MOCKING=disabled`), 인증 헤더 연결, presigned 업로드(공방 이미지), geocode 연동.
 - Out:
-  - 사업자등록증 업로드 및 OCR 국세청 진위 확인 — 백로그. (피그마 디자인에 해당 필드 없음)
+  - 사업자등록증 **파일 업로드**(`documentUrl`) 및 **OCR 국세청 진위 확인** — 백로그. (피그마 1단계에 파일 업로드 필드 없음. 사업자 정보 텍스트 필드는 In 스코프)
   - Admin 검수 승인/반려 처리 — 별도 admin 기능.
   - 공방 수정 (REJECTED 후 재제출) — 별도 기능.
   - 공방 목록 조회 (`GET /partner/stores`) — `partner-store-list` plan 소관.
@@ -210,13 +263,28 @@
 
 ## Status
 
-- [ ] API 구현
+- [x] API 구현
 - [ ] UI 구현
 - [ ] API 연동
 
 ## Out (단계별 완료물)
 
-- API: <!-- 구현된 엔드포인트, 파일 -->
+- API:
+  - `POST /stores` — 공방 초안 생성 (slug 자동생성/중복검증, businessDocument 저장, 첫 공방 시 partner 자동생성)
+  - `POST /partner/stores/:storeId/images` — 공방 이미지 presigned PUT URL 발급
+  - `PATCH /partner/stores/:storeId/images/:imageId/confirm` — S3 객체 존재 검증 후 PENDING→UPLOADED
+  - `POST /partner/stores/:storeId/submit` — 공방 심사 제출 (DRAFT/REJECTED → PENDING)
+  - 주요 파일:
+    - `apps/api/src/modules/store/store.module.ts`
+    - `apps/api/src/modules/store/presentation/controllers/store.controller.ts`
+    - `apps/api/src/modules/store/presentation/dto/create-store.dto.ts`
+    - `apps/api/src/modules/store/presentation/dto/store-image.dto.ts`
+    - `apps/api/src/modules/store/presentation/dto/submit-store.dto.ts`
+    - `apps/api/src/modules/store/application/use-cases/create-store.use-case.ts`
+    - `apps/api/src/modules/store/application/use-cases/create-store-image.use-case.ts`
+    - `apps/api/src/modules/store/application/use-cases/confirm-store-image.use-case.ts`
+    - `apps/api/src/modules/store/application/use-cases/submit-store.use-case.ts`
+    - `apps/api/src/common/s3/s3.service.ts` (objectExists), `s3-object.util.ts` (keyFromImageUrl)
 - UI: <!-- 구현된 화면, 컴포넌트 -->
 - 연동: <!-- 연결 지점, 검증 결과 -->
 
@@ -237,6 +305,9 @@
 - 2026-06-01: API명세 DB 확인 → 공방 등록 엔드포인트는 `POST /stores` (not `/partner/stores`). request body에 `businessDocument` 포함, `convenienceInfo.wifi` 필드 추가, `reservationIntervalMinutes`/`maxCapacityPerSlot` 미포함 확인.
 - 2026-06-01: UI는 기존 store-registration plan에서 MSW mock 구현이 완료된 상태. 본 plan은 BE 구현 + 실 API 연동 전환에 집중.
 - 2026-06-01: 사업자등록증 업로드 및 OCR 진위 확인 전체 백로그 제외. 피그마 디자인에 해당 필드 없음. `businessDocument` 필드도 현재 스코프에서 제거.
+- 2026-06-01: 피그마 1단계 재확인 → 사업자 정보 텍스트 필드(사업자번호/상호명/대표자명/사업장주소/이메일)는 폼에 존재. `businessDocument`를 텍스트 입력 필드로 복원(파일 업로드·OCR만 백로그 유지). `business_documents.document_url`을 nullable로 변경(migration `20260601090000_business_document_url_nullable`).
+- 2026-06-01: 파트너 분기 명세 충실화 → 추가 공방 등록은 `APPROVED` 파트너만 허용. 그 외 status(PENDING/REJECTED/SUSPENDED/TERMINATED)는 `403 PARTNER_NOT_APPROVED`로 차단. (CONTRACT-2의 "partner 존재로만 분기"에서 status 검증 추가.)
+- 2026-06-01: 피그마 3단계(영업 정보)에 "예약 시간 간격"(1/1.5/2/3시간) 필드 존재 확인 → `reservationIntervalMinutes`(분 단위, 60/90/120/180) Store에 추가. 추후 프로그램 타임슬롯 생성 기준값으로 사용. `stores.reservation_interval_minutes` 컬럼 추가(migration `20260601100000_add_store_reservation_interval`).
 
 ## Outcome
 
