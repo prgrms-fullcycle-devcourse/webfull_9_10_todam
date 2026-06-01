@@ -8,6 +8,7 @@ import {
     PartnerStatus,
     StoreStatus,
     type GeocodeResult,
+    type PartnerProgramListResult,
     type PartnerStoreDetailResult,
     type StoreImageConfirmResult,
     type StoreImageUploadRequest,
@@ -29,6 +30,7 @@ import {
     createStoreRegistration,
     deleteStoreImage,
     findLatestStoreRegistration,
+    findPartnerStorePrograms,
     getStoreDetail,
     isBusinessNumberRegistered,
     isSlugTaken,
@@ -175,6 +177,18 @@ export const handlers = [
         }
         const result: PartnerStoreDetailResult = { store: detail };
         return ok(path, result, '공방 상세 정보가 성공적으로 조회되었습니다.');
+    }),
+
+    // 공방 운영 클래스 목록 (파트너센터) — status enum 전체, 0개 시 []
+    http.get(`${API}/partner/stores/:storeId/programs`, ({ params }) => {
+        const storeId = String(params.storeId);
+        const path = `/api/v1/partner/stores/${storeId}/programs`;
+        const programs = findPartnerStorePrograms(storeId);
+        if (programs === null) {
+            return fail(path, 404, StoreEditErrorCode.STORE_NOT_FOUND, '공방을 찾을 수 없습니다.');
+        }
+        const result: PartnerProgramListResult = { programs };
+        return ok(path, result, '운영 클래스 목록이 성공적으로 조회되었습니다.');
     }),
 
     // 주소 → 좌표 (주소 API 연동 mock)

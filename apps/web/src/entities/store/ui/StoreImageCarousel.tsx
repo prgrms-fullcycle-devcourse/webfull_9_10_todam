@@ -3,11 +3,11 @@
 import { useState } from 'react';
 
 import { Pagination } from '@todam/ui';
-import type { StoreDetailImage } from '@todam/shared';
+import type { StoreImage } from '@todam/shared';
 
 // 대표 이미지 carousel. 가로 스크롤 + 인디케이터. 순수 표현 컴포넌트(props만 받음).
 // UI-2(디자인 토큰) 미확정 → 기존 패턴(plain img + bg-muted + object-cover)·기본 스케일로 골격 구성.
-export function StoreImageCarousel({ images }: { images: StoreDetailImage[] }) {
+export function StoreImageCarousel({ images }: { images: StoreImage[] }) {
     const [active, setActive] = useState(0);
 
     const sorted = [...images].sort((a, b) => a.sortOrder - b.sortOrder);

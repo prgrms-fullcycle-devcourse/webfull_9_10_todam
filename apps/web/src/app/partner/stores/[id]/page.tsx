@@ -154,7 +154,7 @@ export default function PartnerStoreDetailPage({
                             name={store.name}
                             rating={store.rating}
                             reviewCount={store.reviewCount}
-                            description={store.description}
+                            description={store.description ?? ''}
                             tags={<ConvenienceChips convenienceInfo={store.convenienceInfo} />}
                             actions={<StoreInfoActions />}
                         />
