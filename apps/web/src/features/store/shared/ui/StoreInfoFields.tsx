@@ -1,5 +1,6 @@
 'use client';
 
+import { formatPhone } from '@todam/shared';
 import { CameraIcon, CloseIcon, TextArea, TextInput } from '@todam/ui';
 import type { ReactNode, RefObject } from 'react';
 
@@ -87,7 +88,7 @@ export function StoreInfoFields({
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={addImageDisabled}
-                            className="flex aspect-[4/3] flex-col items-center justify-center rounded-2xl border border-dashed border-border text-foreground-tertiary"
+                            className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border text-foreground-tertiary disabled:cursor-not-allowed"
                         >
                             <CameraIcon size={24} />
                         </button>
@@ -111,16 +112,20 @@ export function StoreInfoFields({
                 </label>
                 <div
                     className={[
-                        'flex h-12 w-full items-center rounded-xl border bg-surface px-4',
-                        slugHasError ? 'border-danger' : 'border-border-subtle',
+                        'group flex h-12 w-full items-center rounded-xl border bg-surface px-4 transition-colors',
+                        slugHasError
+                            ? 'border-danger'
+                            : 'border-border-subtle focus-within:border-primary',
                     ].join(' ')}
                 >
-                    <span className="shrink-0 text-base text-foreground-tertiary">leadem.com/</span>
+                    <span className="shrink-0 text-base text-foreground-tertiary group-focus-within:text-primary">
+                        leadem.com/
+                    </span>
                     <input
                         value={slug}
                         placeholder="공방아이디"
                         onChange={(e) => onChangeSlug(e.target.value.toLowerCase())}
-                        className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-foreground-tertiary"
+                        className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-foreground-tertiary focus:text-primary focus:placeholder:text-primary"
                     />
                 </div>
                 <p
@@ -135,11 +140,13 @@ export function StoreInfoFields({
 
             <TextInput
                 label="전화번호"
+                type="tel"
+                inputMode="numeric"
                 placeholder="수강생 연락을 받을 공방 번호를 입력해 주세요"
                 value={phone}
                 error={!!phoneError}
                 helperText={phoneError}
-                onChange={(e) => onChangePhone(e.target.value)}
+                onChange={(e) => onChangePhone(formatPhone(e.target.value))}
             />
 
             <TextArea
@@ -160,7 +167,7 @@ function ImageCell({ item }: { item: StoreImageItem }): ReactNode {
             type="button"
             onClick={item.onRemove}
             aria-label="이미지 삭제"
-            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-inverse/60 text-foreground-inverse"
+            className="absolute -right-1 -top-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-emphasis text-foreground-inverse"
         >
             <CloseIcon size={14} />
         </button>

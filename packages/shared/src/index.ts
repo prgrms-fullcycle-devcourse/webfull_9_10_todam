@@ -42,3 +42,4 @@ export * from './contracts/store-list';
 export * from './contracts/reservation-list';
 
 export * from './utils/format-scheduled';
+export * from './utils/format';
