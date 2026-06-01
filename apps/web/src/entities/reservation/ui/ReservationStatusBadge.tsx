@@ -1,14 +1,22 @@
-import { Badge, BoxIcon, ClockIcon, DeliveryIcon, ThreeDIcon, type BadgeTone } from '@todam/ui';
+import {
+    Badge,
+    BoxIcon,
+    CheckIcon,
+    ClockIcon,
+    CloseIcon,
+    DeliveryIcon,
+    PinIcon,
+    ThreeDIcon,
+    type BadgeTone,
+} from '@todam/ui';
 import type { ReactElement } from 'react';
 import { ReservationStatus } from '@todam/shared';
 
 // 예약 상태 → 배지 라벨/톤/아이콘 매핑.
 // plan: docs/exec-plans/active/user-예약-나의 예약조회.md §Design tokens "Badge" 표.
-// 디자인 확정 4건: PENDING / IN_PROGRESS / SHIPPED / DELIVERED(=PICKUP_DONE).
-// 미정 4건(CONFIRMED / CANCELED / PICKUP_READY): fallback default(neutral, label="-") 임시.
+// 디자인 정본(2026-06-01 "상태 메세지" 표) 기준 8 status 전부 확정.
 //
-// 라벨은 status 별 디자인 확정 라벨이지만, 정본 응답에선 displayState.label 을 별도 제공한다.
-// 즉 라벨 가시 텍스트는 항상 props.label(=displayState.label)을 우선 사용하고,
+// 라벨 가시 텍스트는 정본 응답의 displayState.label 을 우선 사용한다.
 // 이 매핑은 톤/아이콘 선택과 fallback 라벨에만 사용한다.
 type StatusVisual = {
     tone: BadgeTone;
@@ -23,24 +31,24 @@ const STATUS_VISUAL: Record<ReservationStatus, StatusVisual> = {
         fallbackLabel: '예약신청',
     },
     [ReservationStatus.CONFIRMED]: {
-        tone: 'neutral',
-        icon: <ClockIcon />,
-        fallbackLabel: '확정',
+        tone: 'primary',
+        icon: <CheckIcon />,
+        fallbackLabel: '예약확정',
     },
     [ReservationStatus.CANCELED]: {
         tone: 'neutral',
-        icon: <ClockIcon />,
-        fallbackLabel: '취소',
+        icon: <CloseIcon />,
+        fallbackLabel: '예약취소',
     },
     [ReservationStatus.IN_PROGRESS]: {
         tone: 'info',
         icon: <ThreeDIcon />,
-        fallbackLabel: '제작중',
+        fallbackLabel: '제작 중',
     },
     [ReservationStatus.SHIPPED]: {
         tone: 'secondary',
         icon: <DeliveryIcon />,
-        fallbackLabel: '배송중',
+        fallbackLabel: '배송 중',
     },
     [ReservationStatus.DELIVERED]: {
         tone: 'neutral',
@@ -48,14 +56,14 @@ const STATUS_VISUAL: Record<ReservationStatus, StatusVisual> = {
         fallbackLabel: '작품 도착',
     },
     [ReservationStatus.PICKUP_READY]: {
-        tone: 'neutral',
-        icon: <ClockIcon />,
-        fallbackLabel: '픽업 대기',
+        tone: 'secondary',
+        icon: <PinIcon />,
+        fallbackLabel: '픽업 가능',
     },
     [ReservationStatus.PICKUP_DONE]: {
         tone: 'neutral',
-        icon: <BoxIcon />,
-        fallbackLabel: '작품 도착',
+        icon: <CheckIcon />,
+        fallbackLabel: '픽업 완료',
     },
 };
 
