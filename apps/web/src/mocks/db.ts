@@ -482,6 +482,8 @@ const storePrograms: Record<string, PartnerProgramListItem[]> = {
             thumbnailUrl: 'https://placehold.co/200x150?text=wheel',
             price: 45000,
             durationMinutes: 120,
+            capacity: 6,
+            sortOrder: 1,
             createdAt: '2026-05-21T09:00:00.000Z',
         },
         {
@@ -491,6 +493,8 @@ const storePrograms: Record<string, PartnerProgramListItem[]> = {
             thumbnailUrl: 'https://placehold.co/200x150?text=mug',
             price: 38000,
             durationMinutes: 90,
+            capacity: 8,
+            sortOrder: 2,
             createdAt: '2026-05-22T09:00:00.000Z',
         },
         {
@@ -500,6 +504,8 @@ const storePrograms: Record<string, PartnerProgramListItem[]> = {
             thumbnailUrl: 'https://placehold.co/200x150?text=couple',
             price: 88000,
             durationMinutes: 150,
+            capacity: 2,
+            sortOrder: 3,
             createdAt: '2026-05-23T09:00:00.000Z',
         },
     ],

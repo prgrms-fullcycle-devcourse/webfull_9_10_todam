@@ -15,6 +15,9 @@ export const partnerProgramListItemSchema = z.object({
     thumbnailUrl: z.string(),
     price: z.number(),
     durationMinutes: z.number(),
+    capacity: z.number(),
+    // 클래스 관리 화면 노출 순서(오름차순 정렬 기준).
+    sortOrder: z.number(),
     createdAt: z.string(),
 });
 export type PartnerProgramListItem = z.infer<typeof partnerProgramListItemSchema>;
