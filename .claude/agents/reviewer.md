@@ -16,9 +16,9 @@ tools: Read, Grep, Glob, Bash
    - 데이터모델 불일치
    - contract에 없는 임의 추가
 4. **단계별 실제 완료 검증**:
-   - API 구현: 엔드포인트가 contract대로 존재하고 동작하는가
+   - API 구현: 실 BE(`apps/api`) 엔드포인트가 contract대로 존재·동작하는가. MSW mock만 있으면 ❌(미체크).
    - UI 구현: 화면이 존재하는가 (사람 작업물)
-   - API 연동: 요청/응답이 contract 스키마로 실제 연결됐는가
+   - API 연동: **실 API** 요청/응답이 contract 스키마로 연결됐는가. MSW mock 바인딩만 한 상태는 ❌(연동 아님, 미체크).
 
 ## DESIGN 체크 (FE, 권고 — 차단 아님)
 FE 구현이면 `DESIGN.md` 위반도 살핀다: raw hex / 미정의 Tailwind 팔레트, arbitrary value(`h-[57px]`), 상호작용 상태가 props로 노출, Storybook 등록 누락, 레이아웃·라우팅 규칙 위반.

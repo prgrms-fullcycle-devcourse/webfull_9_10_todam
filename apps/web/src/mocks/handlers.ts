@@ -9,6 +9,7 @@ import {
     type SlugAvailabilityResult,
     type ToggleLikeRequest,
     type ToggleLikeResult,
+    type PartnerStoreListResult,
 } from '@todam/shared';
 import { http, HttpResponse } from 'msw';
 
@@ -17,6 +18,7 @@ import {
     findLatestStoreRegistration,
     isBusinessNumberRegistered,
     isSlugTaken,
+    listPartnerStores,
     mockGeocode,
     nowIso,
     setLike,
@@ -39,6 +41,13 @@ function fail(path: string, statusCode: number, code: string, message: string) {
 const API = '*/api/v1';
 
 export const handlers = [
+    // 내 공방 목록 조회 (파트너센터) — 본인 소유 공방 전체, 최신 생성순
+    http.get(`${API}/partner/stores`, () => {
+        const path = '/api/v1/partner/stores';
+        const result: PartnerStoreListResult = { stores: listPartnerStores() };
+        return ok(path, result, '내 공방 목록이 성공적으로 조회되었습니다.');
+    }),
+
     // 공방 URL(slug) 중복 확인
     http.get(`${API}/partner/stores/slug-availability`, ({ request }) => {
         const path = '/api/v1/partner/stores/slug-availability';
