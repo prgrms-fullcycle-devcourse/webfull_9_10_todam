@@ -1,11 +1,14 @@
 'use client';
 
 import { ReservationFields } from '../../shared/ui';
-import { useStoreRegistrationStore } from '../model/store';
+import { useStoreEditStore } from '../model/store';
 
-export function ReservationStep() {
-    const reservation = useStoreRegistrationStore((s) => s.form.reservation);
-    const patchReservation = useStoreRegistrationStore((s) => s.patchReservation);
+export function ReservationEditSection() {
+    const form = useStoreEditStore((s) => s.form);
+    const patchReservation = useStoreEditStore((s) => s.patchReservation);
+
+    if (!form) return null;
+    const reservation = form.reservation;
 
     return (
         <ReservationFields
