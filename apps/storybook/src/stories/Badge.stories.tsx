@@ -14,7 +14,6 @@ const meta: Meta<typeof Badge> = {
         "secondary",
         "success",
         "danger",
-        "warning",
         "neutral",
       ],
     },
@@ -61,9 +60,6 @@ export const Tones: Story = {
       </Badge>
       <Badge tone="danger" icon={<ClockIcon />}>
         danger
-      </Badge>
-      <Badge tone="warning" icon={<ClockIcon />}>
-        warning
       </Badge>
       <Badge tone="neutral" icon={<ClockIcon />}>
         neutral

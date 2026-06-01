@@ -7,7 +7,6 @@ export type BadgeTone =
   | "secondary"
   | "success"
   | "danger"
-  | "warning"
   | "neutral";
 
 const toneClasses: Record<BadgeTone, string> = {
@@ -16,7 +15,6 @@ const toneClasses: Record<BadgeTone, string> = {
   secondary: "bg-secondary-subtle text-secondary-darker",
   success: "bg-success-subtle text-success-darker",
   danger: "bg-danger-subtle text-danger-darker",
-  warning: "bg-warning-subtle text-warning-darker",
   neutral: "bg-muted text-foreground-secondary",
 };
 

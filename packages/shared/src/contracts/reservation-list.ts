@@ -25,6 +25,9 @@ export const reservationListItemSchema = z.object({
     id: z.string(),
     storeName: z.string(),
     programTitle: z.string(),
+    // 클래스 카테고리(예: "도자기"). 카드 meta line "{category}・{storeName}・{hh:mm}" 렌더용.
+    // (PR #63 리뷰 nogglee 결정: contract에 추가. 디자인 ↔ 응답 drift 해소.)
+    category: z.string(),
     scheduledAt: z.string(), // ISO 8601
     participantCount: z.number().int().nonnegative(),
     status: z.nativeEnum(ReservationStatus),

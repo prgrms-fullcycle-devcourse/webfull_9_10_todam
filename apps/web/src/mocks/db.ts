@@ -249,6 +249,7 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '토담 공방',
         programTitle: '머그컵 만들기',
         scheduledAt: '2026-06-18T10:00:00.000Z',
+        category: '도자기',
         participantCount: 2,
         status: ReservationStatus.PENDING,
         displayState: {
@@ -263,6 +264,7 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '서래마을 도예원',
         programTitle: '주말 가족 도자기',
         scheduledAt: '2026-06-12T13:00:00.000Z',
+        category: '도자기',
         participantCount: 4,
         status: ReservationStatus.CONFIRMED,
         displayState: {
@@ -277,6 +279,7 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '플러스 도자기',
         programTitle: '취소된 클래스',
         scheduledAt: '2026-06-10T10:00:00.000Z',
+        category: '도자기',
         participantCount: 1,
         status: ReservationStatus.CANCELED,
         displayState: {
@@ -291,6 +294,7 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '흙과 사람',
         programTitle: '물레 체험 기초반',
         scheduledAt: '2026-06-15T14:00:00.000Z',
+        category: '도자기',
         participantCount: 1,
         status: ReservationStatus.IN_PROGRESS,
         displayState: {
@@ -305,6 +309,7 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '클레이 서울',
         programTitle: '체험 한바탕',
         scheduledAt: '2026-06-08T11:00:00.000Z',
+        category: '도자기',
         participantCount: 2,
         status: ReservationStatus.IN_PROGRESS,
         displayState: {
@@ -319,6 +324,7 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '토담 공방',
         programTitle: '핸드 빌딩 클래스',
         scheduledAt: '2026-05-15T15:00:00.000Z',
+        category: '도자기',
         participantCount: 1,
         status: ReservationStatus.IN_PROGRESS,
         displayState: {
@@ -333,6 +339,7 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '백자방',
         programTitle: '화병 만들기',
         scheduledAt: '2026-05-10T11:00:00.000Z',
+        category: '도자기',
         participantCount: 2,
         status: ReservationStatus.IN_PROGRESS,
         displayState: {
@@ -347,6 +354,7 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '클레이 서울',
         programTitle: '도자기 페인팅 클래스',
         scheduledAt: '2026-06-05T16:00:00.000Z',
+        category: '도자기',
         participantCount: 3,
         status: ReservationStatus.SHIPPED,
         displayState: {
@@ -361,6 +369,7 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '플러스 도자기',
         programTitle: '접시 만들기 원데이',
         scheduledAt: '2026-05-20T11:00:00.000Z',
+        category: '도자기',
         participantCount: 2,
         status: ReservationStatus.DELIVERED,
         // DELIVERED 는 status message UI 숨김 → description 공백.
@@ -376,6 +385,7 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '온도 스튜디오',
         programTitle: '오브제 만들기',
         scheduledAt: '2026-05-12T13:00:00.000Z',
+        category: '도자기',
         participantCount: 1,
         status: ReservationStatus.PICKUP_READY,
         displayState: {
@@ -390,6 +400,7 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '흙과 사람',
         programTitle: '캔들 홀더 만들기',
         scheduledAt: '2026-04-22T10:00:00.000Z',
+        category: '도자기',
         participantCount: 1,
         status: ReservationStatus.PICKUP_DONE,
         displayState: {

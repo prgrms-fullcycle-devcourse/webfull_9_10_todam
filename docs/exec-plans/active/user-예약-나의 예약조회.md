@@ -114,6 +114,7 @@ Query Parameters:
 - `id: string(uuid)`
 - `storeName: string`
 - `programTitle: string`
+- `category: string` — 클래스 카테고리(예: "도자기"). 카드 meta line 렌더용. (PR #63 리뷰 nogglee 결정: contract에 추가.)
 - `scheduledAt: string(ISO8601)`
 - `participantCount: number`
 - `status: ReservationStatus`
@@ -278,6 +279,7 @@ Query Parameters:
 - 2026-06-01 (갱신): Figma 노드 `8505:15761`(리스트) / `8505:15771`(빈 상태) 토큰 추출 — 카드 컨테이너 + Badge 4 status(PENDING/IN_PROGRESS/SHIPPED/DELIVERED) + 빈 상태 카피 확정. Open decision 5 해소, Open decision 1은 부분 해소(잔여 4 status + Artwork substate 문구).
 - 2026-06-01 (갱신): PR #51 리뷰(nogglee) — `/me` limit 기본값은 `packages/shared` `DEFAULT_PAGE_SIZE`(20)로 정렬. Notion 정본의 10 대신 팀 공통 상수 우선. Open decision 4 해소.
 - 2026-06-01 (갱신): 디자인 "상태 메세지" 정본 표 수신 — 8 Reservation status(PENDING/CONFIRMED/CANCELED/IN_PROGRESS/SHIPPED/DELIVERED/PICKUP_READY/PICKUP_DONE) label/tone/icon + 4 Artwork substate(DRYING/BISQUE_FIRING/GLAZING/GLAZE_FIRING) subLabel/description 전부 확정. Open decision 1/5 완전 해소. FE Badge 매핑 8건 반영, fallback default 폐기.
+- 2026-06-01 (갱신): PR #63 리뷰(nogglee) 5건 반영 — ① Badge `warning` tone 폐기(secondary로 정렬), ② `category` 필드 contract에 추가 + 카드 meta line `category・storeName・hh:mm` 정본 렌더, ③ `formatScheduled` 를 `packages/shared/src/utils/` 로 추출(재사용), ④ `STATUS_VISUAL` 매핑을 `packages/shared/src/constants/reservation-status-visual.ts` 로 이동(iconName 문자열로, JSX는 web에서 매핑), ⑤ page.tsx `'use client'` 제거 → `ReservationsListClient` 분리.
 
 ## Outcome
 

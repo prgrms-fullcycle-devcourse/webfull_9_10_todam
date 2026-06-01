@@ -1,22 +1,8 @@
 'use client';
 
-import type { ReservationListItem } from '@todam/shared';
+import { formatScheduled, type ReservationListItem } from '@todam/shared';
 
 import { ReservationStatusBadge } from '../../../../../entities/reservation';
-
-// scheduledAt(ISO8601) → 화면용 파싱.
-// Asia/Seoul 기준 표시 가정(서버가 ISO Z 로 내려주므로 로컬 변환 = 한국 환경 기본 정합).
-function formatScheduled(iso: string): { date: string; day: string; time: string } {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return { date: '', day: '', time: '' };
-    const month = d.getMonth() + 1;
-    const date = d.getDate();
-    const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
-    const day = DAYS[d.getDay()] ?? '';
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    return { date: `${month}.${date}`, day, time: `${hh}:${mm}` };
-}
 
 // status message UI 숨김 조건.
 // 1) 정본 명세: DELIVERED/PICKUP_DONE 종료 상태 카드는 status message frame 자체 hidden.
@@ -51,16 +37,11 @@ export function ReservationCard({ item, onClick }: ReservationCardProps) {
                     <ReservationStatusBadge status={item.status} label={item.displayState.label} />
                 </div>
 
-                {/* 행 2: programTitle + meta(storeName・hh:mm) */}
-                {/*
-                    plan §Design tokens 행2 meta 는 "category・storeName・hh:mm" 지만
-                    /me 응답 항목에 category 가 없음 → contract 우선해 storeName・hh:mm 만 표시.
-                    (Open decision: 응답에 category 추가 또는 디자인 갱신 필요)
-                */}
+                {/* 행 2: programTitle + meta(category・storeName・hh:mm) */}
                 <div className="flex flex-col gap-1">
                     <p className="text-sm font-semibold text-foreground">{item.programTitle}</p>
                     <p className="text-xs text-foreground-tertiary">
-                        {item.storeName}・{time}
+                        {item.category}・{item.storeName}・{time}
                     </p>
                 </div>
             </div>
