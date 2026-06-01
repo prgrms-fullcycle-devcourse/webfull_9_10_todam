@@ -135,6 +135,7 @@ model Store {
   phone              String?              @db.VarChar(20)
   autoConfirm        Boolean              @default(false) @map("auto_confirm")
   cancelDeadlineDays Int?                 @map("cancel_deadline_days")
+  reservationIntervalMinutes Int?         @map("reservation_interval_minutes") // 타임슬롯 생성 기준 간격(분)
   status             StoreStatus          @default(DRAFT)
   publishedAt        DateTime?            @map("published_at") @db.Timestamptz(6)
   createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
