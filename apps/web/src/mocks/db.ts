@@ -1,14 +1,21 @@
 import {
     OcrStatus,
     PartnerStatus,
+    ProgramStatus,
+    ReservationStatus,
     StoreStatus,
     ProgramDeliveryOption,
-    ProgramStatus,
     ProgramDifficulty,
     type ConvenienceInfo,
     type DayOfWeek,
+    type OperatingHourInput,
+    type PartnerProgramListItem,
+    type PartnerStoreDetail,
+    type ReservationListItem,
+    type StoreImage,
     type StoreRegistrationSubmitRequest,
     type ProgramImage,
+    type StoreUpdateRequest,
 } from '@todam/shared';
 
 // 인메모리 mock 저장소. prisma 모델 형태를 최소한으로 흉내낸다.
@@ -361,6 +368,380 @@ export function programToApiShape(program: ProgramRow): object {
     };
 }
 
+// ─── 공방 상세(수정 화면 preload) mock ──────────────────────────
+// 파트너센터 공방 상세 — GET/PATCH/이미지 엔드포인트가 참조하는 인메모리 저장소.
+// 목록 시드(SEEDED_PARTNER_STORES)와 id 정합. createStoreRegistration 생성분도 lazy 보강.
+const storeDetails: Record<string, PartnerStoreDetail> = {
+    'store-seed-0001': {
+        id: 'store-seed-0001',
+        partnerId: 'partner-seed-0001',
+        name: '흙과 사람',
+        slug: 'heuk-saram',
+        description: '흙과 함께하는 도자기 체험 공방입니다.',
+        phone: '02-1234-5678',
+        address: '서울특별시 성동구 성수이로 12길 34',
+        latitude: 37.5446,
+        longitude: 127.0556,
+        convenienceInfo: { parking: true, pet: false, wifi: true },
+        autoConfirm: false,
+        cancelDeadlineDays: 1,
+        reservationIntervalMinutes: 60,
+        maxCapacityPerSlot: 6,
+        status: StoreStatus.PUBLISHED,
+        rejectedReason: null,
+        suspendedReason: null,
+        rating: 4.8,
+        reviewCount: 132,
+        inProgressReservationCount: 5,
+        operatingHours: [
+            {
+                dayOfWeek: 'MON',
+                openTime: '10:00',
+                closeTime: '19:00',
+                breakStart: '13:00',
+                breakEnd: '14:00',
+            },
+            {
+                dayOfWeek: 'TUE',
+                openTime: '10:00',
+                closeTime: '19:00',
+                breakStart: '13:00',
+                breakEnd: '14:00',
+            },
+            {
+                dayOfWeek: 'WED',
+                openTime: '10:00',
+                closeTime: '19:00',
+                breakStart: '13:00',
+                breakEnd: '14:00',
+            },
+        ],
+        images: [
+            {
+                id: 'img-seed-0001',
+                imageUrl: 'https://placehold.co/400x300?text=workshop',
+                thumbnailUrl: 'https://placehold.co/200x150?text=workshop',
+                isThumbnail: true,
+                sortOrder: 1,
+            },
+        ],
+        businessDocument: {
+            ownerName: '김리듬',
+            email: 'partner@example.com',
+            businessName: '흙과 사람',
+            businessNumber: '111-22-33333',
+            businessAddress: '서울특별시 성동구 성수이로 12길 34',
+            ocrStatus: OcrStatus.VERIFIED,
+        },
+        publishedAt: '2026-05-20T10:00:00.000Z',
+        createdAt: '2026-05-30T10:00:00.000Z',
+    },
+    'store-seed-0002': {
+        id: 'store-seed-0002',
+        partnerId: 'partner-seed-0002',
+        name: '플러스 도자기',
+        slug: 'plus-pottery',
+        description: null,
+        phone: '02-2222-3333',
+        address: '서울특별시 마포구 와우산로 100',
+        latitude: 37.5512,
+        longitude: 126.9223,
+        convenienceInfo: { parking: false, pet: true, wifi: false },
+        autoConfirm: true,
+        cancelDeadlineDays: 2,
+        reservationIntervalMinutes: 90,
+        maxCapacityPerSlot: 4,
+        status: StoreStatus.PENDING,
+        rejectedReason: null,
+        suspendedReason: null,
+        rating: 0,
+        reviewCount: 0,
+        inProgressReservationCount: 0,
+        operatingHours: [
+            {
+                dayOfWeek: 'SAT',
+                openTime: '11:00',
+                closeTime: '20:00',
+                breakStart: null,
+                breakEnd: null,
+            },
+            {
+                dayOfWeek: 'SUN',
+                openTime: '11:00',
+                closeTime: '20:00',
+                breakStart: null,
+                breakEnd: null,
+            },
+        ],
+        images: [
+            {
+                id: 'img-seed-0002',
+                imageUrl: 'https://placehold.co/400x300?text=pottery',
+                thumbnailUrl: 'https://placehold.co/200x150?text=pottery',
+                isThumbnail: true,
+                sortOrder: 1,
+            },
+        ],
+        businessDocument: {
+            ownerName: '김리듬',
+            email: 'partner@example.com',
+            businessName: '플러스 도자기',
+            businessNumber: '222-33-44444',
+            businessAddress: '서울특별시 마포구 와우산로 100',
+            ocrStatus: OcrStatus.PENDING,
+        },
+        publishedAt: null,
+        createdAt: '2026-05-25T10:00:00.000Z',
+    },
+    'store-seed-0003': {
+        id: 'store-seed-0003',
+        partnerId: 'partner-seed-0003',
+        name: '클레이 서울',
+        slug: 'clay-seoul',
+        description: '도심 속 작은 도예 작업실.',
+        phone: '02-5555-6666',
+        address: '서울특별시 종로구 자하문로 50',
+        latitude: 37.5821,
+        longitude: 126.9706,
+        convenienceInfo: { parking: false, pet: false, wifi: true },
+        autoConfirm: false,
+        cancelDeadlineDays: 1,
+        reservationIntervalMinutes: 120,
+        maxCapacityPerSlot: 8,
+        status: StoreStatus.SUSPENDED,
+        rejectedReason: null,
+        suspendedReason: '운영 정책 위반으로 노출이 중단되었습니다.',
+        rating: 4.5,
+        reviewCount: 21,
+        inProgressReservationCount: 0,
+        operatingHours: [
+            {
+                dayOfWeek: 'MON',
+                openTime: '09:00',
+                closeTime: '18:00',
+                breakStart: null,
+                breakEnd: null,
+            },
+        ],
+        images: [
+            {
+                id: 'img-seed-0003',
+                imageUrl: 'https://placehold.co/400x300?text=clay',
+                thumbnailUrl: 'https://placehold.co/200x150?text=clay',
+                isThumbnail: true,
+                sortOrder: 1,
+            },
+        ],
+        businessDocument: {
+            ownerName: '김리듬',
+            email: 'partner@example.com',
+            businessName: '클레이 서울',
+            businessNumber: '333-44-55555',
+            businessAddress: '서울특별시 종로구 자하문로 50',
+            ocrStatus: OcrStatus.VERIFIED,
+        },
+        publishedAt: null,
+        createdAt: '2026-05-20T10:00:00.000Z',
+    },
+};
+
+// 온보딩(db.stores)으로 생성된 공방을 상세 형태로 lazy 변환.
+function buildDetailFromCreated(id: string): PartnerStoreDetail | undefined {
+    const store = db.stores.find((s) => s.id === id);
+    if (!store) return undefined;
+    const doc = db.businessDocuments.find((d) => d.storeId === id);
+    const hours: OperatingHourInput[] = db.operatingHours
+        .filter((h) => h.storeId === id)
+        .map((h) => ({
+            dayOfWeek: h.dayOfWeek,
+            openTime: h.openTime,
+            closeTime: h.closeTime,
+            breakStart: h.breakStart,
+            breakEnd: h.breakEnd,
+        }));
+    return {
+        id: store.id,
+        partnerId: store.partnerId,
+        name: store.name,
+        slug: store.slug,
+        description: store.description || null,
+        phone: store.phone,
+        address: store.address,
+        latitude: store.latitude,
+        longitude: store.longitude,
+        convenienceInfo: store.convenienceInfo,
+        autoConfirm: store.autoConfirm,
+        cancelDeadlineDays: 1,
+        reservationIntervalMinutes: 60,
+        maxCapacityPerSlot: 4,
+        status: store.status,
+        rejectedReason: store.rejectedReason,
+        suspendedReason: null,
+        rating: 0,
+        reviewCount: 0,
+        inProgressReservationCount: 0,
+        operatingHours: hours,
+        images: [],
+        businessDocument: {
+            ownerName: doc?.ownerName ?? '',
+            email: doc?.email ?? '',
+            businessName: doc?.businessName ?? '',
+            businessNumber: doc?.businessNumber ?? '',
+            businessAddress: doc?.businessAddress ?? '',
+            ocrStatus: doc?.ocrStatus ?? OcrStatus.PENDING,
+        },
+        publishedAt: store.publishedAt,
+        createdAt: store.createdAt,
+    };
+}
+
+export function getStoreDetail(id: string): PartnerStoreDetail | undefined {
+    if (storeDetails[id]) return storeDetails[id];
+    const built = buildDetailFromCreated(id);
+    if (built) {
+        storeDetails[id] = built;
+        return built;
+    }
+    return undefined;
+}
+
+// ─── 운영 클래스 목록 시드 (GET /partner/stores/{storeId}/programs) ──
+// store-seed-0001 만 보유, store-seed-0002 는 empty([]) — empty UI 확인용.
+const storePrograms: Record<string, PartnerProgramListItem[]> = {
+    'store-seed-0001': [
+        {
+            id: 'prog-seed-0001',
+            title: '도자기 물레 원데이 클래스',
+            status: ProgramStatus.ACTIVE,
+            thumbnailUrl: 'https://placehold.co/200x150?text=wheel',
+            price: 45000,
+            durationMinutes: 120,
+            createdAt: '2026-05-21T09:00:00.000Z',
+        },
+        {
+            id: 'prog-seed-0002',
+            title: '핸드빌딩 머그컵 만들기',
+            status: ProgramStatus.DRAFT,
+            thumbnailUrl: 'https://placehold.co/200x150?text=mug',
+            price: 38000,
+            durationMinutes: 90,
+            createdAt: '2026-05-22T09:00:00.000Z',
+        },
+        {
+            id: 'prog-seed-0003',
+            title: '커플 도자기 클래스 (일시 중단)',
+            status: ProgramStatus.INACTIVE,
+            thumbnailUrl: 'https://placehold.co/200x150?text=couple',
+            price: 88000,
+            durationMinutes: 150,
+            createdAt: '2026-05-23T09:00:00.000Z',
+        },
+    ],
+};
+
+// 운영 클래스 목록 조회. 공방 미존재 시 null(→404), 존재하나 클래스 없으면 [].
+export function findPartnerStorePrograms(id: string): PartnerProgramListItem[] | null {
+    if (!getStoreDetail(id)) return null;
+    return storePrograms[id] ?? [];
+}
+
+// PATCH: 전달된 필드만 갱신(부분 갱신), operatingHours·images는 배열 전체 치환. status 불변.
+export function updateStoreDetail(
+    id: string,
+    body: StoreUpdateRequest,
+): PartnerStoreDetail | undefined {
+    const detail = getStoreDetail(id);
+    if (!detail) return undefined;
+    if (body.name !== undefined) detail.name = body.name;
+    if (body.slug !== undefined) detail.slug = body.slug;
+    if (body.description !== undefined) detail.description = body.description;
+    if (body.phone !== undefined) detail.phone = body.phone;
+    if (body.address !== undefined) detail.address = body.address;
+    if (body.latitude !== undefined) detail.latitude = body.latitude;
+    if (body.longitude !== undefined) detail.longitude = body.longitude;
+    if (body.convenienceInfo !== undefined) detail.convenienceInfo = body.convenienceInfo;
+    if (body.autoConfirm !== undefined) detail.autoConfirm = body.autoConfirm;
+    if (body.cancelDeadlineDays !== undefined) detail.cancelDeadlineDays = body.cancelDeadlineDays;
+    if (body.reservationIntervalMinutes !== undefined)
+        detail.reservationIntervalMinutes = body.reservationIntervalMinutes;
+    if (body.maxCapacityPerSlot !== undefined) detail.maxCapacityPerSlot = body.maxCapacityPerSlot;
+    if (body.operatingHours !== undefined) detail.operatingHours = body.operatingHours;
+    if (body.images !== undefined) {
+        // 최종 이미지 id 목록 기준으로 재구성(순서·대표 반영).
+        const next: StoreImage[] = body.images.map((imgId, i) => {
+            const existing =
+                detail.images.find((img) => img.id === imgId) ??
+                pendingImages.find((img) => img.id === imgId);
+            return {
+                id: imgId,
+                imageUrl: existing?.imageUrl ?? `https://placehold.co/400x300?text=${imgId}`,
+                thumbnailUrl:
+                    existing?.thumbnailUrl ?? `https://placehold.co/200x150?text=${imgId}`,
+                isThumbnail: i === 0,
+                sortOrder: i + 1,
+            };
+        });
+        detail.images = next;
+    }
+    return detail;
+}
+
+export function isSlugTakenByOther(slug: string, storeId: string): boolean {
+    if (SEEDED_TAKEN_SLUGS.has(slug)) return true;
+    if (db.stores.some((s) => s.slug === slug && s.id !== storeId)) return true;
+    return Object.values(storeDetails).some((d) => d.slug === slug && d.id !== storeId);
+}
+
+// ─── 이미지 presigned mock ──────────────────────────────────────
+// confirm 전까지 보관하는 임시 이미지 (PENDING). 최종 반영은 PATCH images[].
+interface PendingImage extends StoreImage {
+    status: 'PENDING' | 'UPLOADED';
+}
+const pendingImages: PendingImage[] = [];
+
+export function createPendingImage(
+    storeId: string,
+    fileName: string,
+    isThumbnail: boolean,
+): { imageId: string; uploadUrl: string; imageUrl: string } {
+    const imageId = genId('img');
+    const imageUrl = `https://placehold.co/400x300?text=${encodeURIComponent(fileName)}`;
+    pendingImages.push({
+        id: imageId,
+        imageUrl,
+        thumbnailUrl: `https://placehold.co/200x150?text=${encodeURIComponent(fileName)}`,
+        isThumbnail,
+        sortOrder: pendingImages.length + 1,
+        status: 'PENDING',
+    });
+    return {
+        imageId,
+        uploadUrl: `https://todam-bucket.s3.ap-northeast-2.amazonaws.com/stores/${storeId}/images/${imageId}.jpg?mock=1`,
+        imageUrl,
+    };
+}
+
+export function confirmPendingImage(imageId: string): boolean {
+    const img = pendingImages.find((i) => i.id === imageId);
+    if (!img) return false;
+    if (img.status === 'UPLOADED') return false; // ALREADY_UPLOADED
+    img.status = 'UPLOADED';
+    return true;
+}
+
+export function deleteStoreImage(storeId: string, imageId: string): boolean {
+    const pIdx = pendingImages.findIndex((i) => i.id === imageId);
+    if (pIdx >= 0) {
+        pendingImages.splice(pIdx, 1);
+        return true;
+    }
+    const detail = getStoreDetail(storeId);
+    if (!detail) return false;
+    const before = detail.images.length;
+    detail.images = detail.images.filter((img) => img.id !== imageId);
+    return detail.images.length < before;
+}
+
 // 주소 → 좌표 mock. (실연동: 카카오 로컬 API) 서울 도심 기준 deterministic offset.
 export function mockGeocode(query: string): { latitude: number; longitude: number } {
     let hash = 0;
@@ -370,4 +751,183 @@ export function mockGeocode(query: string): { latitude: number; longitude: numbe
     const latitude = 37.5 + (hash % 1000) / 100000; // 37.5 ~ 37.51
     const longitude = 127.0 + ((hash >> 3) % 1000) / 100000;
     return { latitude: Number(latitude.toFixed(6)), longitude: Number(longitude.toFixed(6)) };
+}
+
+// ─── 나의 예약 목록 시드 ─────────────────────────────────────────
+// 정본 정렬: 최신순 (createdAt 내림차순). cursor 기준은 항목 id(정본 응답대로).
+// 8 Reservation status + 4 IN_PROGRESS substate 시각 검증 커버.
+// displayState 정본은 plan §Design tokens "displayState 정본 매핑" 표 그대로.
+const SEEDED_RESERVATIONS: ReservationListItem[] = [
+    {
+        id: 'res-seed-0001',
+        storeName: '토담 공방',
+        programTitle: '머그컵 만들기',
+        scheduledAt: '2026-06-18T10:00:00.000Z',
+        category: '도자기',
+        participantCount: 2,
+        status: ReservationStatus.PENDING,
+        displayState: {
+            label: '예약신청',
+            description: '작가님이 예약 내용을 확인하고 있어요.',
+            subLabel: null,
+        },
+        createdAt: '2026-06-01T09:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0002',
+        storeName: '서래마을 도예원',
+        programTitle: '주말 가족 도자기',
+        scheduledAt: '2026-06-12T13:00:00.000Z',
+        category: '도자기',
+        participantCount: 4,
+        status: ReservationStatus.CONFIRMED,
+        displayState: {
+            label: '예약확정',
+            description: '예약이 확정되었어요. 공방에서 곧 만나요!',
+            subLabel: null,
+        },
+        createdAt: '2026-05-31T18:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0003',
+        storeName: '플러스 도자기',
+        programTitle: '취소된 클래스',
+        scheduledAt: '2026-06-10T10:00:00.000Z',
+        category: '도자기',
+        participantCount: 1,
+        status: ReservationStatus.CANCELED,
+        displayState: {
+            label: '예약취소',
+            description: '아쉽지만 예약이 취소되었어요. 다음에 꼭 다시 만나요.',
+            subLabel: null,
+        },
+        createdAt: '2026-05-30T16:30:00.000Z',
+    },
+    {
+        id: 'res-seed-0004',
+        storeName: '흙과 사람',
+        programTitle: '물레 체험 기초반',
+        scheduledAt: '2026-06-15T14:00:00.000Z',
+        category: '도자기',
+        participantCount: 1,
+        status: ReservationStatus.IN_PROGRESS,
+        displayState: {
+            label: '제작 중',
+            description: '작품이 단단해지도록 정성껏 말리고 있어요.',
+            subLabel: '건조',
+        },
+        createdAt: '2026-05-30T11:20:00.000Z',
+    },
+    {
+        id: 'res-seed-0005',
+        storeName: '클레이 서울',
+        programTitle: '체험 한바탕',
+        scheduledAt: '2026-06-08T11:00:00.000Z',
+        category: '도자기',
+        participantCount: 2,
+        status: ReservationStatus.IN_PROGRESS,
+        displayState: {
+            label: '제작 중',
+            description: '가마 속에서 첫 번째로 구워지는 중이에요.',
+            subLabel: '초벌',
+        },
+        createdAt: '2026-05-28T15:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0006',
+        storeName: '토담 공방',
+        programTitle: '핸드 빌딩 클래스',
+        scheduledAt: '2026-05-15T15:00:00.000Z',
+        category: '도자기',
+        participantCount: 1,
+        status: ReservationStatus.IN_PROGRESS,
+        displayState: {
+            label: '제작 중',
+            description: '매끄러운 빛깔을 내기 위해 예쁘게 옷을 입혔어요.',
+            subLabel: '유약',
+        },
+        createdAt: '2026-05-26T09:30:00.000Z',
+    },
+    {
+        id: 'res-seed-0007',
+        storeName: '백자방',
+        programTitle: '화병 만들기',
+        scheduledAt: '2026-05-10T11:00:00.000Z',
+        category: '도자기',
+        participantCount: 2,
+        status: ReservationStatus.IN_PROGRESS,
+        displayState: {
+            label: '제작 중',
+            description: '가장 뜨거운 가마를 견디며 더 튼튼해지고 있어요.',
+            subLabel: '재벌',
+        },
+        createdAt: '2026-05-25T14:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0008',
+        storeName: '클레이 서울',
+        programTitle: '도자기 페인팅 클래스',
+        scheduledAt: '2026-06-05T16:00:00.000Z',
+        category: '도자기',
+        participantCount: 3,
+        status: ReservationStatus.SHIPPED,
+        displayState: {
+            label: '배송 중',
+            description: '소중한 작품을 꼼꼼히 포장해서 보냈어요.',
+            subLabel: null,
+        },
+        createdAt: '2026-05-23T13:45:00.000Z',
+    },
+    {
+        id: 'res-seed-0009',
+        storeName: '플러스 도자기',
+        programTitle: '접시 만들기 원데이',
+        scheduledAt: '2026-05-20T11:00:00.000Z',
+        category: '도자기',
+        participantCount: 2,
+        status: ReservationStatus.DELIVERED,
+        // DELIVERED 는 status message UI 숨김 → description 공백.
+        displayState: {
+            label: '작품 도착',
+            description: '',
+            subLabel: null,
+        },
+        createdAt: '2026-05-18T10:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0010',
+        storeName: '온도 스튜디오',
+        programTitle: '오브제 만들기',
+        scheduledAt: '2026-05-12T13:00:00.000Z',
+        category: '도자기',
+        participantCount: 1,
+        status: ReservationStatus.PICKUP_READY,
+        displayState: {
+            label: '픽업 가능',
+            description: '작품이 완성되어 공방에서 기다리고 있어요.',
+            subLabel: null,
+        },
+        createdAt: '2026-05-15T11:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0011',
+        storeName: '흙과 사람',
+        programTitle: '캔들 홀더 만들기',
+        scheduledAt: '2026-04-22T10:00:00.000Z',
+        category: '도자기',
+        participantCount: 1,
+        status: ReservationStatus.PICKUP_DONE,
+        displayState: {
+            label: '픽업 완료',
+            description: '',
+            subLabel: null,
+        },
+        createdAt: '2026-04-25T16:20:00.000Z',
+    },
+];
+
+// 본인 예약 목록 반환(이미 createdAt 내림차순으로 시드됨).
+// status 필터링은 핸들러에서 적용.
+export function listMyReservations(): ReservationListItem[] {
+    return SEEDED_RESERVATIONS;
 }

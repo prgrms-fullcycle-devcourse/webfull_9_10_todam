@@ -105,7 +105,7 @@ model BusinessDocument {
   partnerId       String     @map("partner_id") @db.Uuid
   storeId         String     @map("store_id") @db.Uuid
   email           String?    @map("email") @db.VarChar(255)
-  documentUrl     String     @map("document_url") @db.VarChar(1000)
+  documentUrl     String?    @map("document_url") @db.VarChar(1000)
   ownerName       String     @map("owner_name") @db.VarChar(100) // [S-4] representativeName → ownerName
   businessName    String     @map("business_name") @db.VarChar(200)
   businessNumber  String     @map("business_number") @db.VarChar(20)
@@ -135,6 +135,7 @@ model Store {
   phone              String?              @db.VarChar(20)
   autoConfirm        Boolean              @default(false) @map("auto_confirm")
   cancelDeadlineDays Int?                 @map("cancel_deadline_days")
+  reservationIntervalMinutes Int?         @map("reservation_interval_minutes") // 타임슬롯 생성 기준 간격(분)
   status             StoreStatus          @default(DRAFT)
   publishedAt        DateTime?            @map("published_at") @db.Timestamptz(6)
   createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
