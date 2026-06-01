@@ -2,6 +2,7 @@ import {
     OcrStatus,
     PartnerStatus,
     ProgramStatus,
+    ReservationDeliveryMethod,
     ReservationStatus,
     StoreStatus,
     type ConvenienceInfo,
@@ -9,7 +10,9 @@ import {
     type OperatingHourInput,
     type PartnerProgramListItem,
     type PartnerStoreDetail,
+    type ReservationDetail,
     type ReservationListItem,
+    type ReviewDetail,
     type StoreImage,
     type StoreRegistrationSubmitRequest,
     type StoreUpdateRequest,
@@ -796,4 +799,172 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
 // status 필터링은 핸들러에서 적용.
 export function listMyReservations(): ReservationListItem[] {
     return SEEDED_RESERVATIONS;
+}
+
+// ─── 예약 상세 seed ──────────────────────────────────────────────
+// Figma 4 변형(체험 전 / 체험 완료-리뷰 전 / 체험 완료-리뷰 후 / 취소 dialog) 데이터.
+// 목록 시드 id 재사용(res-seed-0002 = CONFIRMED, res-seed-0004 = IN_PROGRESS, res-seed-0008 = SHIPPED).
+// 추가 시드(res-seed-0101 = SHIPPED + 리뷰 작성됨)로 변형 C 커버.
+//
+// 디자인 정본: 머그컵 만들기 · 흙과 사람 (성수동) · 2026.04.18 (토) 15:00 · 2명 · 90,000원 · 택배.
+const SEEDED_RESERVATION_DETAILS: Record<string, ReservationDetail> = {
+    // 변형 A — 체험 전 (CONFIRMED + 배송 미입력 + 다음 단계 안내). cancelable.
+    'res-seed-0002': {
+        id: 'res-seed-0002',
+        storeId: 'store-seed-0050',
+        storeName: '흙과 사람',
+        programId: 'prog-seed-0050',
+        programTitle: '머그컵 만들기',
+        scheduledAt: '2026-04-18T15:00:00.000Z',
+        reserverName: '김리듬',
+        reserverPhone: '010-0000-0000',
+        participantCount: 2,
+        deliveryMethod: ReservationDeliveryMethod.DELIVERY,
+        shippingAddress: null,
+        requestMemo: null,
+        status: ReservationStatus.CONFIRMED,
+        displayState: {
+            label: '예약확정',
+            description: '예약이 확정되었어요. 공방에서 곧 만나요!',
+            subLabel: null,
+        },
+        artworkId: null,
+        createdAt: '2026-05-31T18:00:00.000Z',
+        totalPrice: 90000,
+        delivery: null, // 배송 정보 미입력 → 빈 상태 카드.
+        canCancel: true,
+        cancelDeadlineDays: 3,
+        artwork: null,
+        hasReview: false,
+        reviewId: null,
+    },
+
+    // 변형 B — 체험 완료 / 리뷰 전 (IN_PROGRESS 건조 + 배송 입력됨 / 운송장 미발송 + 리뷰 빈).
+    'res-seed-0004': {
+        id: 'res-seed-0004',
+        storeId: 'store-seed-0050',
+        storeName: '흙과 사람',
+        programId: 'prog-seed-0050',
+        programTitle: '머그컵 만들기',
+        scheduledAt: '2026-04-18T15:00:00.000Z',
+        reserverName: '김리듬',
+        reserverPhone: '010-0000-0000',
+        participantCount: 2,
+        deliveryMethod: ReservationDeliveryMethod.DELIVERY,
+        shippingAddress: '서울특별시 성동구 성수이로 12길 34',
+        requestMemo: null,
+        status: ReservationStatus.IN_PROGRESS,
+        displayState: {
+            label: '제작 중',
+            description: '작품이 단단해지도록 정성껏 말리고 있어요.',
+            subLabel: '건조',
+        },
+        artworkId: 'artwork-seed-0004',
+        createdAt: '2026-05-30T11:20:00.000Z',
+        totalPrice: 90000,
+        delivery: {
+            recipientName: '김리듬',
+            recipientPhone: '010-0000-0000',
+            address: '서울특별시 성동구 성수이로 12길 34',
+            carrier: null,
+            trackingNumber: null,
+        },
+        canCancel: false,
+        cancelDeadlineDays: 3,
+        artwork: {
+            id: 'artwork-seed-0004',
+            progressPercent: 25,
+            remainingSteps: 3,
+        },
+        hasReview: false,
+        reviewId: null,
+    },
+
+    // 변형 C — 체험 완료 / 리뷰 작성됨 (SHIPPED + 운송장 발송 + 리뷰 있음).
+    'res-seed-0008': {
+        id: 'res-seed-0008',
+        storeId: 'store-seed-0050',
+        storeName: '흙과 사람',
+        programId: 'prog-seed-0050',
+        programTitle: '머그컵 만들기',
+        scheduledAt: '2026-04-18T15:00:00.000Z',
+        reserverName: '김리듬',
+        reserverPhone: '010-0000-0000',
+        participantCount: 2,
+        deliveryMethod: ReservationDeliveryMethod.DELIVERY,
+        shippingAddress: '서울특별시 성동구 성수이로 12길 34',
+        requestMemo: null,
+        status: ReservationStatus.SHIPPED,
+        displayState: {
+            label: '배송 중',
+            description: '소중한 작품을 꼼꼼히 포장해서 보냈어요.',
+            subLabel: null,
+        },
+        artworkId: 'artwork-seed-0008',
+        createdAt: '2026-05-23T13:45:00.000Z',
+        totalPrice: 90000,
+        delivery: {
+            recipientName: '김리듬',
+            recipientPhone: '010-0000-0000',
+            address: '서울특별시 성동구 성수이로 12길 34',
+            carrier: '우체국 택배',
+            trackingNumber: '1111222233334',
+        },
+        canCancel: false,
+        cancelDeadlineDays: null,
+        artwork: null,
+        hasReview: true,
+        reviewId: 'review-seed-0008',
+    },
+
+    // 변형 D 보조 — 취소 불가 dialog 검증용 (PENDING + canCancel false).
+    'res-seed-0001': {
+        id: 'res-seed-0001',
+        storeId: 'store-seed-0001',
+        storeName: '토담 공방',
+        programId: 'prog-seed-0001',
+        programTitle: '머그컵 만들기',
+        scheduledAt: '2026-06-18T10:00:00.000Z',
+        reserverName: '김리듬',
+        reserverPhone: '010-0000-0000',
+        participantCount: 2,
+        deliveryMethod: ReservationDeliveryMethod.DELIVERY,
+        shippingAddress: null,
+        requestMemo: null,
+        status: ReservationStatus.PENDING,
+        displayState: {
+            label: '예약신청',
+            description: '작가님이 예약 내용을 확인하고 있어요.',
+            subLabel: null,
+        },
+        artworkId: null,
+        createdAt: '2026-06-01T09:00:00.000Z',
+        totalPrice: 90000,
+        delivery: null,
+        canCancel: false, // 취소 시한 지남 — 불가 dialog 시뮬레이션.
+        cancelDeadlineDays: 3,
+        artwork: null,
+        hasReview: false,
+        reviewId: null,
+    },
+};
+
+// 리뷰 상세 seed (D4 가정 endpoint).
+const SEEDED_REVIEW_DETAILS: Record<string, ReviewDetail> = {
+    'res-seed-0008': {
+        id: 'review-seed-0008',
+        reservationId: 'res-seed-0008',
+        rating: 5,
+        content: '체험 정말 즐거웠어요. 작가님 친절하시고 머그컵도 만족스러워요!',
+        photos: [{ id: 'photo-seed-0008-1', imageUrl: 'https://placehold.co/56x56?text=IMG' }],
+        createdAt: '2026-05-25T10:00:00.000Z',
+    },
+};
+
+export function findReservationDetail(id: string): ReservationDetail | undefined {
+    return SEEDED_RESERVATION_DETAILS[id];
+}
+
+export function findReviewByReservation(reservationId: string): ReviewDetail | undefined {
+    return SEEDED_REVIEW_DETAILS[reservationId];
 }

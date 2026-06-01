@@ -13,7 +13,9 @@ import {
     type StoreImageConfirmResult,
     type StoreImageUploadRequest,
     type StoreImageUploadResult,
+    type ReservationDetailResult,
     type ReservationListResult,
+    type ReviewDetailResult,
     type StoreRegistrationStatusResult,
     type StoreRegistrationSubmitResult,
     type SlugAvailabilityResult,
@@ -31,6 +33,8 @@ import {
     deleteStoreImage,
     findLatestStoreRegistration,
     findPartnerStorePrograms,
+    findReservationDetail,
+    findReviewByReservation,
     getStoreDetail,
     isBusinessNumberRegistered,
     isSlugTaken,
@@ -353,5 +357,65 @@ export const handlers = [
 
         const result: ReservationListResult = { reservations, nextCursor, hasMore };
         return ok(path, result, '예약 목록이 성공적으로 조회되었습니다.');
+    }),
+
+    // 예약 상세 조회 (인증 필요, 본인 예약만)
+    // plan: docs/exec-plans/active/유저 예약 - 예약 상세조회.md API Contract (스냅샷) 기준.
+    // 시뮬 토글(직접 fetch 시에만 동작 — staleTime + URL forwarding 미적용 환경 한정):
+    //   ?unauth=1 → 401 UNAUTHORIZED
+    //   ?simulate=403 → 403 FORBIDDEN (타인 예약 가정)
+    //   ?simulate=404 → 404 RESERVATION_NOT_FOUND
+    //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
+    http.get(`${API}/reservations/:reservationId`, ({ params, request }) => {
+        const reservationId = String(params.reservationId);
+        const path = `/api/v1/reservations/${reservationId}`;
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '인증이 필요합니다.');
+        }
+        const simulate = url.searchParams.get('simulate');
+        if (simulate === '500') {
+            return fail(
+                path,
+                500,
+                'INTERNAL_SERVER_ERROR',
+                '예약 상세 조회 중 서버 오류가 발생했습니다.',
+            );
+        }
+        if (simulate === '403') {
+            return fail(path, 403, 'FORBIDDEN', '해당 예약에 대한 접근 권한이 없습니다.');
+        }
+        if (simulate === '404') {
+            return fail(path, 404, 'RESERVATION_NOT_FOUND', '예약을 찾을 수 없습니다.');
+        }
+
+        const reservation = findReservationDetail(reservationId);
+        if (!reservation) {
+            return fail(path, 404, 'RESERVATION_NOT_FOUND', '예약을 찾을 수 없습니다.');
+        }
+
+        const result: ReservationDetailResult = { reservation };
+        return ok(path, result, '예약 상세 정보가 성공적으로 조회되었습니다.');
+    }),
+
+    // 예약별 리뷰 상세 조회 (D4 가정 endpoint — BE 채택 패턴 결정 대기).
+    // hasReview=true 인 예약만 200, 외엔 404 REVIEW_NOT_FOUND.
+    http.get(`${API}/reservations/:reservationId/review`, ({ params, request }) => {
+        const reservationId = String(params.reservationId);
+        const path = `/api/v1/reservations/${reservationId}/review`;
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '인증이 필요합니다.');
+        }
+
+        const review = findReviewByReservation(reservationId);
+        if (!review) {
+            return fail(path, 404, 'REVIEW_NOT_FOUND', '리뷰를 찾을 수 없습니다.');
+        }
+
+        const result: ReviewDetailResult = { review };
+        return ok(path, result, '리뷰가 성공적으로 조회되었습니다.');
     }),
 ];
