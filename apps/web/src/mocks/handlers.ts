@@ -1,15 +1,22 @@
 import {
+    StoreEditErrorCode,
     RESERVATION_LIST_DEFAULT_LIMIT,
     ReservationStatus,
     StoreRegistrationErrorCode,
     storeRegistrationSubmitRequestSchema,
+    storeUpdateRequestSchema,
     PartnerStatus,
     StoreStatus,
     type GeocodeResult,
+    type PartnerStoreDetailResult,
+    type StoreImageConfirmResult,
+    type StoreImageUploadRequest,
+    type StoreImageUploadResult,
     type ReservationListResult,
     type StoreRegistrationStatusResult,
     type StoreRegistrationSubmitResult,
     type SlugAvailabilityResult,
+    type StoreUpdateResult,
     type ToggleLikeRequest,
     type ToggleLikeResult,
     type PartnerStoreListResult,
@@ -17,15 +24,21 @@ import {
 import { http, HttpResponse } from 'msw';
 
 import {
+    confirmPendingImage,
+    createPendingImage,
     createStoreRegistration,
+    deleteStoreImage,
     findLatestStoreRegistration,
+    getStoreDetail,
     isBusinessNumberRegistered,
     isSlugTaken,
+    isSlugTakenByOther,
     listMyReservations,
     listPartnerStores,
     mockGeocode,
     nowIso,
     setLike,
+    updateStoreDetail,
 } from './db';
 
 // 봉투 빌더 — apps/api 응답 형태와 일치.
@@ -58,6 +71,110 @@ export const handlers = [
         const slug = new URL(request.url).searchParams.get('slug') ?? '';
         const result: SlugAvailabilityResult = { slug, available: !isSlugTaken(slug) };
         return ok(path, result);
+    }),
+
+    // 공방 이미지 추가 (presigned PUT URL 발급)
+    http.post(`${API}/partner/stores/:storeId/images`, async ({ request, params }) => {
+        const storeId = String(params.storeId);
+        const path = `/api/v1/partner/stores/${storeId}/images`;
+        const body = (await request.json()) as StoreImageUploadRequest;
+        const result: StoreImageUploadResult = createPendingImage(
+            storeId,
+            body.fileName,
+            !!body.isThumbnail,
+        );
+        return ok(
+            path,
+            result,
+            'Pre-signed URL이 성공적으로 발급되었습니다. 5분 이내에 업로드를 완료해주세요.',
+            201,
+        );
+    }),
+
+    // 공방 이미지 업로드 확정 (PENDING → UPLOADED)
+    http.patch(`${API}/partner/stores/:storeId/images/:imageId/confirm`, ({ params }) => {
+        const storeId = String(params.storeId);
+        const imageId = String(params.imageId);
+        const path = `/api/v1/partner/stores/${storeId}/images/${imageId}/confirm`;
+        const okConfirm = confirmPendingImage(imageId);
+        if (!okConfirm) {
+            return fail(
+                path,
+                404,
+                StoreEditErrorCode.IMAGE_NOT_FOUND,
+                '이미지를 찾을 수 없습니다.',
+            );
+        }
+        const result: StoreImageConfirmResult = { image: { id: imageId, status: 'UPLOADED' } };
+        return ok(path, result, '이미지 업로드가 확정되었습니다.');
+    }),
+
+    // 공방 이미지 삭제
+    http.delete(`${API}/partner/stores/:storeId/images/:imageId`, ({ params }) => {
+        const storeId = String(params.storeId);
+        const imageId = String(params.imageId);
+        const path = `/api/v1/partner/stores/${storeId}/images/${imageId}`;
+        const removed = deleteStoreImage(storeId, imageId);
+        if (!removed) {
+            return fail(
+                path,
+                404,
+                StoreEditErrorCode.IMAGE_NOT_FOUND,
+                '이미지를 찾을 수 없습니다.',
+            );
+        }
+        return ok(path, null, '이미지가 성공적으로 삭제되었습니다.');
+    }),
+
+    // 공방 정보 수정 (변경 필드만 부분 갱신, status 불변)
+    http.patch(`${API}/partner/stores/:storeId`, async ({ request, params }) => {
+        const storeId = String(params.storeId);
+        const path = `/api/v1/partner/stores/${storeId}`;
+        const raw = await request.json();
+        const parsed = storeUpdateRequestSchema.safeParse(raw);
+        if (!parsed.success) {
+            return fail(
+                path,
+                400,
+                StoreRegistrationErrorCode.VALIDATION_ERROR,
+                parsed.error.issues[0]?.message ?? '잘못된 입력값입니다.',
+            );
+        }
+        const body = parsed.data;
+        if (body.slug !== undefined && isSlugTakenByOther(body.slug, storeId)) {
+            return fail(
+                path,
+                409,
+                StoreEditErrorCode.STORE_SLUG_DUPLICATED,
+                '이미 사용 중인 공방 URL입니다.',
+            );
+        }
+        const updated = updateStoreDetail(storeId, body);
+        if (!updated) {
+            return fail(path, 404, StoreEditErrorCode.STORE_NOT_FOUND, '공방을 찾을 수 없습니다.');
+        }
+        const result: StoreUpdateResult = {
+            store: {
+                id: updated.id,
+                name: updated.name,
+                slug: updated.slug,
+                status: updated.status,
+                updatedAt: nowIso(),
+            },
+        };
+        return ok(path, result, '공방 정보가 성공적으로 수정되었습니다.');
+    }),
+
+    // 내 공방 상세 (수정 화면 preload)
+    http.get(`${API}/partner/stores/:storeId`, ({ params }) => {
+        const storeId = String(params.storeId);
+        const path = `/api/v1/partner/stores/${storeId}`;
+        const detail = getStoreDetail(storeId);
+        if (!detail) {
+            return fail(path, 404, StoreEditErrorCode.STORE_NOT_FOUND, '공방을 찾을 수 없습니다.');
+        }
+        const result: PartnerStoreDetailResult = { store: detail };
+        return ok(path, result, '공방 상세 정보가 성공적으로 조회되었습니다.');
     }),
 
     // 주소 → 좌표 (주소 API 연동 mock)
