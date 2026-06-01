@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { ProgramDeliveryOption } from '../enums/program-delivery-option';
+import { ProgramDifficulty } from '../enums/program-difficulty';
 import { ProgramStatus } from '../enums/program-status';
 
 // ─── 에러 코드 ───────────────────────────────────────────────────
@@ -12,14 +13,6 @@ export const ProgramEditErrorCode = {
     INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
 } as const;
 export type ProgramEditErrorCode = (typeof ProgramEditErrorCode)[keyof typeof ProgramEditErrorCode];
-
-// ─── 난이도 ──────────────────────────────────────────────────────
-export const ProgramDifficulty = {
-    BASIC: 'BASIC',
-    INTERMEDIATE: 'INTERMEDIATE',
-    ADVANCED: 'ADVANCED',
-} as const;
-export type ProgramDifficulty = (typeof ProgramDifficulty)[keyof typeof ProgramDifficulty];
 
 // ─── program_images ──────────────────────────────────────────────
 export const programImageSchema = z.object({
