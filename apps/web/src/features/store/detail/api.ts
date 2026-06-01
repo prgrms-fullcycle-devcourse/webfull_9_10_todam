@@ -1,7 +1,4 @@
-import {
-    type PartnerProgramListResult,
-    type PartnerStoreDetailResult,
-} from '@todam/shared';
+import { type PartnerProgramListResult, type PartnerStoreDetailResult } from '@todam/shared';
 
 import { apiFetch } from '../../../shared/api';
 
