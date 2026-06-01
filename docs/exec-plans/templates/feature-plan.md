@@ -8,11 +8,11 @@
 
 ## Context
 
-<!-- 명세서는 Notion 웹 게시(notion.site) 링크로 첨부. planner가 WebFetch로 읽음. 없으면 plan 진행 불가. -->
+<!-- 요구사항=docs/requirements.md. 기능/API명세=Notion DB에서 notion-fetch.mjs --find로 select. -->
 
-- 기능명세서: (Notion 게시 링크 — 必)
-- 요구사항명세서: (Notion 게시 링크 — 必)
-- API 명세서(원본): (Notion 게시 링크)
+- 요구사항명세서(고정): docs/requirements.md
+- 기능명세: <기능명> (기능명세 DB에서 select — FE 작업 必)
+- API명세: <URI 목록> (API명세 DB에서 select — BE 작업 必)
 - Relevant design docs:
 - Open decisions:
 
