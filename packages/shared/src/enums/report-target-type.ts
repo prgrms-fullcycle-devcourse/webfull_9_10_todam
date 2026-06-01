@@ -1,5 +1,5 @@
 export enum ReportTargetType {
     STORE = 'STORE',
-    CLASS = 'CLASS',
+    PROGRAM = 'PROGRAM',
     PARTNER = 'PARTNER',
 }

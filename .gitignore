@@ -24,5 +24,7 @@ pnpm-debug.log*
 Thumbs.db
 
 # 로컬
-.claude
+.claude/settings.local.json
+.claude/logs/
+.claude/.env
 .vscode

@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "storybook",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter=@todam/storybook", "dev"],
+      "port": 6006,
+      "autoPort": true
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter=@todam/web", "dev"],
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}
