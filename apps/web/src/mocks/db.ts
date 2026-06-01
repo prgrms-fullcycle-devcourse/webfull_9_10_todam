@@ -1,11 +1,13 @@
 import {
     OcrStatus,
     PartnerStatus,
+    ReservationStatus,
     StoreStatus,
     type ConvenienceInfo,
     type DayOfWeek,
     type OperatingHourInput,
     type PartnerStoreDetail,
+    type ReservationListItem,
     type StoreImage,
     type StoreRegistrationSubmitRequest,
     type StoreUpdateRequest,
@@ -561,4 +563,183 @@ export function mockGeocode(query: string): { latitude: number; longitude: numbe
     const latitude = 37.5 + (hash % 1000) / 100000; // 37.5 ~ 37.51
     const longitude = 127.0 + ((hash >> 3) % 1000) / 100000;
     return { latitude: Number(latitude.toFixed(6)), longitude: Number(longitude.toFixed(6)) };
+}
+
+// ─── 나의 예약 목록 시드 ─────────────────────────────────────────
+// 정본 정렬: 최신순 (createdAt 내림차순). cursor 기준은 항목 id(정본 응답대로).
+// 8 Reservation status + 4 IN_PROGRESS substate 시각 검증 커버.
+// displayState 정본은 plan §Design tokens "displayState 정본 매핑" 표 그대로.
+const SEEDED_RESERVATIONS: ReservationListItem[] = [
+    {
+        id: 'res-seed-0001',
+        storeName: '토담 공방',
+        programTitle: '머그컵 만들기',
+        scheduledAt: '2026-06-18T10:00:00.000Z',
+        category: '도자기',
+        participantCount: 2,
+        status: ReservationStatus.PENDING,
+        displayState: {
+            label: '예약신청',
+            description: '작가님이 예약 내용을 확인하고 있어요.',
+            subLabel: null,
+        },
+        createdAt: '2026-06-01T09:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0002',
+        storeName: '서래마을 도예원',
+        programTitle: '주말 가족 도자기',
+        scheduledAt: '2026-06-12T13:00:00.000Z',
+        category: '도자기',
+        participantCount: 4,
+        status: ReservationStatus.CONFIRMED,
+        displayState: {
+            label: '예약확정',
+            description: '예약이 확정되었어요. 공방에서 곧 만나요!',
+            subLabel: null,
+        },
+        createdAt: '2026-05-31T18:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0003',
+        storeName: '플러스 도자기',
+        programTitle: '취소된 클래스',
+        scheduledAt: '2026-06-10T10:00:00.000Z',
+        category: '도자기',
+        participantCount: 1,
+        status: ReservationStatus.CANCELED,
+        displayState: {
+            label: '예약취소',
+            description: '아쉽지만 예약이 취소되었어요. 다음에 꼭 다시 만나요.',
+            subLabel: null,
+        },
+        createdAt: '2026-05-30T16:30:00.000Z',
+    },
+    {
+        id: 'res-seed-0004',
+        storeName: '흙과 사람',
+        programTitle: '물레 체험 기초반',
+        scheduledAt: '2026-06-15T14:00:00.000Z',
+        category: '도자기',
+        participantCount: 1,
+        status: ReservationStatus.IN_PROGRESS,
+        displayState: {
+            label: '제작 중',
+            description: '작품이 단단해지도록 정성껏 말리고 있어요.',
+            subLabel: '건조',
+        },
+        createdAt: '2026-05-30T11:20:00.000Z',
+    },
+    {
+        id: 'res-seed-0005',
+        storeName: '클레이 서울',
+        programTitle: '체험 한바탕',
+        scheduledAt: '2026-06-08T11:00:00.000Z',
+        category: '도자기',
+        participantCount: 2,
+        status: ReservationStatus.IN_PROGRESS,
+        displayState: {
+            label: '제작 중',
+            description: '가마 속에서 첫 번째로 구워지는 중이에요.',
+            subLabel: '초벌',
+        },
+        createdAt: '2026-05-28T15:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0006',
+        storeName: '토담 공방',
+        programTitle: '핸드 빌딩 클래스',
+        scheduledAt: '2026-05-15T15:00:00.000Z',
+        category: '도자기',
+        participantCount: 1,
+        status: ReservationStatus.IN_PROGRESS,
+        displayState: {
+            label: '제작 중',
+            description: '매끄러운 빛깔을 내기 위해 예쁘게 옷을 입혔어요.',
+            subLabel: '유약',
+        },
+        createdAt: '2026-05-26T09:30:00.000Z',
+    },
+    {
+        id: 'res-seed-0007',
+        storeName: '백자방',
+        programTitle: '화병 만들기',
+        scheduledAt: '2026-05-10T11:00:00.000Z',
+        category: '도자기',
+        participantCount: 2,
+        status: ReservationStatus.IN_PROGRESS,
+        displayState: {
+            label: '제작 중',
+            description: '가장 뜨거운 가마를 견디며 더 튼튼해지고 있어요.',
+            subLabel: '재벌',
+        },
+        createdAt: '2026-05-25T14:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0008',
+        storeName: '클레이 서울',
+        programTitle: '도자기 페인팅 클래스',
+        scheduledAt: '2026-06-05T16:00:00.000Z',
+        category: '도자기',
+        participantCount: 3,
+        status: ReservationStatus.SHIPPED,
+        displayState: {
+            label: '배송 중',
+            description: '소중한 작품을 꼼꼼히 포장해서 보냈어요.',
+            subLabel: null,
+        },
+        createdAt: '2026-05-23T13:45:00.000Z',
+    },
+    {
+        id: 'res-seed-0009',
+        storeName: '플러스 도자기',
+        programTitle: '접시 만들기 원데이',
+        scheduledAt: '2026-05-20T11:00:00.000Z',
+        category: '도자기',
+        participantCount: 2,
+        status: ReservationStatus.DELIVERED,
+        // DELIVERED 는 status message UI 숨김 → description 공백.
+        displayState: {
+            label: '작품 도착',
+            description: '',
+            subLabel: null,
+        },
+        createdAt: '2026-05-18T10:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0010',
+        storeName: '온도 스튜디오',
+        programTitle: '오브제 만들기',
+        scheduledAt: '2026-05-12T13:00:00.000Z',
+        category: '도자기',
+        participantCount: 1,
+        status: ReservationStatus.PICKUP_READY,
+        displayState: {
+            label: '픽업 가능',
+            description: '작품이 완성되어 공방에서 기다리고 있어요.',
+            subLabel: null,
+        },
+        createdAt: '2026-05-15T11:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0011',
+        storeName: '흙과 사람',
+        programTitle: '캔들 홀더 만들기',
+        scheduledAt: '2026-04-22T10:00:00.000Z',
+        category: '도자기',
+        participantCount: 1,
+        status: ReservationStatus.PICKUP_DONE,
+        displayState: {
+            label: '픽업 완료',
+            description: '',
+            subLabel: null,
+        },
+        createdAt: '2026-04-25T16:20:00.000Z',
+    },
+];
+
+// 본인 예약 목록 반환(이미 createdAt 내림차순으로 시드됨).
+// status 필터링은 핸들러에서 적용.
+export function listMyReservations(): ReservationListItem[] {
+    return SEEDED_RESERVATIONS;
 }
