@@ -6,6 +6,20 @@
 - 현재: **UI/플로우 + mock(MSW) 구현 완료.** 실 API·인증·외부연동(OCR/주소/업로드)은 후행.
 - Owner: 파트너 담당 / Date: 2026-05-29
 
+## Status
+
+<!-- 게이트가 읽음. 셋 다 [x] 여야 completed/ 이동 가능. 현재 UI만 완료. -->
+
+- [x] UI 구현
+- [ ] API 구현
+- [ ] API 연동
+
+## Out (단계별 완료물)
+
+- UI: 4단계 폼(사업자/공방/영업/예약) + 제출완료(검토중·반려) 화면, MSW mock 연동. `apps/web/src/features/store-registration`. 타입체크 통과.
+- API: (미구현)
+- 연동: (미구현 — 아래 "실연동 전환 체크리스트" 8항목)
+
 ## 용어
 
 - slice 명 = `store-registration` (prisma `Store` 도메인 일치). 기존 "onboarding" 명칭 폐기.
