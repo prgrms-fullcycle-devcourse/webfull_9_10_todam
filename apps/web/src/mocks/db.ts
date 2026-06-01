@@ -1,9 +1,11 @@
 import {
     OcrStatus,
     PartnerStatus,
+    ReservationStatus,
     StoreStatus,
     type ConvenienceInfo,
     type DayOfWeek,
+    type ReservationListItem,
     type StoreRegistrationSubmitRequest,
 } from '@todam/shared';
 
@@ -235,4 +237,131 @@ export function mockGeocode(query: string): { latitude: number; longitude: numbe
     const latitude = 37.5 + (hash % 1000) / 100000; // 37.5 ~ 37.51
     const longitude = 127.0 + ((hash >> 3) % 1000) / 100000;
     return { latitude: Number(latitude.toFixed(6)), longitude: Number(longitude.toFixed(6)) };
+}
+
+// ─── 나의 예약 목록 시드 ─────────────────────────────────────────
+// 정본 정렬: 최신순 (createdAt 내림차순). cursor 기준은 항목 id(정본 응답대로).
+// displayState 정본 샘플(plan §Design tokens "displayState.description 정본 샘플") 그대로 사용.
+// 4 status(PENDING/IN_PROGRESS/SHIPPED/DELIVERED) + 미정 상태(CONFIRMED/CANCELED 등)
+// 혼합. 무한스크롤 테스트를 위해 6건 이상.
+const SEEDED_RESERVATIONS: ReservationListItem[] = [
+    {
+        id: 'res-seed-0001',
+        storeName: '토담 공방',
+        programTitle: '머그컵 만들기',
+        scheduledAt: '2026-06-18T10:00:00.000Z',
+        participantCount: 2,
+        status: ReservationStatus.PENDING,
+        displayState: {
+            label: '예약신청',
+            description: '작가님이 예약 내용을 확인하고 있어요.',
+            subLabel: null,
+        },
+        createdAt: '2026-06-01T09:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0002',
+        storeName: '흙과 사람',
+        programTitle: '물레 체험 기초반',
+        scheduledAt: '2026-06-15T14:00:00.000Z',
+        participantCount: 1,
+        status: ReservationStatus.IN_PROGRESS,
+        displayState: {
+            label: '제작 중',
+            description: '작품이 단단해지도록 정성껏 말리고 있어요.',
+            subLabel: '건조',
+        },
+        createdAt: '2026-05-30T11:20:00.000Z',
+    },
+    {
+        id: 'res-seed-0003',
+        storeName: '클레이 서울',
+        programTitle: '도자기 페인팅 클래스',
+        scheduledAt: '2026-06-05T16:00:00.000Z',
+        participantCount: 3,
+        status: ReservationStatus.SHIPPED,
+        displayState: {
+            label: '배송중',
+            description: '소중한 작품을 꼼꼼히 포장해서 보냈어요.',
+            subLabel: null,
+        },
+        createdAt: '2026-05-25T13:45:00.000Z',
+    },
+    {
+        id: 'res-seed-0004',
+        storeName: '플러스 도자기',
+        programTitle: '접시 만들기 원데이',
+        scheduledAt: '2026-05-20T11:00:00.000Z',
+        participantCount: 2,
+        status: ReservationStatus.DELIVERED,
+        // DELIVERED 는 status message UI 숨김 → description 공백 정본 패턴.
+        displayState: {
+            label: '작품 도착',
+            description: '',
+            subLabel: null,
+        },
+        createdAt: '2026-05-18T10:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0005',
+        storeName: '토담 공방',
+        programTitle: '핸드 빌딩 클래스',
+        scheduledAt: '2026-05-15T15:00:00.000Z',
+        participantCount: 1,
+        status: ReservationStatus.IN_PROGRESS,
+        displayState: {
+            label: '제작 중',
+            description: '매끄러운 빛깔을 내기 위해 예쁘게 옷을 입혔어요.',
+            subLabel: '유약',
+        },
+        createdAt: '2026-05-10T09:30:00.000Z',
+    },
+    {
+        id: 'res-seed-0006',
+        storeName: '서래마을 도예원',
+        programTitle: '주말 가족 도자기',
+        scheduledAt: '2026-05-08T13:00:00.000Z',
+        participantCount: 4,
+        status: ReservationStatus.PENDING,
+        displayState: {
+            label: '예약신청',
+            description: '작가님이 예약 내용을 확인하고 있어요.',
+            subLabel: null,
+        },
+        createdAt: '2026-05-05T14:10:00.000Z',
+    },
+    {
+        id: 'res-seed-0007',
+        storeName: '클레이 서울',
+        programTitle: '꽃병 만들기',
+        scheduledAt: '2026-05-01T11:00:00.000Z',
+        participantCount: 2,
+        status: ReservationStatus.SHIPPED,
+        displayState: {
+            label: '배송중',
+            description: '소중한 작품을 꼼꼼히 포장해서 보냈어요.',
+            subLabel: null,
+        },
+        createdAt: '2026-04-28T09:00:00.000Z',
+    },
+    {
+        id: 'res-seed-0008',
+        storeName: '흙과 사람',
+        programTitle: '캔들 홀더 만들기',
+        scheduledAt: '2026-04-22T10:00:00.000Z',
+        participantCount: 1,
+        status: ReservationStatus.DELIVERED,
+        displayState: {
+            label: '작품 도착',
+            description: '',
+            subLabel: null,
+        },
+        createdAt: '2026-04-15T10:00:00.000Z',
+    },
+];
+
+// 본인 예약 목록 반환(이미 createdAt 내림차순으로 시드됨).
+// status 필터링은 핸들러에서 적용.
+export function listMyReservations(): ReservationListItem[] {
+    return SEEDED_RESERVATIONS;
 }

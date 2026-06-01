@@ -76,8 +76,8 @@
 Query Parameters:
 - `status` (선택): `ReservationStatus` 필터 (예 `IN_PROGRESS`)
 - `cursor` (선택): 이전 응답 `nextCursor`. 첫 요청 시 생략
-- `limit` (선택, 기본값 **10**): 한 번에 가져올 항목 수
-  - 주의: packages/shared `DEFAULT_PAGE_SIZE=20`과 다름. 이 엔드포인트 기본값은 정본대로 **10** (Open decision: 공통 상수 사용 여부)
+- `limit` (선택, 기본값 **20**): 한 번에 가져올 항목 수
+  - 팀 결정(PR #51 리뷰): `packages/shared` `DEFAULT_PAGE_SIZE=20` 사용. Notion 정본의 "기본값 10"보다 공통 상수 우선. Open decision 4 해소.
 
 응답 200 OK — 공통 봉투 `{ statusCode, timestamp, path, message, data, error }`:
 ```json
@@ -220,19 +220,26 @@ Query Parameters:
 <!-- 게이트가 읽는 체크리스트. 셋 다 [x] 여야 completed/ 이동 가능. 구현 전이므로 전부 미체크. -->
 
 - [ ] API 구현
-- [ ] UI 구현
+- [x] UI 구현
 - [ ] API 연동
 
 ## Out (단계별 완료물)
 
 - API: <!-- 구현된 엔드포인트, 파일 -->
-- UI: <!-- 구현된 화면, 컴포넌트 -->
+- UI:
+  - shared contract: `packages/shared/src/contracts/reservation-list.ts` (`ReservationListItem`, `DisplayState`, `CursorPage`, `ReservationListResult` 타입·zod 스키마 + `RESERVATION_LIST_DEFAULT_LIMIT=10`), `packages/shared/src/index.ts` 재노출
+  - MSW 모킹: `apps/web/src/mocks/handlers.ts` (GET `/api/v1/reservations/me` 핸들러 — status/cursor/limit 처리, limit+1 hasMore 판정, `?empty=1`/`?unauth=1`/`?simulate=500` 분기), `apps/web/src/mocks/db.ts` (`listMyReservations` + 8건 시드 4 status 혼합)
+  - 화면: `apps/web/src/app/(user)/my/reservations/page.tsx` (커서 무한스크롤 + IntersectionObserver sentinel + 401 로그인 리다이렉트 + 빈 상태 + 네트워크 오류)
+  - 카드 컴포넌트: `apps/web/src/app/(user)/my/reservations/_components/ReservationCard.tsx` (행1 date·day + 배지 / 행2 programTitle + storeName·hh:mm / 행3 status message — DELIVERED·PICKUP_DONE·빈 description 시 숨김)
+  - 상태 배지: `apps/web/src/entities/reservation/ui/ReservationStatusBadge.tsx` + `apps/web/src/entities/reservation/index.ts` 재노출 (4 status 톤·아이콘 매핑 + 나머지 4 status neutral fallback, 라벨은 displayState.label 우선)
+  - react-query 훅: `apps/web/src/features/reservation/list/{api.ts, queries.ts, index.ts}` (`useInfiniteQuery` + cursor)
+  - 디자인 시스템: `packages/ui/src/components/Badge.tsx` `BadgeTone`에 `secondary` 추가 (SHIPPED gold-100/-800 매핑), `apps/storybook/src/stories/Badge.stories.tsx`에 secondary·neutral Tones 추가
 - 연동: <!-- 연결 지점, 검증 결과 -->
 
 ## Risks
 
 - displayState 전체 문구 테이블 중 **4 status는 디자인으로 label/배지 확정**, 나머지 4 status + Artwork 전체 substate description/subLabel 미정 → BE 매퍼 부분 확정. 임의 작성 시 고객 노출 문구 오류 위험 (Open decisions 1).
-- `/me` limit 기본값(10) vs `packages/shared` `DEFAULT_PAGE_SIZE`(20) 불일치 → 공통 상수 오용 위험.
+- ~~`/me` limit 기본값(10) vs `packages/shared` `DEFAULT_PAGE_SIZE`(20) 불일치~~ → 해소: 공통 상수(20) 사용 결정 (PR #51 리뷰).
 - 정본 응답 data 항목에 `deliveryMethod`/`displayState 외 수령 메타`가 없어, 기능명세의 "작품 수령 방식(배송중/픽업대기/픽업완료) 표시"를 displayState만으로 충분히 표현 가능한지 미확정(Open decisions 3).
 - `apps/api`에 NestJS 소스가 아직 없음 → reservation 모듈이 첫 모듈일 수 있어 공통 봉투/AuthGuard/예외 필터 인프라 선행 필요 여부 확인.
 
@@ -247,6 +254,7 @@ Query Parameters:
 - 2026-06-01: apispec.md 미러(L5138~5242)와 Notion 정본 일치 확인 — drift 없음. 정본 기준으로 Contract 고정.
 - 2026-06-01: ReservationStatus enum 정본 8값 = prisma schema = packages/shared enum 일치 확인.
 - 2026-06-01 (갱신): Figma 노드 `8505:15761`(리스트) / `8505:15771`(빈 상태) 토큰 추출 — 카드 컨테이너 + Badge 4 status(PENDING/IN_PROGRESS/SHIPPED/DELIVERED) + 빈 상태 카피 확정. Open decision 5 해소, Open decision 1은 부분 해소(잔여 4 status + Artwork substate 문구).
+- 2026-06-01 (갱신): PR #51 리뷰(nogglee) — `/me` limit 기본값은 `packages/shared` `DEFAULT_PAGE_SIZE`(20)로 정렬. Notion 정본의 10 대신 팀 공통 상수 우선. Open decision 4 해소.
 
 ## Outcome
 
@@ -264,5 +272,5 @@ Query Parameters:
    - BE는 미정 구간 진입 전까지 임시 문구 금지(부정확 데이터 방지). FE는 확정된 4건 + fallback default 배지로 진행 가능.
 2. **cursor 정렬 안정성.** nextCursor가 예약 `id`(정본 `res-uuid-002`)인데 "최신순 정렬" 기준이 `createdAt`인지 `id`인지, createdAt 동률 시 tie-break 키. id가 uuid라 시간순 정렬 키로 부적합할 수 있음.
 3. **수령 방식 표시 데이터.** 기능명세는 "배송중/픽업대기/픽업완료" 표시를 요구하나 /me 응답 항목에 `deliveryMethod`/배송 메타 필드가 없음. displayState로 충분한지, 아니면 응답에 `deliveryMethod` 추가가 필요한지(= contract 변경) 결정 필요.
-4. **limit 기본값/상한.** `/me` 기본 10 (정본). `packages/shared` `DEFAULT_PAGE_SIZE=20`/`MAX_PAGE_SIZE=100`와 충돌 — `/me` 전용 상수로 둘지, limit 상한을 둘지 결정.
+4. ~~**limit 기본값/상한.**~~ → **해소(2026-06-01, PR #51 리뷰 nogglee):** `packages/shared` `DEFAULT_PAGE_SIZE`(20) 사용. Notion 정본의 "기본값 10" 보다 팀 공통 상수를 우선. `RESERVATION_LIST_DEFAULT_LIMIT`은 `DEFAULT_PAGE_SIZE` 재노출로 정렬. (상한 `MAX_PAGE_SIZE=100`은 추후 BE에서 강제 시 적용.)
 5. ~~**UI 작업 시작 조건(DESIGN.md).**~~ → **해소(2026-06-01)**: Figma 노드 `8505:15761`/`8505:15771`로 카드 컨테이너 토큰(radius·padding·gap·typography), 빈 상태 카피, **4개 상태**(PENDING/IN_PROGRESS/SHIPPED/DELIVERED) 배지 토큰 확보. FE 착수 가능. **잔여**: 나머지 4 status(CONFIRMED/CANCELED/PICKUP_READY/PICKUP_DONE 단독) 배지 디자인 — 추가 디자인 대기.

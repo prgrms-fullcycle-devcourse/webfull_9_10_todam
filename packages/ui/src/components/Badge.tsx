@@ -4,6 +4,7 @@ import type { HTMLAttributes, ReactElement, ReactNode } from "react";
 export type BadgeTone =
   | "info"
   | "primary"
+  | "secondary"
   | "success"
   | "danger"
   | "warning"
@@ -12,6 +13,7 @@ export type BadgeTone =
 const toneClasses: Record<BadgeTone, string> = {
   info: "bg-info-subtle text-info-darker",
   primary: "bg-primary-subtle text-primary-darker",
+  secondary: "bg-secondary-subtle text-secondary-darker",
   success: "bg-success-subtle text-success-darker",
   danger: "bg-danger-subtle text-danger-darker",
   warning: "bg-warning-subtle text-warning-darker",

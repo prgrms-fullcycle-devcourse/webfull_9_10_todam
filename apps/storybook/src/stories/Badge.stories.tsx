@@ -8,7 +8,15 @@ const meta: Meta<typeof Badge> = {
   argTypes: {
     tone: {
       control: "select",
-      options: ["info", "primary", "success", "danger", "warning"],
+      options: [
+        "info",
+        "primary",
+        "secondary",
+        "success",
+        "danger",
+        "warning",
+        "neutral",
+      ],
     },
     children: { control: "text" },
   },
@@ -45,6 +53,9 @@ export const Tones: Story = {
       <Badge tone="primary" icon={<ClockIcon />}>
         primary
       </Badge>
+      <Badge tone="secondary" icon={<ClockIcon />}>
+        secondary
+      </Badge>
       <Badge tone="success" icon={<ClockIcon />}>
         success
       </Badge>
@@ -53,6 +64,9 @@ export const Tones: Story = {
       </Badge>
       <Badge tone="warning" icon={<ClockIcon />}>
         warning
+      </Badge>
+      <Badge tone="neutral" icon={<ClockIcon />}>
+        neutral
       </Badge>
     </div>
   ),

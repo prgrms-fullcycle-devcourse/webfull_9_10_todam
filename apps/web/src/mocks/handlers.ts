@@ -1,9 +1,12 @@
 import {
+    RESERVATION_LIST_DEFAULT_LIMIT,
+    ReservationStatus,
     StoreRegistrationErrorCode,
     storeRegistrationSubmitRequestSchema,
     PartnerStatus,
     StoreStatus,
     type GeocodeResult,
+    type ReservationListResult,
     type StoreRegistrationStatusResult,
     type StoreRegistrationSubmitResult,
     type SlugAvailabilityResult,
@@ -18,6 +21,7 @@ import {
     findLatestStoreRegistration,
     isBusinessNumberRegistered,
     isSlugTaken,
+    listMyReservations,
     listPartnerStores,
     mockGeocode,
     nowIso,
@@ -156,5 +160,67 @@ export const handlers = [
         const liked = setLike(storeId, !!body?.liked);
         const result: ToggleLikeResult = { storeId, liked };
         return ok(path, result, liked ? '찜했습니다.' : '찜을 해제했습니다.');
+    }),
+
+    // 나의 예약 목록 조회 (인증 필요, 본인 예약만, 커서 페이지네이션)
+    // plan: docs/exec-plans/active/user-예약-나의 예약조회.md API Contract (스냅샷) 기준.
+    // 시뮬: 헤더에 Authorization 없으면 401. ?empty=1 이면 빈 결과. ?simulate=500 이면 서버오류.
+    http.get(`${API}/reservations/me`, ({ request }) => {
+        const path = '/api/v1/reservations/me';
+        const url = new URL(request.url);
+
+        // mock 401 시뮬레이션: NEXT_PUBLIC_API_URL 미사용 환경에선 토큰 없이도 동작해야
+        // 화면 개발이 가능하므로, "?unauth=1" 명시 시에만 401 응답.
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '인증이 필요합니다.');
+        }
+        if (url.searchParams.get('simulate') === '500') {
+            return fail(
+                path,
+                500,
+                'INTERNAL_SERVER_ERROR',
+                '예약 목록 조회 중 서버 오류가 발생했습니다.',
+            );
+        }
+
+        // ?empty=1 → 빈 결과
+        if (url.searchParams.get('empty') === '1') {
+            const result: ReservationListResult = {
+                reservations: [],
+                nextCursor: null,
+                hasMore: false,
+            };
+            return ok(path, result, '예약 목록이 성공적으로 조회되었습니다.');
+        }
+
+        const statusParam = url.searchParams.get('status') as ReservationStatus | null;
+        const cursor = url.searchParams.get('cursor');
+        const limitParam = Number(url.searchParams.get('limit'));
+        const limit =
+            Number.isFinite(limitParam) && limitParam > 0
+                ? limitParam
+                : RESERVATION_LIST_DEFAULT_LIMIT;
+
+        // 1) 본인 예약 + status 필터 적용
+        let all = listMyReservations();
+        if (statusParam) {
+            all = all.filter((r) => r.status === statusParam);
+        }
+
+        // 2) cursor 적용: cursor 가 가리키는 id 이후부터(최신순 정렬 기준 그 다음)
+        let startIdx = 0;
+        if (cursor) {
+            const idx = all.findIndex((r) => r.id === cursor);
+            startIdx = idx >= 0 ? idx + 1 : all.length; // cursor 가 없으면 결과 비움
+        }
+
+        // 3) limit+1 방식으로 hasMore 판정 (plan §커서 페이지네이션 방식)
+        const window = all.slice(startIdx, startIdx + limit + 1);
+        const hasMore = window.length > limit;
+        const reservations = window.slice(0, limit);
+        const nextCursor = hasMore ? (reservations[reservations.length - 1]?.id ?? null) : null;
+
+        const result: ReservationListResult = { reservations, nextCursor, hasMore };
+        return ok(path, result, '예약 목록이 성공적으로 조회되었습니다.');
     }),
 ];
