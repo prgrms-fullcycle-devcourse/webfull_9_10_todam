@@ -3,6 +3,7 @@ import {
     storeRegistrationSubmitRequestSchema,
     PartnerStatus,
     StoreStatus,
+    ProgramEditErrorCode,
     type GeocodeResult,
     type StoreRegistrationStatusResult,
     type StoreRegistrationSubmitResult,
@@ -10,12 +11,22 @@ import {
     type ToggleLikeRequest,
     type ToggleLikeResult,
     type PartnerStoreListResult,
+    type ProgramDetailResult,
+    type ProgramEditResult,
+    type ProgramImageUploadResult,
 } from '@todam/shared';
 import { http, HttpResponse } from 'msw';
 
 import {
     createStoreRegistration,
     findLatestStoreRegistration,
+    findProgramBySlugAndId,
+    findProgramByStoreAndId,
+    addProgramImage,
+    removeProgramImage,
+    updateProgram,
+    programToApiShape,
+    genId,
     isBusinessNumberRegistered,
     isSlugTaken,
     listPartnerStores,
@@ -147,6 +158,138 @@ export const handlers = [
         };
         return ok(path, result);
     }),
+
+    // ─── 프로그램 상세 조회 (퍼블릭, preload용) ─────────────────────────
+    // GET /stores/{slug}/programs/{programId}
+    http.get(`${API}/stores/:slug/programs/:programId`, ({ params }) => {
+        const slug = String(params.slug);
+        const programId = String(params.programId);
+        const path = `/api/v1/stores/${slug}/programs/${programId}`;
+
+        const program = findProgramBySlugAndId(slug, programId);
+        if (!program) {
+            return fail(
+                path,
+                404,
+                ProgramEditErrorCode.PROGRAM_NOT_FOUND,
+                '프로그램을 찾을 수 없습니다.',
+            );
+        }
+
+        const result: ProgramDetailResult = {
+            program: programToApiShape(program) as ProgramDetailResult['program'],
+        };
+        return ok(path, result, '프로그램 상세가 조회되었습니다.');
+    }),
+
+    // ─── 프로그램 수정 ────────────────────────────────────────────────
+    // PATCH /partner/stores/{storeId}/programs/{programId}
+    http.patch(
+        `${API}/partner/stores/:storeId/programs/:programId`,
+        async ({ request, params }) => {
+            const storeId = String(params.storeId);
+            const programId = String(params.programId);
+            const path = `/api/v1/partner/stores/${storeId}/programs/${programId}`;
+
+            const program = findProgramByStoreAndId(storeId, programId);
+            if (!program) {
+                return fail(
+                    path,
+                    404,
+                    ProgramEditErrorCode.PROGRAM_NOT_FOUND,
+                    '프로그램을 찾을 수 없습니다.',
+                );
+            }
+
+            const body = (await request.json()) as Record<string, unknown>;
+            const updated = updateProgram(programId, body as Parameters<typeof updateProgram>[1]);
+            if (!updated) {
+                return fail(
+                    path,
+                    500,
+                    ProgramEditErrorCode.INTERNAL_SERVER_ERROR,
+                    '수정에 실패했습니다.',
+                );
+            }
+
+            const result: ProgramEditResult = {
+                program: {
+                    id: updated.id,
+                    title: updated.title,
+                    price: updated.price,
+                    status: updated.status,
+                    updatedAt: updated.updatedAt,
+                },
+            };
+            return ok(path, result, '프로그램이 성공적으로 수정되었습니다.');
+        },
+    ),
+
+    // ─── 이미지 Pre-signed URL 발급 ──────────────────────────────────
+    // POST /partner/stores/{storeId}/programs/{programId}/images
+    http.post(
+        `${API}/partner/stores/:storeId/programs/:programId/images`,
+        async ({ request, params }) => {
+            const storeId = String(params.storeId);
+            const programId = String(params.programId);
+            const path = `/api/v1/partner/stores/${storeId}/programs/${programId}/images`;
+
+            const body = (await request.json()) as {
+                fileName: string;
+                fileType: string;
+                isThumbnail: boolean;
+            };
+
+            const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/heic'];
+            if (!ALLOWED_TYPES.includes(body.fileType)) {
+                return fail(
+                    path,
+                    400,
+                    ProgramEditErrorCode.INVALID_FILE_TYPE,
+                    '지원하지 않는 파일 형식입니다.',
+                );
+            }
+
+            const programImageId = genId('prog-img');
+            const imageUrl = `https://cdn.todam.app/programs/${programId}/${programImageId}.png`;
+            // mock: uploadUrl 은 자체 엔드포인트로 대체 (실제 S3 URL 흉내)
+            const uploadUrl = `https://todam-bucket.s3.ap-northeast-2.amazonaws.com/programs/${programId}/${programImageId}.png?mock=1`;
+
+            addProgramImage(programId, {
+                programImageId,
+                imageUrl,
+                thumbnailUrl: imageUrl,
+                isThumbnail: body.isThumbnail,
+            });
+
+            const result: ProgramImageUploadResult = { programImageId, uploadUrl, imageUrl };
+            return ok(path, result, '프로그램 이미지 업로드용 URL이 발급되었습니다.', 201);
+        },
+    ),
+
+    // ─── 이미지 삭제 ────────────────────────────────────────────────
+    // DELETE /partner/stores/{storeId}/programs/{programId}/images/{imageId}
+    http.delete(
+        `${API}/partner/stores/:storeId/programs/:programId/images/:imageId`,
+        ({ params }) => {
+            const storeId = String(params.storeId);
+            const programId = String(params.programId);
+            const imageId = String(params.imageId);
+            const path = `/api/v1/partner/stores/${storeId}/programs/${programId}/images/${imageId}`;
+
+            const deleted = removeProgramImage(imageId);
+            if (!deleted) {
+                return fail(
+                    path,
+                    404,
+                    ProgramEditErrorCode.IMAGE_NOT_FOUND,
+                    '이미지를 찾을 수 없습니다.',
+                );
+            }
+
+            return ok(path, null, '프로그램 이미지가 삭제되었습니다.');
+        },
+    ),
 
     // 찜 토글
     http.post(`${API}/stores/:storeId/like`, async ({ request, params }) => {
