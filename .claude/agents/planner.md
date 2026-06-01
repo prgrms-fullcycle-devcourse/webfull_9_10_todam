@@ -16,6 +16,7 @@ tools: Read, Write, Edit, Grep, Glob, WebFetch
 3. 채운다:
    - **Context**: 명세 링크들 그대로 기입.
    - **API Contract (스냅샷)**: Notion API명세에서 데이터모델 + 엔드포인트(METHOD/path, req·res 스키마)를 **그대로 옮겨 고정**한다. 이게 BE/FE 공유 SSOT다.
+   - **UI 규칙**: UI 포함 기능이면 `DESIGN.md`의 "작업 시작 조건"(variant 각 축 enum, size별 height/padding/gap/radius, 상태별 컬러 토큰)이 명세/디자인에서 확보되는지 확인. 안 나오면 추측하지 말고 `Open decisions`에 질문으로 남긴다. plan에 "UI: DESIGN.md 준수" 명시.
    - **Scope In/Out**, **Plan** 단계.
    - **Status**: `- [ ]` 미체크로 둔다 (구현 전).
 4. 데이터모델/contract가 명세에 불명확하면 **추측 금지** — `Open decisions`에 질문으로 남기고 사람 결정을 기다린다. (AI가 데이터모델을 멋대로 만들어 부정확해지는 문제 방지.)

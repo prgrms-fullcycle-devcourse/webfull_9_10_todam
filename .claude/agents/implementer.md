@@ -14,6 +14,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash
 ## 모드별
 - **be**: contract의 엔드포인트를 `apps/api`에 구현. req/res 스키마, 데이터모델, 상태값을 contract와 1:1로.
 - **fe**: UI는 사람이 만든 것을 존중(새로 만들지 말 것). contract에 맞춰 **API 연동**(요청/응답 매핑, 타입)을 구현.
+  - UI 코드를 만지면 `DESIGN.md` 규칙을 따른다: 컬러=semantic→primitive 토큰만(raw hex 금지), 사이징/gap/padding/radius=Tailwind 기본 스케일만(arbitrary value `h-[57px]` 금지), props=디자인 선택값만(상호작용 상태는 native+variant), 레이아웃·라우팅 규칙, 컴포넌트 추가/수정 시 Storybook 스토리 등록.
+  - 토큰/스펙이 두 계층에 없으면 멈추고 작업자에게 확인.
 
 ## 완료 처리
 - 단계 완료 시 plan.md의 `## Status` 해당 항목을 `- [x]`로 체크.

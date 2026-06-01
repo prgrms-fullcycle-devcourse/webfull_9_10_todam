@@ -9,8 +9,8 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 1. Confirm the current task goal.
 2. Read [ARCHITECTURE.md](ARCHITECTURE.md) to understand module boundaries and layer responsibilities.
 3. Use [docs/README.md](docs/README.md) to find only the documents relevant to the task.
-4. When implementation choices are required, check the relevant requirements and design docs first.
-5. For complex work, follow [docs/exec-plans/README.md](docs/exec-plans/README.md) and keep unresolved decisions in the execution plan.
+4. When building a feature, requirements and the API contract come first. Attach the feature/requirements specs (Notion published links) and run `/plan` — it snapshots the data model + API contract into the execution plan, which is the source of truth BE/FE bind to. Don't invent data models; leave unclear contract points as open decisions for a human to approve.
+5. Follow the spec-driven workflow: `/plan` → `/impl <be|fe>` (bind to the plan's API Contract, don't deviate) → `/review` (detect drift) → `/complete`. A plan moves to `docs/exec-plans/completed/` only when API impl / UI impl / API integration are all done — the pre-commit gate enforces this. See [docs/ai-workflow.md](docs/ai-workflow.md) and [docs/exec-plans/README.md](docs/exec-plans/README.md).
 
 ## 1. Think Before Coding
 

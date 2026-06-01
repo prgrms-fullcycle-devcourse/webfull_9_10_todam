@@ -20,9 +20,15 @@ tools: Read, Grep, Glob, Bash
    - UI 구현: 화면이 존재하는가 (사람 작업물)
    - API 연동: 요청/응답이 contract 스키마로 실제 연결됐는가
 
-## 출력
-- drift 목록 (있으면 `path:line: 문제 → contract 기대값` 형식, 한 줄씩).
-- 단계별 판정: API구현 / UI구현 / 연동 각각 ✅/❌.
-- **셋 다 ✅ + drift 0 이면** "Status 체크 및 /complete 가능"이라고 명시. 아니면 막을 이유를 명확히.
+## DESIGN 체크 (FE, 권고 — 차단 아님)
+FE 구현이면 `DESIGN.md` 위반도 살핀다: raw hex / 미정의 Tailwind 팔레트, arbitrary value(`h-[57px]`), 상호작용 상태가 props로 노출, Storybook 등록 누락, 레이아웃·라우팅 규칙 위반.
+- 발견 시 항목을 나열하되 **막지 않는다.** "이런 점이 DESIGN.md와 다릅니다 — 이대로 진행하시겠어요?" 정도로 **리마인드만** 한다.
+- 완료 판정(아래)을 DESIGN 위반으로 ❌ 처리하지 않는다. 판단은 작업자에게 맡긴다.
 
-칭찬·잡담 없음. 문제와 판정만.
+## 출력
+- (게이트) contract drift 목록 (있으면 `path:line: 문제 → contract 기대값` 형식, 한 줄씩).
+- 단계별 판정: API구현 / UI구현 / 연동 각각 ✅/❌. ← **API/contract 기준만**.
+- (권고) DESIGN 체크 리마인드 항목 — 있으면 나열.
+- **단계 셋 다 ✅ + contract drift 0 이면** "Status 체크 및 /complete 가능"이라고 명시. (DESIGN 권고는 완료를 막지 않음.)
+
+칭찬·잡담 없음. 문제·판정·리마인드만.
