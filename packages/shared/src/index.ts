@@ -30,3 +30,4 @@ export * from './constants/regex';
 export * from './contracts/fields';
 export * from './contracts/store-registration';
 export * from './contracts/like';
+export * from './contracts/store-list';
