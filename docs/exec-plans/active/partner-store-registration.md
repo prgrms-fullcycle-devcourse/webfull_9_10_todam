@@ -267,8 +267,9 @@
 ## Out (단계별 완료물)
 
 - API:
-  - `POST /stores` — 공방 초안 생성
+  - `POST /stores` — 공방 초안 생성 (slug 자동생성/중복검증, businessDocument 저장, 첫 공방 시 partner 자동생성)
   - `POST /partner/stores/:storeId/images` — 공방 이미지 presigned PUT URL 발급
+  - `PATCH /partner/stores/:storeId/images/:imageId/confirm` — S3 객체 존재 검증 후 PENDING→UPLOADED
   - `POST /partner/stores/:storeId/submit` — 공방 심사 제출 (DRAFT/REJECTED → PENDING)
   - 주요 파일:
     - `apps/api/src/modules/store/store.module.ts`
@@ -278,7 +279,9 @@
     - `apps/api/src/modules/store/presentation/dto/submit-store.dto.ts`
     - `apps/api/src/modules/store/application/use-cases/create-store.use-case.ts`
     - `apps/api/src/modules/store/application/use-cases/create-store-image.use-case.ts`
+    - `apps/api/src/modules/store/application/use-cases/confirm-store-image.use-case.ts`
     - `apps/api/src/modules/store/application/use-cases/submit-store.use-case.ts`
+    - `apps/api/src/common/s3/s3.service.ts` (objectExists), `s3-object.util.ts` (keyFromImageUrl)
 - UI: <!-- 구현된 화면, 컴포넌트 -->
 - 연동: <!-- 연결 지점, 검증 결과 -->
 
