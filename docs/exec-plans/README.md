@@ -20,7 +20,7 @@
 
 - 한 PR 또는 한 기능 축마다 하나의 계획 파일을 둔다.
 - 복잡한 작업은 `docs/exec-plans/active/` 아래 계획 파일을 만들고 진행한다.
-- 새 계획은 `templates/feature-plan.md`를 복사해 시작한다.
+- 새 계획은 `templates/feature-plan.md`를 복사해 시작한다. 이때, 주석은 지우고 작성한다.
 - 관련 spec, 설계 문서를 `Context`에 링크한다.
 - 구현 범위는 `Scope`의 In/Out에 명시한다.
 - 진행 중 결정 변경은 `Decision Log`에 날짜와 함께 남긴다.

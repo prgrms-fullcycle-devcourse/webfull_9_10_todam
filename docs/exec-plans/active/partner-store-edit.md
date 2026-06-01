@@ -6,9 +6,13 @@
 - Owner:
 - Date: 2026-06-01
 
-## Context
+## Status
 
-<!-- 요구사항=docs/requirements.md. 기능/API명세=Notion DB에서 notion-fetch.mjs --find로 select. -->
+- [ ] API 구현
+- [x] UI 구현
+- [ ] API 연동
+
+## Context
 
 - 요구사항명세서(고정): docs/requirements.md — `공방 store` 도메인(공방 상태/상태전이, 파트너 신청 등록 단계의 필드 정의: 공방명 2~40자 / slug 4~40자 unique / 주소·위경도 / 대표연락처 / 대표이미지 최대 5MB / 공방소개 1000자 / 영업정보 = 예약 오픈·마감/영업일/예약간격/취소가능 d-day/주차·반려동물·자동확정/휴식시간), 접근 주체/가드(`AuthGuard + PartnerGuard`, 공방 소유 권한 검증)
 - 기능명세: `공방 정보 수정` (기능명세 DB `b242ee66b06c8349805601ce4a05247a` — 실행주체: partner / 도메인: store / 연관화면: 공방 관리 / 우선순위: 상)
@@ -35,9 +39,87 @@
     - `operatingHours?`: `OperatingHourInput[]` — **배열 전체 치환**. 항목 = `{ dayOfWeek: "MON"~"SUN", openTime: "HH:mm", closeTime: "HH:mm", breakStart: string|null, breakEnd: string|null }`. 등록 제출 스키마와 동일. businessDays(운영요일)별로 확장.
 - Open decisions (미결): (없음 — 전 결정 확정)
 
-## API Contract (스냅샷)
+## Scope
 
-<!-- Notion API명세(5852ee66b06c838bb8ec01c6bf4f2e25)에서 가져와 고정. BE/FE SSOT. -->
+- In:
+  - BE: `PATCH /partner/stores/{storeId}` 공방 정보 수정(소유권만 검증 — 전 상태 수정 허용, 상태 기반 차단 없음(DEC-3), 전달 필드만 부분 갱신, `updated_at` 갱신, 수정 후 status 불변). 이미지 추가/삭제 엔드포인트가 미구현이면 함께 구현(`POST .../images`, `PATCH .../images/{imageId}/confirm`, `DELETE .../images/{imageId}`). `GET /partner/stores/{storeId}`가 partner-store-list/registration plan에서 미구현이면 본 plan에서 구현.
+  - UI: 공방 정보 수정 화면(`apps/web/src/features/...`). 기존 정보 preload, 변경 감지(dirty) 기반 저장 버튼 활성/비활성, zod 유효성(전화번호 형식·slug·예약 오픈<마감·휴식시간 운영시간 범위 내·운영요일 최소 1개·대표이미지 최대 5장), 화면 이탈 시 변경사항 있으면 `AppModal` 확인 다이얼로그, 저장 성공 시 미리보기 이동 + `AppToast` "수정된 공방 정보가 반영되었어요".
+  - 연동: `GET` preload, `PATCH` 부분 수정, 이미지 추가(presigned PUT → confirm)/삭제 실 API 연동. dirty 필드만 PATCH 전송(DEC-2 확정 — `operatingHours`/`images[]`는 배열 전체 치환).
+- Out:
+  - 공방 공개 상태 변경(게시 중 / 게시 중단) — 별도 기능(Admin 노출 중단 / 파트너 게시 토글).
+  - Admin 검수(승인/반려) — 별도 admin 기능.
+  - 사업자 서류(`businessDocument`) 수정·재OCR — 수정 화면 비대상(읽기 참조).
+  - 주소(`address`/위경도) 변경 — 기능명세 동작 목록의 기본값 노출 필드에 주소 미포함. 변경 대상 여부 미확정 시 제외(주소 수정 시 geocode 재변환은 별도 처리).
+  - slug redirect / 이전 slug 보존(history) 기능 — DEC-1 확정에 따라 redirect·보존 **없이 즉시 교체**(기존 공유 링크 깨짐 허용). 별도 redirect/보존 메커니즘은 구현 안 함.
+
+## Plan
+
+1. **(BE) `GET /partner/stores/{storeId}` 확인/구현 + 응답 보강**: 기존 plan에서 구현됐으면 재사용. 미구현이면 소유권 검증 + 운영시간·이미지 포함 상세 반환 구현. **OD-1 확정 — 상세 응답에 `reservationIntervalMinutes`, `maxCapacityPerSlot` 추가**(예약 정보 수정화면 preload용).
+2. **(BE) `PATCH /partner/stores/{storeId}` 구현**: `AuthGuard + PartnerGuard`, **소유권만 검증(DEC-3 확정 — 전 상태 수정 허용, 상태 기반 차단 없음, `INVALID_STORE_STATUS` 미발생)**, 전달 필드만 부분 갱신, `updated_at` 갱신. status 불변(재검수 전이 없음). DTO는 부분 업데이트(모든 필드 optional): `name?` 2~40자, `operatingHours?` `OperatingHourInput[]` **배열 전체 치환**(DEC-4 확정), `images[]` 배열 전체 치환(OD-3). **OD-2 확정 — slug 중복 시 `409 STORE_SLUG_DUPLICATED`(등록과 동일) 반환, redirect/보존 없이 즉시 교체(DEC-1)**.
+3. **(BE) 이미지 추가/확인/삭제 엔드포인트 확인/구현**: `POST .../images`(presigned), `PATCH .../images/{imageId}/confirm`, `DELETE .../images/{imageId}`. 등록 plan에서 구현됐으면 재사용. 대표이미지 최대 5장 제약 검증. **OD-3 확정 — 최종 이미지 반영은 PATCH `images[]` 기준**(이 엔드포인트들은 업로드/삭제 처리만, 대표이미지 확정은 저장 시점).
+4. **(UI) 수정 화면 구현 + preload**: `GET`으로 기존 정보 fetch → 폼 기본값 주입. 기능명세 13개 필드(대표이미지/공방명/공방URL/전화번호/공방소개/운영시간/휴식시간/운영요일/예약시간간격/예약취소가능기한/예약승인방식/이용조건/편의정보) 렌더. 예약시간간격·수용인원은 GET 응답 `reservationIntervalMinutes`/`maxCapacityPerSlot`로 preload(OD-1). slug는 수정 가능(OD-2 확정). **수정 진입점(공방 정보 수정하기 버튼)은 전 상태(DRAFT/PENDING/PUBLISHED/SUSPENDED) 노출(DEC-3 확정)**. UI: DESIGN.md 준수.
+5. **(UI) 변경 감지 + 유효성**: 초기값 대비 dirty 비교로 저장 버튼 활성/비활성. zod 스키마로 전화번호/예약 오픈<마감/휴식시간 범위/운영요일 최소 1개/대표이미지 ≤5장 검증, 위반 시 저장 차단.
+6. **(UI) 화면 이탈 가드**: dirty 상태에서 뒤로가기/이탈 시 `AppModal` 확인 다이얼로그.
+7. **(연동) 이미지 presigned 플로우 (OD-3 확정)**: 추가는 `POST .../images`로 presigned PUT URL 발급 → S3(현재 mock) PUT → `PATCH .../images/{imageId}/confirm`. 삭제는 X 클릭 시 `DELETE .../images/{imageId}`. 최종 이미지 목록은 저장(PATCH) `images[]`로 반영 — 저장 전까지 대표이미지 미반영(이탈 시 롤백 무관). 등록 플로우와 동일 패턴 재사용.
+8. **(연동) PATCH 저장**: 변경된 dirty 필드만 PATCH body에 담아 부분 갱신(DEC-2 확정). `operatingHours`/`images[]`는 dirty 시 배열 전체 치환. `name`도 dirty 시 포함(DEC-4). → 200 성공 시 미리보기 화면 이동 + `AppToast` "수정된 공방 정보가 반영되었어요".
+9. **(연동) 에러 처리**: `403 FORBIDDEN`, `404 STORE_NOT_FOUND`, `409 STORE_SLUG_DUPLICATED`(OD-2 — slug 필드 중복 에러 표시) 메시지 매핑. `400 INVALID_STORE_STATUS`는 DEC-3 확정으로 발생하지 않으므로 매핑 불필요.
+
+## Out (단계별 완료물)
+
+- API:
+- UI:
+  - 수정 화면 3종 (등록 스텝 구조 재사용):
+    - `apps/web/src/features/store/edit/ui/InfoEditSection.tsx` (공방: 대표이미지/공방명/공방URL/전화번호/소개글)
+    - `apps/web/src/features/store/edit/ui/OperatingEditSection.tsx` (영업: 운영시간/휴식시간/운영요일/편의정보)
+    - `apps/web/src/features/store/edit/ui/ReservationEditSection.tsx` (예약: 시간간격/취소기한/최대정원/승인방식)
+  - 공통 레이아웃 `apps/web/src/features/store/edit/ui/StoreEditLayout.tsx` (GET preload → 폼 주입, dirty 기반 저장 버튼 활성/비활성, zod 유효성, 화면 이탈 가드(AppModal), PATCH 저장 → 미리보기 이동 + AppToast, 403/404/409 에러 매핑)
+  - 모델: `apps/web/src/features/store/edit/model/types.ts`(폼 타입·detailToForm preload 변환), `.../model/store.ts`(zustand dirty 추적·섹션 유효성·dirty 필드만 PATCH body 구성)
+  - 라우트 연결: `apps/web/src/app/partner/stores/[id]/edit/info/page.tsx`(info), `.../edit/business/page.tsx`(operating), `.../edit/reservation/page.tsx`(reservation) — 기존 placeholder를 StoreEditLayout 연결로 교체
+  - 진입점 전 상태 노출(DEC-3): 라우트 가드 없이 storeId만으로 진입 (BE 소유권 검증 위임)
+  - **UI 공유 컴포넌트 추출 (등록·수정 중복 제거 리팩터, 동작/contract 불변)**:
+    - 신설 `apps/web/src/features/store/shared/model/form.ts`(+`index.ts`): `MAX_STORE_IMAGES`/`INTERVAL_OPTIONS`/`DAY_CHIPS`/`CONVENIENCE_OPTIONS`/`OperatingState`/`ConvenienceState` 단일 소스. registration·edit `model/types.ts`는 여기서 re-export(외부 import 경로 호환 유지).
+    - 신설 `apps/web/src/features/store/shared/ui/`: `TimeField`, `OperatingFields`(검증·인라인 에러 내부 계산, edit의 더 엄격한 기준=휴식 범위·영업일 최소1 표준 채택), `ReservationFields`(+내부 Stepper), `StoreInfoFields`(이미지 업로드/slug 중복확인 차이는 props·slot 주입). 모두 store 비종속.
+    - registration 3 스텝(`StoreInfoStep`/`OperatingStep`/`ReservationStep`)·edit 3 섹션(`InfoEditSection`/`OperatingEditSection`/`ReservationEditSection`)을 공유 컴포넌트 쓰는 얇은 래퍼로 교체(각자 zustand store에서 값 읽어 props 전달). 중복 `TimeField`/`Stepper`/JSX/상수 제거.
+    - registration의 next 버튼 gating(`isStepValid`)은 store 로직 그대로 유지. registration 검증 표시는 edit 기준으로 통일(인라인 에러 한정, 제출 흐름 불변).
+- 연동:
+  - contract 타입/스키마 추가: `packages/shared/src/contracts/store-edit.ts` (PartnerStoreDetail/StoreUpdateRequest/이미지 업로드·확정 스키마, StoreEditErrorCode) + index export
+  - API 클라이언트: `apps/web/src/features/store/edit/api.ts` (GET 상세 / PATCH 수정 / POST presigned / S3 PUT / PATCH confirm / DELETE)
+  - 쿼리 훅: `apps/web/src/features/store/edit/queries.ts` (useStoreDetail/useUpdateStore/useAddStoreImage(presigned→PUT→confirm)/useDeleteStoreImage)
+  - PATCH body는 dirty 필드만 전송(DEC-2). operatingHours·images[]는 배열 전체 치환. slug 변경 시 즉시 교체(DEC-1) — 저장 후 `/stores/{slug}` 미리보기 이동.
+  - 이미지 presigned 플로우(OD-3): 추가 시 POST→S3 PUT(mock)→confirm, X 클릭 시 DELETE, 최종 반영은 PATCH images[].
+  - 409 STORE_SLUG_DUPLICATED 수신 시 slug 필드 중복 에러 표시(slugDuplicated 상태), 403/404 토스트 매핑.
+  - **실 BE(apps/api) 미구현 → MSW mock 바인딩 상태**: `apps/web/src/mocks/db.ts`(공방 상세 시드·부분 갱신·presigned/confirm/delete), `apps/web/src/mocks/handlers.ts`(GET/PATCH/POST images/confirm/DELETE 5종). 실 API 연결은 BE 구현 후 체크 — 현재 미체크.
+  - 검증: web typecheck/lint 통과(신규 파일 0 error).
+
+## Risks
+
+- presigned URL 5분 만료: 이미지 업로드 중 만료 시 재발급 로직 필요.
+- 대표이미지 최대 5장 제약: 추가 시 클라이언트+서버 양쪽 검증 필요(현재 5장이면 POST 차단).
+
+## Validation
+
+- Tests: BE 단위(부분 갱신 — 전달 필드만 변경/나머지 불변, `operatingHours` 배열 전체 치환, 소유권 403, status 불변, 전 상태(DRAFT/PENDING/PUBLISHED/SUSPENDED) 모두 수정 성공 — DEC-3), 가드(401/403) e2e. FE 폼 유효성(zod), dirty 기반 저장 버튼 토글, 이탈 다이얼로그.
+- Manual checks: Partner 토큰으로 본인 공방 GET preload → 일부 필드 변경 → PATCH → 미리보기 이동 + 토스트. 타 파트너 공방 PATCH 403. 변경 없을 때 저장 버튼 비활성. 이미지 추가(presigned)·삭제. 수정 후 status 불변 확인. SUSPENDED/PENDING 공방도 수정 성공 확인(DEC-3).
+- Observability: PATCH 실패(권한·slug 중복) 로깅, presigned 발급 실패 로깅.
+
+## Decision Log
+
+- 2026-06-01: 기능명세 DB에서 `공방 정보 수정` 정확 매칭(실행주체 partner, 도메인 store, 연관화면 공방 관리).
+- 2026-06-01: API명세 DB에서 4종 select — `PATCH /partner/stores/{storeId}`(공방 정보 수정), `GET /partner/stores/{storeId}`(preload), `POST /partner/stores/{storeId}/images`(이미지 추가), `DELETE /partner/stores/{storeId}/images/{imageId}`(이미지 삭제). 이미지 confirm(`PATCH .../images/{imageId}/confirm`)도 명세 존재 확인.
+- 2026-06-01: OD-1 확정 — GET 상세 응답에 `reservationIntervalMinutes`/`maxCapacityPerSlot` 추가(예약 정보 수정화면 preload). API 응답 스키마 보강 = 승인된 보강. BE 작업 항목.
+- 2026-06-01: OD-2 확정 — PATCH slug 중복 시 등록과 동일 `409 STORE_SLUG_DUPLICATED` 반환. 에러코드 contract 추가. FE는 409 시 slug 필드 중복 에러 표시.
+- 2026-06-01: OD-3 확정 — 이미지 업로드 FE presigned 플로우(POST images → S3 PUT → confirm). 최종 이미지 key 목록은 PATCH `images[]`로 반영(저장 전까지 미반영 → 이탈 롤백 무관). 등록 플로우와 동일 패턴 재사용.
+- 2026-06-01: DEC-1 확정 — slug 변경 시 redirect·이전 slug 보존 없이 신규 slug로 즉시 교체. 기존 공유 링크 깨짐 허용. redirect/보존 메커니즘 Out scope.
+- 2026-06-01: DEC-2 확정 — FE가 변경된(dirty) 필드만 PATCH body에 담아 부분 갱신. `operatingHours`/`images[]`는 배열 단위 전체 치환.
+- 2026-06-01: DEC-3 확정 — 수정 가능 상태 = 전 상태(DRAFT/PENDING/PUBLISHED/SUSPENDED) 허용(기능명세 "검수 상태 무관" 기준). BE 상태 기반 차단 제거(소유권만 검증), `400 INVALID_STORE_STATUS` 미발생, 수정 진입점 전 상태 노출.
+- 2026-06-01: DEC-4 확정 — PATCH `name?`(string 2~40자), `operatingHours?`(`OperatingHourInput[]` 배열 전체 치환, 항목 = dayOfWeek/openTime/closeTime/breakStart/breakEnd, 등록 제출 스키마 동일) contract 고정. PATCH body 예시에 반영.
+
+## Outcome
+
+- Status:
+- Follow-up: 공방 공개 상태 토글(게시 중/중단) 별도 기능. 주소 변경 + geocode 재변환 범위 확정.
+
+## API Contract (스냅샷)
 
 ### 데이터모델
 
@@ -253,96 +335,3 @@
   }
   ```
 - 에러: `403 FORBIDDEN` / `404 IMAGE_NOT_FOUND` / `500 INTERNAL_SERVER_ERROR`
-
-## Scope
-
-- In:
-  - BE: `PATCH /partner/stores/{storeId}` 공방 정보 수정(소유권만 검증 — 전 상태 수정 허용, 상태 기반 차단 없음(DEC-3), 전달 필드만 부분 갱신, `updated_at` 갱신, 수정 후 status 불변). 이미지 추가/삭제 엔드포인트가 미구현이면 함께 구현(`POST .../images`, `PATCH .../images/{imageId}/confirm`, `DELETE .../images/{imageId}`). `GET /partner/stores/{storeId}`가 partner-store-list/registration plan에서 미구현이면 본 plan에서 구현.
-  - UI: 공방 정보 수정 화면(`apps/web/src/features/...`). 기존 정보 preload, 변경 감지(dirty) 기반 저장 버튼 활성/비활성, zod 유효성(전화번호 형식·slug·예약 오픈<마감·휴식시간 운영시간 범위 내·운영요일 최소 1개·대표이미지 최대 5장), 화면 이탈 시 변경사항 있으면 `AppModal` 확인 다이얼로그, 저장 성공 시 미리보기 이동 + `AppToast` "수정된 공방 정보가 반영되었어요".
-  - 연동: `GET` preload, `PATCH` 부분 수정, 이미지 추가(presigned PUT → confirm)/삭제 실 API 연동. dirty 필드만 PATCH 전송(DEC-2 확정 — `operatingHours`/`images[]`는 배열 전체 치환).
-- Out:
-  - 공방 공개 상태 변경(게시 중 / 게시 중단) — 별도 기능(Admin 노출 중단 / 파트너 게시 토글).
-  - Admin 검수(승인/반려) — 별도 admin 기능.
-  - 사업자 서류(`businessDocument`) 수정·재OCR — 수정 화면 비대상(읽기 참조).
-  - 주소(`address`/위경도) 변경 — 기능명세 동작 목록의 기본값 노출 필드에 주소 미포함. 변경 대상 여부 미확정 시 제외(주소 수정 시 geocode 재변환은 별도 처리).
-  - slug redirect / 이전 slug 보존(history) 기능 — DEC-1 확정에 따라 redirect·보존 **없이 즉시 교체**(기존 공유 링크 깨짐 허용). 별도 redirect/보존 메커니즘은 구현 안 함.
-
-## Plan
-
-1. **(BE) `GET /partner/stores/{storeId}` 확인/구현 + 응답 보강**: 기존 plan에서 구현됐으면 재사용. 미구현이면 소유권 검증 + 운영시간·이미지 포함 상세 반환 구현. **OD-1 확정 — 상세 응답에 `reservationIntervalMinutes`, `maxCapacityPerSlot` 추가**(예약 정보 수정화면 preload용).
-2. **(BE) `PATCH /partner/stores/{storeId}` 구현**: `AuthGuard + PartnerGuard`, **소유권만 검증(DEC-3 확정 — 전 상태 수정 허용, 상태 기반 차단 없음, `INVALID_STORE_STATUS` 미발생)**, 전달 필드만 부분 갱신, `updated_at` 갱신. status 불변(재검수 전이 없음). DTO는 부분 업데이트(모든 필드 optional): `name?` 2~40자, `operatingHours?` `OperatingHourInput[]` **배열 전체 치환**(DEC-4 확정), `images[]` 배열 전체 치환(OD-3). **OD-2 확정 — slug 중복 시 `409 STORE_SLUG_DUPLICATED`(등록과 동일) 반환, redirect/보존 없이 즉시 교체(DEC-1)**.
-3. **(BE) 이미지 추가/확인/삭제 엔드포인트 확인/구현**: `POST .../images`(presigned), `PATCH .../images/{imageId}/confirm`, `DELETE .../images/{imageId}`. 등록 plan에서 구현됐으면 재사용. 대표이미지 최대 5장 제약 검증. **OD-3 확정 — 최종 이미지 반영은 PATCH `images[]` 기준**(이 엔드포인트들은 업로드/삭제 처리만, 대표이미지 확정은 저장 시점).
-4. **(UI) 수정 화면 구현 + preload**: `GET`으로 기존 정보 fetch → 폼 기본값 주입. 기능명세 13개 필드(대표이미지/공방명/공방URL/전화번호/공방소개/운영시간/휴식시간/운영요일/예약시간간격/예약취소가능기한/예약승인방식/이용조건/편의정보) 렌더. 예약시간간격·수용인원은 GET 응답 `reservationIntervalMinutes`/`maxCapacityPerSlot`로 preload(OD-1). slug는 수정 가능(OD-2 확정). **수정 진입점(공방 정보 수정하기 버튼)은 전 상태(DRAFT/PENDING/PUBLISHED/SUSPENDED) 노출(DEC-3 확정)**. UI: DESIGN.md 준수.
-5. **(UI) 변경 감지 + 유효성**: 초기값 대비 dirty 비교로 저장 버튼 활성/비활성. zod 스키마로 전화번호/예약 오픈<마감/휴식시간 범위/운영요일 최소 1개/대표이미지 ≤5장 검증, 위반 시 저장 차단.
-6. **(UI) 화면 이탈 가드**: dirty 상태에서 뒤로가기/이탈 시 `AppModal` 확인 다이얼로그.
-7. **(연동) 이미지 presigned 플로우 (OD-3 확정)**: 추가는 `POST .../images`로 presigned PUT URL 발급 → S3(현재 mock) PUT → `PATCH .../images/{imageId}/confirm`. 삭제는 X 클릭 시 `DELETE .../images/{imageId}`. 최종 이미지 목록은 저장(PATCH) `images[]`로 반영 — 저장 전까지 대표이미지 미반영(이탈 시 롤백 무관). 등록 플로우와 동일 패턴 재사용.
-8. **(연동) PATCH 저장**: 변경된 dirty 필드만 PATCH body에 담아 부분 갱신(DEC-2 확정). `operatingHours`/`images[]`는 dirty 시 배열 전체 치환. `name`도 dirty 시 포함(DEC-4). → 200 성공 시 미리보기 화면 이동 + `AppToast` "수정된 공방 정보가 반영되었어요".
-9. **(연동) 에러 처리**: `403 FORBIDDEN`, `404 STORE_NOT_FOUND`, `409 STORE_SLUG_DUPLICATED`(OD-2 — slug 필드 중복 에러 표시) 메시지 매핑. `400 INVALID_STORE_STATUS`는 DEC-3 확정으로 발생하지 않으므로 매핑 불필요.
-
-## Status
-
-<!--
-게이트가 읽는 체크리스트. 셋 다 [x] 여야 completed/ 이동 가능 (pre-commit이 강제).
-- API 구현: 실 BE(`apps/api`) 엔드포인트가 contract대로 존재·동작. MSW mock만 있으면 미체크.
-- UI 구현: 화면/컴포넌트 구현 완료.
-- API 연동: **실 API** 요청/응답이 contract 스키마로 연결. MSW mock 바인딩만 한 상태는 미체크(연동 아님).
--->
-
-- [ ] API 구현
-- [x] UI 구현
-- [ ] API 연동
-
-## Out (단계별 완료물)
-
-- API: <!-- 구현된 엔드포인트, 파일 -->
-- UI:
-  - 수정 화면 3종 (등록 스텝 구조 재사용):
-    - `apps/web/src/features/store/edit/ui/InfoEditSection.tsx` (공방: 대표이미지/공방명/공방URL/전화번호/소개글)
-    - `apps/web/src/features/store/edit/ui/OperatingEditSection.tsx` (영업: 운영시간/휴식시간/운영요일/편의정보)
-    - `apps/web/src/features/store/edit/ui/ReservationEditSection.tsx` (예약: 시간간격/취소기한/최대정원/승인방식)
-  - 공통 레이아웃 `apps/web/src/features/store/edit/ui/StoreEditLayout.tsx` (GET preload → 폼 주입, dirty 기반 저장 버튼 활성/비활성, zod 유효성, 화면 이탈 가드(AppModal), PATCH 저장 → 미리보기 이동 + AppToast, 403/404/409 에러 매핑)
-  - 모델: `apps/web/src/features/store/edit/model/types.ts`(폼 타입·detailToForm preload 변환), `.../model/store.ts`(zustand dirty 추적·섹션 유효성·dirty 필드만 PATCH body 구성)
-  - 라우트 연결: `apps/web/src/app/partner/stores/[id]/edit/info/page.tsx`(info), `.../edit/business/page.tsx`(operating), `.../edit/reservation/page.tsx`(reservation) — 기존 placeholder를 StoreEditLayout 연결로 교체
-  - 진입점 전 상태 노출(DEC-3): 라우트 가드 없이 storeId만으로 진입 (BE 소유권 검증 위임)
-  - **UI 공유 컴포넌트 추출 (등록·수정 중복 제거 리팩터, 동작/contract 불변)**:
-    - 신설 `apps/web/src/features/store/shared/model/form.ts`(+`index.ts`): `MAX_STORE_IMAGES`/`INTERVAL_OPTIONS`/`DAY_CHIPS`/`CONVENIENCE_OPTIONS`/`OperatingState`/`ConvenienceState` 단일 소스. registration·edit `model/types.ts`는 여기서 re-export(외부 import 경로 호환 유지).
-    - 신설 `apps/web/src/features/store/shared/ui/`: `TimeField`, `OperatingFields`(검증·인라인 에러 내부 계산, edit의 더 엄격한 기준=휴식 범위·영업일 최소1 표준 채택), `ReservationFields`(+내부 Stepper), `StoreInfoFields`(이미지 업로드/slug 중복확인 차이는 props·slot 주입). 모두 store 비종속.
-    - registration 3 스텝(`StoreInfoStep`/`OperatingStep`/`ReservationStep`)·edit 3 섹션(`InfoEditSection`/`OperatingEditSection`/`ReservationEditSection`)을 공유 컴포넌트 쓰는 얇은 래퍼로 교체(각자 zustand store에서 값 읽어 props 전달). 중복 `TimeField`/`Stepper`/JSX/상수 제거.
-    - registration의 next 버튼 gating(`isStepValid`)은 store 로직 그대로 유지. registration 검증 표시는 edit 기준으로 통일(인라인 에러 한정, 제출 흐름 불변).
-- 연동:
-  - contract 타입/스키마 추가: `packages/shared/src/contracts/store-edit.ts` (PartnerStoreDetail/StoreUpdateRequest/이미지 업로드·확정 스키마, StoreEditErrorCode) + index export
-  - API 클라이언트: `apps/web/src/features/store/edit/api.ts` (GET 상세 / PATCH 수정 / POST presigned / S3 PUT / PATCH confirm / DELETE)
-  - 쿼리 훅: `apps/web/src/features/store/edit/queries.ts` (useStoreDetail/useUpdateStore/useAddStoreImage(presigned→PUT→confirm)/useDeleteStoreImage)
-  - PATCH body는 dirty 필드만 전송(DEC-2). operatingHours·images[]는 배열 전체 치환. slug 변경 시 즉시 교체(DEC-1) — 저장 후 `/stores/{slug}` 미리보기 이동.
-  - 이미지 presigned 플로우(OD-3): 추가 시 POST→S3 PUT(mock)→confirm, X 클릭 시 DELETE, 최종 반영은 PATCH images[].
-  - 409 STORE_SLUG_DUPLICATED 수신 시 slug 필드 중복 에러 표시(slugDuplicated 상태), 403/404 토스트 매핑.
-  - **실 BE(apps/api) 미구현 → MSW mock 바인딩 상태**: `apps/web/src/mocks/db.ts`(공방 상세 시드·부분 갱신·presigned/confirm/delete), `apps/web/src/mocks/handlers.ts`(GET/PATCH/POST images/confirm/DELETE 5종). 실 API 연결은 BE 구현 후 체크 — 현재 미체크.
-  - 검증: web typecheck/lint 통과(신규 파일 0 error).
-
-## Risks
-
-- presigned URL 5분 만료: 이미지 업로드 중 만료 시 재발급 로직 필요.
-- 대표이미지 최대 5장 제약: 추가 시 클라이언트+서버 양쪽 검증 필요(현재 5장이면 POST 차단).
-
-## Validation
-
-- Tests: BE 단위(부분 갱신 — 전달 필드만 변경/나머지 불변, `operatingHours` 배열 전체 치환, 소유권 403, status 불변, 전 상태(DRAFT/PENDING/PUBLISHED/SUSPENDED) 모두 수정 성공 — DEC-3), 가드(401/403) e2e. FE 폼 유효성(zod), dirty 기반 저장 버튼 토글, 이탈 다이얼로그.
-- Manual checks: Partner 토큰으로 본인 공방 GET preload → 일부 필드 변경 → PATCH → 미리보기 이동 + 토스트. 타 파트너 공방 PATCH 403. 변경 없을 때 저장 버튼 비활성. 이미지 추가(presigned)·삭제. 수정 후 status 불변 확인. SUSPENDED/PENDING 공방도 수정 성공 확인(DEC-3).
-- Observability: PATCH 실패(권한·slug 중복) 로깅, presigned 발급 실패 로깅.
-
-## Decision Log
-
-- 2026-06-01: 기능명세 DB에서 `공방 정보 수정` 정확 매칭(실행주체 partner, 도메인 store, 연관화면 공방 관리).
-- 2026-06-01: API명세 DB에서 4종 select — `PATCH /partner/stores/{storeId}`(공방 정보 수정), `GET /partner/stores/{storeId}`(preload), `POST /partner/stores/{storeId}/images`(이미지 추가), `DELETE /partner/stores/{storeId}/images/{imageId}`(이미지 삭제). 이미지 confirm(`PATCH .../images/{imageId}/confirm`)도 명세 존재 확인.
-- 2026-06-01: OD-1 확정 — GET 상세 응답에 `reservationIntervalMinutes`/`maxCapacityPerSlot` 추가(예약 정보 수정화면 preload). API 응답 스키마 보강 = 승인된 보강. BE 작업 항목.
-- 2026-06-01: OD-2 확정 — PATCH slug 중복 시 등록과 동일 `409 STORE_SLUG_DUPLICATED` 반환. 에러코드 contract 추가. FE는 409 시 slug 필드 중복 에러 표시.
-- 2026-06-01: OD-3 확정 — 이미지 업로드 FE presigned 플로우(POST images → S3 PUT → confirm). 최종 이미지 key 목록은 PATCH `images[]`로 반영(저장 전까지 미반영 → 이탈 롤백 무관). 등록 플로우와 동일 패턴 재사용.
-- 2026-06-01: DEC-1 확정 — slug 변경 시 redirect·이전 slug 보존 없이 신규 slug로 즉시 교체. 기존 공유 링크 깨짐 허용. redirect/보존 메커니즘 Out scope.
-- 2026-06-01: DEC-2 확정 — FE가 변경된(dirty) 필드만 PATCH body에 담아 부분 갱신. `operatingHours`/`images[]`는 배열 단위 전체 치환.
-- 2026-06-01: DEC-3 확정 — 수정 가능 상태 = 전 상태(DRAFT/PENDING/PUBLISHED/SUSPENDED) 허용(기능명세 "검수 상태 무관" 기준). BE 상태 기반 차단 제거(소유권만 검증), `400 INVALID_STORE_STATUS` 미발생, 수정 진입점 전 상태 노출.
-- 2026-06-01: DEC-4 확정 — PATCH `name?`(string 2~40자), `operatingHours?`(`OperatingHourInput[]` 배열 전체 치환, 항목 = dayOfWeek/openTime/closeTime/breakStart/breakEnd, 등록 제출 스키마 동일) contract 고정. PATCH body 예시에 반영.
-
-## Outcome
-
-- Status:
-- Follow-up: 공방 공개 상태 토글(게시 중/중단) 별도 기능. 주소 변경 + geocode 재변환 범위 확정.

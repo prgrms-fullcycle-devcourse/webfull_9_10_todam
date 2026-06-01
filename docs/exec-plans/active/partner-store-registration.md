@@ -6,6 +6,12 @@
 - Owner:
 - Date: 2026-06-01
 
+## Status
+
+- [x] API 구현
+- [ ] UI 구현
+- [ ] API 연동
+
 ## Context
 
 - 요구사항명세서(고정): docs/requirements.md — `공방 store` 도메인(공방 상태/상태전이, 파트너 신청/첫 공방 등록, 추가 공방 등록), `partner` 도메인(파트너 상태/상태전이), 접근 주체/가드(`AuthGuard`, 첫 등록은 User 이상, 추가 등록은 `AuthGuard + PartnerGuard`)
@@ -25,9 +31,77 @@
   - (UI-1) 4단계 진행 indicator(Stepper) 컴포넌트 디자인 토큰(활성/완료/미완료 상태별 컬러) DESIGN.md 미확정.
   - (UI-2) 반려 상태 Badge variant(`danger`) 컬러 토큰 미확정.
 
-## API Contract (스냅샷)
+## Scope
 
-<!-- Notion API명세(5852ee66b06c838bb8ec01c6bf4f2e25)에서 가져와 고정. BE/FE SSOT. -->
+- In:
+  - BE: `POST /stores` (공방 초안 생성 + 첫 공방 시 Partner 엔티티 자동 생성), `POST /partner/stores/{storeId}/images` (presigned PUT URL 발급), `POST /partner/stores/{storeId}/submit` (PENDING 전이) 3개 엔드포인트 구현. slug 중복 검증, 카카오맵 geocode 연동.
+  - UI: 4단계 폼(공방 정보 / 영업 정보 / 이미지 업로드 / 예약 정보) + 제출 완료(검토중 / 반려) 화면. (`apps/web/src/features/store-registration` 기존 UI가 존재하므로 실 API 연동 집중.)
+  - 연동: 실 API로 mock 전환 (`.env.local` `NEXT_PUBLIC_API_MOCKING=disabled`), 인증 헤더 연결, presigned 업로드(공방 이미지), geocode 연동.
+- Out:
+  - 사업자등록증 **파일 업로드**(`documentUrl`) 및 **OCR 국세청 진위 확인** — 백로그. (피그마 1단계에 파일 업로드 필드 없음. 사업자 정보 텍스트 필드는 In 스코프)
+  - Admin 검수 승인/반려 처리 — 별도 admin 기능.
+  - 공방 수정 (REJECTED 후 재제출) — 별도 기능.
+  - 공방 목록 조회 (`GET /partner/stores`) — `partner-store-list` plan 소관.
+  - 공방 이미지 삭제 (`DELETE /partner/stores/{storeId}/images/{imageId}`) — 등록 플로우 외 별도 편집 기능.
+
+## Plan
+
+1. **(BE) 공방 초안 생성 `POST /stores`**: `store` 모듈 컨트롤러/서비스/리포지터리 구현. AuthGuard 적용. slug 중복 검증, 카카오맵 geocode 변환, `stores` + `store_operating_hours` row 생성(`status = DRAFT`). 첫 공방 여부(Partner 레코드 존재 확인) → `partners` row 자동 생성(`status = PENDING`).
+2. **(BE) 이미지 presigned URL `POST /partner/stores/{storeId}/images`**: S3 presigned PUT URL 생성(5분 유효). `store_images` row 선생성. 응답에 `uploadUrl`, `imageId`, `imageUrl` 반환.
+3. **(BE) 공방 심사 제출 `POST /partner/stores/{storeId}/submit`**: 상태 검증(`DRAFT` 또는 `REJECTED`) → 필수 항목 완비 검증(이름·주소·대표이미지 1장) → `stores.status = PENDING` 전이. notification 큐 등록(파트너 신청 알림).
+4. **(UI) 실 API 연동 전환**: 기존 MSW mock을 실 API로 교체. `NEXT_PUBLIC_API_MOCKING=disabled` + `NEXT_PUBLIC_API_URL` 설정. `shared/api/auth-token.ts`에 accessToken 주입. 엔드포인트 경로 확정 반영.
+5. **(UI) presigned 업로드 연동**: `POST /partner/stores/{storeId}/images` 호출 → 발급받은 `uploadUrl`로 S3 직접 PUT 업로드.
+6. **(UI) geocode 연동**: 다음 주소 검색 → 카카오 로컬 API 또는 BE geocode 엔드포인트로 위경도 변환.
+7. **(연동) 제출 완료 → 검수 대기 화면**: `POST /partner/stores/{storeId}/submit` 성공 시 검토중 화면 렌더. 반려(`REJECTED`) 상태 조회 시 반려 사유 표시.
+
+## Out (단계별 완료물)
+
+- API:
+  - `POST /stores` — 공방 초안 생성 (slug 자동생성/중복검증, businessDocument 저장, 첫 공방 시 partner 자동생성)
+  - `POST /partner/stores/:storeId/images` — 공방 이미지 presigned PUT URL 발급
+  - `PATCH /partner/stores/:storeId/images/:imageId/confirm` — S3 객체 존재 검증 후 PENDING→UPLOADED
+  - `POST /partner/stores/:storeId/submit` — 공방 심사 제출 (DRAFT/REJECTED → PENDING)
+  - 주요 파일:
+    - `apps/api/src/modules/store/store.module.ts`
+    - `apps/api/src/modules/store/presentation/controllers/store.controller.ts`
+    - `apps/api/src/modules/store/presentation/dto/create-store.dto.ts`
+    - `apps/api/src/modules/store/presentation/dto/store-image.dto.ts`
+    - `apps/api/src/modules/store/presentation/dto/submit-store.dto.ts`
+    - `apps/api/src/modules/store/application/use-cases/create-store.use-case.ts`
+    - `apps/api/src/modules/store/application/use-cases/create-store-image.use-case.ts`
+    - `apps/api/src/modules/store/application/use-cases/confirm-store-image.use-case.ts`
+    - `apps/api/src/modules/store/application/use-cases/submit-store.use-case.ts`
+    - `apps/api/src/common/s3/s3.service.ts` (objectExists), `s3-object.util.ts` (keyFromImageUrl)
+- UI:
+- 연동:
+
+## Risks
+
+- presigned URL 5분 만료: 공방 이미지 업로드 중 만료 시 재발급 로직 필요.
+- slug 자동 생성: 미입력 시 BE에서 nanoid로 생성. FE는 slug 필드를 선택 입력으로 처리.
+
+## Validation
+
+- Tests: BE 서비스 단위(slug 중복, Partner 자동 생성 여부, 상태 전이), 가드(401·403) e2e. FE 폼 유효성(zod 스키마), presigned 업로드 성공/실패 분기.
+- Manual checks: User 토큰으로 첫 공방 등록 → Partner 엔티티 생성 확인. Partner 토큰으로 추가 공방 등록. slug 중복 409. 제출 완료 화면 정상 이동.
+- Observability: presigned URL 발급 실패 로깅.
+
+## Decision Log
+
+- 2026-06-01: 기능명세 DB에서 `공방등록` 검색 → `첫 공방 등록` 항목으로 매칭(실행주체 user, 도메인 store, 종료상태 PENDING).
+- 2026-06-01: API명세 DB 확인 → 공방 등록 엔드포인트는 `POST /stores` (not `/partner/stores`). request body에 `businessDocument` 포함, `convenienceInfo.wifi` 필드 추가, `reservationIntervalMinutes`/`maxCapacityPerSlot` 미포함 확인.
+- 2026-06-01: UI는 기존 store-registration plan에서 MSW mock 구현이 완료된 상태. 본 plan은 BE 구현 + 실 API 연동 전환에 집중.
+- 2026-06-01: 사업자등록증 업로드 및 OCR 진위 확인 전체 백로그 제외. 피그마 디자인에 해당 필드 없음. `businessDocument` 필드도 현재 스코프에서 제거.
+- 2026-06-01: 피그마 1단계 재확인 → 사업자 정보 텍스트 필드(사업자번호/상호명/대표자명/사업장주소/이메일)는 폼에 존재. `businessDocument`를 텍스트 입력 필드로 복원(파일 업로드·OCR만 백로그 유지). `business_documents.document_url`을 nullable로 변경(migration `20260601090000_business_document_url_nullable`).
+- 2026-06-01: 파트너 분기 명세 충실화 → 추가 공방 등록은 `APPROVED` 파트너만 허용. 그 외 status(PENDING/REJECTED/SUSPENDED/TERMINATED)는 `403 PARTNER_NOT_APPROVED`로 차단. (CONTRACT-2의 "partner 존재로만 분기"에서 status 검증 추가.)
+- 2026-06-01: 피그마 3단계(영업 정보)에 "예약 시간 간격"(1/1.5/2/3시간) 필드 존재 확인 → `reservationIntervalMinutes`(분 단위, 60/90/120/180) Store에 추가. 추후 프로그램 타임슬롯 생성 기준값으로 사용. `stores.reservation_interval_minutes` 컬럼 추가(migration `20260601100000_add_store_reservation_interval`).
+
+## Outcome
+
+- Status:
+- Follow-up: Admin 검수(승인/반려) — 별도 admin plan. 반려 후 재제출(공방 수정) — 별도 기능. 사업자등록증 OCR — 백로그.
+
+## API Contract (스냅샷)
 
 ### 데이터모델
 
@@ -237,79 +311,3 @@
   - `500 INTERNAL_SERVER_ERROR`
 
 ---
-
-## Scope
-
-- In:
-  - BE: `POST /stores` (공방 초안 생성 + 첫 공방 시 Partner 엔티티 자동 생성), `POST /partner/stores/{storeId}/images` (presigned PUT URL 발급), `POST /partner/stores/{storeId}/submit` (PENDING 전이) 3개 엔드포인트 구현. slug 중복 검증, 카카오맵 geocode 연동.
-  - UI: 4단계 폼(공방 정보 / 영업 정보 / 이미지 업로드 / 예약 정보) + 제출 완료(검토중 / 반려) 화면. (`apps/web/src/features/store-registration` 기존 UI가 존재하므로 실 API 연동 집중.)
-  - 연동: 실 API로 mock 전환 (`.env.local` `NEXT_PUBLIC_API_MOCKING=disabled`), 인증 헤더 연결, presigned 업로드(공방 이미지), geocode 연동.
-- Out:
-  - 사업자등록증 **파일 업로드**(`documentUrl`) 및 **OCR 국세청 진위 확인** — 백로그. (피그마 1단계에 파일 업로드 필드 없음. 사업자 정보 텍스트 필드는 In 스코프)
-  - Admin 검수 승인/반려 처리 — 별도 admin 기능.
-  - 공방 수정 (REJECTED 후 재제출) — 별도 기능.
-  - 공방 목록 조회 (`GET /partner/stores`) — `partner-store-list` plan 소관.
-  - 공방 이미지 삭제 (`DELETE /partner/stores/{storeId}/images/{imageId}`) — 등록 플로우 외 별도 편집 기능.
-
-## Plan
-
-1. **(BE) 공방 초안 생성 `POST /stores`**: `store` 모듈 컨트롤러/서비스/리포지터리 구현. AuthGuard 적용. slug 중복 검증, 카카오맵 geocode 변환, `stores` + `store_operating_hours` row 생성(`status = DRAFT`). 첫 공방 여부(Partner 레코드 존재 확인) → `partners` row 자동 생성(`status = PENDING`).
-2. **(BE) 이미지 presigned URL `POST /partner/stores/{storeId}/images`**: S3 presigned PUT URL 생성(5분 유효). `store_images` row 선생성. 응답에 `uploadUrl`, `imageId`, `imageUrl` 반환.
-3. **(BE) 공방 심사 제출 `POST /partner/stores/{storeId}/submit`**: 상태 검증(`DRAFT` 또는 `REJECTED`) → 필수 항목 완비 검증(이름·주소·대표이미지 1장) → `stores.status = PENDING` 전이. notification 큐 등록(파트너 신청 알림).
-4. **(UI) 실 API 연동 전환**: 기존 MSW mock을 실 API로 교체. `NEXT_PUBLIC_API_MOCKING=disabled` + `NEXT_PUBLIC_API_URL` 설정. `shared/api/auth-token.ts`에 accessToken 주입. 엔드포인트 경로 확정 반영.
-5. **(UI) presigned 업로드 연동**: `POST /partner/stores/{storeId}/images` 호출 → 발급받은 `uploadUrl`로 S3 직접 PUT 업로드.
-6. **(UI) geocode 연동**: 다음 주소 검색 → 카카오 로컬 API 또는 BE geocode 엔드포인트로 위경도 변환.
-7. **(연동) 제출 완료 → 검수 대기 화면**: `POST /partner/stores/{storeId}/submit` 성공 시 검토중 화면 렌더. 반려(`REJECTED`) 상태 조회 시 반려 사유 표시.
-
-## Status
-
-- [x] API 구현
-- [ ] UI 구현
-- [ ] API 연동
-
-## Out (단계별 완료물)
-
-- API:
-  - `POST /stores` — 공방 초안 생성 (slug 자동생성/중복검증, businessDocument 저장, 첫 공방 시 partner 자동생성)
-  - `POST /partner/stores/:storeId/images` — 공방 이미지 presigned PUT URL 발급
-  - `PATCH /partner/stores/:storeId/images/:imageId/confirm` — S3 객체 존재 검증 후 PENDING→UPLOADED
-  - `POST /partner/stores/:storeId/submit` — 공방 심사 제출 (DRAFT/REJECTED → PENDING)
-  - 주요 파일:
-    - `apps/api/src/modules/store/store.module.ts`
-    - `apps/api/src/modules/store/presentation/controllers/store.controller.ts`
-    - `apps/api/src/modules/store/presentation/dto/create-store.dto.ts`
-    - `apps/api/src/modules/store/presentation/dto/store-image.dto.ts`
-    - `apps/api/src/modules/store/presentation/dto/submit-store.dto.ts`
-    - `apps/api/src/modules/store/application/use-cases/create-store.use-case.ts`
-    - `apps/api/src/modules/store/application/use-cases/create-store-image.use-case.ts`
-    - `apps/api/src/modules/store/application/use-cases/confirm-store-image.use-case.ts`
-    - `apps/api/src/modules/store/application/use-cases/submit-store.use-case.ts`
-    - `apps/api/src/common/s3/s3.service.ts` (objectExists), `s3-object.util.ts` (keyFromImageUrl)
-- UI: <!-- 구현된 화면, 컴포넌트 -->
-- 연동: <!-- 연결 지점, 검증 결과 -->
-
-## Risks
-
-- presigned URL 5분 만료: 공방 이미지 업로드 중 만료 시 재발급 로직 필요.
-- slug 자동 생성: 미입력 시 BE에서 nanoid로 생성. FE는 slug 필드를 선택 입력으로 처리.
-
-## Validation
-
-- Tests: BE 서비스 단위(slug 중복, Partner 자동 생성 여부, 상태 전이), 가드(401·403) e2e. FE 폼 유효성(zod 스키마), presigned 업로드 성공/실패 분기.
-- Manual checks: User 토큰으로 첫 공방 등록 → Partner 엔티티 생성 확인. Partner 토큰으로 추가 공방 등록. slug 중복 409. 제출 완료 화면 정상 이동.
-- Observability: presigned URL 발급 실패 로깅.
-
-## Decision Log
-
-- 2026-06-01: 기능명세 DB에서 `공방등록` 검색 → `첫 공방 등록` 항목으로 매칭(실행주체 user, 도메인 store, 종료상태 PENDING).
-- 2026-06-01: API명세 DB 확인 → 공방 등록 엔드포인트는 `POST /stores` (not `/partner/stores`). request body에 `businessDocument` 포함, `convenienceInfo.wifi` 필드 추가, `reservationIntervalMinutes`/`maxCapacityPerSlot` 미포함 확인.
-- 2026-06-01: UI는 기존 store-registration plan에서 MSW mock 구현이 완료된 상태. 본 plan은 BE 구현 + 실 API 연동 전환에 집중.
-- 2026-06-01: 사업자등록증 업로드 및 OCR 진위 확인 전체 백로그 제외. 피그마 디자인에 해당 필드 없음. `businessDocument` 필드도 현재 스코프에서 제거.
-- 2026-06-01: 피그마 1단계 재확인 → 사업자 정보 텍스트 필드(사업자번호/상호명/대표자명/사업장주소/이메일)는 폼에 존재. `businessDocument`를 텍스트 입력 필드로 복원(파일 업로드·OCR만 백로그 유지). `business_documents.document_url`을 nullable로 변경(migration `20260601090000_business_document_url_nullable`).
-- 2026-06-01: 파트너 분기 명세 충실화 → 추가 공방 등록은 `APPROVED` 파트너만 허용. 그 외 status(PENDING/REJECTED/SUSPENDED/TERMINATED)는 `403 PARTNER_NOT_APPROVED`로 차단. (CONTRACT-2의 "partner 존재로만 분기"에서 status 검증 추가.)
-- 2026-06-01: 피그마 3단계(영업 정보)에 "예약 시간 간격"(1/1.5/2/3시간) 필드 존재 확인 → `reservationIntervalMinutes`(분 단위, 60/90/120/180) Store에 추가. 추후 프로그램 타임슬롯 생성 기준값으로 사용. `stores.reservation_interval_minutes` 컬럼 추가(migration `20260601100000_add_store_reservation_interval`).
-
-## Outcome
-
-- Status:
-- Follow-up: Admin 검수(승인/반려) — 별도 admin plan. 반려 후 재제출(공방 수정) — 별도 기능. 사업자등록증 OCR — 백로그.

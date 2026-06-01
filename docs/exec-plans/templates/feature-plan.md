@@ -6,6 +6,20 @@
 - Owner:
 - Date:
 
+## Status
+
+<!--
+게이트가 읽는 체크리스트. 셋 다 [x] 여야 completed/ 이동 가능 (pre-commit이 강제).
+각 항목 체크 기준:
+- API 구현: 실 BE(`apps/api`) 엔드포인트가 contract대로 존재·동작. MSW mock만 있으면 미체크.
+- UI 구현: 화면/컴포넌트 구현 완료.
+- API 연동: **실 API** 요청/응답이 contract 스키마로 연결. MSW mock 바인딩만 한 상태는 미체크(연동 아님).
+-->
+
+- [ ] API 구현
+- [ ] UI 구현
+- [ ] API 연동
+
 ## Context
 
 <!-- 요구사항=docs/requirements.md. 기능/API명세=Notion DB에서 notion-fetch.mjs --find로 select. -->
@@ -35,20 +49,6 @@
 1.
 2.
 3.
-
-## Status
-
-<!--
-게이트가 읽는 체크리스트. 셋 다 [x] 여야 completed/ 이동 가능 (pre-commit이 강제).
-각 항목 체크 기준:
-- API 구현: 실 BE(`apps/api`) 엔드포인트가 contract대로 존재·동작. MSW mock만 있으면 미체크.
-- UI 구현: 화면/컴포넌트 구현 완료.
-- API 연동: **실 API** 요청/응답이 contract 스키마로 연결. MSW mock 바인딩만 한 상태는 미체크(연동 아님).
--->
-
-- [ ] API 구현
-- [ ] UI 구현
-- [ ] API 연동
 
 ## Out (단계별 완료물)
 

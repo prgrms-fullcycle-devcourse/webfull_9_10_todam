@@ -6,9 +6,13 @@
 - Owner: nogglee
 - Date: 2026-06-01
 
-## Context
+## Status
 
-<!-- 요구사항=docs/requirements.md. 기능/API명세=Notion DB에서 notion-fetch.mjs --find로 select. -->
+- [ ] API 구현
+- [x] UI 구현
+- [ ] API 연동
+
+## Context
 
 - 요구사항명세서(고정): docs/requirements.md — `공방 store` 도메인(공방 상태/상태전이, 공방 조회), `partner` 도메인(파트너 상태), 접근 주체/가드(`AuthGuard + PartnerGuard`)
 - 기능명세: `나의 공방 목록 조회` (기능명세 DB `b242ee66b06c8349805601ce4a05247a` 에서 select)
@@ -27,59 +31,6 @@
   - ⏳ (CONTRACT-2) "현재 선택된 공방" 강조 — `공방 전환` 소관, 본 API 미포함. 선택 공방 출처 미확정 → 후속.
   - ⏳ (CONTRACT-3) 페이지네이션/총개수 없음(전체 반환). 다수 공방 대비 페이징 필요 여부 미확정.
 
-## API Contract (스냅샷)
-
-<!-- Notion API명세(5852ee66b06c838bb8ec01c6bf4f2e25)에서 그대로 옮겨 고정. BE/FE SSOT. -->
-
-### 데이터모델 (응답 store 항목)
-
-> ⚠️ **구현 시 디자인(Figma) 기준으로 확정** — 원 API명세의 `slug/address/thumbnailUrl/publishedAt`는 카드에서 미사용이라 제외, 디자인에 있는 `ownerName`(대표자)을 추가. BE 합의 필요(CONTRACT-1 참고).
-
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| `id` | string | 공방 ID (카드 key·상세 라우팅) |
-| `name` | string | 공방명 |
-| `ownerName` | string | 대표자명 (카드 "대표자 {ownerName}") |
-| `status` | enum | `DRAFT` \| `PENDING` \| `PUBLISHED` \| `REJECTED` \| `SUSPENDED` |
-| `createdAt` | string(ISO8601) | 생성 일시 (정렬 기준: 최신순) |
-
-> 라벨/Badge 매핑(디자인 확정 3종): PENDING→심사중(neutral·회색), PUBLISHED→게시중(success·초록), SUSPENDED→게시중단(danger·빨강). DRAFT→작성중, REJECTED→반려는 디자인 미제공 → 잠정 매핑(neutral/danger), 추후 확정.
-> zod 계약: `packages/shared/src/contracts/store-list.ts` (`PartnerStoreListItem` / `PartnerStoreListResult`).
-
-### 엔드포인트
-
-- `GET /api/v1/partner/stores` — 내 공방 목록 (파트너센터)
-  - 가드: `AuthGuard + PartnerGuard` (인증 토큰으로 파트너 capability 검증)
-  - Request Headers: `Accept: application/json`, `Authorization: Bearer {accessToken}`
-  - Request: path/query/body 없음
-  - 시스템 처리: 요청자 식별 → partner capability 검증 → `stores` 테이블에서 `partner_id` 소속 공방 전체 조회 → 상태 무관 본인 소유 전부 반환(최신 생성순)
-  - Response `200 OK`:
-    ```json
-    {
-      "statusCode": 200,
-      "timestamp": "2026-05-25T18:10:00.000Z",
-      "path": "/api/v1/partner/stores",
-      "message": "내 공방 목록이 성공적으로 조회되었습니다.",
-      "data": {
-        "stores": [
-          {
-            "id": "store-seed-0001",
-            "name": "흙과 사람",
-            "ownerName": "김리듬",
-            "status": "PUBLISHED",
-            "createdAt": "2026-05-30T10:00:00.000Z"
-          }
-        ]
-      },
-      "error": null
-    }
-    ```
-  - 에러:
-    - `401 UNAUTHORIZED` — "인증이 필요합니다."
-    - `403 FORBIDDEN` — "파트너 권한이 필요합니다."
-    - `500 INTERNAL_SERVER_ERROR` — "공방 목록 조회 중 서버 오류가 발생했습니다."
-  - 공통 응답 봉투: `{ statusCode, timestamp, path, message, data, error }`
-
 ## Scope
 
 - In:
@@ -97,14 +48,6 @@
 1. (BE) `GET /partner/stores` 컨트롤러/서비스 구현: PartnerGuard 적용, `partner_id` 기준 조회, `deletedAt` 제외, `createdAt DESC` 정렬, 응답 DTO를 API Contract 스냅샷 스키마로 직렬화.
 2. (UI) 공방 관리 목록 화면 + 공방 카드/게시상태 Badge/빈 상태 컴포넌트. UI-1~3 토큰 확보 전엔 mock으로 골격만, 토큰 확정 후 스타일 적용. DESIGN.md 준수.
 3. (연동) 응답 타입 정의 + 조회 훅(react-query 등), status enum→라벨 매핑 유틸, 로딩/401·403·500/빈 배열 상태 처리. 상세·등록 라우팅 연결.
-
-## Status
-
-<!-- 게이트가 읽는 체크리스트. 셋 다 [x] 여야 completed/ 이동 가능 (pre-commit이 강제). -->
-
-- [ ] API 구현  <!-- MSW mock만 구현. 실 BE(apps/api) 미구현이라 미체크 -->
-- [x] UI 구현
-- [ ] API 연동  <!-- 현재 MSW mock 바인딩만. 실 API 연동 완료 시 체크 -->
 
 ## Out (단계별 완료물)
 
@@ -155,3 +98,54 @@
   - CONTRACT-1(사업자 승인 상태 표기) 기획·BE 확정.
   - DRAFT/REJECTED Badge 디자인 확정.
   - 더보기 외 항목·페이지네이션(CONTRACT-3)·현재선택 강조(CONTRACT-2).
+
+## API Contract (스냅샷)
+
+### 데이터모델 (응답 store 항목)
+
+> ⚠️ **구현 시 디자인(Figma) 기준으로 확정** — 원 API명세의 `slug/address/thumbnailUrl/publishedAt`는 카드에서 미사용이라 제외, 디자인에 있는 `ownerName`(대표자)을 추가. BE 합의 필요(CONTRACT-1 참고).
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `id` | string | 공방 ID (카드 key·상세 라우팅) |
+| `name` | string | 공방명 |
+| `ownerName` | string | 대표자명 (카드 "대표자 {ownerName}") |
+| `status` | enum | `DRAFT` \| `PENDING` \| `PUBLISHED` \| `REJECTED` \| `SUSPENDED` |
+| `createdAt` | string(ISO8601) | 생성 일시 (정렬 기준: 최신순) |
+
+> 라벨/Badge 매핑(디자인 확정 3종): PENDING→심사중(neutral·회색), PUBLISHED→게시중(success·초록), SUSPENDED→게시중단(danger·빨강). DRAFT→작성중, REJECTED→반려는 디자인 미제공 → 잠정 매핑(neutral/danger), 추후 확정.
+> zod 계약: `packages/shared/src/contracts/store-list.ts` (`PartnerStoreListItem` / `PartnerStoreListResult`).
+
+### 엔드포인트
+
+- `GET /api/v1/partner/stores` — 내 공방 목록 (파트너센터)
+  - 가드: `AuthGuard + PartnerGuard` (인증 토큰으로 파트너 capability 검증)
+  - Request Headers: `Accept: application/json`, `Authorization: Bearer {accessToken}`
+  - Request: path/query/body 없음
+  - 시스템 처리: 요청자 식별 → partner capability 검증 → `stores` 테이블에서 `partner_id` 소속 공방 전체 조회 → 상태 무관 본인 소유 전부 반환(최신 생성순)
+  - Response `200 OK`:
+    ```json
+    {
+      "statusCode": 200,
+      "timestamp": "2026-05-25T18:10:00.000Z",
+      "path": "/api/v1/partner/stores",
+      "message": "내 공방 목록이 성공적으로 조회되었습니다.",
+      "data": {
+        "stores": [
+          {
+            "id": "store-seed-0001",
+            "name": "흙과 사람",
+            "ownerName": "김리듬",
+            "status": "PUBLISHED",
+            "createdAt": "2026-05-30T10:00:00.000Z"
+          }
+        ]
+      },
+      "error": null
+    }
+    ```
+  - 에러:
+    - `401 UNAUTHORIZED` — "인증이 필요합니다."
+    - `403 FORBIDDEN` — "파트너 권한이 필요합니다."
+    - `500 INTERNAL_SERVER_ERROR` — "공방 목록 조회 중 서버 오류가 발생했습니다."
+  - 공통 응답 봉투: `{ statusCode, timestamp, path, message, data, error }`
