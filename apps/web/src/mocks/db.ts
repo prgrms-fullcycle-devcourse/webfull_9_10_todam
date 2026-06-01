@@ -86,6 +86,58 @@ export function setLike(storeId: string, liked: boolean): boolean {
     return likedStores.has(storeId);
 }
 
+// ─── 내 공방 목록 시드 ──────────────────────────────────────────
+// 온보딩 흐름(db.stores)과 분리한 데모 데이터. 최신 생성순 정렬을 위해 createdAt 내림차순으로 시드.
+export interface PartnerStoreListRow {
+    id: string;
+    name: string;
+    ownerName: string;
+    status: StoreStatus;
+    createdAt: string;
+}
+const SEEDED_PARTNER_STORES: PartnerStoreListRow[] = [
+    {
+        id: 'store-seed-0001',
+        name: '흙과 사람',
+        ownerName: '김리듬',
+        status: StoreStatus.PUBLISHED,
+        createdAt: '2026-05-30T10:00:00.000Z',
+    },
+    {
+        id: 'store-seed-0002',
+        name: '플러스 도자기',
+        ownerName: '김리듬',
+        status: StoreStatus.PENDING,
+        createdAt: '2026-05-25T10:00:00.000Z',
+    },
+    {
+        id: 'store-seed-0003',
+        name: '클레이 서울',
+        ownerName: '김리듬',
+        status: StoreStatus.SUSPENDED,
+        createdAt: '2026-05-20T10:00:00.000Z',
+    },
+];
+
+// 내 공방 목록: 온보딩으로 생성된 공방 + 시드 데모, 최신 생성순.
+export function listPartnerStores(): PartnerStoreListRow[] {
+    const created: PartnerStoreListRow[] = db.stores
+        .filter((s) => {
+            const partner = db.partners.find((p) => p.id === s.partnerId);
+            return partner?.userId === MOCK_USER_ID;
+        })
+        .map((s) => ({
+            id: s.id,
+            name: s.name,
+            ownerName: db.businessDocuments.find((d) => d.storeId === s.id)?.ownerName ?? '',
+            status: s.status,
+            createdAt: s.createdAt,
+        }));
+    return [...created, ...SEEDED_PARTNER_STORES].sort((a, b) =>
+        b.createdAt.localeCompare(a.createdAt),
+    );
+}
+
 let seq = 0;
 export function genId(prefix: string): string {
     seq += 1;

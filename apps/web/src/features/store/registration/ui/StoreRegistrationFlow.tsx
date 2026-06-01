@@ -19,7 +19,12 @@ import { OperatingStep } from './OperatingStep';
 import { ReservationStep } from './ReservationStep';
 import { StoreInfoStep } from './StoreInfoStep';
 
-export function StoreRegistrationFlow() {
+export type StoreRegistrationFlowProps = {
+    // 닫기/첫 단계 뒤로가기 시 돌아갈 경로. 진입점별로 다르다. (예: /apply→/my, /partner/stores/new→/partner/stores)
+    returnTo?: string;
+};
+
+export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlowProps) {
     const router = useRouter();
     const step = useStoreRegistrationStore((s) => s.step);
     const form = useStoreRegistrationStore((s) => s.form);
@@ -39,7 +44,7 @@ export function StoreRegistrationFlow() {
 
     const exit = () => {
         reset();
-        router.push('/my');
+        router.push(returnTo);
     };
 
     if (submitted) {
@@ -92,7 +97,7 @@ export function StoreRegistrationFlow() {
     return (
         <div className="flex flex-1 flex-col overflow-hidden">
             {/* Header (back + title + close) */}
-            <header className="flex h-15 shrink-0 items-center border-b border-border-subtle bg-surface pt-safe">
+            <header className="flex h-15 shrink-0 items-center bg-transparent pt-safe">
                 <Button
                     variant="ghost"
                     layout="onlyIcon"

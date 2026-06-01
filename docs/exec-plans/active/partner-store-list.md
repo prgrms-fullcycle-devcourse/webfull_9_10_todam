@@ -20,12 +20,12 @@
 - API명세: `GET /partner/stores` (내 공방 목록 - 파트너센터). 상세 이동 대상은 별도 기능(`GET /partner/stores/{storeId}`), 등록 이동은 별도 기능(첫/추가 공방 등록) — 본 plan 범위 밖.
 - Relevant design docs: DESIGN.md (작업 시작 조건 — variant enum / size별 토큰 / 상태별 컬러 토큰)
 - Open decisions:
-  - (UI-1) 게시 상태 Badge 컴포넌트: variant enum(`DRAFT|PENDING|PUBLISHED|REJECTED|SUSPENDED` → 심사중/반려/게시중/게시중단 라벨 매핑)과 상태별 컬러 토큰이 DESIGN.md/Figma에 미확정. 확보 전 코딩 시작 금지.
-  - (UI-2) 공방 카드 컴포넌트의 size별 height/padding/gap/radius 토큰 미확정.
-  - (UI-3) 빈 상태(empty) 화면 카피/일러스트 미확정.
-  - (CONTRACT-1) 기능명세의 "사업자 승인 상태"가 API 응답에 별도 필드로 없음. 현재 `GET /partner/stores`는 store `status`만 반환(파트너 승인상태 아님). "사업자 승인 상태" 표시를 store.status로 갈음할지, partner.status를 별도 조회해 함께 표시할지 결정 필요. → 결정 전까지 store.status enum만 사용.
-  - (CONTRACT-2) "현재 선택된 공방"(강조)은 클라이언트 선택 상태(`공방 전환` 기능 소관)이며 본 API 응답에 없음. 선택 공방 식별 출처(zustand/cookie/별도 API) 미확정 — 본 plan은 목록 조회만 다루고 강조는 후속.
-  - (CONTRACT-3) API 응답 `data.stores`에 페이지네이션/총개수 필드 없음(전체 반환). 공방 다수 파트너 대비 페이징 필요 여부 확인.
+  - ✅ (UI-1) 게시 상태 Badge: Figma 디자인 확보. `Badge`에 `neutral` tone 추가(`bg-muted/text-foreground-secondary`). 매핑 3종 확정(심사중/게시중/게시중단). DRAFT/REJECTED만 잠정.
+  - ✅ (UI-2) 공방 카드: `entities/store/ui/StoreManagementItem.tsx` 구현. Figma 토큰 매핑 완료(rounded-2xl/p-4/gap-3 등, 전부 semantic·Tailwind 스케일).
+  - ✅ (UI-3) 빈 상태: `shared/ui/EmptyState.tsx` 공용 컴포넌트 구현(메시지 가변). 카피 "아직 등록된 공방이 없습니다." (임시 확정).
+  - ⏳ (CONTRACT-1) "사업자 승인 상태" vs 응답 필드 불일치. **현 구현은 디자인 따라 `ownerName`(대표자) 표시 + store.status로 게시상태 Badge.** partner.status(사업자 승인) 별도 표기 필요한지 BE/기획 확정 대기.
+  - ⏳ (CONTRACT-2) "현재 선택된 공방" 강조 — `공방 전환` 소관, 본 API 미포함. 선택 공방 출처 미확정 → 후속.
+  - ⏳ (CONTRACT-3) 페이지네이션/총개수 없음(전체 반환). 다수 공방 대비 페이징 필요 여부 미확정.
 
 ## API Contract (스냅샷)
 
@@ -33,44 +33,41 @@
 
 ### 데이터모델 (응답 store 항목)
 
+> ⚠️ **구현 시 디자인(Figma) 기준으로 확정** — 원 API명세의 `slug/address/thumbnailUrl/publishedAt`는 카드에서 미사용이라 제외, 디자인에 있는 `ownerName`(대표자)을 추가. BE 합의 필요(CONTRACT-1 참고).
+
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| `id` | string(UUID) | 공방 ID |
+| `id` | string | 공방 ID (카드 key·상세 라우팅) |
 | `name` | string | 공방명 |
-| `slug` | string | 공방 슬러그 |
-| `address` | string | 공방 주소 |
+| `ownerName` | string | 대표자명 (카드 "대표자 {ownerName}") |
 | `status` | enum | `DRAFT` \| `PENDING` \| `PUBLISHED` \| `REJECTED` \| `SUSPENDED` |
-| `thumbnailUrl` | string(URL) | 대표 이미지 썸네일 |
-| `publishedAt` | string(ISO8601) \| null | 게시 일시 |
 | `createdAt` | string(ISO8601) | 생성 일시 (정렬 기준: 최신순) |
 
-> store.status enum은 요구사항 공방 상태(DRAFT/PENDING/PUBLISHED/SUSPENDED)에 API명세가 `REJECTED`를 추가로 명시. 라벨 매핑: PENDING→심사중, REJECTED→반려, PUBLISHED→게시중, SUSPENDED→게시중단(DRAFT는 작성중).
+> 라벨/Badge 매핑(디자인 확정 3종): PENDING→심사중(neutral·회색), PUBLISHED→게시중(success·초록), SUSPENDED→게시중단(danger·빨강). DRAFT→작성중, REJECTED→반려는 디자인 미제공 → 잠정 매핑(neutral/danger), 추후 확정.
+> zod 계약: `packages/shared/src/contracts/store-list.ts` (`PartnerStoreListItem` / `PartnerStoreListResult`).
 
 ### 엔드포인트
 
-- `GET /partner/stores` — 내 공방 목록 (파트너센터)
+- `GET /api/v1/partner/stores` — 내 공방 목록 (파트너센터)
   - 가드: `AuthGuard + PartnerGuard` (인증 토큰으로 파트너 capability 검증)
   - Request Headers: `Accept: application/json`, `Authorization: Bearer {accessToken}`
   - Request: path/query/body 없음
-  - 시스템 처리: 요청자 식별 → partner capability 검증 → `stores` 테이블에서 `partner_id` 소속 공방 전체 조회 → 상태 무관 본인 소유 전부 반환
+  - 시스템 처리: 요청자 식별 → partner capability 검증 → `stores` 테이블에서 `partner_id` 소속 공방 전체 조회 → 상태 무관 본인 소유 전부 반환(최신 생성순)
   - Response `200 OK`:
     ```json
     {
       "statusCode": 200,
       "timestamp": "2026-05-25T18:10:00.000Z",
-      "path": "/partner/stores",
+      "path": "/api/v1/partner/stores",
       "message": "내 공방 목록이 성공적으로 조회되었습니다.",
       "data": {
         "stores": [
           {
-            "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
-            "name": "토담 공방",
-            "slug": "todam-studio",
-            "address": "서울특별시 성동구 성수이로 12길 34",
+            "id": "store-seed-0001",
+            "name": "흙과 사람",
+            "ownerName": "김리듬",
             "status": "PUBLISHED",
-            "thumbnailUrl": "https://cdn.todam.app/stores/todam-studio/thumb.jpg",
-            "publishedAt": "2026-05-20T10:00:00.000Z",
-            "createdAt": "2026-05-18T12:00:00.000Z"
+            "createdAt": "2026-05-30T10:00:00.000Z"
           }
         ]
       },
@@ -86,9 +83,9 @@
 ## Scope
 
 - In:
-  - BE: `GET /partner/stores` 구현(파트너 소유 공방 전체 조회, 최신 생성순 정렬, 삭제 공방 제외, 공통 응답 봉투).
-  - UI: 공방 관리 목록 화면 — 공방 카드(이미지/이름/주소/게시상태 Badge), 빈 상태, 로딩/네트워크 오류 처리, 공방 상세/등록 진입 링크(라우팅만).
-  - 연동: 목록 조회 API 바인딩(타입/쿼리 훅), 상태 enum → 라벨/Badge 매핑.
+  - BE: `GET /api/v1/partner/stores` 구현(파트너 소유 공방 전체 조회, 최신 생성순 정렬, 삭제 공방 제외, 공통 응답 봉투). **현재 MSW mock만 구현, 실 BE(apps/api) 미구현.**
+  - UI: 공방 관리 목록 화면 — 공방 카드(공방명/대표자/게시상태 Badge), 빈 상태, 로딩/오류 처리, 헤더 더보기(공방 등록) + 공방 상세/등록 라우팅.
+  - 연동: 목록 조회 API 바인딩(타입/쿼리 훅 `usePartnerStores`), 상태 enum → 라벨/Badge 매핑(`StoreStatusBadge`).
 - Out:
   - 공방 상세 조회(`GET /partner/stores/{storeId}`) 화면.
   - 공방 등록 플로우(첫/추가 공방 등록).
@@ -105,21 +102,32 @@
 
 <!-- 게이트가 읽는 체크리스트. 셋 다 [x] 여야 completed/ 이동 가능 (pre-commit이 강제). -->
 
-- [ ] API 구현
-- [ ] UI 구현
-- [ ] API 연동
+- [ ] API 구현  <!-- MSW mock만 구현. 실 BE(apps/api) 미구현이라 미체크 -->
+- [x] UI 구현
+- [ ] API 연동  <!-- 현재 MSW mock 바인딩만. 실 API 연동 완료 시 체크 -->
 
 ## Out (단계별 완료물)
 
-- API: <!-- 구현된 엔드포인트, 파일 -->
-- UI: <!-- 구현된 화면, 컴포넌트 -->
-- 연동: <!-- 연결 지점, 검증 결과 -->
+- API(mock): `apps/web/src/mocks/handlers.ts` `GET */api/v1/partner/stores`, `mocks/db.ts` `listPartnerStores()` + 시드 3종(최신 생성순). **실 BE 미구현.**
+- UI:
+  - `entities/store/ui/StoreManagementItem.tsx` — 공방 카드(공방명/대표자/Badge slot)
+  - `entities/store/ui/StoreStatusBadge.tsx` — status→tone+label+dot 매핑
+  - `packages/ui/Badge.tsx` — `neutral` tone 추가
+  - `packages/ui/Menu.tsx` — `MenuItem.icon`(trailing) 추가 + 디자인 정렬
+  - `shared/ui/EmptyState.tsx` — 빈 상태 공용
+  - `app/partner/stores/page.tsx` — 목록 화면(로딩/에러/빈/카드)
+  - 헤더 더보기: `shared/model/header-action.ts`(store) + `widgets/header` rightAction 슬롯 + `features/store/list/ui/StoreListHeaderMenu.tsx`
+  - 헤더 전역 스타일: `bg-transparent`·border 제거(Header 위젯/등록 인라인 헤더)
+- 연동: `features/store/list/` `api.ts`(`getPartnerStores`) + `queries.ts`(`usePartnerStores`). 계약 `packages/shared/.../store-list.ts`.
+- 부수: 등록 플로우 `returnTo` prop 추가(`/partner/stores/new` → 닫기 시 리스트 복귀).
 
 ## Risks
 
-- CONTRACT-1: "사업자 승인 상태" 표시 의미가 store.status와 partner.status 중 무엇인지 미확정 → 잘못 바인딩 시 사용자 혼동.
-- store.status에 `REJECTED`가 API명세에만 존재(요구사항 공방 상태 전이엔 DRAFT 반려로 기재) → enum 매핑 불일치 가능. 라벨 매핑 확정 필요.
-- 페이지네이션 부재 — 공방 다수 파트너에서 응답 비대 가능(CONTRACT-3).
+- CONTRACT-1: "사업자 승인 상태" 의미 미확정. 현 구현은 디자인 따라 `ownerName`+store.status만. partner.status 표기 필요 시 계약/카드 수정 필요.
+- 계약 drift: 원 API명세(slug/address/thumbnailUrl/publishedAt) ↔ 구현 계약(ownerName 추가, 4필드 제외). 실 BE 구현 시 합의 필수.
+- base path: 명세 `/partner/stores` ↔ 코드 컨벤션 `/api/v1/partner/stores`.
+- DRAFT/REJECTED Badge 매핑 잠정(디자인 미제공).
+- 페이지네이션 부재(CONTRACT-3).
 
 ## Validation
 
@@ -130,8 +138,20 @@
 ## Decision Log
 
 - 기능명 `파트너 공방 관리 - 공방 리스트 조회`는 기능명세 DB에 정확 일치 없음 → 후보 중 `나의 공방 목록 조회`로 매칭(실행주체 partner, 연관화면 설정, 표시 항목 일치). API는 `GET /partner/stores`로 확정.
+- 카드 필드: Figma `StoreManagementItem`엔 thumbnail/address 없음, `ownerName`(대표자) 있음 → 계약을 디자인 기준으로 작성(slug/address/thumbnailUrl/publishedAt 제외, ownerName 추가).
+- Badge 회색(심사중) tone이 기존 `Badge`에 없어 `neutral` tone 추가(토큰 `bg-muted/text-foreground-secondary`). dot 색 = 텍스트색(currentColor)으로 3종 일치.
+- 헤더 더보기: Header 위젯이 route-driven(layout 마운트)이라 페이지가 props 직접 못 줌 → `header-action` zustand store(modal/sheet/toast 패턴)로 우측 슬롯 주입.
+- 드롭다운: 커스텀 재구현 대신 `@todam/ui` `Menu` 재사용. trailing icon(+) 위해 `MenuItem.icon` 추가.
+- 빈 상태 `EmptyState`를 web 공용으로 분리(`shared/ui`).
+- 폴더/파일명: `features/store/list`(상위 store 중복 제거), 계약 `contracts/store-list.ts`(형제 `store-registration.ts`와 prefix 일치).
+- 헤더 전역 스타일: `bg-transparent` + border 제거(디자인 합의).
+- 등록 플로우 `returnTo`: 진입점별 닫기 목적지 분리(`/apply`→`/my`, `/partner/stores/new`→`/partner/stores`).
 
 ## Outcome
 
-- Status:
+- Status: UI·연동(mock) 완료. 실 BE(apps/api) + CONTRACT-1 확정 + 상세화면/공방전환 후속.
 - Follow-up:
+  - 실 `GET /api/v1/partner/stores` BE 구현 + 계약 합의(ownerName/제외필드).
+  - CONTRACT-1(사업자 승인 상태 표기) 기획·BE 확정.
+  - DRAFT/REJECTED Badge 디자인 확정.
+  - 더보기 외 항목·페이지네이션(CONTRACT-3)·현재선택 강조(CONTRACT-2).

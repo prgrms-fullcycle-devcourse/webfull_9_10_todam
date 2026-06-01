@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
+import type { ReactNode } from 'react';
 
 import { Logo, Button } from '@todam/ui';
 import { CloseIcon, LeftIcon, NotiIcon } from '@todam/ui';
 
+import { useHeaderActionStore } from '../../../shared/model';
 import { useHeader } from '../model/useHeader';
 
 type HeaderType = 'home' | 'main' | 'mainText' | 'sub' | 'subText' | 'popup' | 'search';
@@ -13,6 +15,7 @@ type HeaderViewProps = {
     type: HeaderType;
     title?: string;
     actionLabel?: string;
+    rightAction?: ReactNode;
     onNoti?: () => void;
     onAction?: () => void;
     onBack?: () => void;
@@ -26,6 +29,7 @@ function HeaderView({
     type,
     title,
     actionLabel = '선택',
+    rightAction,
     onNoti,
     onAction,
     onBack,
@@ -35,7 +39,7 @@ function HeaderView({
     onSearchClear,
 }: HeaderViewProps) {
     return (
-        <header className="shrink-0 border-b border-border-subtle bg-surface pt-safe">
+        <header className="shrink-0 bg-transparent pt-safe">
             <div
                 className={`flex h-15 items-center ${type === 'popup' ? 'justify-end' : type === 'search' ? 'gap-3 px-4' : ''}`}
             >
@@ -108,15 +112,17 @@ function HeaderView({
                         <span className="flex-1 truncate text-lg font-medium leading-6 text-foreground">
                             {title}
                         </span>
-                        <Button
-                            variant="ghost"
-                            layout="onlyIcon"
-                            size="lg"
-                            icon={<NotiIcon />}
-                            aria-label="알림"
-                            onClick={onNoti}
-                            className="hover:!bg-transparent hover:!text-foreground"
-                        />
+                        {rightAction ?? (
+                            <Button
+                                variant="ghost"
+                                layout="onlyIcon"
+                                size="lg"
+                                icon={<NotiIcon />}
+                                aria-label="알림"
+                                onClick={onNoti}
+                                className="hover:!bg-transparent hover:!text-foreground"
+                            />
+                        )}
                     </>
                 )}
 
@@ -199,7 +205,16 @@ type WidgetHeaderProps = Omit<Partial<HeaderViewProps>, 'type'>;
 
 export function Header(props: WidgetHeaderProps) {
     const header = useHeader();
+    const rightAction = useHeaderActionStore((s) => s.action);
     if (!header.visible) return null;
 
-    return <HeaderView type={header.type} title={header.title} onBack={header.onBack} {...props} />;
+    return (
+        <HeaderView
+            type={header.type}
+            title={header.title}
+            onBack={header.onBack}
+            rightAction={rightAction}
+            {...props}
+        />
+    );
 }
