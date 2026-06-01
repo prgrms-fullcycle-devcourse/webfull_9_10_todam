@@ -46,6 +46,7 @@
 | `convenienceInfo` | object | `{ parking: boolean, pet: boolean, wifi: boolean }` |
 | `autoConfirm` | boolean | 자동 예약 확정 여부 |
 | `cancelDeadlineDays` | number | 취소 가능 기한(d-day) |
+| `reservationIntervalMinutes` | number | 예약 시간 간격(분). `60`/`90`/`120`/`180` 중 하나. 추후 프로그램 타임슬롯 생성 기준 |
 | `operatingHours` | array | 영업 요일·시간 (아래 참조) |
 | `status` | enum | `DRAFT` \| `PENDING` \| `PUBLISHED` \| `REJECTED` \| `SUSPENDED` |
 
@@ -92,6 +93,7 @@
     "convenienceInfo": { "parking": true, "pet": false, "wifi": true },
     "autoConfirm": false,
     "cancelDeadlineDays": 1,
+    "reservationIntervalMinutes": 60,
     "operatingHours": [
       {
         "dayOfWeek": "MON",
@@ -305,6 +307,7 @@
 - 2026-06-01: 사업자등록증 업로드 및 OCR 진위 확인 전체 백로그 제외. 피그마 디자인에 해당 필드 없음. `businessDocument` 필드도 현재 스코프에서 제거.
 - 2026-06-01: 피그마 1단계 재확인 → 사업자 정보 텍스트 필드(사업자번호/상호명/대표자명/사업장주소/이메일)는 폼에 존재. `businessDocument`를 텍스트 입력 필드로 복원(파일 업로드·OCR만 백로그 유지). `business_documents.document_url`을 nullable로 변경(migration `20260601090000_business_document_url_nullable`).
 - 2026-06-01: 파트너 분기 명세 충실화 → 추가 공방 등록은 `APPROVED` 파트너만 허용. 그 외 status(PENDING/REJECTED/SUSPENDED/TERMINATED)는 `403 PARTNER_NOT_APPROVED`로 차단. (CONTRACT-2의 "partner 존재로만 분기"에서 status 검증 추가.)
+- 2026-06-01: 피그마 3단계(영업 정보)에 "예약 시간 간격"(1/1.5/2/3시간) 필드 존재 확인 → `reservationIntervalMinutes`(분 단위, 60/90/120/180) Store에 추가. 추후 프로그램 타임슬롯 생성 기준값으로 사용. `stores.reservation_interval_minutes` 컬럼 추가(migration `20260601100000_add_store_reservation_interval`).
 
 ## Outcome
 
