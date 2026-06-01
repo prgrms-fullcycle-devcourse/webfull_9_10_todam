@@ -307,7 +307,17 @@ Response 201 Created:
 
 - API:
 - UI:
-- 연동:
+  - **2단계 플로우 UI 구현 완료** (1단계 기본정보 + 2단계 운영정보 + 저장→토스트→목록 복귀).
+    - `packages/shared/src/enums/program-difficulty.ts` — `ProgramDifficulty` enum (BASIC|INTERMEDIATE|ADVANCED), index export 추가
+    - `apps/web/src/features/program/registration/` — model(types/store: zustand + isStepValid + isAllValid + isDirty), ui(BasicInfoStep, OperatingStep, ProgramRegistrationFlow), index
+    - `apps/web/src/app/partner/classes/new/page.tsx` — stub → ProgramRegistrationFlow 렌더 (returnTo=/partner/classes)
+    - 1단계: 대표이미지(file input 자리만, mock url), 클래스명(2~60자), 난이도(3버튼 검정선택=BASIC/INTERMEDIATE/ADVANCED), 상세설명(1000자 카운터)
+    - 2단계: 가격/소요시간/정원/리드타임(2x2 숫자입력), 어린이동반·택배(CheckboxInput bordered)
+    - 저장: 필수값 충족 시 활성 → 토스트("새로운 클래스가 등록되었어요") + /partner/classes 이동
+    - 재사용 컴포넌트: @todam/ui(TextInput·TextArea·Button·BottomBar·CheckboxInput·Camera/Close/LeftIcon), shared/ui(ProgressBarWrapper), shared/model(useToast); 멀티스텝 패턴은 features/store/registration 컨벤션 준수
+    - 검증: typecheck 통과 + 프리뷰 전체 플로우(1단계→2단계→저장→이동) 동작 확인
+  - **미구현(UI)**: 대표이미지 S3 업로드, 입력 중 이탈 확인 다이얼로그
+- 연동: 미구현 (저장은 mock 처리만, 실제 `POST /programs` 미호출 / MSW 핸들러 미등록)
 
 ## Risks
 
