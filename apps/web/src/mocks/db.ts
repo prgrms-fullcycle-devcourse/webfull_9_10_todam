@@ -1,11 +1,13 @@
 import {
     OcrStatus,
     PartnerStatus,
+    ProgramStatus,
     ReservationStatus,
     StoreStatus,
     type ConvenienceInfo,
     type DayOfWeek,
     type OperatingHourInput,
+    type PartnerProgramListItem,
     type PartnerStoreDetail,
     type ReservationListItem,
     type StoreImage,
@@ -253,7 +255,10 @@ const storeDetails: Record<string, PartnerStoreDetail> = {
         maxCapacityPerSlot: 6,
         status: StoreStatus.PUBLISHED,
         rejectedReason: null,
-        suspededReason: null,
+        suspendedReason: null,
+        rating: 4.8,
+        reviewCount: 132,
+        inProgressReservationCount: 5,
         operatingHours: [
             {
                 dayOfWeek: 'MON',
@@ -314,7 +319,10 @@ const storeDetails: Record<string, PartnerStoreDetail> = {
         maxCapacityPerSlot: 4,
         status: StoreStatus.PENDING,
         rejectedReason: null,
-        suspededReason: null,
+        suspendedReason: null,
+        rating: 0,
+        reviewCount: 0,
+        inProgressReservationCount: 0,
         operatingHours: [
             {
                 dayOfWeek: 'SAT',
@@ -368,7 +376,10 @@ const storeDetails: Record<string, PartnerStoreDetail> = {
         maxCapacityPerSlot: 8,
         status: StoreStatus.SUSPENDED,
         rejectedReason: null,
-        suspededReason: '운영 정책 위반으로 노출이 중단되었습니다.',
+        suspendedReason: '운영 정책 위반으로 노출이 중단되었습니다.',
+        rating: 4.5,
+        reviewCount: 21,
+        inProgressReservationCount: 0,
         operatingHours: [
             {
                 dayOfWeek: 'MON',
@@ -431,7 +442,10 @@ function buildDetailFromCreated(id: string): PartnerStoreDetail | undefined {
         maxCapacityPerSlot: 4,
         status: store.status,
         rejectedReason: store.rejectedReason,
-        suspededReason: null,
+        suspendedReason: null,
+        rating: 0,
+        reviewCount: 0,
+        inProgressReservationCount: 0,
         operatingHours: hours,
         images: [],
         businessDocument: {
@@ -455,6 +469,46 @@ export function getStoreDetail(id: string): PartnerStoreDetail | undefined {
         return built;
     }
     return undefined;
+}
+
+// ─── 운영 클래스 목록 시드 (GET /partner/stores/{storeId}/programs) ──
+// store-seed-0001 만 보유, store-seed-0002 는 empty([]) — empty UI 확인용.
+const storePrograms: Record<string, PartnerProgramListItem[]> = {
+    'store-seed-0001': [
+        {
+            id: 'prog-seed-0001',
+            title: '도자기 물레 원데이 클래스',
+            status: ProgramStatus.ACTIVE,
+            thumbnailUrl: 'https://placehold.co/200x150?text=wheel',
+            price: 45000,
+            durationMinutes: 120,
+            createdAt: '2026-05-21T09:00:00.000Z',
+        },
+        {
+            id: 'prog-seed-0002',
+            title: '핸드빌딩 머그컵 만들기',
+            status: ProgramStatus.DRAFT,
+            thumbnailUrl: 'https://placehold.co/200x150?text=mug',
+            price: 38000,
+            durationMinutes: 90,
+            createdAt: '2026-05-22T09:00:00.000Z',
+        },
+        {
+            id: 'prog-seed-0003',
+            title: '커플 도자기 클래스 (일시 중단)',
+            status: ProgramStatus.INACTIVE,
+            thumbnailUrl: 'https://placehold.co/200x150?text=couple',
+            price: 88000,
+            durationMinutes: 150,
+            createdAt: '2026-05-23T09:00:00.000Z',
+        },
+    ],
+};
+
+// 운영 클래스 목록 조회. 공방 미존재 시 null(→404), 존재하나 클래스 없으면 [].
+export function findPartnerStorePrograms(id: string): PartnerProgramListItem[] | null {
+    if (!getStoreDetail(id)) return null;
+    return storePrograms[id] ?? [];
 }
 
 // PATCH: 전달된 필드만 갱신(부분 갱신), operatingHours·images는 배열 전체 치환. status 불변.

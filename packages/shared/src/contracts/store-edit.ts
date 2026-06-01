@@ -60,8 +60,12 @@ export const partnerStoreDetailSchema = z.object({
     maxCapacityPerSlot: z.number(),
     status: z.nativeEnum(StoreStatus),
     rejectedReason: z.string().nullable(),
-    // 스펙 표기 그대로 (오타 추정). contract 동결.
-    suspededReason: z.string().nullable(),
+    suspendedReason: z.string().nullable(),
+    // 상세 조회 표시용 집계 (CONTRACT-1/3). 리뷰/진행예약 없으면 0.
+    rating: z.number(),
+    reviewCount: z.number(),
+    // 진행 중 예약 = 체험 완료 처리되지 않은 예약 건수.
+    inProgressReservationCount: z.number(),
     operatingHours: z.array(operatingHourInputSchema),
     images: z.array(storeImageSchema),
     businessDocument: storeBusinessDocumentSchema,
