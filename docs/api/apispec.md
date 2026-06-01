@@ -387,9 +387,10 @@
       "longitude": 127.0556,
       "convenienceInfo": { "parking": true, "pet": false, "wifi": true },
       "autoConfirm": false,
+      "cancelDeadlineDays": 1,
       "status": "PUBLISHED",
-      "rejectionReason": null,
-      "suspensionReason": null,
+      "rejectedReason": null,
+      "suspendedReason": null,
       "operatingHours": [
         {
           "dayOfWeek": "MON",
@@ -410,6 +411,7 @@
       ],
       "businessDocument": {
         "ownerName": "김토담",
+        "email": "partner@example.com",
         "businessName": "토담 공방",
         "businessNumber": "123-45-67890",
         "businessAddress": "서울특별시 성동구 성수이로 12길 34",
@@ -707,6 +709,7 @@
     "wifi": true
   },
   "autoConfirm": false,
+  "cancelDeadlineDays": 1,
   "operatingHours": [
     {
       "dayOfWeek": "MON",
@@ -719,6 +722,7 @@
   "businessDocument": {
     "documentUrl": "https://s3.amazonaws.com/todam/docs/business-license.jpg",
     "ownerName": "김토담",
+    "email": "partner@example.com",
     "businessName": "토담 공방",
     "businessNumber": "123-45-67890",
     "businessAddress": "서울특별시 성동구 성수이로 12길 34"
@@ -1049,11 +1053,11 @@
   "timestamp": "2026-05-25T19:50:00.000Z",
   "path": "/reservations/res-uuid-001/cancel",
   "message": "예약이 성공적으로 취소되었습니다.",
-  "data": {
+  "data": { 
     "reservation": {
       "id": "res-uuid-001",
       "status": "CANCELED",
-      "canceledBy": "CUSTOMER",
+      "canceledBy": "user-uuid-001",
       "cancelReason": "개인 사정으로 인한 취소",
       "canceledAt": "2026-05-25T19:50:00.000Z"
     }
@@ -1235,10 +1239,10 @@
   "materials": "앞치마 (공방 제공), 편한 복장",
   "caution": "체험 당일 취소는 불가합니다.",
   "price": 45000,
-  "duration": 120,
+  "durationMinutes": 120,
   "capacity": 6,
   "leadTimeDays": 30,
-  "receiveOption": "CUSTOMER_CHOICE"
+  "deliveryOption": "CUSTOMER_SELECT"
 }
 ```
 
@@ -1354,7 +1358,7 @@
 
 ### Query Parameters
 
-- `status`: 공방 심사 상태 필터 (선택, `PENDING`, `APPROVED`, `REJECTED`, `SUSPENDED` 중 하나, 기본값: `PENDING`)
+- `status`: 공방 심사 상태 필터 (선택, `PENDING`, `PUBLISHED`, `REJECTED`, `SUSPENDED` 중 하나, 기본값: `PENDING`)
 - `page`: 조회할 페이지 번호 (선택, 기본값: 1)
 - `limit`: 한 페이지에 노출할 공방 개수 (선택, 기본값: 10, 최대: 100)
 
@@ -1411,15 +1415,14 @@
         "createdAt": "2026-05-26T09:00:00.000Z",
         "partner": {
           "partnerId": "partner-uuid-101",
-          "name": "김파트너",
-          "email": "partner@example.com",
-          "phone": "010-9999-8888"
+          "nickname": "김파트너"
         },
         "businessDocument": {
           "documentId": "doc-uuid-001",
           "businessName": "토담 도예",
           "businessNumber": "123-45-67890",
           "ownerName": "김파트너",
+          "email": "partner@example.com",
           "documentUrl": "https://cdn.todam.app/documents/business-license_01.jpg",
           "ocrStatus": "VERIFIED"
         }
@@ -1918,7 +1921,9 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 - 인증된 파트너가 현장·전화 예약 등을 대신 입력하는 수동 예약을 등록한다.
 - `PENDING` 단계 없이 `CONFIRMED` 또는 `IN_PROGRESS` 상태로 직접 생성된다.
-- `program_time_slots` 슬롯 상태(`CLOSED`) 검증 및 정원 초과 검증은 생략한다.
+- `program_time_slots` 슬롯 상태(`CLOSED`) 검증 및 정원 초과 검증은 생략하며, 고객 예약과 달리 과거 일자의 슬롯도 선택할 수 있다.
+- `deliveryMethod`는 프로그램 `deliveryOption`이 `CUSTOMER_SELECT`일 때만 요청 필수이며, 그 외에는 서버가 `PICKUP`으로 강제한다. (배송지는 예약 확정 이후 입력)
+- 현장·전화 손님은 회원 계정이 없을 수 있으므로 `userId`는 비워둘 수 있다 (`source = 'PARTNER_MANUAL'`인 경우에만 `null` 허용).
 
 ---
 
@@ -1942,10 +1947,11 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 ```json
 {
   "programId": "prog-uuid-001",
-  "experienceAt": "2026-06-05T14:00:00.000Z",
-  "participantName": "박현장",
-  "participantPhone": "010-9876-5432",
+  "slotId": "slot-uuid-001",
+  "reserverName": "박현장",
+  "reserverPhone": "010-9876-5432",
   "participantCount": 1,
+  "deliveryMethod": "PICKUP",
   "initialStatus": "CONFIRMED",
   "internalMemo": "현장 방문 예약"
 }
@@ -1958,9 +1964,12 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 ### 시스템 처리 
 
 - 인증 토큰으로 파트너 capability를 검증한다.
-- 공방 소유 권한 및 프로그램 상태(`ACTIVE`)를 검증한다.
-- 정원 차감(`reserved_count` 증가)을 통계 목적으로 처리한다.
-- `reservations` row를 생성한다 (`source = 'PARTNER_MANUAL'`, 상태는 `initialStatus`).
+- 공방 소유 권한, 공방 상태(`PUBLISHED`), 프로그램 상태(`ACTIVE`)를 검증한다.
+- `slotId`로 타임슬롯을 조회한다 (과거 일자 슬롯 허용, `CLOSED` 및 정원 초과 검증은 생략).
+- `program_time_slots.reserved_count`를 `participantCount`만큼 증가시킨다 (통계 목적, 정원 초과 허용).
+- 프로그램의 최신 `program_snapshots`를 연결한다 (`programSnapshotId`).
+- `deliveryMethod`를 결정한다: 프로그램 `deliveryOption`이 `CUSTOMER_SELECT`이면 요청의 `deliveryMethod`(이 경우 필수)를 사용하고, 그 외에는 서버가 `PICKUP`으로 강제한다. (배송지는 예약 확정 이후 별도 입력)
+- `reservations` row를 생성한다 (`source = 'PARTNER_MANUAL'`, 상태는 `initialStatus`, 선택한 슬롯을 `programTimeSlotId`로 연결, `userId`는 비회원 현장 예약이므로 `null`).
 - `artworks` row를 자동 생성하고 QR 토큰을 발급한다.
 - 등록 완료 응답을 반환한다.
 
@@ -1982,7 +1991,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
   "data": {
     "reservation": {
       "id": "res-uuid-002",
-      "participantName": "박현장",
+      "reserverName": "박현장",
       "status": "CONFIRMED",
       "source": "PARTNER_MANUAL",
       "artworkId": "artwork-uuid-002",
@@ -2053,7 +2062,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 ```json
 {
-  "suspensionReason": "허위 정보 게재로 인한 노출 중단 조치입니다."
+  "suspendedReason": "허위 정보 게재로 인한 노출 중단 조치입니다."
 }
 ```
 
@@ -2065,7 +2074,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 - 어드민 인증 토큰을 검증한다.
 - `storeId`로 공방을 조회하고 `PUBLISHED` 상태인지 확인한다.
-- `stores.status = 'SUSPENDED'`, `suspension_reason`을 저장한다.
+- `stores.status = 'SUSPENDED'`, `suspended_reason`을 저장한다.
 - `Partner.status`는 변경하지 않는다.
 - 파트너에게 노출 중단 사유 알림을 발송한다.
 - 중단 완료 응답을 반환한다.
@@ -2089,7 +2098,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
     "store": {
       "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
       "status": "SUSPENDED",
-      "suspensionReason": "허위 정보 게재로 인한 노출 중단 조치입니다."
+      "suspendedReason": "허위 정보 게재로 인한 노출 중단 조치입니다."
     }
   },
   "error": null
@@ -2384,10 +2393,10 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
       "materials": "앞치마 (공방 제공), 편한 복장",
       "caution": "체험 당일 취소는 불가합니다.",
       "price": 45000,
-      "duration": 120,
+      "durationMinutes": 120,
       "capacity": 6,
       "leadTimeDays": 30,
-      "receiveOption": "CUSTOMER_CHOICE",
+      "deliveryOption": "CUSTOMER_SELECT",
       "status": "ACTIVE",
       "images": [
         {
@@ -2746,7 +2755,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 ---
 
-## /admin/stores/{storeId}/restore
+## /admin/partners/{PartnerId}/suspend
 
 ## 요구사항
 
@@ -2775,7 +2784,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 ```json
 {
-  "suspensionReason": "서비스 운영 정책 위반으로 인한 강제 정지 조치입니다."
+  "suspendedReason": "서비스 운영 정책 위반으로 인한 강제 정지 조치입니다."
 }
 ```
 
@@ -2787,7 +2796,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 - 어드민 인증 토큰을 검증한다.
 - `partnerId`로 파트너를 조회하고 `APPROVED` 상태인지 확인한다.
-- `suspensionReason` 필수 여부를 검증한다.
+- `suspendedReason` 필수 여부를 검증한다.
 - 해당 파트너의 `PENDING` 예약을 자동 취소 처리하고 고객에게 취소 알림을 발송한다.
 - `partners.status = 'SUSPENDED'`로 갱신한다.
 - 연결된 모든 `stores.status = 'SUSPENDED'`로 cascade 전이한다.
@@ -2928,8 +2937,8 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
       {
         "id": "res-uuid-001",
         "programTitle": "물레 체험 기초반",
-        "experienceAt": "2026-06-01T10:00:00.000Z",
-        "participantName": "김토담",
+        "scheduledAt": "2026-06-01T10:00:00.000Z",
+        "reserverName": "김토담",
         "participantCount": 2,
         "status": "CONFIRMED",
         "source": "CUSTOMER",
@@ -3138,11 +3147,11 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
       "storeName": "토담 공방",
       "programId": "prog-uuid-001",
       "programTitle": "물레 체험 기초반",
-      "experienceAt": "2026-06-01T10:00:00.000Z",
-      "participantName": "김토담",
-      "participantPhone": "010-1234-5678",
+      "scheduledAt": "2026-06-01T10:00:00.000Z",
+      "reserverName": "김토담",
+      "reserverPhone": "010-1234-5678",
       "participantCount": 2,
-      "receiveMethod": "DELIVERY",
+      "deliveryMethod": "DELIVERY",
       "shippingAddress": "서울특별시 마포구 월드컵북로 12, 101호",
       "requestMemo": "왼손잡이라 주의 부탁드립니다.", // 메모 필드 없어도 됨, 배송 정보 필요
       "status": "IN_PROGRESS",
@@ -3210,7 +3219,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 ## 요구사항
 
-- 인증된 파트너가 `DRAFT` 상태의 공방을 어드민 검수 대기(`PENDING`) 상태로 제출한다.
+- 인증된 파트너가 `DRAFT` 또는 `REJECTED` 상태의 공방을 어드민 검수 대기(`PENDING`) 상태로 제출한다.
 - 제출 전 필수 정보(공방명, 주소, 대표 이미지, 사업자등록번호, 사업자등록증 이미지)가 모두 입력되어 있어야 한다.
 
 ---
@@ -3235,7 +3244,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 
 - 인증 토큰으로 파트너 capability를 검증한다.
 - `storeId`로 공방을 조회하고 소유 권한을 확인한다.
-- 공방 상태가 `DRAFT`인지 검증한다.
+- 공방 상태가 `DRAFT` 또는 `REJECTED`인지 검증한다.
 - 필수 항목(이름, 주소, 대표 이미지 1장 이상, 사업자 서류)이 모두 갖춰졌는지 검증한다.
 - `stores.status = 'PENDING'`으로 전이한다.
 - 어드민 검수 대기 알림을 발송한다.
@@ -3306,7 +3315,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
   "statusCode": 409,
   "timestamp": "2026-05-25T18:25:05.000Z",
   "path": "/partner/stores/a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d/submit",
-  "message": "DRAFT 상태의 공방만 제출할 수 있습니다.",
+  "message": "DRAFT 또는 REJECTED 상태의 공방만 제출할 수 있습니다.",
   "data": null,
   "error": "INVALID_STORE_STATUS"
 }
@@ -3359,7 +3368,7 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
 - 요청 헤더의 Access Token 유효성을 검증하고 파트너 capability 권한을 확인한다.
 - 파트너 계정과 연동된 소유 공방 정보를 대조한다. (만약 `storeId` 파라미터가 명시적으로 존재한다면, 파트너 소유의 공방이 맞는지 소유 권한을 철저히 검증한다.)
 - `artworks` 테이블에서 해당 공방 ID를 참조하며, 작품 상태가 `CANCELED`가 아닌 활성 레코드들을 색인한다.
-- 작품 제작 단계 필드(예: `DRYING` (건조), `FIRST_FIRING` (초벌), `GLAZING` (유약), `SECOND_FIRING` (재벌))별로 SQL Group By 집계를 통해 실시간 작품 수 카운트를 계산한다.
+- 작품 제작 단계 필드(예: `DRYING` (건조), `BISQUE_FIRING` (초벌), `GLAZING` (유약), `GLAZE_FIRING` (재벌))별로 SQL Group By 집계를 통해 실시간 작품 수 카운트를 계산한다.
 - 단계별 누적 작품 수 리스트를 정갈한 Key-Value 데이터 구조로 가공하여 성공 응답을 반환한다.
 
 ---
@@ -3379,9 +3388,9 @@ refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYjUwYTczZi03OD
   "message": "제작단계별 작품 수 조회가 완료되었습니다.",
   "data": {
     "drying": 12,
-    "firstFiring": 8,
+    "bisqueFiring": 8,
     "glazing": 4,
-    "secondFiring": 2
+    "glazeFiring": 2
   },
   "error": null
 }
@@ -3836,7 +3845,7 @@ Content-Disposition: attachment; filename="qr-label-res-uuid-001.pdf"
 
 - 어드민 인증 토큰을 검증한다.
 - `storeId`로 공방을 조회하고 `SUSPENDED` 상태인지 확인한다.
-- `stores.status = 'PUBLISHED'`, `suspension_reason = null`로 갱신한다.
+- `stores.status = 'PUBLISHED'`, `suspended_reason = null`로 갱신한다.
 - 파트너에게 노출 재개 알림을 발송한다.
 - 재개 완료 응답을 반환한다.
 
@@ -4335,7 +4344,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 
 ## 요구사항
 
-- 어드민이 `PENDING` 상태의 공방을 반려하여 `DRAFT`로 전이한다.
+- 어드민이 `PENDING` 상태의 공방을 반려하여 `REJECTED`로 전이한다.
 - 반려 사유를 필수로 입력해야 하며, 파트너에게 반려 사유를 전달한다.
 
 ---
@@ -4359,7 +4368,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 
 ```json
 {
-  "rejectionReason": "사업자등록증 이미지가 불명확합니다. 선명한 이미지로 재업로드해주세요."
+  "rejectedReason": "사업자등록증 이미지가 불명확합니다. 선명한 이미지로 재업로드해주세요."
 }
 ```
 
@@ -4371,8 +4380,8 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 
 - 어드민 인증 토큰을 검증한다.
 - `storeId`로 공방을 조회하고 `PENDING` 상태인지 확인한다.
-- `rejectionReason` 필수 여부를 검증한다.
-- `stores.status = 'DRAFT'`, `rejection_reason`을 저장한다.
+- `rejectedReason` 필수 여부를 검증한다.
+- `stores.status = 'REJECTED'`, `rejected_reason`을 저장한다.
 - 첫 번째 공방인 경우 `partners.status = 'PENDING'`을 유지한다.
 - 파트너에게 반려 사유를 포함한 알림을 발송한다.
 - 반려 완료 응답을 반환한다.
@@ -4395,8 +4404,8 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
   "data": {
     "store": {
       "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
-      "status": "DRAFT",
-      "rejectionReason": "사업자등록증 이미지가 불명확합니다. 선명한 이미지로 재업로드해주세요."
+      "status": "REJECTED",
+      "rejectedReason": "사업자등록증 이미지가 불명확합니다. 선명한 이미지로 재업로드해주세요."
     }
   },
   "error": null
@@ -4882,8 +4891,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
     {
       "filename": "pottery_drying.jpg",
       "fileSize": 1048576,
-      "contentType": "image/jpeg",
-      "memo": "건조 중인 작품입니다."
+      "contentType": "image/jpeg"
     }
   ]
 }
@@ -4900,7 +4908,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 - 조회된 작품 상태가 `CANCELED`가 아닌지 검증한다.
 - 요청된 파일 정보(한 번에 최대 5장, 용량 5MB 이하, 파일 형식 JPG/PNG/HEIC)가 올바른지 유효성을 검증한다.
 - 고유 파일명(UUID 기반) 및 S3 Key(`artworks/{artworkId}/photos/{uuid}_{filename}`)를 생성한다.
-- `artwork_photos` 테이블에 원본 이미지 CDN 주소, 메모(`memo`), 상태값 `PENDING`으로 즉시 레코드를 삽입한다.
+- `artwork_photos` 테이블에 원본 이미지 CDN 주소, 상태값 `PENDING`으로 즉시 레코드를 삽입한다.
 - S3 SDK를 호출하여 PutObject 방식의 Presigned URL(유효기간 10분)을 생성한다.
 - 생성된 S3 Key, Presigned URL 및 DB에서 생성된 사진 고유 UUID(`photoId`) 목록을 성공 응답으로 반환한다.
 
@@ -5027,7 +5035,8 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 {
   "action": "SHIP",
   "trackingNumber": "1234567890123",
-  "carrier": "CJ_LOGISTICS"
+  "carrier": "CJ_LOGISTICS",
+  "shippedAt": "2026-05-25"
 }
 ```
 
@@ -5061,7 +5070,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 - `artworkId`로 작품을 조회하고 공방 소유 권한을 확인한다.
 - `Artwork.status = 'COMPLETED'`인지 검증한다.
 - `action`에 따라 분기 처리한다.
-    - `SHIP`: `artworks`에 운송장 번호·택배사·발송일을 저장하고 연결된 `reservations.status = 'SHIPPED'`로 갱신. 고객에게 배송 시작 알림 발송. 7일 후 자동 `DELIVERED` 전이 스케줄러 등록.
+    - `SHIP`: `deliveries` 레코드에 운송장 번호·택배사·발송일(`shippedAt`)을 기록하고 연결된 `reservations.status = 'SHIPPED'`로 갱신. 고객에게 배송 시작 알림 발송. 발송일 기준 7일 후 자동 `DELIVERED` 전이 스케줄러 등록.
     - `PICKUP_READY`: `reservations.status = 'PICKUP_READY'`로 갱신. 고객에게 픽업 가능 알림 발송.
     - `PICKUP_DONE`: `reservations.status = 'PICKUP_DONE'`으로 갱신.
 - 처리 완료 응답을 반환한다.
@@ -5087,7 +5096,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
       "status": "SHIPPED",
       "trackingNumber": "1234567890123",
       "carrier": "CJ_LOGISTICS",
-      "shippedAt": "2026-05-25T20:45:00.000Z"
+      "shippedAt": "2026-05-25"
     }
   },
   "error": null
@@ -5182,7 +5191,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
         "id": "res-uuid-001",
         "storeName": "토담 공방",
         "programTitle": "물레 체험 기초반",
-        "experienceAt": "2026-06-01T10:00:00.000Z",
+        "scheduledAt": "2026-06-01T10:00:00.000Z",
         "participantCount": 2,
         "status": "IN_PROGRESS",
         "displayState": {
@@ -5339,7 +5348,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 ## 요구사항
 
 - 인증된 사용자가 특정 프로그램의 예약 가능한 날짜 및 시간대 목록을 조회한다.
-- 공방 운영시간, 휴게시간, 기존 예약 수, `BlockedSlot` 여부를 종합하여 예약 가능 여부를 계산한다.
+- 공방 운영시간, 휴게시간, 기존 예약 수, `program_time_slots.status = 'CLOSED'` 여부를 종합하여 예약 가능 여부를 계산한다.
 
 ---
 
@@ -5370,7 +5379,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 - `programId`로 `ACTIVE` 상태의 프로그램을 조회한다.
 - 해당 공방의 운영시간, 휴게시간, 예약 시간 간격을 기반으로 해당 월의 시간 슬롯 목록을 생성한다.
 - `program_time_slots`에서 각 슬롯의 `reserved_count`와 `capacity`를 비교하여 잔여 정원을 계산한다.
-- `blocked_slots` 테이블에서 차단된 슬롯을 필터링한다.
+- `program_time_slots.status = 'CLOSED'` 슬롯을 필터링한다.
 - 예약 가능 여부(`OPEN`/`CLOSED`)가 표시된 슬롯 목록을 반환한다.
 
 ---
@@ -5475,7 +5484,8 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 ```json
 {
   "fileName": "program_01.png",
-  "fileType": "image/png"
+  "fileType": "image/png",
+  "isThumbnail": true
 }
 ```
 
@@ -5487,7 +5497,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 
 - 인증 토큰으로 파트너 권한 및 프로그램 소속 여부를 확인한다.
 - S3 객체 키를 생성하고 Pre-signed PUT URL을 발급한다.
-- `program_images` 테이블에 row를 선 생성한다.
+- `program_images` 테이블에 row를 선 생성한다 (`image_url` 및 `is_thumbnail` 기록).
 - 발급된 URL과 이미지 정보를 반환한다.
 
 ---
@@ -5661,7 +5671,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 ## 요구사항
 
 - 인증된 파트너가 본인이 운영 중인 공방 목록을 조회한다.
-- 공방 상태(DRAFT, PENDING, PUBLISHED, SUSPENDED)에 관계없이 본인 소유 공방 전체를 반환한다.
+- 공방 상태(DRAFT, PENDING, PUBLISHED, REJECTED, SUSPENDED)에 관계없이 본인 소유 공방 전체를 반환한다.
 
 ---
 
@@ -5925,7 +5935,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
     "artwork": {
       "id": "artwork-uuid-001",
       "reservationId": "res-uuid-001",
-      "participantName": "김토담",
+      "reserverName": "김토담",
       "status": "DRYING",
       "displayState": {
         "label": "제작 중",
@@ -5949,7 +5959,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
           "toStatus": "DRYING",
           "changedByNickname": "토담공방",
           "memo": "건조 시작",
-          "changedAt": "2026-06-02T10:00:00.000Z"
+          "createdAt": "2026-06-02T10:00:00.000Z"
         }
       ]
     }
@@ -6047,10 +6057,10 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
         "title": "물레 체험 기초반",
         "description": "처음 도자기를 접하는 분들을 위한 물레 체험입니다.",
         "price": 45000,
-        "duration": 120,
+        "durationMinutes": 120,
         "capacity": 6,
         "leadTimeDays": 30,
-        "receiveOption": "CUSTOMER_CHOICE",
+        "deliveryOption": "CUSTOMER_SELECT",
         "thumbnailUrl": "https://cdn.todam.app/programs/prog-uuid-001/thumb.jpg",
         "status": "ACTIVE",
         "sortOrder": 1
@@ -6138,7 +6148,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 - 작품 상태가 `COMPLETED` 또는 `CANCELED`가 아닌지 검증한다.
 - 목표 상태가 현재 상태의 직후 또는 직전 단계인지 검증한다.
 - `artworks.status`를 갱신하고 `updated_at`을 기록한다.
-- `artwork_logs` row를 생성한다 (`from_status`, `to_status`, `changed_by`, `memo`, `changed_at`).
+- `artwork_logs` row를 생성한다 (`from_status`, `to_status`, `changed_by`, `memo`, `created_at`).
 - 고객 알림 큐에 등록한다 (내부 상태를 고객 노출 문구로 치환하여 발송).
 - 변경 완료 응답을 반환한다.
 
@@ -6380,7 +6390,8 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
     "parking": true,
     "pet": true,
     "wifi": true
-  }
+  },
+  "cancelDeadlineDays": 1
 }
 ```
 
@@ -6545,7 +6556,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 
 - 인증 토큰으로 파트너 capability를 검증한다.
 - 공방 소유 권한 및 프로그램 소속 여부를 확인한다.
-- 가격·정원·리드타임이 변경되고 기존 예약이 1건 이상 존재하면, 신규 `program_snapshots` row를 생성하고 `programs.current_snapshot_id`를 갱신한다.
+- 가격·정원·리드타임이 변경되고 기존 예약이 1건 이상 존재하면, 신규 `program_snapshots` row를 생성하고 `program_snapshots`에 새 레코드를 생성한다.
 - 나머지 필드를 `programs` row에 반영하고 `updated_at`을 갱신한다.
 - 수정 완료 응답을 반환한다.
 
@@ -7119,7 +7130,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
     "reservation": {
       "id": "res-uuid-001",
       "status": "CANCELED",
-      "canceledBy": "PARTNER",
+      "canceledBy": "partner-user-uuid-001",
       "cancelReason": "공방 사정으로 인한 취소",
       "canceledAt": "2026-05-25T20:10:00.000Z"
     }
@@ -7743,10 +7754,10 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 {
   "programId": "prog-uuid-001",
   "slotId": "slot-uuid-001",
-  "participantName": "김토담",
-  "participantPhone": "010-1234-5678",
+  "reserverName": "김토담",
+  "reserverPhone": "010-1234-5678",
   "participantCount": 2,
-  "receiveMethod": "DELIVERY",
+  "deliveryMethod": "DELIVERY",
   "shippingAddress": "서울특별시 마포구 월드컵북로 12, 101호",
   "requestMemo": "왼손잡이라 주의 부탁드립니다."
 }
@@ -7761,9 +7772,10 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 - 인증 토큰으로 사용자를 식별한다.
 - `programId`와 `slotId`로 클래스 및 시간 슬롯의 상태를 검증한다.
 - 잔여 정원(`capacity - reserved_count`)이 `participantCount` 이상인지 확인한다 (동시성 안전 처리).
-- `BlockedSlot` 여부를 확인한다.
+- `program_time_slots.status = 'CLOSED'` 여부를 확인한다.
 - 예약자가 해당 공방의 파트너인지 확인하여 자기거래를 차단한다.
 - `reservations` row를 생성한다 (`status = 'PENDING'`, `source = 'CUSTOMER'`).
+- 배송(`deliveryMethod = 'DELIVERY'`) 선택 시 `deliveries` row를 생성하고 `shippingAddress`를 저장한다.
 - `program_time_slots.reserved_count`를 `participantCount`만큼 증가시킨다.
 - `auto_confirm = true`인 공방이면 즉시 `CONFIRMED` 전이 후 `artworks` row를 자동 생성하고 QR 토큰을 발급한다.
 - 고객에게 예약 접수 알림, 파트너에게 새 예약 알림을 발송한다.
@@ -7789,7 +7801,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
       "id": "res-uuid-001",
       "programId": "prog-uuid-001",
       "slotId": "slot-uuid-001",
-      "participantName": "김토담",
+      "reserverName": "김토담",
       "participantCount": 2,
       "status": "PENDING",
       "displayState": {
@@ -7976,7 +7988,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
 
 - 인증된 파트너(공방 사장님)가 특정 프로그램에 대해 예약 가능한 일자 및 시간대 슬롯(Time Slot)을 생성한다.
 - 운영 편의성을 위해 단일 생성뿐만 아니라 여러 날짜와 여러 시간대를 배열 구조로 묶어 **벌크 일괄 생성(Bulk Creation)** 할 수 있도록 지원한다.
-- 생성하고자 하는 시간 슬롯은 해당 공방의 정기 휴무일이나 차단 슬롯(`Blocked Slot`) 영역과 겹치지 않아야 한다.
+- 생성하고자 하는 시간 슬롯은 해당 공방의 정기 휴무일이나 차단 슬롯(`program_time_slots.status = 'CLOSED'`) 영역과 겹치지 않아야 한다.
 - 이미 동일한 날짜 및 시작/종료 시간으로 해당 프로그램에 타임슬롯이 생성되어 있다면 충돌(`409 Conflict`) 오류를 반환한다.
 
 ---
@@ -8223,7 +8235,7 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
     "artworks": [
       {
         "id": "artwork-uuid-001",
-        "participantName": "김토담",
+        "reserverName": "김토담",
         "status": "DRYING",
         "estimatedCompletedAt": "2026-07-01T00:00:00.000Z",
         "thumbnailUrl": "https://cdn.todam.app/artworks/artwork-uuid-001/thumb.jpg",
