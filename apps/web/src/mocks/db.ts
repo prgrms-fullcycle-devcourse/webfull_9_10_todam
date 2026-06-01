@@ -5,6 +5,8 @@ import {
     ReservationDeliveryMethod,
     ReservationStatus,
     StoreStatus,
+    ProgramDeliveryOption,
+    ProgramDifficulty,
     type ConvenienceInfo,
     type DayOfWeek,
     type OperatingHourInput,
@@ -15,6 +17,7 @@ import {
     type ReviewDetail,
     type StoreImage,
     type StoreRegistrationSubmitRequest,
+    type ProgramImage,
     type StoreUpdateRequest,
 } from '@todam/shared';
 
@@ -235,6 +238,137 @@ export function findLatestStoreRegistration() {
     if (!store) return null;
     const businessDoc = db.businessDocuments.filter((d) => d.storeId === store.id).at(-1) ?? null;
     return { partner, store, businessDoc };
+}
+
+// ─── 프로그램 mock DB ────────────────────────────────────────────
+
+export interface ProgramRow {
+    id: string;
+    storeId: string;
+    title: string;
+    description: string | null;
+    materials: string | null;
+    price: number;
+    durationMinutes: number;
+    capacity: number;
+    leadTimeDays: number;
+    difficulty: ProgramDifficulty;
+    deliveryOption: ProgramDeliveryOption;
+    childrenAllowed: boolean;
+    deliveryAvailable: boolean;
+    status: ProgramStatus;
+    updatedAt: string;
+}
+
+export interface ProgramImageRow {
+    programImageId: string;
+    programId: string;
+    imageUrl: string;
+    thumbnailUrl: string;
+    isThumbnail: boolean;
+}
+
+// 시드: 테스트용 공방 + 프로그램 데이터
+export const MOCK_STORE_ID = 'store-seed-0001';
+export const MOCK_STORE_SLUG = 'todam-pottery';
+
+export const seededPrograms: ProgramRow[] = [
+    {
+        id: 'prog-uuid-001',
+        storeId: MOCK_STORE_ID,
+        title: '물레 체험 기초반',
+        description: '처음 도자기를 접하는 분들을 위한 물레 체험입니다.',
+        materials: '앞치마 (공방 제공), 편한 복장',
+        price: 45000,
+        durationMinutes: 120,
+        capacity: 6,
+        leadTimeDays: 30,
+        difficulty: ProgramDifficulty.BASIC,
+        deliveryOption: ProgramDeliveryOption.CUSTOMER_SELECT,
+        childrenAllowed: true,
+        deliveryAvailable: false,
+        status: ProgramStatus.ACTIVE,
+        updatedAt: '2026-05-25T19:05:00.000Z',
+    },
+];
+
+export const seededProgramImages: ProgramImageRow[] = [
+    {
+        programImageId: 'prog-img-uuid-001',
+        programId: 'prog-uuid-001',
+        imageUrl: 'https://cdn.todam.app/programs/prog-uuid-001/01.jpg',
+        thumbnailUrl: 'https://cdn.todam.app/programs/prog-uuid-001/01_thumb.jpg',
+        isThumbnail: true,
+    },
+];
+
+export function findProgramBySlugAndId(slug: string, programId: string): ProgramRow | undefined {
+    // slug → storeId 매핑 (시드 기준)
+    if (slug !== MOCK_STORE_SLUG) return undefined;
+    return seededPrograms.find((p) => p.id === programId);
+}
+
+export function findProgramByStoreAndId(
+    storeId: string,
+    programId: string,
+): ProgramRow | undefined {
+    return seededPrograms.find((p) => p.storeId === storeId && p.id === programId);
+}
+
+export function getProgramImages(programId: string): ProgramImageRow[] {
+    return seededProgramImages.filter((img) => img.programId === programId);
+}
+
+export function updateProgram(
+    programId: string,
+    patch: Partial<Omit<ProgramRow, 'id' | 'storeId'>>,
+): ProgramRow | undefined {
+    const idx = seededPrograms.findIndex((p) => p.id === programId);
+    if (idx === -1) return undefined;
+    seededPrograms[idx] = { ...seededPrograms[idx]!, ...patch, updatedAt: nowIso() };
+    return seededPrograms[idx]!;
+}
+
+export function addProgramImage(
+    programId: string,
+    image: Omit<ProgramImageRow, 'programId'>,
+): ProgramImageRow {
+    const row: ProgramImageRow = { ...image, programId };
+    seededProgramImages.push(row);
+    return row;
+}
+
+export function removeProgramImage(imageId: string): boolean {
+    const idx = seededProgramImages.findIndex((img) => img.programImageId === imageId);
+    if (idx === -1) return false;
+    seededProgramImages.splice(idx, 1);
+    return true;
+}
+
+export function programToApiShape(program: ProgramRow): object {
+    const images: ProgramImage[] = getProgramImages(program.id).map((img) => ({
+        programImageId: img.programImageId,
+        imageUrl: img.imageUrl,
+        thumbnailUrl: img.thumbnailUrl,
+        isThumbnail: img.isThumbnail,
+    }));
+    return {
+        id: program.id,
+        storeId: program.storeId,
+        title: program.title,
+        description: program.description,
+        materials: program.materials,
+        price: program.price,
+        durationMinutes: program.durationMinutes,
+        capacity: program.capacity,
+        leadTimeDays: program.leadTimeDays,
+        difficulty: program.difficulty,
+        deliveryOption: program.deliveryOption,
+        childrenAllowed: program.childrenAllowed,
+        deliveryAvailable: program.deliveryAvailable,
+        status: program.status,
+        images,
+    };
 }
 
 // ─── 공방 상세(수정 화면 preload) mock ──────────────────────────
@@ -485,6 +619,8 @@ const storePrograms: Record<string, PartnerProgramListItem[]> = {
             thumbnailUrl: 'https://placehold.co/200x150?text=wheel',
             price: 45000,
             durationMinutes: 120,
+            capacity: 6,
+            sortOrder: 1,
             createdAt: '2026-05-21T09:00:00.000Z',
         },
         {
@@ -494,6 +630,8 @@ const storePrograms: Record<string, PartnerProgramListItem[]> = {
             thumbnailUrl: 'https://placehold.co/200x150?text=mug',
             price: 38000,
             durationMinutes: 90,
+            capacity: 8,
+            sortOrder: 2,
             createdAt: '2026-05-22T09:00:00.000Z',
         },
         {
@@ -503,6 +641,8 @@ const storePrograms: Record<string, PartnerProgramListItem[]> = {
             thumbnailUrl: 'https://placehold.co/200x150?text=couple',
             price: 88000,
             durationMinutes: 150,
+            capacity: 2,
+            sortOrder: 3,
             createdAt: '2026-05-23T09:00:00.000Z',
         },
     ],

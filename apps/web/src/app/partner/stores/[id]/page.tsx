@@ -80,11 +80,7 @@ function StoreInfoActions() {
     );
 }
 
-export default function PartnerStoreDetailPage({
-    params,
-}: {
-    params: Promise<{ id: string }>;
-}) {
+export default function PartnerStoreDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const router = useRouter();
     const { open } = useSheet();
