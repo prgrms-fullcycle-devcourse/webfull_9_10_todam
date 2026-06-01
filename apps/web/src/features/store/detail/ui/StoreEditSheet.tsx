@@ -58,7 +58,6 @@ export function StoreEditSheet({
             subTitle={`현재 진행 중인 예약이 총 ${inProgressReservationCount.toLocaleString('ko-KR')}건 있어요`}
             actionLabel="닫기"
             onAction={close}
-            onBackdropClick={close}
         >
             <div className="flex flex-col gap-2">
                 {EDIT_SLOTS.map((slot) => (
