@@ -75,3 +75,16 @@ export const NoTitle: Story = {
     />
   ),
 };
+
+export const WithDisabledItem: Story = {
+  name: "비활성 항목 포함",
+  render: () => (
+    <Menu
+      title="메뉴보기"
+      items={[
+        { label: "클래스 등록" },
+        { label: "클래스 순서 변경", disabled: true },
+      ]}
+    />
+  ),
+};
