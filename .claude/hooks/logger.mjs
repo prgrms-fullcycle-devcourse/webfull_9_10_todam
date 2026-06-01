@@ -72,17 +72,27 @@ async function main() {
   const env = { ...loadEnv(ENV_FILE), ...process.env };
   const event = data.hook_event_name || "unknown";
 
-  // content: 입력 프롬프트 or 턴 결과
+  // PostToolUse는 서브에이전트(Task)만 기록. 그 외 툴은 스킵.
+  if (event === "PostToolUse" && data.tool_name !== "Task") process.exit(0);
+
+  // content / agent / event_type 결정
   let content = null;
+  let agent = env.AGENT_ROLE || null; // 서브에이전트 역할(planner/implementer/reviewer)
+  let eventType = event;
   if (event === "UserPromptSubmit") content = data.prompt ?? null;
   else if (event === "Stop") content = lastAssistantText(data.transcript_path);
+  else if (event === "PostToolUse" && data.tool_name === "Task") {
+    eventType = "Subagent";
+    agent = data.tool_input?.subagent_type ?? agent; // 어떤 서브에이전트였나
+    content = data.tool_input?.prompt ?? data.tool_input?.description ?? null; // 받은 지시
+  }
 
   const branch = env.BRANCH || sh("git branch --show-current");
   const record = {
     project: env.PROJECT || "todam",
     user_name: env.USER_NAME || sh("git config user.name"),
-    agent: env.AGENT_ROLE || null, // 서브에이전트 역할(planner/reviewer 등). 없으면 null.
-    event_type: event,
+    agent,
+    event_type: eventType,
     content,
     metadata: {
       tool: env.TOOL || "claude", // 어떤 CLI: claude | codex
