@@ -133,6 +133,15 @@ export class CreateStoreDto {
     @IsNumber()
     cancelDeadlineDays!: number;
 
+    @ApiProperty({
+        enum: [60, 90, 120, 180],
+        description: '타임슬롯 생성 기준 간격(분). 1/1.5/2/3시간',
+    })
+    @IsIn([60, 90, 120, 180], {
+        message: '예약 시간 간격은 60, 90, 120, 180분 중 하나여야 합니다.',
+    })
+    reservationIntervalMinutes!: number;
+
     @ApiProperty({ type: [OperatingHourDto] })
     @IsArray()
     @ValidateNested({ each: true })

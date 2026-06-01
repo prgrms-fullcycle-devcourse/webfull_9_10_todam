@@ -70,6 +70,7 @@ export class CreateStoreUseCase {
                 convenienceInfo: dto.convenienceInfo as unknown as Record<string, boolean>,
                 autoConfirm: dto.autoConfirm,
                 cancelDeadlineDays: dto.cancelDeadlineDays,
+                reservationIntervalMinutes: dto.reservationIntervalMinutes,
                 status: 'DRAFT',
                 operatingHours: {
                     create: dto.operatingHours.map((h) => ({
