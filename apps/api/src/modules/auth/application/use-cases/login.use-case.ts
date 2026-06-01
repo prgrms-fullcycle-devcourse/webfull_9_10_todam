@@ -19,7 +19,7 @@ export class LoginUseCase {
     async execute(dto: LoginDto, res: Response): Promise<LoginResponseDto> {
         const user = await this.prisma.user.findUnique({
             where: { email: dto.email },
-            select: { id: true, password: true, status: true },
+            select: { id: true, password: true, status: true, email: true, nickname: true, isPartner: true },
         });
 
         // 존재하지 않거나, 소셜 전용 가입(password null)이거나, 탈퇴한 경우
@@ -35,6 +35,14 @@ export class LoginUseCase {
         const accessToken = this.tokenService.signAccessToken(user.id);
         await this.tokenService.issueRefreshToken(user.id, res);
 
-        return { accessToken };
+        return {
+            accessToken,
+            user: {
+                userId: user.id,
+                email: user.email,
+                nickname: user.nickname,
+                isPartner: user.isPartner,
+            },
+        };
     }
 }

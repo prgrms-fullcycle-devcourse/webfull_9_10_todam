@@ -55,11 +55,8 @@ export class AuthController {
 
     @Post('signup')
     @ApiCreatedResponse({ description: '회원가입 성공', type: SignupResponseDto })
-    async signup(
-        @Body() dto: SignupDto,
-        @Res({ passthrough: true }) res: Response,
-    ): Promise<SignupResponseDto> {
-        return this.signupUseCase.execute(dto, res);
+    async signup(@Body() dto: SignupDto): Promise<SignupResponseDto> {
+        return this.signupUseCase.execute(dto);
     }
 
     @Post('login')

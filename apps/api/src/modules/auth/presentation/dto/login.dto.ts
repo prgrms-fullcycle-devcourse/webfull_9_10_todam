@@ -11,7 +11,14 @@ export class LoginDto {
     password!: string;
 }
 
+export class LoginUserDto {
+    @ApiProperty() userId!: string;
+    @ApiProperty() email!: string;
+    @ApiProperty() nickname!: string;
+    @ApiProperty() isPartner!: boolean;
+}
+
 export class LoginResponseDto {
-    @ApiProperty()
-    accessToken!: string;
+    @ApiProperty() accessToken!: string;
+    @ApiProperty({ type: LoginUserDto }) user!: LoginUserDto;
 }

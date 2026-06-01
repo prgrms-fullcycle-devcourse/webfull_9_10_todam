@@ -20,7 +20,12 @@ export class SignupDto {
     nickname?: string;
 }
 
+export class SignupUserDto {
+    @ApiProperty() userId!: string;
+    @ApiProperty() email!: string;
+    @ApiProperty() nickname!: string;
+}
+
 export class SignupResponseDto {
-    @ApiProperty()
-    accessToken!: string;
+    @ApiProperty({ type: SignupUserDto }) user!: SignupUserDto;
 }
