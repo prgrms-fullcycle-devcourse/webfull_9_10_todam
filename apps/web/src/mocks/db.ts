@@ -1,9 +1,12 @@
 import {
     OcrStatus,
     PartnerStatus,
+    ProgramStatus,
     StoreStatus,
     type ConvenienceInfo,
     type DayOfWeek,
+    type PartnerProgramListItem,
+    type StoreDetail,
     type StoreRegistrationSubmitRequest,
 } from '@todam/shared';
 
@@ -224,6 +227,143 @@ export function findLatestStoreRegistration() {
     if (!store) return null;
     const businessDoc = db.businessDocuments.filter((d) => d.storeId === store.id).at(-1) ?? null;
     return { partner, store, businessDoc };
+}
+
+// ─── 공방 상세 시드 (파트너센터) ────────────────────────────────
+// 목록 시드(store-seed-0001~0003)와 동일 id 로 상세를 구성. API Contract 스키마 그대로.
+const SEEDED_STORE_DETAILS: Record<string, StoreDetail> = {
+    'store-seed-0001': {
+        id: 'store-seed-0001',
+        partnerId: 'partner-seed-0001',
+        name: '흙과 사람',
+        slug: 'soil-and-people',
+        description: '흙과 함께하는 도자기 체험 공방입니다.\n초보자도 편하게 즐길 수 있어요.',
+        phone: '02-1234-5678',
+        address: '서울특별시 성동구 성수이로 12길 34',
+        latitude: 37.5446,
+        longitude: 127.0556,
+        convenienceInfo: { parking: true, pet: false, wifi: true },
+        autoConfirm: false,
+        cancelDeadlineDays: 1,
+        status: StoreStatus.PUBLISHED,
+        rejectedReason: null,
+        suspendedReason: null,
+        rating: 4.8,
+        reviewCount: 132,
+        inProgressReservationCount: 5,
+        operatingHours: [
+            {
+                dayOfWeek: 'MON',
+                openTime: '10:00',
+                closeTime: '19:00',
+                breakStart: '13:00',
+                breakEnd: '14:00',
+            },
+        ],
+        images: [
+            {
+                id: 'img-seed-001',
+                imageUrl: 'https://picsum.photos/seed/todam1/600/600',
+                thumbnailUrl: 'https://picsum.photos/seed/todam1/200/200',
+                isThumbnail: true,
+                sortOrder: 1,
+            },
+            {
+                id: 'img-seed-002',
+                imageUrl: 'https://picsum.photos/seed/todam2/600/600',
+                thumbnailUrl: 'https://picsum.photos/seed/todam2/200/200',
+                isThumbnail: false,
+                sortOrder: 2,
+            },
+        ],
+        businessDocument: {
+            ownerName: '김리듬',
+            email: 'partner@example.com',
+            businessName: '흙과 사람',
+            businessNumber: '111-22-33333',
+            businessAddress: '서울특별시 성동구 성수이로 12길 34',
+            ocrStatus: OcrStatus.VERIFIED,
+        },
+        publishedAt: '2026-05-30T10:00:00.000Z',
+        createdAt: '2026-05-30T10:00:00.000Z',
+    },
+    // 클래스 0개 케이스(empty UI 확인용).
+    'store-seed-0002': {
+        id: 'store-seed-0002',
+        partnerId: 'partner-seed-0002',
+        name: '플러스 도자기',
+        slug: 'plus-ceramic',
+        description: '검수 진행 중인 공방입니다.',
+        phone: '02-2222-3333',
+        address: '서울특별시 마포구 와우산로 10',
+        latitude: 37.5512,
+        longitude: 126.925,
+        convenienceInfo: { parking: false, pet: false, wifi: false },
+        autoConfirm: true,
+        cancelDeadlineDays: 2,
+        status: StoreStatus.PENDING,
+        rejectedReason: null,
+        suspendedReason: null,
+        rating: 0,
+        reviewCount: 0,
+        inProgressReservationCount: 0,
+        operatingHours: [],
+        images: [],
+        businessDocument: {
+            ownerName: '김리듬',
+            email: 'partner@example.com',
+            businessName: '플러스 도자기',
+            businessNumber: '222-33-44444',
+            businessAddress: '서울특별시 마포구 와우산로 10',
+            ocrStatus: OcrStatus.PENDING,
+        },
+        publishedAt: null,
+        createdAt: '2026-05-25T10:00:00.000Z',
+    },
+};
+
+// 운영 클래스 목록 시드. store-seed-0001 만 보유, store-seed-0002 는 empty([]).
+const SEEDED_PROGRAMS: Record<string, PartnerProgramListItem[]> = {
+    'store-seed-0001': [
+        {
+            id: 'prog-seed-001',
+            title: '도자기 물레 원데이 클래스',
+            status: ProgramStatus.ACTIVE,
+            thumbnailUrl: 'https://picsum.photos/seed/prog1/200/200',
+            price: 45000,
+            durationMinutes: 120,
+            createdAt: '2026-05-19T09:00:00.000Z',
+        },
+        {
+            id: 'prog-seed-002',
+            title: '핸드빌딩 머그컵 만들기',
+            status: ProgramStatus.DRAFT,
+            thumbnailUrl: 'https://picsum.photos/seed/prog2/200/200',
+            price: 38000,
+            durationMinutes: 90,
+            createdAt: '2026-05-21T09:00:00.000Z',
+        },
+        {
+            id: 'prog-seed-003',
+            title: '커플 도자기 클래스 (일시 중단)',
+            status: ProgramStatus.INACTIVE,
+            thumbnailUrl: 'https://picsum.photos/seed/prog3/200/200',
+            price: 88000,
+            durationMinutes: 150,
+            createdAt: '2026-05-22T09:00:00.000Z',
+        },
+    ],
+};
+
+// 공방 상세 조회: 본인 소유 시드/온보딩 공방만. 미존재 시 null(→404).
+export function findPartnerStoreDetail(storeId: string): StoreDetail | null {
+    return SEEDED_STORE_DETAILS[storeId] ?? null;
+}
+
+// 공방 운영 클래스 목록: 미존재 공방은 null(→404), 보유 0개는 [].
+export function findPartnerStorePrograms(storeId: string): PartnerProgramListItem[] | null {
+    if (!SEEDED_STORE_DETAILS[storeId]) return null;
+    return SEEDED_PROGRAMS[storeId] ?? [];
 }
 
 // 주소 → 좌표 mock. (실연동: 카카오 로컬 API) 서울 도심 기준 deterministic offset.

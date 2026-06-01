@@ -1,9 +1,12 @@
 import {
+    StoreDetailErrorCode,
     StoreRegistrationErrorCode,
     storeRegistrationSubmitRequestSchema,
     PartnerStatus,
     StoreStatus,
     type GeocodeResult,
+    type PartnerProgramListResult,
+    type StoreDetailResult,
     type StoreRegistrationStatusResult,
     type StoreRegistrationSubmitResult,
     type SlugAvailabilityResult,
@@ -16,6 +19,8 @@ import { http, HttpResponse } from 'msw';
 import {
     createStoreRegistration,
     findLatestStoreRegistration,
+    findPartnerStoreDetail,
+    findPartnerStorePrograms,
     isBusinessNumberRegistered,
     isSlugTaken,
     listPartnerStores,
@@ -54,6 +59,40 @@ export const handlers = [
         const slug = new URL(request.url).searchParams.get('slug') ?? '';
         const result: SlugAvailabilityResult = { slug, available: !isSlugTaken(slug) };
         return ok(path, result);
+    }),
+
+    // 공방 운영 클래스 목록 (파트너센터) — status enum 전체, 0개 시 []
+    http.get(`${API}/partner/stores/:storeId/programs`, ({ params }) => {
+        const storeId = String(params.storeId);
+        const path = `/api/v1/partner/stores/${storeId}/programs`;
+        const programs = findPartnerStorePrograms(storeId);
+        if (programs === null) {
+            return fail(
+                path,
+                404,
+                StoreDetailErrorCode.STORE_NOT_FOUND,
+                '공방을 찾을 수 없습니다.',
+            );
+        }
+        const result: PartnerProgramListResult = { programs };
+        return ok(path, result, '운영 클래스 목록이 성공적으로 조회되었습니다.');
+    }),
+
+    // 내 공방 상세 조회 (파트너센터)
+    http.get(`${API}/partner/stores/:storeId`, ({ params }) => {
+        const storeId = String(params.storeId);
+        const path = `/api/v1/partner/stores/${storeId}`;
+        const store = findPartnerStoreDetail(storeId);
+        if (!store) {
+            return fail(
+                path,
+                404,
+                StoreDetailErrorCode.STORE_NOT_FOUND,
+                '공방을 찾을 수 없습니다.',
+            );
+        }
+        const result: StoreDetailResult = { store };
+        return ok(path, result, '공방 상세 정보가 성공적으로 조회되었습니다.');
     }),
 
     // 주소 → 좌표 (주소 API 연동 mock)

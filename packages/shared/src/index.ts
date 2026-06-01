@@ -31,3 +31,5 @@ export * from './contracts/fields';
 export * from './contracts/store-registration';
 export * from './contracts/like';
 export * from './contracts/store-list';
+export * from './contracts/store-detail';
+export * from './contracts/store-programs';
