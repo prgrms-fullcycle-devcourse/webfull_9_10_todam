@@ -4,8 +4,6 @@ import { BottomBar, Button, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { ProgramDeliveryOption } from '@todam/shared';
-
 import { ApiError } from '../../../../../../shared/api';
 import { useModal } from '../../../../../../shared/model/modal';
 import { useToast } from '../../../../../../shared/model/toast';
@@ -20,59 +18,57 @@ const MOCK_SLUG = 'todam-pottery';
 type PageProps = { params: Promise<{ id: string }> };
 
 export default function PartnerClassEditOperationsPage({ params }: PageProps) {
-    const router = useRouter();
-    const { push: pushToast } = useToast();
-    const { open: openModal, close: closeModal } = useModal();
-
     const [programId, setProgramId] = useState<string>('');
     useEffect(() => {
         params.then((p) => setProgramId(p.id));
     }, [params]);
 
-    // ─── preload ────────────────────────────────────────────────
     const { data: detailData, isLoading } = useProgramDetail(MOCK_SLUG, programId);
     const program = detailData?.program;
-    const storeId = program?.storeId ?? '';
 
-    // ─── 폼 상태 ────────────────────────────────────────────────
-    const [form, setForm] = useState<ProgramOperationsFormState>({
-        price: 0,
-        capacity: 1,
-        leadTimeDays: 0,
-        durationMinutes: 120,
-        deliveryOption: ProgramDeliveryOption.PICKUP,
-        childrenAllowed: false,
-        deliveryAvailable: false,
-    });
+    if (isLoading || !program) {
+        return (
+            <div className="flex flex-1 items-center justify-center">
+                <span className="text-sm text-foreground-tertiary">불러오는 중...</span>
+            </div>
+        );
+    }
 
-    const [initialized, setInitialized] = useState(false);
-    useEffect(() => {
-        if (program && !initialized) {
-            // 서버 preload 데이터로 폼 1회 hydration (의도된 동기화)
-            setForm({
-                price: program.price,
-                capacity: program.capacity,
-                leadTimeDays: program.leadTimeDays,
-                durationMinutes: program.durationMinutes,
-                deliveryOption: program.deliveryOption,
-                childrenAllowed: program.childrenAllowed ?? false,
-                deliveryAvailable: program.deliveryAvailable ?? false,
-            });
-            setInitialized(true);
-        }
-    }, [program, initialized]);
+    return <EditOperationsForm key={programId} programId={programId} program={program} />;
+}
+
+type EditOperationsFormProps = {
+    programId: string;
+    program: NonNullable<ReturnType<typeof useProgramDetail>['data']>['program'];
+};
+
+function EditOperationsForm({ programId, program }: EditOperationsFormProps) {
+    const router = useRouter();
+    const { push: pushToast } = useToast();
+    const { open: openModal, close: closeModal } = useModal();
+
+    const storeId = program.storeId;
+
+    // 서버 데이터로 폼 초기값 1회 구성 (lazy initializer — setState-in-effect 회피)
+    const [form, setForm] = useState<ProgramOperationsFormState>(() => ({
+        price: program.price,
+        capacity: program.capacity,
+        leadTimeDays: program.leadTimeDays,
+        durationMinutes: program.durationMinutes,
+        deliveryOption: program.deliveryOption,
+        childrenAllowed: program.childrenAllowed ?? false,
+        deliveryAvailable: program.deliveryAvailable ?? false,
+    }));
 
     // ─── dirty 판정 ─────────────────────────────────────────────
     const isDirty =
-        initialized &&
-        program != null &&
-        (form.price !== program.price ||
-            form.capacity !== program.capacity ||
-            form.leadTimeDays !== program.leadTimeDays ||
-            form.durationMinutes !== program.durationMinutes ||
-            form.deliveryOption !== program.deliveryOption ||
-            form.childrenAllowed !== (program.childrenAllowed ?? false) ||
-            form.deliveryAvailable !== (program.deliveryAvailable ?? false));
+        form.price !== program.price ||
+        form.capacity !== program.capacity ||
+        form.leadTimeDays !== program.leadTimeDays ||
+        form.durationMinutes !== program.durationMinutes ||
+        form.deliveryOption !== program.deliveryOption ||
+        form.childrenAllowed !== (program.childrenAllowed ?? false) ||
+        form.deliveryAvailable !== (program.deliveryAvailable ?? false);
 
     useLeaveGuard(isDirty);
 
@@ -85,7 +81,7 @@ export default function PartnerClassEditOperationsPage({ params }: PageProps) {
         const errs: Partial<Record<keyof ProgramOperationsFormState, string>> = {};
         if (!form.price || form.price <= 0) errs.price = '가격을 입력해 주세요.';
         if (form.capacity < 1) errs.capacity = '정원은 1명 이상이어야 합니다.';
-        if (!form.durationMinutes) errs.durationMinutes = '소요시간을 선택해 주세요.';
+        if (!form.durationMinutes) errs.durationMinutes = '소요 시간을 입력해 주세요.';
         setErrors(errs);
         return Object.keys(errs).length === 0;
     }
@@ -142,14 +138,6 @@ export default function PartnerClassEditOperationsPage({ params }: PageProps) {
             }
         }
     };
-
-    if (isLoading || !initialized) {
-        return (
-            <div className="flex flex-1 items-center justify-center">
-                <span className="text-sm text-foreground-tertiary">불러오는 중...</span>
-            </div>
-        );
-    }
 
     return (
         <div className="flex flex-1 flex-col overflow-hidden">

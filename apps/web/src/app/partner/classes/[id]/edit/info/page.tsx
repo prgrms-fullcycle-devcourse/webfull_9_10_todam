@@ -28,59 +28,56 @@ const MOCK_SLUG = 'todam-pottery';
 type PageProps = { params: Promise<{ id: string }> };
 
 export default function PartnerClassEditInfoPage({ params }: PageProps) {
-    const router = useRouter();
-    const { push: pushToast } = useToast();
-    const { open: openModal, close: closeModal } = useModal();
-
     // params는 Next.js 15+ async params
     const [programId, setProgramId] = useState<string>('');
     useEffect(() => {
         params.then((p) => setProgramId(p.id));
     }, [params]);
 
-    // ─── preload ────────────────────────────────────────────────
     const { data: detailData, isLoading } = useProgramDetail(MOCK_SLUG, programId);
     const program = detailData?.program;
 
-    // storeId는 preload 데이터에서
-    const storeId = program?.storeId ?? '';
+    if (isLoading || !program) {
+        return (
+            <div className="flex flex-1 items-center justify-center">
+                <span className="text-sm text-foreground-tertiary">불러오는 중...</span>
+            </div>
+        );
+    }
 
-    // ─── 폼 상태 ────────────────────────────────────────────────
-    const [form, setForm] = useState<ProgramInfoFormState>({
-        title: '',
-        description: '',
-        difficulty: ProgramDifficulty.BASIC,
-        existingImages: [],
+    // program 로드 완료 후 마운트 → 폼 초기값을 동기적으로 구성 (effect 불필요).
+    return <EditInfoForm key={programId} programId={programId} program={program} />;
+}
+
+type EditInfoFormProps = {
+    programId: string;
+    program: NonNullable<ReturnType<typeof useProgramDetail>['data']>['program'];
+};
+
+function EditInfoForm({ programId, program }: EditInfoFormProps) {
+    const router = useRouter();
+    const { push: pushToast } = useToast();
+    const { open: openModal, close: closeModal } = useModal();
+
+    const storeId = program.storeId;
+
+    // 서버 데이터로 폼 초기값 1회 구성 (lazy initializer — setState-in-effect 회피)
+    const [form, setForm] = useState<ProgramInfoFormState>(() => ({
+        title: program.title,
+        description: program.description ?? '',
+        difficulty: program.difficulty ?? ProgramDifficulty.BASIC,
+        existingImages: program.images as ProgramImage[],
         pendingImages: [],
         deletedImageIds: [],
-    });
-
-    // preload 데이터로 폼 초기값 설정
-    const [initialized, setInitialized] = useState(false);
-    useEffect(() => {
-        if (program && !initialized) {
-            // 서버 preload 데이터로 폼 1회 hydration (의도된 동기화)
-            setForm({
-                title: program.title,
-                description: program.description ?? '',
-                difficulty: program.difficulty ?? ProgramDifficulty.BASIC,
-                existingImages: program.images as ProgramImage[],
-                pendingImages: [],
-                deletedImageIds: [],
-            });
-            setInitialized(true);
-        }
-    }, [program, initialized]);
+    }));
 
     // ─── dirty 판정 ─────────────────────────────────────────────
     const isDirty =
-        initialized &&
-        program != null &&
-        (form.title !== program.title ||
-            form.description !== (program.description ?? '') ||
-            form.difficulty !== (program.difficulty ?? ProgramDifficulty.BASIC) ||
-            form.pendingImages.length > 0 ||
-            form.deletedImageIds.length > 0);
+        form.title !== program.title ||
+        form.description !== (program.description ?? '') ||
+        form.difficulty !== (program.difficulty ?? ProgramDifficulty.BASIC) ||
+        form.pendingImages.length > 0 ||
+        form.deletedImageIds.length > 0;
 
     useLeaveGuard(isDirty);
 
@@ -196,14 +193,6 @@ export default function PartnerClassEditInfoPage({ params }: PageProps) {
             }
         }
     };
-
-    if (isLoading || !initialized) {
-        return (
-            <div className="flex flex-1 items-center justify-center">
-                <span className="text-sm text-foreground-tertiary">불러오는 중...</span>
-            </div>
-        );
-    }
 
     return (
         <div className="flex flex-1 flex-col overflow-hidden">
