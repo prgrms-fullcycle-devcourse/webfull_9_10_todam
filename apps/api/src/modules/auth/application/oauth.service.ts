@@ -39,7 +39,7 @@ export class OAuthService {
                 // 신규 유저 생성 + 소셜 연동 동시 처리
                 const result = await this.prisma.$transaction(async (tx) => {
                     const newUser = await tx.user.create({
-                        data: { email, nickname, password: null },
+                        data: { email, nickname, password: null, emailVerified: true },
                         select: { id: true },
                     });
                     await tx.oAuthAccount.create({

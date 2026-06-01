@@ -35,7 +35,7 @@ export class SignupUseCase {
         const nickname = dto.nickname ?? generateRandomNickname();
 
         const user = await this.prisma.user.create({
-            data: { email: dto.email, password: passwordHash, nickname },
+            data: { email: dto.email, password: passwordHash, nickname, emailVerified: true },
             select: { id: true, email: true, nickname: true },
         });
 
