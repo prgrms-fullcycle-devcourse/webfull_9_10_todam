@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { createApiEnv } from '@todam/config';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -13,6 +14,7 @@ async function bootstrap(): Promise<void> {
     const app = await NestFactory.create(AppModule);
 
     app.enableCors({ origin: corsOrigins, credentials: true });
+    app.use(cookieParser());
 
     // 검증: DTO에 정의되지 않은 값 제거, 타입 변환, 미허용 필드 거부
     app.useGlobalPipes(
