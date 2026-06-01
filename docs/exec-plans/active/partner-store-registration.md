@@ -110,7 +110,7 @@
     }
   }
   ```
-- 시스템 처리: slug 중복 검증 → 사업자등록번호 형식 검증(숫자 10자리) → 카카오맵으로 위경도 변환 → `stores` row 생성(`status = DRAFT`) → `store_operating_hours` + `business_documents` 저장 → 첫 공방이면 `partners` row 자동 생성(`status = PENDING`)
+- 시스템 처리: slug 중복 검증 → 사업자등록번호 형식 검증(숫자 10자리) → **파트너 분기**(레코드 없음 → 첫 공방, `partners` 자동 생성 `status = PENDING` / 레코드 있고 `APPROVED` → 추가 공방 허용 / 그 외 status → 403 차단) → 카카오맵으로 위경도 변환 → `stores` row 생성(`status = DRAFT`) → `store_operating_hours` + `business_documents` 저장
 - Response `201 Created`:
   ```json
   {
@@ -132,8 +132,9 @@
   }
   ```
 - 에러:
-  - `400 BAD_REQUEST` — 필수 필드 누락 / slug 형식 오류
+  - `400 BAD_REQUEST` — 필수 필드 누락 / slug 형식 오류 / 사업자번호 형식 오류
   - `401 UNAUTHORIZED` — 인증 필요
+  - `403 PARTNER_NOT_APPROVED` — 승인되지 않은 파트너의 추가 공방 등록 시도
   - `409 SLUG_CONFLICT` — slug 중복
 
 ---
@@ -303,6 +304,7 @@
 - 2026-06-01: UI는 기존 store-registration plan에서 MSW mock 구현이 완료된 상태. 본 plan은 BE 구현 + 실 API 연동 전환에 집중.
 - 2026-06-01: 사업자등록증 업로드 및 OCR 진위 확인 전체 백로그 제외. 피그마 디자인에 해당 필드 없음. `businessDocument` 필드도 현재 스코프에서 제거.
 - 2026-06-01: 피그마 1단계 재확인 → 사업자 정보 텍스트 필드(사업자번호/상호명/대표자명/사업장주소/이메일)는 폼에 존재. `businessDocument`를 텍스트 입력 필드로 복원(파일 업로드·OCR만 백로그 유지). `business_documents.document_url`을 nullable로 변경(migration `20260601090000_business_document_url_nullable`).
+- 2026-06-01: 파트너 분기 명세 충실화 → 추가 공방 등록은 `APPROVED` 파트너만 허용. 그 외 status(PENDING/REJECTED/SUSPENDED/TERMINATED)는 `403 PARTNER_NOT_APPROVED`로 차단. (CONTRACT-2의 "partner 존재로만 분기"에서 status 검증 추가.)
 
 ## Outcome
 

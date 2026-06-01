@@ -39,14 +39,22 @@ export class CreateStoreUseCase {
 
         let partner = await this.prisma.partner.findUnique({
             where: { userId },
-            select: { id: true },
+            select: { id: true, status: true },
         });
 
         if (!partner) {
+            // 첫 공방 등록 → 파트너 엔티티 자동 생성 (status = PENDING)
             partner = await this.prisma.partner.create({
                 data: { userId },
-                select: { id: true },
+                select: { id: true, status: true },
             });
+        } else if (partner.status !== 'APPROVED') {
+            // 추가 공방 등록은 승인된 파트너만 가능
+            throw new BusinessException(
+                'PARTNER_NOT_APPROVED',
+                '승인된 파트너만 추가 공방을 등록할 수 있습니다.',
+                HttpStatus.FORBIDDEN,
+            );
         }
 
         const store = await this.prisma.store.create({
