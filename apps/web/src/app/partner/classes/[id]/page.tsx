@@ -17,11 +17,16 @@ import {
     PauseIcon,
     RightIcon,
 } from '@todam/ui';
-import { ProgramDeliveryOption, ProgramDifficulty, ProgramStatus } from '@todam/shared';
+import {
+    ProgramDeliveryOption,
+    ProgramDifficulty,
+    ProgramStatus,
+    formatDuration,
+} from '@todam/shared';
 
 import { InfoTable, type InfoTableRow } from '../../../../shared/ui';
 import { useHeaderActionStore, useSheet } from '../../../../shared/model';
-import { getDeliveryLabel, getDifficultyLabel, formatDuration } from '../../../../entities/program';
+import { getDeliveryLabel, getDifficultyLabel } from '../../../../entities/program';
 
 type ProgramDetail = {
     title: string;

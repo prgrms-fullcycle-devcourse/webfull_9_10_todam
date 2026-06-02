@@ -3,10 +3,10 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { ProgramStatus } from '@todam/shared';
+import { ProgramStatus, formatDuration, formatPrice } from '@todam/shared';
 import { Button } from '@todam/ui';
 
-import { ClassItem, formatDuration, formatPrice } from '../../../entities/program';
+import { ClassItem } from '../../../entities/program';
 import {
     ClassListHeaderMenu,
     usePartnerPrograms,
