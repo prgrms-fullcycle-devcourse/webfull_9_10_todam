@@ -38,6 +38,8 @@ export const programDetailSchema = z.object({
     childrenAllowed: z.boolean().optional(),
     deliveryAvailable: z.boolean().optional(),
     status: z.nativeEnum(ProgramStatus),
+    // 표시용 특성 태그 (예: "어린이 가능", "배송 가능"). BE 제공.
+    featureTags: z.array(z.string()),
     images: z.array(programImageSchema),
 });
 export type ProgramDetail = z.infer<typeof programDetailSchema>;

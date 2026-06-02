@@ -350,6 +350,10 @@ export function programToApiShape(program: ProgramRow): object {
         thumbnailUrl: img.thumbnailUrl,
         isThumbnail: img.isThumbnail,
     }));
+    const featureTags = [
+        program.childrenAllowed && '어린이 가능',
+        program.deliveryAvailable && '배송 가능',
+    ].filter(Boolean) as string[];
     return {
         id: program.id,
         storeId: program.storeId,
@@ -364,6 +368,7 @@ export function programToApiShape(program: ProgramRow): object {
         childrenAllowed: program.childrenAllowed,
         deliveryAvailable: program.deliveryAvailable,
         status: program.status,
+        featureTags,
         images,
     };
 }
