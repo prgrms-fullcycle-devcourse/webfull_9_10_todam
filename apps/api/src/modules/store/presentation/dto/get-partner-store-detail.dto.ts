@@ -106,6 +106,18 @@ export class StoreDetailDto {
     @ApiProperty({ example: 1, nullable: true })
     cancelDeadlineDays!: number | null;
 
+    @ApiProperty({
+        example: 30,
+        description: '예약 시간 간격(분). 예약 정보 수정화면 preload (OD-1)',
+    })
+    reservationIntervalMinutes!: number;
+
+    @ApiProperty({
+        example: 6,
+        description: '슬롯당 최대 수용 인원. 예약 정보 수정화면 preload (OD-1)',
+    })
+    maxCapacityPerSlot!: number;
+
     @ApiProperty({ enum: StoreStatus, example: StoreStatus.PUBLISHED })
     status!: StoreStatus;
 

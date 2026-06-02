@@ -66,6 +66,8 @@ export class GetPartnerStoreDetailUseCase {
                 convenienceInfo: true,
                 autoConfirm: true,
                 cancelDeadlineDays: true,
+                reservationIntervalMinutes: true,
+                maxCapacityPerSlot: true,
                 status: true,
                 rejectedReason: true,
                 suspendedReason: true,
@@ -125,7 +127,7 @@ export class GetPartnerStoreDetailUseCase {
             );
         }
 
-        // 집계: rating/reviewCount (review 도메인), inProgressReservationCount (체험 미완료 예약 건수)
+        // 집계: rating/reviewCount (review 도메인), inProgressReservationCount (체험 미완료 예약 건수).
         const [reviewAggregate, inProgressReservationCount] = await Promise.all([
             this.prisma.review.aggregate({
                 where: { storeId: store.id, isVisible: true },
@@ -142,6 +144,8 @@ export class GetPartnerStoreDetailUseCase {
 
         const reviewCount = reviewAggregate._count._all;
         const rating = reviewAggregate._avg.rating ?? 0;
+        // DEC-5(개정): 슬롯당 최대 정원은 공방(Store) 단위 저장 필드. 미설정 시 0.
+        const maxCapacityPerSlot = store.maxCapacityPerSlot ?? 0;
 
         const businessDoc = store.businessDocs[0] ?? null;
 
@@ -159,6 +163,8 @@ export class GetPartnerStoreDetailUseCase {
                 convenienceInfo: toConvenienceInfo(store.convenienceInfo),
                 autoConfirm: store.autoConfirm,
                 cancelDeadlineDays: store.cancelDeadlineDays,
+                reservationIntervalMinutes: store.reservationIntervalMinutes ?? 0,
+                maxCapacityPerSlot,
                 status: store.status,
                 rejectedReason: store.rejectedReason,
                 suspendedReason: store.suspendedReason,

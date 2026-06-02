@@ -1,4 +1,5 @@
 import {
+    ArtworkStatus,
     OcrStatus,
     PartnerStatus,
     ProgramStatus,
@@ -7,6 +8,7 @@ import {
     StoreStatus,
     ProgramDeliveryOption,
     ProgramDifficulty,
+    type ArtworkDetail,
     type ConvenienceInfo,
     type DayOfWeek,
     type OperatingHourInput,
@@ -665,9 +667,7 @@ export function updateStoreDetail(
     if (body.slug !== undefined) detail.slug = body.slug;
     if (body.description !== undefined) detail.description = body.description;
     if (body.phone !== undefined) detail.phone = body.phone;
-    if (body.address !== undefined) detail.address = body.address;
-    if (body.latitude !== undefined) detail.latitude = body.latitude;
-    if (body.longitude !== undefined) detail.longitude = body.longitude;
+    // 주소(address/위경도)는 수정 Out scope — PATCH 대상 아님.
     if (body.convenienceInfo !== undefined) detail.convenienceInfo = body.convenienceInfo;
     if (body.autoConfirm !== undefined) detail.autoConfirm = body.autoConfirm;
     if (body.cancelDeadlineDays !== undefined) detail.cancelDeadlineDays = body.cancelDeadlineDays;
@@ -1107,4 +1107,219 @@ export function findReservationDetail(id: string): ReservationDetail | undefined
 
 export function findReviewByReservation(reservationId: string): ReviewDetail | undefined {
     return SEEDED_REVIEW_DETAILS[reservationId];
+}
+
+// ─── 작품 상세 seed (GET /artworks/{artworkId}) ───────────────────────
+// plan: docs/exec-plans/active/유저 예약 - 작품 상세 조회.md
+// - reservation seed 의 artworkId 와 매핑 (res-seed-0004 ↔ artwork-seed-0004 등).
+// - displayState 는 plan §displayState 단계 매핑 표 SSOT 그대로(추측 금지).
+//   IN_PROGRESS substate(DRYING/BISQUE_FIRING/GLAZING/GLAZE_FIRING) +
+//   VISITED("체험이 완료되었어요.") + COMPLETED("작품이 완성되었어요.").
+//   ⚠️ RESERVED 는 plan D5 미해소 → timeline 에 등장시키지 않음.
+// - D1: imageUrl / thumbnailUrl 둘 다 채워 production 패턴 시연.
+const ARTWORK_SEED_THUMB = (slug: string) =>
+    `https://placehold.co/64x64?text=${encodeURIComponent(slug)}`;
+const ARTWORK_SEED_IMG = (slug: string) =>
+    `https://placehold.co/320x320?text=${encodeURIComponent(slug)}`;
+
+const SEEDED_ARTWORK_DETAILS: Record<string, ArtworkDetail> = {
+    // 변형 B (예약 상세 res-seed-0004 = IN_PROGRESS 건조) 와 연결.
+    // 단계 예시: VISITED(완료) + DRYING(현재) + BISQUE_FIRING/GLAZING/GLAZE_FIRING/COMPLETED(미완료).
+    'artwork-seed-0004': {
+        id: 'artwork-seed-0004',
+        estimatedCompletedAt: '2026-07-01T00:00:00.000Z',
+        currentStage: {
+            status: ArtworkStatus.DRYING,
+            displayState: {
+                label: '제작 중',
+                description: '작품이 단단해지도록 정성껏 말리고 있어요.',
+                subLabel: '건조',
+            },
+        },
+        timeline: [
+            {
+                stage: ArtworkStatus.VISITED,
+                isCompleted: true,
+                displayState: {
+                    label: '흙',
+                    description: '체험이 완료되었어요.',
+                    subLabel: null,
+                },
+                photos: [],
+                completedAt: '2026-04-03T12:30:00.000Z',
+            },
+            {
+                stage: ArtworkStatus.DRYING,
+                isCompleted: false,
+                isCurrent: true,
+                displayState: {
+                    label: '제작 중',
+                    description: '작품이 단단해지도록 정성껏 말리고 있어요.',
+                    subLabel: '건조',
+                },
+                photos: [
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('drying-1'),
+                        imageUrl: ARTWORK_SEED_IMG('drying-1'),
+                    },
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('drying-2'),
+                        imageUrl: ARTWORK_SEED_IMG('drying-2'),
+                    },
+                ],
+            },
+            {
+                stage: ArtworkStatus.BISQUE_FIRING,
+                isCompleted: false,
+                displayState: {
+                    label: '제작 중',
+                    description: '가마 속에서 첫 번째로 구워지는 중이에요.',
+                    subLabel: '초벌',
+                },
+                photos: [],
+            },
+            {
+                stage: ArtworkStatus.GLAZING,
+                isCompleted: false,
+                displayState: {
+                    label: '제작 중',
+                    description: '매끄러운 빛깔을 내기 위해 예쁘게 옷을 입혔어요.',
+                    subLabel: '유약',
+                },
+                photos: [],
+            },
+            {
+                stage: ArtworkStatus.GLAZE_FIRING,
+                isCompleted: false,
+                displayState: {
+                    label: '제작 중',
+                    description: '가장 뜨거운 가마를 견디며 더 튼튼해지고 있어요.',
+                    subLabel: '재벌',
+                },
+                photos: [],
+            },
+            {
+                stage: ArtworkStatus.COMPLETED,
+                isCompleted: false,
+                displayState: {
+                    label: '완성',
+                    description: '작품이 완성되었어요.',
+                    subLabel: null,
+                },
+                photos: [],
+            },
+        ],
+    },
+
+    // 추가 시드: 다수의 완료 단계 + 단계별 사진 검증용.
+    // Figma `8505:15922` 정본 stepper 예시(체험→건조→초벌→유약(current)→재벌→완성).
+    'artwork-seed-figma': {
+        id: 'artwork-seed-figma',
+        estimatedCompletedAt: '2026-07-01T00:00:00.000Z',
+        currentStage: {
+            status: ArtworkStatus.GLAZING,
+            displayState: {
+                label: '제작 중',
+                description: '매끄러운 빛깔을 내기 위해 예쁘게 옷을 입혔어요.',
+                subLabel: '유약',
+            },
+        },
+        timeline: [
+            {
+                stage: ArtworkStatus.VISITED,
+                isCompleted: true,
+                displayState: {
+                    label: '흙',
+                    description: '체험이 완료되었어요.',
+                    subLabel: null,
+                },
+                photos: [],
+                completedAt: '2026-04-03T12:30:00.000Z',
+            },
+            {
+                stage: ArtworkStatus.DRYING,
+                isCompleted: true,
+                displayState: {
+                    label: '제작 중',
+                    description: '작품이 단단해지도록 정성껏 말리고 있어요.',
+                    subLabel: '건조',
+                },
+                photos: [
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('drying-1'),
+                        imageUrl: ARTWORK_SEED_IMG('drying-1'),
+                    },
+                ],
+                completedAt: '2026-04-05T15:00:00.000Z',
+            },
+            {
+                stage: ArtworkStatus.BISQUE_FIRING,
+                isCompleted: true,
+                displayState: {
+                    label: '제작 중',
+                    description: '가마 속에서 첫 번째로 구워지는 중이에요.',
+                    subLabel: '초벌',
+                },
+                photos: [
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('bisque-1'),
+                        imageUrl: ARTWORK_SEED_IMG('bisque-1'),
+                    },
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('bisque-2'),
+                        imageUrl: ARTWORK_SEED_IMG('bisque-2'),
+                    },
+                ],
+                completedAt: '2026-04-20T11:00:00.000Z',
+            },
+            {
+                stage: ArtworkStatus.GLAZING,
+                isCompleted: false,
+                isCurrent: true,
+                displayState: {
+                    label: '제작 중',
+                    description: '매끄러운 빛깔을 내기 위해 예쁘게 옷을 입혔어요.',
+                    subLabel: '유약',
+                },
+                photos: [
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('glazing-1'),
+                        imageUrl: ARTWORK_SEED_IMG('glazing-1'),
+                    },
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('glazing-2'),
+                        imageUrl: ARTWORK_SEED_IMG('glazing-2'),
+                    },
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('glazing-3'),
+                        imageUrl: ARTWORK_SEED_IMG('glazing-3'),
+                    },
+                ],
+            },
+            {
+                stage: ArtworkStatus.GLAZE_FIRING,
+                isCompleted: false,
+                displayState: {
+                    label: '제작 중',
+                    description: '가장 뜨거운 가마를 견디며 더 튼튼해지고 있어요.',
+                    subLabel: '재벌',
+                },
+                photos: [],
+            },
+            {
+                stage: ArtworkStatus.COMPLETED,
+                isCompleted: false,
+                displayState: {
+                    label: '완성',
+                    description: '작품이 완성되었어요.',
+                    subLabel: null,
+                },
+                photos: [],
+            },
+        ],
+    },
+};
+
+export function findArtworkDetail(id: string): ArtworkDetail | undefined {
+    return SEEDED_ARTWORK_DETAILS[id];
 }

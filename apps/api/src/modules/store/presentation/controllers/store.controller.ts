@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
     HttpCode,
     HttpStatus,
@@ -25,12 +26,15 @@ import { SubmitStoreUseCase } from '../../application/use-cases/submit-store.use
 import { ListPartnerStoresUseCase } from '../../application/use-cases/list-partner-stores.use-case';
 import { GetPartnerStoreDetailUseCase } from '../../application/use-cases/get-partner-store-detail.use-case';
 import { ListPartnerStoreProgramsUseCase } from '../../application/use-cases/list-partner-store-programs.use-case';
+import { UpdateStoreUseCase } from '../../application/use-cases/update-store.use-case';
+import { DeleteStoreImageUseCase } from '../../application/use-cases/delete-store-image.use-case';
 import { CreateStoreDto, CreateStoreResponseDto } from '../dto/create-store.dto';
 import { CreateStoreImageDto, CreateStoreImageResponseDto } from '../dto/store-image.dto';
 import { SubmitStoreResponseDto } from '../dto/submit-store.dto';
 import { ListPartnerStoresResponseDto } from '../dto/list-partner-stores.dto';
 import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detail.dto';
 import { ListPartnerStoreProgramsResponseDto } from '../dto/list-partner-store-programs.dto';
+import { UpdateStoreDto, UpdateStoreResponseDto } from '../dto/update-store.dto';
 
 @ApiTags('stores')
 @ApiBearerAuth()
@@ -44,6 +48,8 @@ export class StoreController {
         private readonly listPartnerStoresUseCase: ListPartnerStoresUseCase,
         private readonly getPartnerStoreDetailUseCase: GetPartnerStoreDetailUseCase,
         private readonly listPartnerStoreProgramsUseCase: ListPartnerStoreProgramsUseCase,
+        private readonly updateStoreUseCase: UpdateStoreUseCase,
+        private readonly deleteStoreImageUseCase: DeleteStoreImageUseCase,
     ) {}
 
     @Get('partner/stores')
@@ -87,6 +93,19 @@ export class StoreController {
         return this.getPartnerStoreDetailUseCase.execute(user.id, storeId);
     }
 
+    @Patch('partner/stores/:storeId')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('공방 정보가 성공적으로 수정되었습니다.')
+    @ApiOkResponse({ description: '공방 정보 수정 성공', type: UpdateStoreResponseDto })
+    async updateStore(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+        @Body() dto: UpdateStoreDto,
+    ): Promise<UpdateStoreResponseDto> {
+        return this.updateStoreUseCase.execute(user.id, storeId, dto);
+    }
+
     @Post('stores')
     @UseGuards(AuthGuard)
     @ResponseMessage('공방이 성공적으로 등록되었습니다. 제출 후 검수를 진행해주세요.')
@@ -99,7 +118,7 @@ export class StoreController {
     }
 
     @Post('partner/stores/:storeId/images')
-    @UseGuards(AuthGuard)
+    @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage(
         'Pre-signed URL이 성공적으로 발급되었습니다. 5분 이내에 업로드를 완료해주세요.',
     )
@@ -117,7 +136,7 @@ export class StoreController {
 
     @Patch('partner/stores/:storeId/images/:imageId/confirm')
     @HttpCode(HttpStatus.OK)
-    @UseGuards(AuthGuard)
+    @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('이미지 업로드가 확인되었습니다.')
     @ApiOkResponse({ description: '공방 이미지 업로드 확인 성공' })
     async confirmStoreImage(
@@ -126,6 +145,19 @@ export class StoreController {
         @Param('imageId') imageId: string,
     ): Promise<ConfirmStoreImageResponseDto> {
         return this.confirmStoreImageUseCase.execute(user.id, storeId, imageId);
+    }
+
+    @Delete('partner/stores/:storeId/images/:imageId')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('이미지가 성공적으로 삭제되었습니다.')
+    @ApiOkResponse({ description: '공방 이미지 삭제 성공' })
+    async deleteStoreImage(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+        @Param('imageId') imageId: string,
+    ): Promise<void> {
+        await this.deleteStoreImageUseCase.execute(user.id, storeId, imageId);
     }
 
     @Post('partner/stores/:storeId/submit')
