@@ -12,12 +12,12 @@ type Props = {
     isDirty: boolean;
     isSaving: boolean;
     onSave: () => void;
-    backTo: string;
     children: ReactNode;
 };
 
 // 클래스 수정 화면 공통 셸: 헤더(뒤로가기 이탈 가드) + 스크롤 폼 영역 + 하단 저장 버튼.
-export function ProgramEditScaffold({ title, isDirty, isSaving, onSave, backTo, children }: Props) {
+// 진입 직전 화면(상세)으로 돌아가도록 router.back() 사용 → 히스토리 중복 방지.
+export function ProgramEditScaffold({ title, isDirty, isSaving, onSave, children }: Props) {
     const router = useRouter();
     const { open: openModal, close: closeModal } = useModal();
 
@@ -25,7 +25,7 @@ export function ProgramEditScaffold({ title, isDirty, isSaving, onSave, backTo, 
 
     const handleBack = () => {
         if (!isDirty) {
-            router.push(backTo);
+            router.back();
             return;
         }
         openModal(
@@ -37,7 +37,7 @@ export function ProgramEditScaffold({ title, isDirty, isSaving, onSave, backTo, 
                 danger
                 onConfirm={() => {
                     closeModal();
-                    router.push(backTo);
+                    router.back();
                 }}
                 onCancel={closeModal}
                 onBackdropClick={closeModal}

@@ -22,7 +22,6 @@ type Props = {
 export function ProgramOperationsEditScreen({ programId, program }: Props) {
     const router = useRouter();
     const { push: pushToast } = useToast();
-    const backTo = `/partner/classes/${programId}`;
 
     // 서버 데이터 baseline → 폼 1회 초기화 + dirty 파생
     const baseline: ProgramOperationsFormState = {
@@ -60,7 +59,7 @@ export function ProgramOperationsEditScreen({ programId, program }: Props) {
             });
 
             pushToast({ message: '수정된 클래스 정보가 반영되었어요.' });
-            router.push(backTo);
+            router.back();
         } catch (err) {
             if (err instanceof ApiError) {
                 pushToast({ message: err.message });
@@ -76,7 +75,6 @@ export function ProgramOperationsEditScreen({ programId, program }: Props) {
             isDirty={isDirty}
             isSaving={isSaving}
             onSave={handleSave}
-            backTo={backTo}
         >
             <ProgramOperationsEditForm form={form} errors={errors} onChange={patch} />
         </ProgramEditScaffold>
