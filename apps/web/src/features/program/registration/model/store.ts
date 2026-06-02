@@ -1,6 +1,8 @@
 import { ProgramDifficulty } from '@todam/shared';
 import { create } from 'zustand';
 
+import { filterValidImageFiles } from '../../../../shared/lib/imageFile';
+import type { PendingImage } from '../../../../shared/model';
 import {
     ProgramRegistrationStep,
     TITLE_MAX,
@@ -8,9 +10,11 @@ import {
     type ProgramRegistrationForm,
 } from './types';
 
+const MAX_PROGRAM_IMAGES = 1;
+
 function initialForm(): ProgramRegistrationForm {
     return {
-        thumbnailUrl: null,
+        images: [],
         title: '',
         difficulty: ProgramDifficulty.BASIC, // 기본 선택
         description: '',
@@ -31,6 +35,8 @@ interface ProgramRegistrationStore {
     next: () => void;
     prev: () => void;
     patch: (p: Patch) => void;
+    addImageFiles: (files: File[]) => void;
+    removeImage: (index: number) => void;
     reset: () => void;
 }
 
@@ -41,7 +47,31 @@ export const useProgramRegistrationStore = create<ProgramRegistrationStore>((set
     next: () => set((s) => ({ step: Math.min(s.step + 1, ProgramRegistrationStep.Operating) })),
     prev: () => set((s) => ({ step: Math.max(s.step - 1, ProgramRegistrationStep.BasicInfo) })),
     patch: (p) => set((s) => ({ form: { ...s.form, ...p } })),
-    reset: () => set({ step: ProgramRegistrationStep.BasicInfo, form: initialForm() }),
+    addImageFiles: (files) =>
+        set((s) => {
+            const room = MAX_PROGRAM_IMAGES - s.form.images.length;
+            if (room <= 0) return s;
+            const valid = filterValidImageFiles(files).slice(0, room);
+            if (valid.length === 0) return s;
+            const empty = s.form.images.length === 0;
+            const added: PendingImage[] = valid.map((file, i) => ({
+                file,
+                previewUrl: URL.createObjectURL(file),
+                isThumbnail: empty && i === 0,
+            }));
+            return { form: { ...s.form, images: [...s.form.images, ...added] } };
+        }),
+    removeImage: (index) =>
+        set((s) => {
+            const target = s.form.images[index];
+            if (target) URL.revokeObjectURL(target.previewUrl);
+            return { form: { ...s.form, images: s.form.images.filter((_, i) => i !== index) } };
+        }),
+    reset: () =>
+        set((s) => {
+            s.form.images.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+            return { step: ProgramRegistrationStep.BasicInfo, form: initialForm() };
+        }),
 }));
 
 // ─── 단계별 유효성 (필수값 충족 시 다음/저장 활성) ───────────────
@@ -78,7 +108,7 @@ export function isAllValid(form: ProgramRegistrationForm): boolean {
 // 사용자가 입력을 시작했는지 (이탈 확인 다이얼로그 판단용 — 연동 단계에서 사용)
 export function isDirty(form: ProgramRegistrationForm): boolean {
     return (
-        form.thumbnailUrl !== null ||
+        form.images.length > 0 ||
         form.title.trim().length > 0 ||
         form.description.trim().length > 0 ||
         form.difficulty !== ProgramDifficulty.BASIC ||

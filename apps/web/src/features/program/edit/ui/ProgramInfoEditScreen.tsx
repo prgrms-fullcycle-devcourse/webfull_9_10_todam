@@ -2,17 +2,17 @@
 
 import { useRouter } from 'next/navigation';
 
-import { ProgramDifficulty, type ProgramDetail } from '@todam/shared';
+import { MAX_PROGRAM_IMAGE_COUNT, ProgramDifficulty, type ProgramDetail } from '@todam/shared';
 
 import { ApiError } from '../../../../shared/api';
 import { useToast } from '../../../../shared/model/toast';
 import { validateDescription, validateTitle } from '../../../../entities/program';
 import { usePendingImages } from '../../../../shared/model';
+import { PendingImageField } from '../../../../shared/ui';
 import { useEditableForm } from '../../../../shared/lib/useEditableForm';
 import { useFormValidation } from '../../../../shared/lib/useFormValidation';
 import { useDeleteProgramImage, usePatchProgram, useUploadProgramImage } from '../queries';
 import { ProgramEditScaffold } from './ProgramEditScaffold';
-import { ProgramImageField } from './ProgramImageField';
 import { ProgramInfoEditForm, type ProgramInfoFields } from './ProgramInfoEditForm';
 
 type Props = {
@@ -32,9 +32,13 @@ export function ProgramInfoEditScreen({ programId, program }: Props) {
     };
     const { form: fields, patch, isDirty: fieldsDirty } = useEditableForm(baseline);
 
-    // ProgramImage(programImageId) → ExistingImage(id) 매핑.
+    // ProgramImage → ExistingImage(id, src) 매핑.
     const images = usePendingImages(
-        program.images.map((img) => ({ ...img, id: img.programImageId })),
+        program.images.map((img) => ({
+            ...img,
+            id: img.programImageId,
+            src: img.thumbnailUrl,
+        })),
     );
 
     const isDirty = fieldsDirty || images.isDirty;
@@ -102,12 +106,16 @@ export function ProgramInfoEditScreen({ programId, program }: Props) {
             onSave={handleSave}
         >
             <div className="flex flex-col gap-4">
-                <ProgramImageField
+                <PendingImageField
+                    label="클래스 이미지"
                     existingImages={images.existingImages}
                     pendingImages={images.pendingImages}
                     onAdd={images.addFiles}
                     onRemoveExisting={images.removeExisting}
                     onRemovePending={images.removePending}
+                    max={MAX_PROGRAM_IMAGE_COUNT}
+                    multiple={false}
+                    alt="클래스 이미지"
                 />
                 <ProgramInfoEditForm fields={fields} errors={errors} onChange={patch} />
             </div>

@@ -38,7 +38,8 @@ export function submitStoreRegistration(form: StoreRegistrationForm) {
         latitude: form.business.latitude ?? 0,
         longitude: form.business.longitude ?? 0,
         convenienceInfo: { ...form.store.convenienceInfo },
-        images: [...form.store.images],
+        // TODO(presigned 후행): File 펜딩 → 일괄 업로드 후 실제 key. 현재 mock url.
+        images: form.store.images.map((p) => `mock://store/${p.file.name}`),
         autoConfirm: form.reservation.autoConfirm ?? false,
         reservationIntervalMinutes: form.reservation.intervalMinutes,
         cancelDeadlineDays: form.reservation.cancelDeadlineDays,

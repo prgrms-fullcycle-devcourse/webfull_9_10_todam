@@ -1,5 +1,7 @@
 import { ProgramDifficulty } from '@todam/shared';
 
+import type { PendingImage } from '../../../../shared/model';
+
 // 폼 제약·난이도 옵션은 entities/program 단일 출처에서 재노출.
 export {
     TITLE_MIN,
@@ -23,7 +25,7 @@ export const TOTAL_STEPS = 2;
 
 export interface ProgramRegistrationForm {
     // 1단계: 기본 정보
-    thumbnailUrl: string | null; // 대표 이미지 (presigned 후행 → 현재 mock url, 선택)
+    images: PendingImage[]; // 대표 이미지 (File 펜딩, 선택, 최대 1 — presigned 후행)
     title: string;
     difficulty: ProgramDifficulty;
     description: string; // 선택, 최대 1000자

@@ -1,3 +1,4 @@
+import type { PendingImage } from '../../../../shared/model';
 import {
     MAX_STORE_IMAGES,
     INTERVAL_OPTIONS,
@@ -49,7 +50,7 @@ export interface StoreRegistrationForm {
         longitude: number | null;
     };
     store: {
-        images: string[]; // 대표 이미지 (최대 5, presigned 후행 → mock url)
+        images: PendingImage[]; // 대표 이미지 (최대 5, File 펜딩 — 제출 시 presigned 업로드)
         name: string;
         slug: string;
         phone: string;

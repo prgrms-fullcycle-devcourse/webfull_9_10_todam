@@ -14,9 +14,11 @@ export interface PendingImage {
     uploadedUrl?: string;
 }
 
-// 기존(서버) 이미지 최소 형태. 도메인별로 확장해 사용. id = 삭제·key 식별자.
+// 기존(서버) 이미지 최소 형태. 도메인별로 확장해 사용.
+// id = 삭제·key 식별자, src = 썸네일 렌더 URL. PendingImageField 가 직접 소비.
 export interface ExistingImage {
     id: string;
+    src: string;
 }
 
 export interface PendingImagesState<T extends ExistingImage> {

@@ -18,7 +18,7 @@ type Props = {
     onChange: (patch: Partial<ProgramInfoFields>) => void;
 };
 
-// 기본 정보(클래스명·난이도·상세설명) 입력 필드. 이미지는 ProgramImageField가 담당.
+// 기본 정보(클래스명·난이도·상세설명) 입력 필드. 이미지는 PendingImageField가 담당.
 export function ProgramInfoEditForm({ fields, errors, onChange }: Props) {
     return (
         <div className="flex flex-col gap-4">

@@ -3,7 +3,7 @@
 import { phoneSchema, slugSchema } from '@todam/shared';
 import { useEffect, useState } from 'react';
 
-import { StoreInfoFields, type StoreImageItem } from '../../shared/ui';
+import { StoreInfoFields } from '../../shared/ui';
 import { useStoreRegistrationStore } from '../model/store';
 import { useSlugAvailability } from '../queries';
 
@@ -13,7 +13,7 @@ const isPhone = (v: string) => phoneSchema.safeParse(v).success;
 export function StoreInfoStep() {
     const store = useStoreRegistrationStore((s) => s.form.store);
     const patchStore = useStoreRegistrationStore((s) => s.patchStore);
-    const addImage = useStoreRegistrationStore((s) => s.addImage);
+    const addImageFiles = useStoreRegistrationStore((s) => s.addImageFiles);
     const removeImage = useStoreRegistrationStore((s) => s.removeImage);
 
     // 공방 URL 실시간(debounce) 중복확인 → TanStack Query
@@ -33,11 +33,6 @@ export function StoreInfoStep() {
         }
     }, [slugQuery.data, store.slug, patchStore]);
 
-    const handleAddImages = (files: File[]) => {
-        // TODO(presigned 후행): 실제 업로드 후 key 저장. 현재 mock url.
-        files.forEach((f) => addImage(`mock://store/${f.name}`));
-    };
-
     const slugFormatError =
         store.slug.length > 0 && !isSlug(store.slug) ? '영문 소문자·숫자·-·_ 3~30자' : undefined;
     const phoneError =
@@ -53,16 +48,13 @@ export function StoreInfoStep() {
                 : '이미 사용 중인 URL입니다.'
             : '미입력 시 자동 생성됩니다.';
 
-    const images: StoreImageItem[] = store.images.map((url, i) => ({
-        key: `${url}-${i}`,
-        label: url.replace('mock://store/', ''),
-        onRemove: () => removeImage(i),
-    }));
-
     return (
         <StoreInfoFields
-            images={images}
-            onAddImages={handleAddImages}
+            existingImages={[]}
+            pendingImages={store.images}
+            onAddImages={addImageFiles}
+            onRemoveExisting={() => {}}
+            onRemovePending={removeImage}
             name={store.name}
             onChangeName={(v) => patchStore({ name: v })}
             slug={store.slug}
