@@ -10,6 +10,7 @@ import {
     type DeliveryEditRequest,
     type ReservationDetail,
 } from '@todam/shared';
+import { BottomBar, Button } from '@todam/ui';
 
 import { useReservationDetail } from '../../detail';
 import { useUpdateReservationDelivery } from '../queries';
@@ -17,7 +18,6 @@ import { ApiError } from '../../../../shared/api';
 import { useToast } from '../../../../shared/model';
 
 import { DeliveryForm, type DeliveryFormErrors } from './DeliveryForm';
-import { SaveButtonSection } from './SaveButtonSection';
 
 // 배송 정보 수정 페이지의 클라이언트 본체 — 데이터 페치·가드·라우팅만 담당.
 // 폼 본체는 reservation 도착 후 DeliveryEditForm 으로 mount 위임 (effect 내 setState 회피).
@@ -245,21 +245,30 @@ function DeliveryEditForm({ reservationId, reservation }: DeliveryEditFormProps)
     };
 
     return (
-        <main className="flex flex-1 flex-col overflow-y-auto px-4 pb-0">
-            <div className="flex flex-col gap-2 py-2">
-                <DeliveryForm
-                    values={values}
-                    errors={errors}
-                    onChange={handleChange}
-                    onAddressResolved={handleAddressResolved}
-                    disabled={updateMutation.isPending}
-                />
+        <main className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-4">
+                <div className="flex flex-col gap-2 py-2">
+                    <DeliveryForm
+                        values={values}
+                        errors={errors}
+                        onChange={handleChange}
+                        onAddressResolved={handleAddressResolved}
+                        disabled={updateMutation.isPending}
+                    />
+                </div>
             </div>
-            <SaveButtonSection
-                disabled={!isFormValid}
-                loading={updateMutation.isPending}
-                onClick={handleSave}
-            />
+            <BottomBar>
+                <Button
+                    type="button"
+                    variant="filled"
+                    size="lg"
+                    className="w-full"
+                    disabled={!isFormValid || updateMutation.isPending}
+                    onClick={handleSave}
+                >
+                    {updateMutation.isPending ? '저장 중…' : '저장'}
+                </Button>
+            </BottomBar>
         </main>
     );
 }
