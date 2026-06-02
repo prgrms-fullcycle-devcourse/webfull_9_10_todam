@@ -11,10 +11,10 @@ import {
     type ReservationDetail,
 } from '@todam/shared';
 
-import { useReservationDetail } from '../../../../../../../../features/reservation/detail';
-import { useUpdateReservationDelivery } from '../../../../../../../../features/reservation/delivery-edit';
-import { ApiError } from '../../../../../../../../shared/api';
-import { useToast } from '../../../../../../../../shared/model';
+import { useReservationDetail } from '../../detail';
+import { useUpdateReservationDelivery } from '../queries';
+import { ApiError } from '../../../../shared/api';
+import { useToast } from '../../../../shared/model';
 
 import { DeliveryForm, type DeliveryFormErrors } from './DeliveryForm';
 import { SaveButtonSection } from './SaveButtonSection';
