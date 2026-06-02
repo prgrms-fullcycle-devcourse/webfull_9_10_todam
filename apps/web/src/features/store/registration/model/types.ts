@@ -1,4 +1,4 @@
-import type { PendingImage } from '../../../../shared/model';
+import type { PendingImage } from '@/shared/model';
 import {
     MAX_STORE_IMAGES,
     INTERVAL_OPTIONS,
@@ -6,7 +6,7 @@ import {
     CONVENIENCE_OPTIONS,
     type OperatingState,
     type ConvenienceState,
-} from '../../shared/model';
+} from '@/features/store/shared/model';
 
 // 공유 상수/타입은 store/shared/model 단일 소스에서 re-export (외부 import 경로 호환).
 export {

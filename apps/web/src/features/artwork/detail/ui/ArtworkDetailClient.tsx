@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 
 import type { ArtworkPhoto } from '@todam/shared';
 
-import { Stepper } from '../../../../entities/artwork';
-import { ApiError } from '../../../../shared/api';
+import { Stepper } from '@/entities/artwork';
+import { ApiError } from '@/shared/api';
 import { useArtworkDetail } from '../queries';
 
 import { ArtworkDetailEmpty } from './ArtworkDetailEmpty';

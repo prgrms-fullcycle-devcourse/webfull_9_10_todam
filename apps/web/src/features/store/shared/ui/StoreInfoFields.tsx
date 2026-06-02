@@ -3,8 +3,8 @@
 import { formatPhone } from '@todam/shared';
 import { TextArea, TextInput } from '@todam/ui';
 
-import type { ExistingImage, PendingImage } from '../../../../shared/model';
-import { PendingImageField } from '../../../../shared/ui';
+import type { ExistingImage, PendingImage } from '@/shared/model';
+import { PendingImageField } from '@/shared/ui';
 import { MAX_STORE_IMAGES } from '../model';
 
 interface StoreInfoFieldsProps {

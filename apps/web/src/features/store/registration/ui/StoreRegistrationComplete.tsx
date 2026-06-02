@@ -12,7 +12,7 @@ import {
     DotIcon,
     EmailIcon,
 } from '@todam/ui';
-import { ResultTable } from '../../../../shared/ui';
+import { ResultTable } from '@/shared/ui';
 import { useStoreRegistrationStatus } from '../queries';
 
 export function StoreRegistrationComplete({

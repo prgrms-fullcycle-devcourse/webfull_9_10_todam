@@ -2,7 +2,7 @@
 
 import { use } from 'react';
 
-import { BusinessInfoEditScreen } from '../../../../../features/store/business-edit';
+import { BusinessInfoEditScreen } from '@/features/store/business-edit';
 
 export default function PartnerStoreBusinessEditPage({
     params,

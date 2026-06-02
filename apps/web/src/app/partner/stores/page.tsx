@@ -2,10 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 
-import { StoreManagementItem, StoreStatusBadge } from '../../../entities/store';
-import { StoreListHeaderMenu, usePartnerStores } from '../../../features/store/list';
-import { useHeaderOverride } from '../../../shared/lib/useHeaderOverride';
-import { EmptyState } from '../../../shared/ui';
+import { StoreManagementItem, StoreStatusBadge } from '@/entities/store';
+import { StoreListHeaderMenu, usePartnerStores } from '@/features/store/list';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { EmptyState } from '@/shared/ui';
 
 export default function PartnerStoresPage() {
     const router = useRouter();

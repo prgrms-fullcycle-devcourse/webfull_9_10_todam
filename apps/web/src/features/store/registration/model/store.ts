@@ -1,8 +1,8 @@
 import { businessNumberSchema, emailSchema, phoneSchema, slugSchema } from '@todam/shared';
 import { create } from 'zustand';
 
-import { filterValidImageFiles } from '../../../../shared/lib/imageFile';
-import type { PendingImage } from '../../../../shared/model';
+import { filterValidImageFiles } from '@/shared/lib/imageFile';
+import type { PendingImage } from '@/shared/model';
 import {
     MAX_STORE_IMAGES,
     StoreRegistrationStep,

@@ -4,9 +4,9 @@ import { formatBusinessNumber } from '@todam/shared';
 import { DescriptionBlock, TextInput } from '@todam/ui';
 import { useState } from 'react';
 
-import { openPostcode } from '../../../../shared/lib/daumPostcode';
-import { useToast } from '../../../../shared/model';
-import { ImageUploadField, type ImageUploadGridItem } from '../../../../shared/ui';
+import { openPostcode } from '@/shared/lib/daumPostcode';
+import { useToast } from '@/shared/model';
+import { ImageUploadField, type ImageUploadGridItem } from '@/shared/ui';
 import { useStoreRegistrationStore } from '../model/store';
 import { useGeocode } from '../queries';
 

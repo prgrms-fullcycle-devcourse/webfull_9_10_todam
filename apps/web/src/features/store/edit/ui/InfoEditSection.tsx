@@ -2,7 +2,7 @@
 
 import { phoneSchema, slugSchema } from '@todam/shared';
 
-import { StoreInfoFields } from '../../shared/ui';
+import { StoreInfoFields } from '@/features/store/shared/ui';
 import { useStoreEditStore } from '../model/store';
 
 const isSlug = (v: string) => slugSchema.safeParse(v).success;

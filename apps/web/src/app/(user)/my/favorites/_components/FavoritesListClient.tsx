@@ -6,15 +6,12 @@ import { Button, HeartFillIcon } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
-import { FavoriteStoreCard } from '../../../../../entities/store';
-import {
-    FAVORITE_STORES_QUERY_KEY,
-    useFavoriteStores,
-} from '../../../../../features/store/favorite-list';
-import { useToggleFavorite } from '../../../../../features/store/toggle-favorite';
-import { ApiError } from '../../../../../shared/api';
-import { useToast } from '../../../../../shared/model';
-import { EmptyState } from '../../../../../shared/ui';
+import { FavoriteStoreCard } from '@/entities/store';
+import { FAVORITE_STORES_QUERY_KEY, useFavoriteStores } from '@/features/store/favorite-list';
+import { useToggleFavorite } from '@/features/store/toggle-favorite';
+import { ApiError } from '@/shared/api';
+import { useToast } from '@/shared/model';
+import { EmptyState } from '@/shared/ui';
 
 type FavoriteInfiniteData = InfiniteData<FavoriteStoreListResult, string | null>;
 

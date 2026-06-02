@@ -1,8 +1,8 @@
 import { DAY_OF_WEEK, phoneSchema, slugSchema, type StoreUpdateRequest } from '@todam/shared';
 import { create } from 'zustand';
 
-import { filterValidImageFiles } from '../../../../shared/lib/imageFile';
-import type { PendingImage } from '../../../../shared/model';
+import { filterValidImageFiles } from '@/shared/lib/imageFile';
+import type { PendingImage } from '@/shared/model';
 import {
     MAX_STORE_IMAGES,
     type ConvenienceState,

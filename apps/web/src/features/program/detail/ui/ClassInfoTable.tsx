@@ -1,7 +1,7 @@
 import { CalendarIcon, ClockIcon, FlagIcon, NametagIcon } from '@todam/ui';
 import { formatDuration, formatPrice, type ProgramDetail } from '@todam/shared';
 
-import { InfoTable, type InfoTableRow } from '../../../../shared/ui';
+import { InfoTable, type InfoTableRow } from '@/shared/ui';
 
 const ICON_SIZE = 16;
 

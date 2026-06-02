@@ -9,13 +9,13 @@ import {
 import { BottomBar, Button, TextInput } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 
-import { ApiError } from '../../../../shared/api';
-import { openPostcode } from '../../../../shared/lib/daumPostcode';
-import { useEditableForm } from '../../../../shared/lib/useEditableForm';
-import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
-import { useToast } from '../../../../shared/model';
-import { ImageUploadField, type ImageUploadGridItem } from '../../../../shared/ui';
-import { usePartnerStoreDetail } from '../../detail';
+import { ApiError } from '@/shared/api';
+import { openPostcode } from '@/shared/lib/daumPostcode';
+import { useEditableForm } from '@/shared/lib/useEditableForm';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { useToast } from '@/shared/model';
+import { ImageUploadField, type ImageUploadGridItem } from '@/shared/ui';
+import { usePartnerStoreDetail } from '@/features/store/detail';
 import { useUpdateBusinessDocument } from '../queries';
 
 const isBizNumber = (v: string) => businessNumberSchema.safeParse(v).success;

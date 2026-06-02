@@ -2,7 +2,7 @@
 
 import { Button, DuplicateIcon } from '@todam/ui';
 
-import { useToast } from '../../../../../../shared/model';
+import { useToast } from '@/shared/model';
 
 // 예약번호 카드 (outline + duplicate icon + label).
 // 디자인 정본 — Figma `c72f7ac4...` outline size=sm type=iconLabel, 328 x 40.

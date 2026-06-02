@@ -12,10 +12,10 @@ import {
 } from '@todam/shared';
 import { BottomBar, Button } from '@todam/ui';
 
-import { useReservationDetail } from '../../detail';
+import { useReservationDetail } from '@/features/reservation/detail';
 import { useUpdateReservationDelivery } from '../queries';
-import { ApiError } from '../../../../shared/api';
-import { useToast } from '../../../../shared/model';
+import { ApiError } from '@/shared/api';
+import { useToast } from '@/shared/model';
 
 import { DeliveryForm, type DeliveryFormErrors } from './DeliveryForm';
 

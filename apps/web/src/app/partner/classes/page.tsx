@@ -9,9 +9,9 @@ import {
     ClassListHeaderMenu,
     PartnerClassListItem,
     usePartnerPrograms,
-} from '../../../features/program/list';
-import { useHeaderOverride } from '../../../shared/lib/useHeaderOverride';
-import { EmptyState } from '../../../shared/ui';
+} from '@/features/program/list';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { EmptyState } from '@/shared/ui';
 
 // 현재 선택 공방 컨텍스트(전역 store 선택)는 미구현 단계.
 // mock 단계에서는 시드 데이터가 있는 공방 id 로 고정해 화면을 렌더한다.

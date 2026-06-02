@@ -1,9 +1,6 @@
 'use client';
 
-import {
-    ProgramInfoEditScreen,
-    useProgramEditPreload,
-} from '../../../../../../features/program/edit';
+import { ProgramInfoEditScreen, useProgramEditPreload } from '@/features/program/edit';
 
 type PageProps = { params: Promise<{ id: string }> };
 

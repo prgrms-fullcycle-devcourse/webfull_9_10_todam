@@ -6,10 +6,10 @@ import { useEffect, useState } from 'react';
 
 import { StoreRegistrationErrorCode } from '@todam/shared';
 
-import { ApiError } from '../../../../shared/api';
-import { useModal, useToast } from '../../../../shared/model';
-import { ProgressBarWrapper } from '../../../../shared/ui';
-import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
+import { ApiError } from '@/shared/api';
+import { useModal, useToast } from '@/shared/model';
+import { ProgressBarWrapper } from '@/shared/ui';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { isAllValid, isDirty, isStepValid, useStoreRegistrationStore } from '../model/store';
 import { useSubmitStoreRegistration } from '../queries';
 import { StoreRegistrationStep, STEP_TITLES, TOTAL_STEPS } from '../model/types';

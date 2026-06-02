@@ -1,8 +1,8 @@
 import { MAX_PROGRAM_IMAGE_COUNT, ProgramDifficulty } from '@todam/shared';
 import { create } from 'zustand';
 
-import { filterValidImageFiles } from '../../../../shared/lib/imageFile';
-import type { PendingImage } from '../../../../shared/model';
+import { filterValidImageFiles } from '@/shared/lib/imageFile';
+import type { PendingImage } from '@/shared/model';
 import {
     ProgramRegistrationStep,
     TITLE_MAX,

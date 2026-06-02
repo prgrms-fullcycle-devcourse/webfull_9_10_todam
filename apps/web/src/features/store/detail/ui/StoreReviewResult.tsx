@@ -13,7 +13,7 @@ import {
     EmailIcon,
 } from '@todam/ui';
 
-import { ResultTable } from '../../../../shared/ui';
+import { ResultTable } from '@/shared/ui';
 
 type Props = {
     storeName: string;

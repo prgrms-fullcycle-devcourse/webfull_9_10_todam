@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 
-import { MenuTable } from '../../../shared/ui';
+import { MenuTable } from '@/shared/ui';
 
 export default function MyPage() {
     const router = useRouter();

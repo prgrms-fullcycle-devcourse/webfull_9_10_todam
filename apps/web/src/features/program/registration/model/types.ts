@@ -1,14 +1,9 @@
 import { ProgramDifficulty } from '@todam/shared';
 
-import type { PendingImage } from '../../../../shared/model';
+import type { PendingImage } from '@/shared/model';
 
 // 폼 제약·난이도 옵션은 entities/program 단일 출처에서 재노출.
-export {
-    TITLE_MIN,
-    TITLE_MAX,
-    DESCRIPTION_MAX,
-    DIFFICULTY_OPTIONS,
-} from '../../../../entities/program';
+export { TITLE_MIN, TITLE_MAX, DESCRIPTION_MAX, DIFFICULTY_OPTIONS } from '@/entities/program';
 
 // 클래스 등록 2단계. (이번 구현: 1단계 기본정보. 2단계 운영정보는 후행)
 export enum ProgramRegistrationStep {

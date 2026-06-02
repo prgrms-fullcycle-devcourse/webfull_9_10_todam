@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 
 import { Button, MoreIcon } from '@todam/ui';
 
-import { ReviewDetailContent } from '../../../../entities/review';
-import { useReservationDetail, useReservationReview } from '../../../reservation/detail';
-import { useDeleteReviewMutation } from '../../actions';
-import { ApiError } from '../../../../shared/api';
-import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
-import { useModal, useToast } from '../../../../shared/model';
+import { ReviewDetailContent } from '@/entities/review';
+import { useReservationDetail, useReservationReview } from '@/features/reservation/detail';
+import { useDeleteReviewMutation } from '@/features/review/actions';
+import { ApiError } from '@/shared/api';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { useModal, useToast } from '@/shared/model';
 
 import { DeleteReviewDialog } from './DeleteReviewDialog';
 import { ReviewMoreMenu } from './ReviewMoreMenu';

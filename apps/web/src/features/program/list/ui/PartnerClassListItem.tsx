@@ -3,7 +3,7 @@
 import { ProgramStatus, formatDuration, formatPrice } from '@todam/shared';
 import { useRouter } from 'next/navigation';
 
-import { ClassItem } from '../../../../entities/program';
+import { ClassItem } from '@/entities/program';
 import type { PartnerProgramListItemView } from '../api';
 
 // 서브텍스트 항목 구성. Contract 필드(durationMinutes) + mock 확장(level·leadTimeDays).

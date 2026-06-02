@@ -2,7 +2,7 @@
 
 import { Slot, TextArea, TextInput } from '@todam/ui';
 
-import { PendingImageField } from '../../../../shared/ui';
+import { PendingImageField } from '@/shared/ui';
 import { useProgramRegistrationStore } from '../model/store';
 import { DESCRIPTION_MAX, DIFFICULTY_OPTIONS, TITLE_MAX } from '../model/types';
 

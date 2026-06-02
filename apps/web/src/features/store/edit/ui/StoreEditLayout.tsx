@@ -5,9 +5,9 @@ import { BottomBar, Button, ConfirmIcon, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { ApiError } from '../../../../shared/api';
-import { useModal, useToast } from '../../../../shared/model';
-import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
+import { ApiError } from '@/shared/api';
+import { useModal, useToast } from '@/shared/model';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { detailToForm, type EditSection } from '../model/types';
 import {
     buildImageIds,

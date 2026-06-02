@@ -4,9 +4,9 @@ import { BottomBar, Button, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { useModal, useToast } from '../../../../shared/model';
-import { ProgressBarWrapper } from '../../../../shared/ui';
-import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
+import { useModal, useToast } from '@/shared/model';
+import { ProgressBarWrapper } from '@/shared/ui';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { isDirty, isStepValid, useProgramRegistrationStore } from '../model/store';
 import { ProgramRegistrationStep, STEP_TITLES, TOTAL_STEPS } from '../model/types';
 

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { RightIcon, SectionTitle } from '@todam/ui';
 import type { ReservationDetail } from '@todam/shared';
 
-import { ReservationStatusBadge } from '../../../../../../entities/reservation';
+import { ReservationStatusBadge } from '@/entities/reservation';
 
 // 디자인 정본 (변형 B/C) — Figma `8118:2615` 작품 제작 단계 카드.
 // status=IN_PROGRESS 시에만 렌더. Badge(substate) + statusMessage + ProgressBar + "N단계 남음" + 자세히보기.

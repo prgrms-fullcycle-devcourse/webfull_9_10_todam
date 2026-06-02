@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import { StoreStatus } from '@todam/shared';
 
-import { useStoreRegistrationStatus } from '../../features/store/registration';
+import { useStoreRegistrationStatus } from '@/features/store/registration';
 
 const sections = [
     { title: '대기 중인 예약', count: 4 },

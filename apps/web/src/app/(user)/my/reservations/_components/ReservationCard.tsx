@@ -2,7 +2,7 @@
 
 import { formatScheduled, type ReservationListItem } from '@todam/shared';
 
-import { ReservationStatusBadge } from '../../../../../entities/reservation';
+import { ReservationStatusBadge } from '@/entities/reservation';
 
 // status message UI 숨김 조건.
 // 1) 정본 명세: DELIVERED/PICKUP_DONE 종료 상태 카드는 status message frame 자체 hidden.

@@ -3,8 +3,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
-import { ApiError } from '../../../shared/api';
-import { useToast } from '../../../shared/model';
+import { ApiError } from '@/shared/api';
+import { useToast } from '@/shared/model';
 
 import { deleteReview } from './api';
 
