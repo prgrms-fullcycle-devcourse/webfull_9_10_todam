@@ -63,12 +63,13 @@
 | `status` | string | 항상 `PUBLISHED`만 반환 |
 | `convenienceInfo` | object | `{ parking: boolean, pet: boolean, wifi: boolean }` |
 | `autoConfirm` | boolean | 자동 예약 확정 여부 |
-| `region` | string | 행정동명(예: `성수동`). 카카오 coord2regioncode 등록시 저장. **Store 신규 컬럼** |
+| `region` | object | `{ sido, sigungu, dong }` (예: `{"서울","성동구","성수동"}`). 카카오 coord2regioncode 시·구·동을 **구조화 저장**(Store 신규 컬럼). 근처 카드=`dong`, 검색 카드/자동완성=`"{sido} {sigungu} {dong}"`. (`user-stores-keyword` 동기화) |
 | `thumbnailUrl` | string \| null | 카드 대표 이미지 (`StoreImage.thumbnailUrl`, `isThumbnail`) |
 | `rating` | number \| null | 별점. `Review.rating` 평균(`isVisible=true`). 리뷰 0건이면 `null` |
 | `reviewCount` | number | 리뷰 수(`isVisible=true`). 없으면 `0` |
 | `distance` | number | 사용자 좌표 기준 거리, **미터(정수)**. `Store.latitude/longitude` 기준. FE가 km 포맷 |
 | `representativeClass` | object \| null | `{ name: string, price: number(KRW), hasMore: boolean }`. **최저가 Program**, `hasMore`=노출 클래스 2개↑ → FE "~" 표시 |
+| `matchedClass` | object \| null | `{ name, price }`. `keyword`가 해당 공방의 ACTIVE 프로그램명에 매칭될 때만 non-null(다건이면 최저가). FE는 있으면 이걸, 없으면 `representativeClass` 렌더. (검색 통합 — `user-stores-keyword`) |
 | `isOperating` | boolean | 현재 운영시간 내 여부(`StoreOperatingHour` 기준). `false`→"준비 중" 뱃지 |
 | `publishedAt` | string (ISO) | 공개 시각 |
 | `createdAt` | string (ISO) | 생성 시각 |
@@ -84,17 +85,17 @@
 - Query Parameters (전부 선택):
   - `lat`: 검색 중심 위도 (예: `37.5665`) — 권한 거부 시 FE가 성수동 기본값 `37.5446` 전송 (Open decisions #4)
   - `lng`: 검색 중심 경도 (예: `126.9780`) — 권한 거부 시 FE가 성수동 기본값 `127.0560` 전송 (Open decisions #4)
-  - `keyword`: 공방 이름(`name`) 또는 주소(`address`) 부분일치(LIKE) 검색어
+  - `keyword`: 공방 이름(`name`)·주소(`address`) **+ ACTIVE 프로그램명(`Program.title`)** 부분일치(LIKE) 검색어. (검색 통합 — `user-stores-keyword`)
   - `cursor`: 다음 페이지 커서 (opaque, 첫 페이지는 미전송) — 커서 기반 무한스크롤 (Open decisions #3, **API명세 갱신 필요**)
   - `limit`: 페이지당 항목 수 (기본 `20`) — (Open decisions #3, **API명세 갱신 필요**)
 - 시스템 처리:
   - 파라미터 형식 검증
   - `status = 'PUBLISHED'` 공방만 필터
-  - `keyword` 있으면 `name` 또는 `address` LIKE 필터
+  - `keyword` 있으면 `name`/`address` **+ ACTIVE `Program.title`** LIKE 필터(programs join). 프로그램명 매칭 시 해당 공방의 `matchedClass`(매칭 프로그램, 다건 최저가) 산출
   - `lat`/`lng` 기준 좌표↔공방 좌표 거리 연산 → `distance`(미터) 산출, 거리순 정렬 (동일 거리는 `id` 보조정렬로 페이지 경계 안정화)
   - **반경(radius) 제한 없음** — 전체를 거리순 정렬 후 무한스크롤로 페이징 (Open decisions #2)
   - `rating`(`Review.rating` 평균, `isVisible=true`)/`reviewCount`(count) 집계, `representativeClass`(노출 Program 중 최저가 + `hasMore`), `isOperating`(`StoreOperatingHour` vs 현재 요일·시각) 산출
-  - `region`은 저장된 컬럼값 반환(조회 시 카카오 호출 없음)
+  - `region`은 저장된 구조화 컬럼(`sido`/`sigungu`/`dong`)을 객체로 반환(조회 시 카카오 호출 없음)
   - **커서 기반 페이징**: `cursor` 디코드 → 해당 지점 이후부터 `limit`개 조회, 다음 `nextCursor`(없으면 `null`) 및 `hasNext` 산출.
     - 커서 payload는 정렬키에 따라 분기: **lat/lng 있으면 `{ distance, id }`**(거리순+id), **없으면 `{ id }`**(또는 `{ publishedAt, id }`). 좌표 있을 때는 후속 요청에 lat/lng 고정 필수.
 - 응답 `200 OK`:
@@ -118,12 +119,13 @@
         "status": "PUBLISHED",
         "convenienceInfo": { "parking": true, "pet": false, "wifi": true },
         "autoConfirm": false,
-        "region": "성수동",
+        "region": { "sido": "서울", "sigungu": "성동구", "dong": "성수동" },
         "thumbnailUrl": "https://cdn.todam.example/stores/todam-jeonju/thumb.jpg",
         "rating": 4.9,
         "reviewCount": 253,
         "distance": 1400,
         "representativeClass": { "name": "머그컵 만들기", "price": 45000, "hasMore": true },
+        "matchedClass": null,
         "isOperating": true,
         "publishedAt": "2026-05-25T10:00:00.000Z",
         "createdAt": "2026-05-24T12:00:00.000Z"
@@ -171,8 +173,11 @@
 - UI: <!-- 메인 공방 목록 섹션, 공방 카드 컴포넌트 -->
 - 연동: <!-- 실 GET /stores 바인딩, 권한 허용/거부 경로 검증 결과 -->
 
+## Risks
+
+- **검색 통합으로 인한 재변경(`user-stores-keyword`)**: `keyword`에 ACTIVE `Program.title` 매칭 추가 + 응답 `matchedClass` 추가 + `region` 객체화. programs join으로 쿼리 복잡도↑, 이미 머지된 본체 계약 변경이므로 Notion·구현 동기화 필수.
 - **운영시간 데이터 = 확보됨**: `isOperating`("준비 중")은 `StoreOperatingHour`(요일·openTime·closeTime·breakStart/End) 기준으로 계산. 스키마 존재 확인 완료(별도 선행작업 불필요). 시간대(KST) 경계·휴게시간 처리만 주의.
-- **신규 스키마 작업 — `Store.region` 컬럼 추가(nullable) + 마이그레이션 + 기존 데이터 백필**(카카오 coord2regioncode). 외부 API 장애/쿼터 고려. 행정동 depth/접미사 정리 규칙 확정 필요.
+- **신규 스키마 작업 — `Store`에 구조화 region 컬럼(`regionSido`/`regionSigungu`/`regionDong`) 추가 + 마이그레이션 + 기존 데이터 백필**(카카오 coord2regioncode 시·구·동). 외부 API 장애/쿼터 고려. 시도명 약어(서울특별시→서울)·depth 정리 규칙 확정 필요.
 - **`representativeClass` 선정 기준**: 노출 가능 Program 중 최저가. "노출 가능"으로 볼 `Program.status` 값 확정 필요. 가격 표시 "~"는 `hasMore`로 FE에서 처리.
 - **집계 비용**: `rating`/`reviewCount` 실시간 집계가 목록 N건마다 비싸지면 캐시/비정규화 컬럼 고려.
 - Geolocation 권한 거부/타임아웃 처리 미흡 시 메인 진입 경험 저하(폴백 성수동).
@@ -196,8 +201,9 @@
 - 2026-06-02: `region`은 **카카오 `coord2regioncode`를 공방 등록/주소수정 시점에 호출해 컬럼 저장**하는 방식으로 확정(조회당 외부호출 0). 사용자 위치 라벨만 FE가 카카오 1회 호출. → **`Store.region` 컬럼 신규 추가 + 기존 데이터 백필** 필요.
 - 2026-06-02: 스키마 직접 확인 — `StoreOperatingHour`(운영시간), `Review.rating/isVisible`(평점·리뷰수), `StoreImage.thumbnailUrl/isThumbnail`(썸네일), `Program.price/sortOrder/status`(클래스), `Store.latitude/longitude`(거리) 모두 존재. **신규 작업은 `Store.region` 컬럼뿐.** `isOperating` 운영시간 의존 리스크 해소.
 - 2026-06-02: `representativeClass` → **최저가 Program**을 대표로 선정(동가 `sortOrder`→`id`). 응답에 `hasMore: boolean`(노출 클래스 2개↑) 추가 → FE가 가격 뒤 "~" 표시(예: `10,000~`). 0개면 `null`.
+- 2026-06-02: **검색 통합(`user-stores-keyword`)에 따른 본체 계약 변경** — (1) `keyword`에 ACTIVE `Program.title` 매칭 추가, (2) 응답에 `matchedClass{name,price}|null`(키워드-프로그램 매칭 시, 다건 최저가) 추가, (3) `region`을 **구조화 객체 `{sido,sigungu,dong}`**로 변경(컬럼 `regionSido/Sigungu/Dong`). `/stores/search`는 폐기되어 본 엔드포인트로 흡수. 상세는 `user-stores-keyword.md` 참조.
 
 ## Outcome
 
-- Status: Open decisions #1~#4 전부 확정(UI 기준). API명세 DB 갱신 + 팀(BE) approve 대기.
-- Follow-up: API명세 갱신 후 implementer로 인계. `isOperating` 위한 운영시간 데이터 존재여부 BE 확인 필요.
+- Status: Open decisions #1~#4 전부 확정(UI 기준). **+ 검색 통합 계약 변경(region 객체화·keyword 클래스 매칭·matchedClass)** 반영. API명세 DB 갱신 + 팀(BE) approve 대기.
+- Follow-up: API명세 갱신(카드 필드·커서·region 객체·keyword 확장·matchedClass) 후 implementer로 인계. `user-stores-keyword.md`와 contract 동기 유지.
