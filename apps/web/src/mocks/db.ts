@@ -1301,6 +1301,69 @@ export function findReviewByReservation(reservationId: string): ReviewDetail | u
     return SEEDED_REVIEW_DETAILS[reservationId];
 }
 
+export function findReviewById(reviewId: string): ReviewDetail | undefined {
+    return Object.values(SEEDED_REVIEW_DETAILS).find((r) => r.id === reviewId);
+}
+
+// S3 Key → 노출 URL (mock). presigned 업로드된 사진의 표시용 URL 구성.
+function reviewPhotoKeyToUrl(key: string): string {
+    return `https://todam-bucket.s3.ap-northeast-2.amazonaws.com/${key}`;
+}
+
+interface ReviewWriteInput {
+    rating: number;
+    content?: string;
+    photos?: string[];
+}
+
+// 리뷰 작성 — SEEDED_REVIEW_DETAILS 갱신 + 예약 detail hasReview 전이.
+export function createReview(reservationId: string, input: ReviewWriteInput): ReviewDetail {
+    const id = genId('review');
+    const review: ReviewDetail = {
+        id,
+        reservationId,
+        rating: input.rating,
+        content: input.content ?? '',
+        photos: (input.photos ?? []).map((key, i) => ({
+            id: `${id}-p${i + 1}`,
+            imageUrl: reviewPhotoKeyToUrl(key),
+        })),
+        createdAt: nowIso(),
+    };
+    SEEDED_REVIEW_DETAILS[reservationId] = review;
+    const detail = SEEDED_RESERVATION_DETAILS[reservationId];
+    if (detail) {
+        detail.hasReview = true;
+        detail.reviewId = id;
+    }
+    return review;
+}
+
+// 리뷰 수정 — 기존 photos 통째 교체. 미존재 시 undefined.
+export function updateReview(reviewId: string, input: ReviewWriteInput): ReviewDetail | undefined {
+    const review = findReviewById(reviewId);
+    if (!review) return undefined;
+    review.rating = input.rating;
+    review.content = input.content ?? '';
+    if (input.photos) {
+        review.photos = input.photos.map((key, i) => ({
+            id: `${review.id}-p${i + 1}`,
+            imageUrl: reviewPhotoKeyToUrl(key),
+        }));
+    }
+    return review;
+}
+
+// 리뷰 사진 presigned (D14 — 추론 mock). 응답에 S3 key 포함.
+export function createReviewImageUpload(fileName: string): { uploadUrl: string; key: string } {
+    const id = genId('rphoto');
+    const key = `reviews/photos/${id}_${fileName}`;
+    return {
+        uploadUrl: `https://todam-bucket.s3.ap-northeast-2.amazonaws.com/${key}?mock=1`,
+        key,
+    };
+}
+
 // ─── 작품 상세 seed (GET /artworks/{artworkId}) ───────────────────────
 // plan: docs/exec-plans/active/유저 예약 - 작품 상세 조회.md
 // - reservation seed 의 artworkId 와 매핑 (res-seed-0004 ↔ artwork-seed-0004 등).
