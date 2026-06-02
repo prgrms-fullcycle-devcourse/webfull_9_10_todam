@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { StoreManagementItem, StoreStatusBadge } from '../../../entities/store';
 import { StoreListHeaderMenu, usePartnerStores } from '../../../features/store/list';
-import { useHeaderActionStore } from '../../../shared/model';
+import { useHeaderOverride } from '../../../shared/lib/useHeaderOverride';
 import { EmptyState } from '../../../shared/ui';
 
 export default function PartnerStoresPage() {
@@ -13,13 +12,8 @@ export default function PartnerStoresPage() {
     const { data, isLoading, isError } = usePartnerStores();
     const stores = data?.stores ?? [];
 
-    const setAction = useHeaderActionStore((s) => s.setAction);
-    const clearAction = useHeaderActionStore((s) => s.clearAction);
-
-    useEffect(() => {
-        setAction(<StoreListHeaderMenu />);
-        return () => clearAction();
-    }, [setAction, clearAction]);
+    // 라우트 헤더(공방 관리) 우측 슬롯에 메뉴 주입.
+    useHeaderOverride({ rightAction: <StoreListHeaderMenu /> });
 
     return (
         <main className="flex-1 overflow-y-auto px-4 pb-16">

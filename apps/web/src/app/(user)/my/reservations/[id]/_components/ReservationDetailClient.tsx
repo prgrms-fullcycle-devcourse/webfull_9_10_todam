@@ -8,7 +8,8 @@ import { ReservationDeliveryMethod, ReservationStatus } from '@todam/shared';
 
 import { useReservationDetail } from '../../../../../../features/reservation/detail';
 import { ApiError } from '../../../../../../shared/api';
-import { useHeaderActionStore, useModal, useToast } from '../../../../../../shared/model';
+import { useHeaderOverride } from '../../../../../../shared/lib/useHeaderOverride';
+import { useModal, useToast } from '../../../../../../shared/model';
 
 import { ArtworkStageCard } from './ArtworkStageCard';
 import { CancelDialog } from './CancelDialog';
@@ -53,8 +54,6 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
     const { data, error, isLoading, isError } = useReservationDetail(reservationId);
     const { open: openModal, close: closeModal } = useModal();
     const { push: pushToast } = useToast();
-    const setHeaderAction = useHeaderActionStore((s) => s.setAction);
-    const clearHeaderAction = useHeaderActionStore((s) => s.clearAction);
 
     const [menuOpen, setMenuOpen] = useState(false);
 
@@ -93,13 +92,9 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
         pushToast({ message: '예약 수정은 곧 지원돼요.' });
     };
 
-    // 헤더 우측 more 버튼 등록 / 해제.
-    useEffect(() => {
-        if (!showMoreMenu) {
-            clearHeaderAction();
-            return () => clearHeaderAction();
-        }
-        setHeaderAction(
+    // 라우트 헤더(예약 자세히보기) 우측 more 버튼. 메뉴 항목 없으면 미노출(기본값 유지).
+    useHeaderOverride({
+        rightAction: showMoreMenu ? (
             <Button
                 variant="ghost"
                 layout="onlyIcon"
@@ -108,10 +103,9 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
                 aria-label="더보기"
                 onClick={() => setMenuOpen((prev) => !prev)}
                 className="hover:!bg-transparent hover:!text-foreground"
-            />,
-        );
-        return () => clearHeaderAction();
-    }, [showMoreMenu, setHeaderAction, clearHeaderAction]);
+            />
+        ) : undefined,
+    });
 
     if (isLoading) {
         return (

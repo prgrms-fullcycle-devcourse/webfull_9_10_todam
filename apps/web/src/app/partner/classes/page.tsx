@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { ProgramStatus } from '@todam/shared';
@@ -11,7 +10,7 @@ import {
     PartnerClassListItem,
     usePartnerPrograms,
 } from '../../../features/program/list';
-import { useHeaderActionStore } from '../../../shared/model';
+import { useHeaderOverride } from '../../../shared/lib/useHeaderOverride';
 import { EmptyState } from '../../../shared/ui';
 
 // 현재 선택 공방 컨텍스트(전역 store 선택)는 미구현 단계.
@@ -27,13 +26,8 @@ export default function PartnerClassesPage() {
         .filter((p) => p.status !== ProgramStatus.DRAFT)
         .sort((a, b) => a.sortOrder - b.sortOrder);
 
-    const setAction = useHeaderActionStore((s) => s.setAction);
-    const clearAction = useHeaderActionStore((s) => s.clearAction);
-
-    useEffect(() => {
-        setAction(<ClassListHeaderMenu programCount={programs.length} />);
-        return () => clearAction();
-    }, [setAction, clearAction, programs.length]);
+    // 라우트 헤더(클래스 관리) 우측 슬롯에 메뉴 주입.
+    useHeaderOverride({ rightAction: <ClassListHeaderMenu programCount={programs.length} /> });
 
     return (
         <main className="flex-1 overflow-y-auto px-4 pb-16">

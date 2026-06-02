@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
-
 import { Button, Tag, RightIcon, BottomBar } from '@todam/ui';
 import { ProgramDifficulty, ProgramStatus } from '@todam/shared';
 
-import { useHeaderActionStore, useSheet } from '../../../../shared/model';
+import { useSheet } from '../../../../shared/model';
+import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
 import { getDifficultyLabel } from '../../../../entities/program';
 import { useProgramEditPreload } from '../../../../features/program/edit';
 import { ClassEditSheet, ClassInfoTable } from '../../../../features/program/detail';
@@ -16,13 +15,8 @@ export default function PartnerClassDetailPage({ params }: PageProps) {
     const { programId, program, isLoading } = useProgramEditPreload(params);
     const { open: openSheet, close: closeSheet } = useSheet();
 
-    // sub 헤더 기본 우측 알림 아이콘 숨김 (빈 action 주입으로 noti fallback 대체).
-    const setAction = useHeaderActionStore((s) => s.setAction);
-    const clearAction = useHeaderActionStore((s) => s.clearAction);
-    useEffect(() => {
-        setAction(<span aria-hidden />);
-        return () => clearAction();
-    }, [setAction, clearAction]);
+    // 라우트 헤더(클래스 미리보기) 우측 기본 알림 아이콘 숨김.
+    useHeaderOverride({ hideRightAction: true });
 
     if (isLoading || !program) {
         return (
