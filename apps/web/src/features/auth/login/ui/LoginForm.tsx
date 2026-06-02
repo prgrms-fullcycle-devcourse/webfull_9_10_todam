@@ -4,8 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { Button, TextInput, Logo, Divider, CloseIcon } from '@todam/ui';
+import { Button, TextInput, Logo, Divider } from '@todam/ui';
 
+import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
 import { KakaoLoginButton } from './KakaoLoginButton';
 import { GoogleLoginButton } from './GoogleLoginButton';
 
@@ -14,6 +15,9 @@ export function LoginForm() {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+
+    // 전역 Header override: 닫기(X)만 있는 popup 헤더.
+    useHeaderOverride({ type: 'popup', onClose: () => router.back() });
 
     // 이메일/비밀번호가 모두 입력되면 로그인 버튼 활성화(클라이언트 로컬 상태).
     const canSubmit = email.trim().length > 0 && password.trim().length > 0;
@@ -32,18 +36,6 @@ export function LoginForm() {
 
     return (
         <div className="flex h-full flex-col bg-background">
-            <header className="flex h-15 items-center justify-end px-4 pt-safe">
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<CloseIcon />}
-                    aria-label="닫기"
-                    onClick={() => router.back()}
-                    className="hover:!bg-transparent hover:!text-foreground"
-                />
-            </header>
-
             <main className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-8 pt-2">
                 <div className="flex flex-col gap-3">
                     <Logo color="brand" height={40} />
