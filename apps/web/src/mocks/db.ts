@@ -250,7 +250,6 @@ export interface ProgramRow {
     materials: string | null;
     price: number;
     durationMinutes: number;
-    capacity: number;
     leadTimeDays: number;
     difficulty: ProgramDifficulty;
     deliveryOption: ProgramDeliveryOption;
@@ -281,7 +280,6 @@ export const seededPrograms: ProgramRow[] = [
         materials: '앞치마 (공방 제공), 편한 복장',
         price: 45000,
         durationMinutes: 120,
-        capacity: 6,
         leadTimeDays: 30,
         difficulty: ProgramDifficulty.BASIC,
         deliveryOption: ProgramDeliveryOption.CUSTOMER_SELECT,
@@ -360,7 +358,6 @@ export function programToApiShape(program: ProgramRow): object {
         materials: program.materials,
         price: program.price,
         durationMinutes: program.durationMinutes,
-        capacity: program.capacity,
         leadTimeDays: program.leadTimeDays,
         difficulty: program.difficulty,
         deliveryOption: program.deliveryOption,
@@ -622,7 +619,6 @@ const storePrograms: Record<string, PartnerProgramListSeed[]> = {
             thumbnailUrl: 'https://placehold.co/200x150?text=wheel',
             price: 45000,
             durationMinutes: 120,
-            capacity: 6,
             sortOrder: 1,
             createdAt: '2026-05-21T09:00:00.000Z',
             level: '기본',
@@ -635,7 +631,6 @@ const storePrograms: Record<string, PartnerProgramListSeed[]> = {
             thumbnailUrl: 'https://placehold.co/200x150?text=mug',
             price: 38000,
             durationMinutes: 90,
-            capacity: 8,
             sortOrder: 2,
             createdAt: '2026-05-22T09:00:00.000Z',
             level: '중급',
@@ -648,7 +643,6 @@ const storePrograms: Record<string, PartnerProgramListSeed[]> = {
             thumbnailUrl: 'https://placehold.co/200x150?text=couple',
             price: 88000,
             durationMinutes: 150,
-            capacity: 2,
             sortOrder: 3,
             createdAt: '2026-05-23T09:00:00.000Z',
             level: '심화',

@@ -8,11 +8,7 @@ import { ApiError } from '../../../../shared/api';
 import { useToast } from '../../../../shared/model/toast';
 import { useEditableForm } from '../../../../shared/lib/useEditableForm';
 import { useFormValidation } from '../../../../shared/lib/useFormValidation';
-import {
-    validateCapacity,
-    validateDurationMinutes,
-    validatePrice,
-} from '../../../../entities/program';
+import { validateDurationMinutes, validatePrice } from '../../../../entities/program';
 import { usePatchProgram } from '../queries';
 import type { ProgramOperationsFormState } from '../model/types';
 import { ProgramEditScaffold } from './ProgramEditScaffold';
@@ -31,7 +27,6 @@ export function ProgramOperationsEditScreen({ programId, program }: Props) {
     // 서버 데이터 baseline → 폼 1회 초기화 + dirty 파생
     const baseline: ProgramOperationsFormState = {
         price: program.price,
-        capacity: program.capacity,
         leadTimeDays: program.leadTimeDays,
         durationMinutes: program.durationMinutes,
         deliveryOption: program.deliveryOption,
@@ -43,7 +38,6 @@ export function ProgramOperationsEditScreen({ programId, program }: Props) {
     // ─── 유효성 검사 ─────────────────────────────────────────────
     const { errors, validate } = useFormValidation<ProgramOperationsFormState>({
         price: validatePrice,
-        capacity: validateCapacity,
         durationMinutes: validateDurationMinutes,
     });
 
@@ -58,7 +52,6 @@ export function ProgramOperationsEditScreen({ programId, program }: Props) {
         try {
             await patchMutation.mutateAsync({
                 price: form.price,
-                capacity: form.capacity,
                 leadTimeDays: form.leadTimeDays,
                 durationMinutes: form.durationMinutes,
                 deliveryOption: form.deliveryOption,

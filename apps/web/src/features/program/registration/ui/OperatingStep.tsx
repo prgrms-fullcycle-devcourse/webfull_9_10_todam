@@ -32,13 +32,6 @@ export function OperatingStep() {
                     onChange={(e) => patch({ durationMinutes: toNum(e.target.value) })}
                 />
                 <TextInput
-                    label="정원 (명)"
-                    inputMode="numeric"
-                    placeholder="최대 인원"
-                    value={form.capacity === null ? '' : String(form.capacity)}
-                    onChange={(e) => patch({ capacity: toNum(e.target.value) })}
-                />
-                <TextInput
                     label="리드타임 (일)"
                     inputMode="numeric"
                     placeholder="평균 소요일"

@@ -16,7 +16,6 @@ import {
     NametagIcon,
     PauseIcon,
     RightIcon,
-    UserIcon,
 } from '@todam/ui';
 import { ProgramDeliveryOption, ProgramDifficulty, ProgramStatus } from '@todam/shared';
 
@@ -29,7 +28,6 @@ type ProgramDetail = {
     description: string | null;
     price: number;
     durationMinutes: number;
-    capacity: number;
     leadTimeDays: number;
     deliveryOption: ProgramDeliveryOption;
     difficulty: ProgramDifficulty;
@@ -45,7 +43,6 @@ const mockProgram: ProgramDetail = {
     description: '물레 없이 손으로 빚는 머그컵 클래스는 초보자도 즐기면서 참여할 수 있습니다.',
     price: 45000,
     durationMinutes: 120,
-    capacity: 4,
     leadTimeDays: 28,
     deliveryOption: ProgramDeliveryOption.CUSTOMER_SELECT,
     difficulty: ProgramDifficulty.BASIC,
@@ -171,11 +168,6 @@ export default function PartnerClassDetailPage() {
             label: '소요 시간',
             value: formatDuration(program.durationMinutes),
             icon: <ClockIcon size={ICON_SIZE} />,
-        },
-        {
-            label: '정원',
-            value: `최대 ${program.capacity}명`,
-            icon: <UserIcon size={ICON_SIZE} />,
         },
         {
             label: '평균 제작일',

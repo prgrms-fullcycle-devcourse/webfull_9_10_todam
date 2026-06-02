@@ -5,7 +5,6 @@ export const DESCRIPTION_MAX = 1000;
 
 export const DURATION_STEP = 30; // 30분 단위
 export const DURATION_MIN = 30;
-export const CAPACITY_MIN = 1;
 export const LEAD_TIME_MIN = 0;
 
 // ─── 필드 단위 검증 (에러 메시지 반환, 통과 시 undefined) ─────────
@@ -23,11 +22,6 @@ export function validateDescription(description: string): string | undefined {
 
 export function validatePrice(price: number): string | undefined {
     if (!price || price <= 0) return '가격을 입력해 주세요.';
-    return undefined;
-}
-
-export function validateCapacity(capacity: number): string | undefined {
-    if (capacity < CAPACITY_MIN) return `정원은 ${CAPACITY_MIN}명 이상이어야 합니다.`;
     return undefined;
 }
 

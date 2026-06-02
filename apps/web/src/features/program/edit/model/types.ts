@@ -6,7 +6,6 @@ export type { PendingImage } from '../../../../shared/model';
 // 운영 정보 수정 폼 상태
 export interface ProgramOperationsFormState {
     price: number;
-    capacity: number;
     leadTimeDays: number;
     durationMinutes: number;
     deliveryOption: ProgramDeliveryOption;
