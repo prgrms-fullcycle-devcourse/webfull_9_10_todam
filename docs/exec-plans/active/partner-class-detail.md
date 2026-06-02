@@ -8,7 +8,7 @@
 
 ## Status
 
-- [ ] API 구현
+- [x] API 구현
 - [x] UI 구현
 - [ ] API 연동
 
@@ -30,7 +30,7 @@
 
 - In:
   - 파트너가 클래스 관리 목록에서 클래스 카드 클릭 시 클래스 상세 화면 진입
-  - 클래스 상세 정보 조회 (대표 이미지, 클래스명, 설명, 가격, 소요시간, 정원, 평균 제작일, 수령 방식, 게시 상태)
+  - 클래스 상세 정보 조회 (대표 이미지, 클래스명, 설명, 가격, 소요시간, 평균 제작일, 수령 방식, 게시 상태) — 정원(수용 인원)은 공방 단위 `maxCapacityPerSlot`로 관리되어 클래스 상세에 포함하지 않음
   - 게시 상태에 따른 CTA 분기
     - `ACTIVE`: `클래스 정보 수정하기` 버튼 노출
     - `INACTIVE` / `DRAFT`: `클래스 게시하기` 버튼 노출
@@ -66,7 +66,7 @@
 5. MSW mock 데이터 정의 (`program` 응답 픽스처, status별 3종: `DRAFT`, `ACTIVE`, `INACTIVE`)
 6. 클래스 상세 화면 컴포넌트 구현
    - 대표 이미지 슬라이드(또는 단일 이미지)
-   - 클래스명, 가격, 소요시간, 정원, 평균 제작일, 수령 방식, 설명
+   - 클래스명, 가격, 소요시간, 평균 제작일, 수령 방식, 설명
    - 게시 상태 배지
    - 게시 상태에 따른 CTA 분기 렌더링
 7. 수정 액션 바텀시트 컴포넌트 구현 (기본 정보 수정 / 운영 정보 수정 / 게시 중단 3항목)
@@ -80,6 +80,24 @@
 - API: `GET /partner/stores/{storeId}/programs/{programId}` (신설), `PATCH /partner/stores/{storeId}/programs/{programId}/status`
 - UI: 클래스 상세 화면, 수정 액션 바텀시트
 - 연동: 클래스 상세 조회 + 게시 상태 변경 실 API 연결, status 전이 시나리오 확인
+
+### BE 완료 (2026-06-02)
+
+- 추가:
+  - `apps/api/src/modules/program/application/use-cases/get-program-detail.use-case.ts` — 파트너 클래스 상세 조회 use-case. 소유권 검증(타 파트너 403 FORBIDDEN, 없음/storeId 불일치 404 PROGRAM_NOT_FOUND), DRAFT·INACTIVE·ACTIVE 전체 상태 반환, images는 `status=UPLOADED`만 노출(serve-UPLOADED-only) + sortOrder asc 정렬.
+  - `apps/api/src/modules/program/presentation/dto/get-program-detail.dto.ts` — 응답 DTO. Contract 정정본 데이터모델 1:1 (deliverable/childFriendly boolean, difficulty BASIC|INTERMEDIATE|ADVANCED, images[{imageUrl, thumbnailUrl|null}]).
+  - `apps/api/src/modules/program/application/use-cases/update-program-status.use-case.spec.ts` — 상태 전이 단위 테스트 12 케이스(유효 전이 3, 무효 전이 3, 동일 상태 3, 권한/존재 검증 3). 전부 통과.
+  - `apps/api/jest.config.js` — ts-jest 기반 jest 설정 (테스트 컴파일에만 jest 타입 노출).
+- 수정:
+  - `apps/api/src/modules/program/presentation/controllers/program.controller.ts` — `GET partner/stores/:storeId/programs/:programId` 핸들러 추가 (`@UseGuards(AuthGuard, PartnerGuard)`).
+  - `apps/api/src/modules/program/program.module.ts` — `GetProgramDetailUseCase` provider 등록.
+  - `apps/api/tsconfig.json` — `*.spec.ts`를 build/typecheck 대상에서 제외 (런타임 types는 불변).
+  - `apps/api/package.json` — devDependencies에 jest, ts-jest, @types/jest, @nestjs/testing 추가 (기존 `test: jest` 스크립트용 toolchain 신설).
+- 엔드포인트:
+  - `GET /partner/stores/{storeId}/programs/{programId}` (신설) — Contract #1 그대로.
+  - `PATCH /partner/stores/{storeId}/programs/{programId}/status` — 재검증 결과 Contract #2와 일치(유효 전이 DRAFT→ACTIVE / ACTIVE→INACTIVE / INACTIVE→ACTIVE 외 400 INVALID_STATUS_TRANSITION, 403 FORBIDDEN, 404 PROGRAM_NOT_FOUND). 보완 불필요.
+- 검증: `tsc --noEmit` 0 에러, `nest build` 성공, `jest` 12/12 통과.
+- 비고: `partner-class-create`에 테스트 toolchain이 부재(`.spec.ts` 0개, jest 미설치)했으나 repo의 `test: jest` 스크립트 의도에 맞춰 최소 toolchain을 신설함. 공유 config(`tsconfig.json`, `package.json`) 변경 포함 — reviewer 확인 요망.
 
 ## Risks
 
@@ -124,12 +142,14 @@
 | `caution` | string \| null | 유의사항 |
 | `price` | number | 가격 (원 단위, 양의 정수) |
 | `durationMinutes` | number | 소요시간 (분 단위, 30분 단위 30~480) |
-| `capacity` | number | 정원 (1~30) |
-| `leadTimeDays` | number | 리드타임 (10~60일, 기본 30) |
-| `deliveryOption` | `"DELIVERY"` \| `"PICKUP"` \| `"CUSTOMER_SELECT"` | 수령 방법 |
-| `difficulty` | `"BEGINNER"` \| `"INTERMEDIATE"` \| `"ADVANCED"` | 난이도 |
+| `leadTimeDays` | number | 리드타임 (0일 이상) |
+| `deliverable` | boolean | 택배 가능 여부 |
+| `childFriendly` | boolean | 어린이 동반 가능 여부 |
+| `difficulty` | `"BASIC"` \| `"INTERMEDIATE"` \| `"ADVANCED"` | 난이도 |
 | `status` | `"DRAFT"` \| `"ACTIVE"` \| `"INACTIVE"` | 게시 상태 |
-| `images` | `Array<{ imageUrl: string, thumbnailUrl: string }>` | 대표 이미지 목록 |
+| `images` | `Array<{ imageUrl: string, thumbnailUrl: string \| null }>` | 대표 이미지 목록 (`status=UPLOADED`만 노출) |
+
+> **2026-06-02 Contract 정정**: 머지된 `partner-class-create`(commit cda4f98) 및 실제 Prisma 스키마와 동기화. `deliveryOption` enum 제거 → `deliverable: boolean`, `childFriendly: boolean` 추가, `difficulty` 값 `BEGINNER`→`BASIC`. 조회 응답은 serve-UPLOADED-only 정책 준수.
 
 ### 엔드포인트
 
@@ -160,10 +180,10 @@
       "caution": "체험 당일 취소는 불가합니다.",
       "price": 45000,
       "durationMinutes": 120,
-      "capacity": 6,
       "leadTimeDays": 30,
-      "deliveryOption": "CUSTOMER_SELECT",
-      "difficulty": "BEGINNER",
+      "deliverable": true,
+      "childFriendly": false,
+      "difficulty": "BASIC",
       "status": "DRAFT",
       "images": [
         {
@@ -255,7 +275,7 @@
 ```
 
 수정 가능 필드: `title`, `description`, `images`, `caution` (언제든 수정 가능)
-스냅샷 분리 필드: `price`, `capacity`, `leadTimeDays` (기존 예약 1건 이상 시 `program_snapshots` 신규 row 생성)
+스냅샷 분리 필드: `price`, `leadTimeDays` (기존 예약 1건 이상 시 `program_snapshots` 신규 row 생성)
 
 **Response 200 OK**
 ```json
