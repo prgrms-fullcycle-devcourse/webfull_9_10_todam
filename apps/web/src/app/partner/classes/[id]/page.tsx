@@ -18,12 +18,11 @@ import {
     RightIcon,
     UserIcon,
 } from '@todam/ui';
-import { ProgramDeliveryOption, ProgramStatus } from '@todam/shared';
+import { ProgramDeliveryOption, ProgramDifficulty, ProgramStatus } from '@todam/shared';
 
 import { InfoTable, type InfoTableRow } from '../../../../shared/ui';
 import { useHeaderActionStore, useSheet } from '../../../../shared/model';
-
-type ProgramDifficulty = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+import { getDeliveryLabel, getDifficultyLabel, formatDuration } from '../../../../entities/program';
 
 type ProgramDetail = {
     title: string;
@@ -49,32 +48,12 @@ const mockProgram: ProgramDetail = {
     capacity: 4,
     leadTimeDays: 28,
     deliveryOption: ProgramDeliveryOption.CUSTOMER_SELECT,
-    difficulty: 'BEGINNER',
+    difficulty: ProgramDifficulty.BASIC,
     status: ProgramStatus.ACTIVE,
     reviewCount: 0,
     featureTags: ['어린이 가능', '배송 가능'],
     images: [],
 };
-
-const DIFFICULTY_LABEL: Record<ProgramDifficulty, string> = {
-    BEGINNER: '기본',
-    INTERMEDIATE: '중급',
-    ADVANCED: '고급',
-};
-
-const DELIVERY_LABEL: Record<ProgramDeliveryOption, string> = {
-    [ProgramDeliveryOption.DELIVERY]: '택배',
-    [ProgramDeliveryOption.PICKUP]: '직접 수령',
-    [ProgramDeliveryOption.CUSTOMER_SELECT]: '택배・직접 수령',
-};
-
-function formatDuration(minutes: number): string {
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    if (h === 0) return `${m}분`;
-    if (m === 0) return `${h}시간`;
-    return `${h}시간 ${m}분`;
-}
 
 const ICON_SIZE = 16;
 
@@ -205,7 +184,7 @@ export default function PartnerClassDetailPage() {
         },
         {
             label: '작품 수령 방법',
-            value: DELIVERY_LABEL[program.deliveryOption],
+            value: getDeliveryLabel(program.deliveryOption),
             icon: <FlagIcon size={ICON_SIZE} />,
         },
     ];
@@ -233,7 +212,7 @@ export default function PartnerClassDetailPage() {
                     <div className="flex flex-col gap-2">
                         <div className="flex flex-wrap gap-1">
                             <Tag className="!bg-primary-subtle !text-primary-darker">
-                                {DIFFICULTY_LABEL[program.difficulty]}
+                                {getDifficultyLabel(program.difficulty)}
                             </Tag>
                             {program.featureTags.map((tag) => (
                                 <Tag key={tag}>{tag}</Tag>
