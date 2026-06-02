@@ -11,19 +11,14 @@ Implement one active plan in `be` or `fe` mode.
 
 1. Parse arguments as `<feature> <be|fe>`.
 2. Confirm `docs/exec-plans/active/<feature>.md` exists. If not, stop and say `plan이 먼저 필요하다(skill-plan)`.
-3. Log the request:
-   `node .codex/scripts/logger.mjs --event UserPromptSubmit --content "skill-impl <arguments>"`
-4. Read `.codex/agents/implementer.md`.
-5. Use Codex subagents when available:
+3. Read `.codex/agents/implementer.md`.
+4. Use Codex subagents when available:
    - Prefer a `worker` subagent for bounded implementation.
    - Give it ownership of the relevant files/modules.
    - Tell it other edits may exist and it must not revert them.
-   - Log requested/completed with `.codex/scripts/subagent-log.mjs`.
-6. If subagents are unavailable, implement inline with the same rules.
-7. Bind implementation strictly to the plan's `API Contract (스냅샷)`.
-8. Update the plan's `## Status` and `## Out` only for work actually completed.
-9. Log the final result:
-   `node .codex/scripts/logger.mjs --event Stop --content "<result summary>"`
+5. If subagents are unavailable, implement inline with the same rules.
+6. Bind implementation strictly to the plan's `API Contract (스냅샷)`.
+7. Update the plan's `## Status` and `## Out` only for work actually completed.
 
 Stop for human input if the contract is insufficient or contradictory.
 

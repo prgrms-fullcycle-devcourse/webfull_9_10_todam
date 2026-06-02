@@ -5,32 +5,20 @@ This folder mirrors the project workflows in `.claude/` for Codex.
 ## Layout
 
 - `agents/`: role instructions for Codex subagents.
-- `scripts/logger.mjs`: insert Codex work logs into Supabase using `.codex/.env` or `.claude/.env`.
-- `scripts/subagent-log.mjs`: small wrapper for logging Codex subagent requests/results.
 - `.agents/plugins/marketplace.json`: marketplace manifest when `.codex` is registered as the marketplace root.
 - Codex-discovered workflow skills live in `.codex/plugins/todam-workflows/skills/`.
 
 ## Logging
 
-Use:
+**Skills do NOT call a logger inline.** Inline `node .codex/scripts/logger.mjs ...` calls triggered a Codex sandbox approval on every run (the content changes each time, so prefix allowlists never matched). They are removed.
 
-```bash
-node .codex/scripts/logger.mjs --event UserPromptSubmit --content "request"
-node .codex/scripts/logger.mjs --event Stop --content "result"
-node .codex/scripts/subagent-log.mjs --agent planner --status requested --content "feature name"
-node .codex/scripts/subagent-log.mjs --agent planner --status completed --content "plan created"
-```
+Instead, a background poller collects logs from Codex session transcripts with no approval prompt:
 
-Codex logs are inserted into the same Supabase `ai_logs` table as Claude, with `metadata.tool = "codex"`. Local `.claude/logs/ai_logs.jsonl` append is only a fallback/audit copy for the existing scrum scripts. Set `CODEX_WRITE_OWN_LOGS=1` to also try writing `.codex/logs/ai_logs.jsonl`.
+- `.claude/scripts/logger-codex.mjs` polls `~/.codex/sessions/**/*.jsonl` and inserts into the same Supabase `ai_logs` table as Claude, with `metadata.tool = "codex"`.
+- It maps `user_message` → UserPromptSubmit/Subagent, `task_complete` → Stop, `function_call` names → `metadata.tools_used`, and `session_meta.agent_role` → `agent`.
+- Install once per machine (macOS launchd / Windows Task Scheduler): `bash .claude/scripts/install-codex-logger.sh` or `powershell -ExecutionPolicy Bypass -File .claude\scripts\install-codex-logger.ps1`.
 
-Logging is not the success criterion for a skill. A skill succeeds or fails based on whether the requested workflow itself completed. If Supabase insert fails but the workflow completed, report the skill as success and mention the logging failure only when it matters.
-
-Use `--strict` only when testing the logger itself and the command must fail on Supabase insert failure:
-
-```bash
-node .codex/scripts/logger.mjs --event UserPromptSubmit --content "request" --strict
-node .codex/scripts/subagent-log.mjs --agent planner --status requested --content "feature name" --strict
-```
+Logging is never the success criterion for a skill. A skill succeeds or fails based on whether the requested workflow itself completed. The poller records the session afterward regardless.
 
 ## Command Names
 

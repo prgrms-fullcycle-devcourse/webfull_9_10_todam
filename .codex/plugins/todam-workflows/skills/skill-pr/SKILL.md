@@ -9,17 +9,13 @@ Create a PR to `dev` using Todam conventions.
 
 ## Workflow
 
-1. Log the request:
-   `node .codex/scripts/logger.mjs --event UserPromptSubmit --content "skill-pr <arguments>"`
-2. Read `docs/conventions/pull-request.md`, `docs/conventions/branch.md`, and `.github/PULL_REQUEST_TEMPLATE.md`.
-3. Check the current branch. If it is `dev` or the default branch, stop and ask for a work branch.
-4. Push the branch if needed.
-5. Build the PR body from diff, commit log, and verified test results only.
-6. Use title format `[type] #issue title` when an issue number is provided.
-7. Show the PR draft and wait for approval.
-8. After approval, run `gh pr create --base dev`.
-9. Log the final result:
-   `node .codex/scripts/logger.mjs --event Stop --content "<PR URL or result summary>"`
+1. Read `docs/conventions/pull-request.md`, `docs/conventions/branch.md`, and `.github/PULL_REQUEST_TEMPLATE.md`.
+2. Check the current branch. If it is `dev` or the default branch, stop and ask for a work branch.
+3. Push the branch if needed.
+4. Build the PR body from diff, commit log, and verified test results only.
+5. Use title format `[type] #issue title` when an issue number is provided.
+6. Show the PR draft and wait for approval.
+7. After approval, run `gh pr create --base dev`.
 
 Mark checklist items only when they are actually true.
 
