@@ -2,7 +2,7 @@
 
 import { Divider, Rating, SectionTitle } from '@todam/ui';
 import type { ReservationDetail, ReviewDetail } from '@todam/shared';
-import { formatScheduled } from '@todam/shared';
+import { formatScheduled, formatYmd } from '@todam/shared';
 
 // 리뷰 상세 본문 — Figma 정본(`8507:23649`) 기준.
 // 작품 정보 헤더(reservation 의존) + Rating display + Divider + 본문(읽기 전용) + Photo grid.
@@ -10,15 +10,6 @@ export type ReviewDetailContentProps = {
     review: ReviewDetail;
     reservation?: ReservationDetail;
 };
-
-function formatCreatedAt(iso: string): string {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return '';
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}. ${m}. ${day} 작성`;
-}
 
 export function ReviewDetailContent({ review, reservation }: ReviewDetailContentProps) {
     const hasContent = review.content.trim().length > 0;
@@ -77,7 +68,7 @@ export function ReviewDetailContent({ review, reservation }: ReviewDetailContent
 
             {/* 작성일 */}
             <p className="py-2 text-xs text-foreground-tertiary">
-                {formatCreatedAt(review.createdAt)}
+                {formatYmd(review.createdAt) && `${formatYmd(review.createdAt)} 작성`}
             </p>
         </div>
     );

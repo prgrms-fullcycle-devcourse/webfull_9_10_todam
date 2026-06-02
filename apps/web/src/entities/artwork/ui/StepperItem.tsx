@@ -1,7 +1,7 @@
 'use client';
 
 import { CheckIcon } from '@todam/ui';
-import type { ArtworkPhoto, ArtworkTimelineEntry } from '@todam/shared';
+import { formatYmdShort, type ArtworkPhoto, type ArtworkTimelineEntry } from '@todam/shared';
 
 import { StepperItemMedia } from './StepperItemMedia';
 
@@ -29,15 +29,6 @@ function pickVariant(entry: ArtworkTimelineEntry): Variant {
     return 'upcoming';
 }
 
-// 날짜 표시: YY.MM.DD (정본 예시 26.04.03 형식).
-function formatDate(iso: string): string {
-    const d = new Date(iso);
-    const yy = String(d.getFullYear()).slice(-2);
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yy}.${mm}.${dd}`;
-}
-
 export type StepperItemProps = {
     entry: ArtworkTimelineEntry;
     isLast: boolean;
@@ -54,7 +45,7 @@ export function StepperItem({ entry, isLast, onSelectPhoto }: StepperItemProps) 
     // - completed: completedAt 있으면 표시
     // - current/upcoming: 미노출
     const dateText =
-        variant === 'completed' && entry.completedAt ? formatDate(entry.completedAt) : null;
+        variant === 'completed' && entry.completedAt ? formatYmdShort(entry.completedAt) : null;
 
     return (
         <div className="flex gap-3">

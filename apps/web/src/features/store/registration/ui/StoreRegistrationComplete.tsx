@@ -1,6 +1,6 @@
 'use client';
 
-import { StoreStatus } from '@todam/shared';
+import { formatYmdHm, StoreStatus } from '@todam/shared';
 import {
     Badge,
     BottomBar,
@@ -14,13 +14,6 @@ import {
 } from '@todam/ui';
 import { ResultTable } from '../../../../shared/ui';
 import { useStoreRegistrationStatus } from '../queries';
-
-function formatDateTime(iso: string): string {
-    if (!iso) return '-';
-    const d = new Date(iso);
-    const p = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}. ${p(d.getMonth() + 1)}. ${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
 
 export function StoreRegistrationComplete({
     onClose,
@@ -114,7 +107,7 @@ export function StoreRegistrationComplete({
                             },
                             {
                                 label: '신청일시',
-                                value: formatDateTime(status?.createdAt ?? ''),
+                                value: formatYmdHm(status?.createdAt ?? '') || '-',
                                 icon: <ClockIcon size={16} />,
                             },
                             {

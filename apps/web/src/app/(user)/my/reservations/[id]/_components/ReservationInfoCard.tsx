@@ -4,6 +4,7 @@ import { CalendarIcon, ClockIcon, Divider, FlagIcon, NametagIcon, UserIcon } fro
 import {
     formatPrice,
     formatScheduled,
+    formatYmdWithDay,
     ReservationDeliveryMethod,
     type ReservationDetail,
 } from '@todam/shared';
@@ -12,16 +13,6 @@ const DELIVERY_LABEL: Record<ReservationDeliveryMethod, string> = {
     [ReservationDeliveryMethod.DELIVERY]: '택배로 받기',
     [ReservationDeliveryMethod.PICKUP]: '공방에서 찾기',
 };
-
-function formatScheduledDate(iso: string): string {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return '';
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const day = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()] ?? '';
-    return `${yyyy}. ${mm}. ${dd} (${day})`;
-}
 
 // 디자인 정본 — Figma `8113:1361` 클래스 정보 ResultTable.
 // title=programTitle, subText="storeName・location" (location 은 본 응답에 없음 — 일단 storeName 만).
@@ -32,7 +23,7 @@ export type ReservationInfoCardProps = {
 
 export function ReservationInfoCard({ reservation }: ReservationInfoCardProps) {
     const { time } = formatScheduled(reservation.scheduledAt);
-    const dateLine = formatScheduledDate(reservation.scheduledAt);
+    const dateLine = formatYmdWithDay(reservation.scheduledAt);
     const deliveryLabel = DELIVERY_LABEL[reservation.deliveryMethod];
 
     const rows: Array<{ icon: React.ReactNode; label: string; value: string }> = [
