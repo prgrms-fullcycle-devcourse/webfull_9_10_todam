@@ -79,6 +79,11 @@
 
 - presigned URL 5분 만료: 공방 이미지 업로드 중 만료 시 재발급 로직 필요.
 - slug 자동 생성: 미입력 시 BE에서 nanoid로 생성. FE는 slug 필드를 선택 입력으로 처리.
+- **[미구현] 추가 공방 등록 가드(`403 PARTNER_NOT_APPROVED`)**: 규칙은 Decision Log(2026-06-01) 확정 — 첫 등록은 status 무관, 2번째부터 `partner.status == APPROVED` 필수, 그 외(PENDING/REJECTED/SUSPENDED/TERMINATED) 403. **현재 어디에도 반영 안 됨**:
+  - contract `StoreRegistrationErrorCode` enum에 `PARTNER_NOT_APPROVED` 없음 (현재 `VALIDATION_ERROR`/`BUSINESS_NUMBER_ALREADY_REGISTERED`/`STORE_SLUG_DUPLICATED`만).
+  - MSW `POST /partner/onboarding` 핸들러에 status 게이트 없음 → 무조건 `createStoreRegistration` 생성.
+  - FE `StoreRegistrationFlow.handleSubmit` 에 403 PARTNER_NOT_APPROVED 분기 없음.
+  - **인가 규칙이므로 BE에서 최종 강제 필수**(클라 검사는 우회 가능, UX 미러용). 구현 시 contract enum + mock 게이트 + FE 토스트 동시 반영.
 
 ## Validation
 
@@ -100,6 +105,7 @@
 
 - Status:
 - Follow-up: Admin 검수(승인/반려) — 별도 admin plan. 반려 후 재제출(공방 수정) — 별도 기능. 사업자등록증 OCR — 백로그.
+- Follow-up: **추가 공방 등록 APPROVED 가드 구현** — contract `PARTNER_NOT_APPROVED`(403) 추가 + MSW `/partner/onboarding` status 게이트 + FE 403 토스트. (규칙=Decision Log 2026-06-01, 현재 미구현 — Risks 참조.)
 
 ## API Contract (스냅샷)
 
