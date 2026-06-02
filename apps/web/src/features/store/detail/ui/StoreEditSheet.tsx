@@ -58,13 +58,14 @@ export function StoreEditSheet({
             subTitle={`현재 진행 중인 예약이 총 ${inProgressReservationCount.toLocaleString('ko-KR')}건 있어요`}
             actionLabel="닫기"
             onAction={close}
+            actionVariant="ghost"
         >
             <div className="flex flex-col gap-2">
                 {EDIT_SLOTS.map((slot) => (
                     <button
                         key={slot.segment}
                         type="button"
-                        className="flex w-full items-center gap-5 rounded-2xl border border-border-subtle bg-surface p-4 text-left hover:bg-muted"
+                        className="flex cursor-pointer w-full items-center gap-5 rounded-2xl border border-border-subtle bg-surface p-4 text-left hover:bg-muted"
                         onClick={() => {
                             close();
                             router.push(`/partner/stores/${storeId}/edit/${slot.segment}`);
