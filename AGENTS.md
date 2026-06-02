@@ -15,6 +15,15 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
    - **No plan** → `/plan` → human approves the API Contract → `/issue` → commit the plan on a work branch, push, open `/pr` **before implementing** (so the shared contract lets BE/FE work in parallel) → `/impl`.
    Then `/review` (detect drift) → `/complete`. A plan reaches `docs/exec-plans/completed/` only when API impl / UI impl / API integration are all done — the pre-commit gate enforces this. See [docs/exec-plans/README.md](docs/exec-plans/README.md).
 
+## Codex Workflows
+
+- Codex workflow equivalents live in `.codex/plugins/todam-workflows/skills/`.
+- In Codex, use `skill-*` names for Claude command equivalents: `skill-plan`, `skill-impl`, `skill-review`, `skill-complete`, `skill-summary-daily`, `skill-commit`, `skill-issue`, and `skill-pr`.
+- When the user asks for `/plan`, `/impl`, `/review`, `/complete`, `/summary-daily`, `/commit`, `/issue`, or `/pr` in Codex, map it to the matching `skill-*` workflow and record logs through `.codex/scripts/logger.mjs`.
+- When using Codex subagents for those workflows, log requested/completed events with `.codex/scripts/subagent-log.mjs`.
+- After a `skill-*` workflow finishes, respond briefly as `성공: <완료한 작업>` or `실패: <실패한 workflow 단계와 이유>`.
+- Judge success/failure by whether the skill workflow itself completed, not by whether Supabase logging succeeded.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
