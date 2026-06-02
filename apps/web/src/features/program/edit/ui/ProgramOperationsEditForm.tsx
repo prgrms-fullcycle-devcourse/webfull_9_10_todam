@@ -20,23 +20,10 @@ export function ProgramOperationsEditForm({ form, errors, onChange }: Props) {
 
     return (
         <div className="flex flex-col gap-4">
-            {/* 가격 / 소요 시간 */}
+            {/* 소요시간 / 리드타임 */}
             <div className="grid grid-cols-2 gap-3">
                 <TextInput
-                    label="가격(원)"
-                    required
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    placeholder="예) 30,000"
-                    value={numValue(form.price)}
-                    error={!!errors.price}
-                    helperText={errors.price}
-                    onChange={(e) => onChange({ price: Number(e.target.value) || 0 })}
-                />
-                <TextInput
                     label="소요 시간 (분)"
-                    required
                     type="number"
                     inputMode="numeric"
                     min={1}
@@ -45,21 +32,6 @@ export function ProgramOperationsEditForm({ form, errors, onChange }: Props) {
                     error={!!errors.durationMinutes}
                     helperText={errors.durationMinutes}
                     onChange={(e) => onChange({ durationMinutes: Number(e.target.value) || 0 })}
-                />
-            </div>
-
-            {/* 정원 / 리드타임 */}
-            <div className="grid grid-cols-2 gap-3">
-                <TextInput
-                    label="정원 (명)"
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    placeholder="최대 인원"
-                    value={numValue(form.capacity)}
-                    error={!!errors.capacity}
-                    helperText={errors.capacity}
-                    onChange={(e) => onChange({ capacity: Number(e.target.value) || 0 })}
                 />
                 <TextInput
                     label="리드타임 (일)"
@@ -73,6 +45,19 @@ export function ProgramOperationsEditForm({ form, errors, onChange }: Props) {
                     onChange={(e) => onChange({ leadTimeDays: Number(e.target.value) || 0 })}
                 />
             </div>
+
+            {/* 가격 / 소요 시간 */}
+            <TextInput
+                label="가격(원)"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                placeholder="예) 30,000"
+                value={numValue(form.price)}
+                error={!!errors.price}
+                helperText={errors.price}
+                onChange={(e) => onChange({ price: Number(e.target.value) || 0 })}
+            />
 
             {/* 어린이 동반 가능 */}
             <CheckboxInput
