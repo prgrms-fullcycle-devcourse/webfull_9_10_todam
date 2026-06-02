@@ -23,10 +23,14 @@ import {
 } from '../../application/use-cases/confirm-store-image.use-case';
 import { SubmitStoreUseCase } from '../../application/use-cases/submit-store.use-case';
 import { ListPartnerStoresUseCase } from '../../application/use-cases/list-partner-stores.use-case';
+import { GetPartnerStoreDetailUseCase } from '../../application/use-cases/get-partner-store-detail.use-case';
+import { ListPartnerStoreProgramsUseCase } from '../../application/use-cases/list-partner-store-programs.use-case';
 import { CreateStoreDto, CreateStoreResponseDto } from '../dto/create-store.dto';
 import { CreateStoreImageDto, CreateStoreImageResponseDto } from '../dto/store-image.dto';
 import { SubmitStoreResponseDto } from '../dto/submit-store.dto';
 import { ListPartnerStoresResponseDto } from '../dto/list-partner-stores.dto';
+import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detail.dto';
+import { ListPartnerStoreProgramsResponseDto } from '../dto/list-partner-store-programs.dto';
 
 @ApiTags('stores')
 @ApiBearerAuth()
@@ -38,6 +42,8 @@ export class StoreController {
         private readonly confirmStoreImageUseCase: ConfirmStoreImageUseCase,
         private readonly submitStoreUseCase: SubmitStoreUseCase,
         private readonly listPartnerStoresUseCase: ListPartnerStoresUseCase,
+        private readonly getPartnerStoreDetailUseCase: GetPartnerStoreDetailUseCase,
+        private readonly listPartnerStoreProgramsUseCase: ListPartnerStoreProgramsUseCase,
     ) {}
 
     @Get('partner/stores')
@@ -49,6 +55,36 @@ export class StoreController {
         @CurrentUser() user: RequestUser,
     ): Promise<ListPartnerStoresResponseDto> {
         return this.listPartnerStoresUseCase.execute(user.id);
+    }
+
+    @Get('partner/stores/:storeId/programs')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('운영 클래스 목록이 성공적으로 조회되었습니다.')
+    @ApiOkResponse({
+        description: '운영 클래스 목록 조회 성공',
+        type: ListPartnerStoreProgramsResponseDto,
+    })
+    async listPartnerStorePrograms(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+    ): Promise<ListPartnerStoreProgramsResponseDto> {
+        return this.listPartnerStoreProgramsUseCase.execute(user.id, storeId);
+    }
+
+    @Get('partner/stores/:storeId')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('공방 상세 정보가 성공적으로 조회되었습니다.')
+    @ApiOkResponse({
+        description: '내 공방 상세 조회 성공',
+        type: GetPartnerStoreDetailResponseDto,
+    })
+    async getPartnerStoreDetail(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+    ): Promise<GetPartnerStoreDetailResponseDto> {
+        return this.getPartnerStoreDetailUseCase.execute(user.id, storeId);
     }
 
     @Post('stores')
