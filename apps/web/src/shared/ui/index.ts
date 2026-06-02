@@ -7,6 +7,8 @@ export * from './StepperItemChild';
 export * from './MenuTable';
 export * from './EmptyState';
 export * from './ImageUploadCell';
+export * from './ImageUploadGrid';
+export * from './ImageUploadField';
 export * from './AppModal';
 export * from './AppSheet';
 export * from './AppToast';
