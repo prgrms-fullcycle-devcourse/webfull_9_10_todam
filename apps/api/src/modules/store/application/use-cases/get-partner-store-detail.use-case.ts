@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ReservationStatus } from '@prisma/client';
+import { ImageUploadStatus, ReservationStatus } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import type {
@@ -81,6 +81,8 @@ export class GetPartnerStoreDetailUseCase {
                     },
                 },
                 images: {
+                    // S3 업로드 확인(confirm)된 이미지만 노출. PENDING/FAILED 는 객체가 없어 깨진 링크가 된다.
+                    where: { status: ImageUploadStatus.UPLOADED },
                     orderBy: { sortOrder: 'asc' },
                     select: {
                         id: true,
