@@ -86,9 +86,7 @@ export const storeUpdateRequestSchema = z.object({
     slug: slugSchema.optional(),
     description: z.string().max(1000).nullable().optional(),
     phone: phoneSchema.optional(),
-    address: z.string().optional(),
-    latitude: z.number().optional(),
-    longitude: z.number().optional(),
+    // 주소(address/위경도) 변경은 partner-store-edit Out scope(geocode 재변환 별도) — PATCH 대상 아님.
     convenienceInfo: convenienceInfoSchema.optional(),
     autoConfirm: z.boolean().optional(),
     cancelDeadlineDays: z.number().int().min(0).optional(),
