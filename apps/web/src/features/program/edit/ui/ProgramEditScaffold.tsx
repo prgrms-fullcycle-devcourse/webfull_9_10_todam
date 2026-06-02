@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { useModal } from '../../../../shared/model/modal';
-import { useLeaveGuard } from '../model/useLeaveGuard';
+import { useLeaveGuard } from '../../../../shared/lib/useLeaveGuard';
 
 type Props = {
     title: string;
