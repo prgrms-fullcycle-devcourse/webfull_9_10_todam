@@ -30,8 +30,8 @@ export interface ProgramRegistrationForm {
 
     // 2단계: 운영 정보 (미입력 = null)
     price: number | null; // 양의 정수 (원)
-    durationMinutes: number | null; // 30~480, 30분 단위
+    durationMinutes: number | null; // 양의 정수 (분)
     leadTimeDays: number | null; // 0일 이상
-    childFriendly: boolean; // 어린이 동반 가능
-    deliverable: boolean; // 택배 배송 가능
+    childrenAllowed: boolean; // 어린이 동반 가능
+    deliveryAvailable: boolean; // 택배 배송 가능
 }

@@ -44,14 +44,14 @@ export function OperatingStep() {
                 <CheckboxInput
                     bordered
                     label="어린이 동반 가능"
-                    checked={form.childFriendly}
-                    onCheckedChange={(v) => patch({ childFriendly: v })}
+                    checked={form.childrenAllowed}
+                    onCheckedChange={(v) => patch({ childrenAllowed: v })}
                 />
                 <CheckboxInput
                     bordered
                     label="택배 배송 가능"
-                    checked={form.deliverable}
-                    onCheckedChange={(v) => patch({ deliverable: v })}
+                    checked={form.deliveryAvailable}
+                    onCheckedChange={(v) => patch({ deliveryAvailable: v })}
                 />
             </div>
         </div>
