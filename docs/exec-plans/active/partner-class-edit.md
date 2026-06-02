@@ -6,6 +6,12 @@
 - Owner:
 - Date: 2026-06-01
 
+## Status
+
+- [ ] API 구현
+- [x] UI 구현
+- [ ] API 연동
+
 ## Context
 
 - 요구사항명세서(고정): docs/requirements.md — `class` 도메인 § 3. 클래스 수정·중단
@@ -23,6 +29,124 @@
   5. **description 최대 글자수**: 기능명세 기준 **1000자** 적용.
 
 ---
+
+## Scope
+
+- In:
+  - 기본 정보 수정 폼: 대표 이미지, 클래스명, 난이도, 상세 설명
+  - 운영 정보 수정 폼: 가격, 소요시간, 정원, 리드타임, 어린이 동반 가능, 택배 배송 가능
+  - 수정 폼 데이터 preload (기존 값 초기화)
+  - 변경사항 있을 때만 저장 버튼 활성화 (dirty state)
+  - 저장 성공 시 클래스 상세 조회 화면으로 이동 + 토스트 메시지 노출
+  - 저장 실패 시 수정 화면 유지 + 실패 토스트 노출
+  - 이탈 시 변경사항 확인 다이얼로그
+  - 가격·정원·리드타임 변경 시 스냅샷 분리(서버 자동 처리, FE는 일반 PATCH 요청)
+  - MSW mock 작성 (실 API 연동 전)
+
+- Out:
+  - 클래스 상태 변경 (ACTIVE↔INACTIVE) — 별도 기능
+  - 클래스 등록 신규 생성 — 별도 기능
+  - 클래스 삭제 — MVP 범위 외
+  - 이미지 삭제 API — 명세 미확인 (Open decision #1)
+  - 타임슬롯 수정 — 별도 기능
+
+---
+
+## Plan
+
+### BE
+
+1. `PATCH /partner/stores/{storeId}/programs/{programId}` 구현
+   - `AuthGuard`, `PartnerGuard` 적용
+   - 공방 소유 권한 검증 (`storeId` + `partnerId`)
+   - partial update 처리 (변경 필드만 반영)
+   - `price`, `capacity`, `leadTimeDays` 변경 + 기존 예약 1건 이상이면 `program_snapshots` 신규 row 생성
+   - `programs.updated_at` 갱신
+
+2. `POST /partner/stores/{storeId}/programs/{programId}/images` 구현 (이미 존재할 경우 확인)
+   - S3 Pre-signed PUT URL 발급
+   - `program_images` row 선 생성 (`image_url`, `is_thumbnail`)
+   - `isThumbnail = true` 처리 시 기존 thumbnail 교체 정책 결정 (Open decision #1 해소 후)
+
+3. 이미지 삭제 엔드포인트 추가 여부 결정 후 구현 (Open decision #1)
+
+### FE
+
+4. 수정 폼 라우트 및 레이아웃 구성
+   - 기본 정보 수정 탭 / 운영 정보 수정 탭 분리 (기능명세 트리거 기준)
+   - 진입점: 클래스 상세 조회 화면 내 "기본 정보 수정" / "운영 정보 수정" 버튼
+
+5. preload 처리
+   - Open decision #2 해소 후: 파트너 전용 조회 또는 퍼블릭 API 사용 결정
+   - React Query로 서버 데이터 fetch → 폼 초기값 세팅
+
+6. 폼 상태 관리
+   - react-hook-form + zod 스키마 검증
+   - `isDirty` 상태로 저장 버튼 활성/비활성 제어
+   - 이탈 시 `useBeforeUnload` 또는 라우터 가드로 확인 다이얼로그
+
+7. 이미지 업로드 처리
+   - Pre-signed URL 발급 → S3 직접 PUT 업로드 → PATCH body에 `imageUrl` 포함
+   - 대표 이미지 최소 1장 유지 검증
+   - 5MB 이하, JPG/PNG/HEIC 형식 검증 (클라이언트 사이드)
+
+8. 저장 처리
+   - PATCH 호출 → 성공 시 클래스 상세로 이동 + "수정된 클래스 정보가 반영되었어요" 토스트
+   - 실패 시 현재 화면 유지 + 실패 토스트
+
+9. MSW mock 작성
+   - `PATCH /partner/stores/:storeId/programs/:programId` handler
+   - `POST /partner/stores/:storeId/programs/:programId/images` handler
+
+### 검증
+
+10. 유닛 테스트: zod 스키마 경계값, 스냅샷 분리 로직
+11. 통합 확인: dirty state 동작, 이탈 가드, 이미지 교체 플로우
+
+---
+
+## Out (단계별 완료물)
+
+- API: `PATCH /partner/stores/{storeId}/programs/{programId}`, `POST .../images`, (이미지 삭제 TBD)
+- UI: 기본 정보 수정 폼, 운영 정보 수정 폼, 이탈 다이얼로그
+- 연동: 실 API 요청/응답 확인, 스냅샷 분리 시나리오 검증
+
+---
+
+## Risks
+
+- **스냅샷 분리 미인지**: FE가 가격/정원/리드타임 수정 후 "기존 예약에 반영되지 않음"을 UI로 안내하지 않으면 파트너 혼란 발생. 변경 시 안내 문구 또는 확인 다이얼로그 필요 여부 결정 필요.
+- **`difficulty` / `childrenAllowed` / `deliveryAvailable` DB 마이그레이션**: 신규 컬럼이므로 BE 마이그레이션 선행 후 FE 연동 가능. 순서 주의.
+
+---
+
+## Validation
+
+- Tests:
+  - PATCH 요청 시 partial update 정상 동작 (미전송 필드 유지)
+  - 기존 예약 있을 때 가격 변경 → `program_snapshots` 신규 row 생성 확인
+  - 기존 예약 없을 때 가격 변경 → 스냅샷 미생성 확인
+  - dirty state false일 때 저장 버튼 비활성화 확인
+  - 이탈 시 다이얼로그 노출 확인
+- Manual checks:
+  - 대표 이미지 교체 후 클래스 상세 화면에서 즉시 반영 확인
+  - 저장 실패 시 폼 데이터 유지 확인
+  - "수정된 클래스 정보가 반영되었어요" 토스트 노출 확인
+- Observability: PATCH 응답 200/403/404 로그 확인
+
+---
+
+## Decision Log
+
+- 2026-06-01: plan 초안 작성. 이미지 삭제 API, 파트너 전용 조회 API, 난이도 필드, 어린이 동반/배송 가능 필드의 서버 스키마 미확인으로 Open decisions 등록.
+- 2026-06-01: Open decisions 전체 해소. BE가 DELETE 이미지 엔드포인트 추가, difficulty/childrenAllowed/deliveryAvailable 컬럼 추가. description 1000자. DRAFT/INACTIVE preload는 UI 진입점 차단으로 대응.
+
+---
+
+## Outcome
+
+- Status: planning
+- Follow-up: Open decisions 1~5 해소 후 구현(implementer)으로 이관
 
 ## API Contract (스냅샷)
 
@@ -223,127 +347,3 @@ Body:
 ```
 
 ---
-
-## Scope
-
-- In:
-  - 기본 정보 수정 폼: 대표 이미지, 클래스명, 난이도, 상세 설명
-  - 운영 정보 수정 폼: 가격, 소요시간, 정원, 리드타임, 어린이 동반 가능, 택배 배송 가능
-  - 수정 폼 데이터 preload (기존 값 초기화)
-  - 변경사항 있을 때만 저장 버튼 활성화 (dirty state)
-  - 저장 성공 시 클래스 상세 조회 화면으로 이동 + 토스트 메시지 노출
-  - 저장 실패 시 수정 화면 유지 + 실패 토스트 노출
-  - 이탈 시 변경사항 확인 다이얼로그
-  - 가격·정원·리드타임 변경 시 스냅샷 분리(서버 자동 처리, FE는 일반 PATCH 요청)
-  - MSW mock 작성 (실 API 연동 전)
-
-- Out:
-  - 클래스 상태 변경 (ACTIVE↔INACTIVE) — 별도 기능
-  - 클래스 등록 신규 생성 — 별도 기능
-  - 클래스 삭제 — MVP 범위 외
-  - 이미지 삭제 API — 명세 미확인 (Open decision #1)
-  - 타임슬롯 수정 — 별도 기능
-
----
-
-## Plan
-
-### BE
-
-1. `PATCH /partner/stores/{storeId}/programs/{programId}` 구현
-   - `AuthGuard`, `PartnerGuard` 적용
-   - 공방 소유 권한 검증 (`storeId` + `partnerId`)
-   - partial update 처리 (변경 필드만 반영)
-   - `price`, `capacity`, `leadTimeDays` 변경 + 기존 예약 1건 이상이면 `program_snapshots` 신규 row 생성
-   - `programs.updated_at` 갱신
-
-2. `POST /partner/stores/{storeId}/programs/{programId}/images` 구현 (이미 존재할 경우 확인)
-   - S3 Pre-signed PUT URL 발급
-   - `program_images` row 선 생성 (`image_url`, `is_thumbnail`)
-   - `isThumbnail = true` 처리 시 기존 thumbnail 교체 정책 결정 (Open decision #1 해소 후)
-
-3. 이미지 삭제 엔드포인트 추가 여부 결정 후 구현 (Open decision #1)
-
-### FE
-
-4. 수정 폼 라우트 및 레이아웃 구성
-   - 기본 정보 수정 탭 / 운영 정보 수정 탭 분리 (기능명세 트리거 기준)
-   - 진입점: 클래스 상세 조회 화면 내 "기본 정보 수정" / "운영 정보 수정" 버튼
-
-5. preload 처리
-   - Open decision #2 해소 후: 파트너 전용 조회 또는 퍼블릭 API 사용 결정
-   - React Query로 서버 데이터 fetch → 폼 초기값 세팅
-
-6. 폼 상태 관리
-   - react-hook-form + zod 스키마 검증
-   - `isDirty` 상태로 저장 버튼 활성/비활성 제어
-   - 이탈 시 `useBeforeUnload` 또는 라우터 가드로 확인 다이얼로그
-
-7. 이미지 업로드 처리
-   - Pre-signed URL 발급 → S3 직접 PUT 업로드 → PATCH body에 `imageUrl` 포함
-   - 대표 이미지 최소 1장 유지 검증
-   - 5MB 이하, JPG/PNG/HEIC 형식 검증 (클라이언트 사이드)
-
-8. 저장 처리
-   - PATCH 호출 → 성공 시 클래스 상세로 이동 + "수정된 클래스 정보가 반영되었어요" 토스트
-   - 실패 시 현재 화면 유지 + 실패 토스트
-
-9. MSW mock 작성
-   - `PATCH /partner/stores/:storeId/programs/:programId` handler
-   - `POST /partner/stores/:storeId/programs/:programId/images` handler
-
-### 검증
-
-10. 유닛 테스트: zod 스키마 경계값, 스냅샷 분리 로직
-11. 통합 확인: dirty state 동작, 이탈 가드, 이미지 교체 플로우
-
----
-
-## Status
-
-- [ ] API 구현
-- [ ] UI 구현
-- [ ] API 연동
-
-## Out (단계별 완료물)
-
-- API: `PATCH /partner/stores/{storeId}/programs/{programId}`, `POST .../images`, (이미지 삭제 TBD)
-- UI: 기본 정보 수정 폼, 운영 정보 수정 폼, 이탈 다이얼로그
-- 연동: 실 API 요청/응답 확인, 스냅샷 분리 시나리오 검증
-
----
-
-## Risks
-
-- **스냅샷 분리 미인지**: FE가 가격/정원/리드타임 수정 후 "기존 예약에 반영되지 않음"을 UI로 안내하지 않으면 파트너 혼란 발생. 변경 시 안내 문구 또는 확인 다이얼로그 필요 여부 결정 필요.
-- **`difficulty` / `childrenAllowed` / `deliveryAvailable` DB 마이그레이션**: 신규 컬럼이므로 BE 마이그레이션 선행 후 FE 연동 가능. 순서 주의.
-
----
-
-## Validation
-
-- Tests:
-  - PATCH 요청 시 partial update 정상 동작 (미전송 필드 유지)
-  - 기존 예약 있을 때 가격 변경 → `program_snapshots` 신규 row 생성 확인
-  - 기존 예약 없을 때 가격 변경 → 스냅샷 미생성 확인
-  - dirty state false일 때 저장 버튼 비활성화 확인
-  - 이탈 시 다이얼로그 노출 확인
-- Manual checks:
-  - 대표 이미지 교체 후 클래스 상세 화면에서 즉시 반영 확인
-  - 저장 실패 시 폼 데이터 유지 확인
-  - "수정된 클래스 정보가 반영되었어요" 토스트 노출 확인
-- Observability: PATCH 응답 200/403/404 로그 확인
-
----
-
-## Decision Log
-
-- 2026-06-01: plan 초안 작성. 이미지 삭제 API, 파트너 전용 조회 API, 난이도 필드, 어린이 동반/배송 가능 필드의 서버 스키마 미확인으로 Open decisions 등록.
-- 2026-06-01: Open decisions 전체 해소. BE가 DELETE 이미지 엔드포인트 추가, difficulty/childrenAllowed/deliveryAvailable 컬럼 추가. description 1000자. DRAFT/INACTIVE preload는 UI 진입점 차단으로 대응.
-
----
-
-## Outcome
-
-- Status: planning
-- Follow-up: Open decisions 1~5 해소 후 구현(implementer)으로 이관

@@ -6,6 +6,12 @@
 - Owner: -
 - Date: 2026-06-01
 
+## Status
+
+- [ ] API 구현
+- [x] UI 구현
+- [ ] API 연동
+
 ## Context
 
 - 요구사항명세서(고정): docs/requirements.md — `class` 도메인 (§ 클래스 상태, § 클래스 등록, § 클래스 수정·중단)
@@ -19,6 +25,86 @@
   1. ~~**파트너 전용 클래스 상세 GET 엔드포인트 부재**~~ **→ 해소 (2026-06-01)**: 기능 범위가 "파트너가 자신의 클래스 상세 조회"로 확정됨. 파트너는 `DRAFT`·`INACTIVE` 상태도 조회해야 하므로 퍼블릭 엔드포인트 재사용 불가. `GET /partner/stores/{storeId}/programs/{programId}` 신설로 결정.
   2. ~~**기능명세의 `난이도` 필드**~~ **→ 해소 (2026-06-01)**: `난이도` 포함으로 확정. API response에 `difficulty` 필드 추가. Notion API명세 DB 업데이트 필요.
   3. **UI: DESIGN.md 준수** — 클래스 상세 화면 및 수정 액션 바텀시트의 variant enum, 상태별 토큰, size별 height/padding/gap/radius 값이 DESIGN.md에 정의되어 있는지 확인 후 구현한다. 미정의 토큰 사용 금지.
+
+## Scope
+
+- In:
+  - 파트너가 클래스 관리 목록에서 클래스 카드 클릭 시 클래스 상세 화면 진입
+  - 클래스 상세 정보 조회 (대표 이미지, 클래스명, 설명, 가격, 소요시간, 정원, 평균 제작일, 수령 방식, 게시 상태)
+  - 게시 상태에 따른 CTA 분기
+    - `ACTIVE`: `클래스 정보 수정하기` 버튼 노출
+    - `INACTIVE` / `DRAFT`: `클래스 게시하기` 버튼 노출
+  - `클래스 정보 수정하기` 클릭 시 수정 액션 바텀시트 노출 (기본 정보 수정 / 운영 정보 수정 / 게시 중단)
+  - 게시 중단 액션: `ACTIVE` → `INACTIVE` 상태 전이 (`PATCH .../status`)
+  - 게시하기 액션: `INACTIVE`/`DRAFT` → `ACTIVE` 상태 전이 (`PATCH .../status`)
+  - 존재하지 않는 클래스 접근 시 에러 화면 또는 토스트 처리
+  - 권한 없는 공방 클래스 접근 시 403 처리
+- Out:
+  - 기본 정보 수정 화면 구현 (별도 기능: 클래스 수정)
+  - 운영 정보 수정 화면 구현 (별도 기능: 클래스 수정)
+  - 클래스 등록 (별도 기능)
+  - 리뷰 목록 (`GET /stores/{slug}/programs/{programId}/reviews` — 별도 기능)
+  - 타임슬롯 관리 (별도 기능)
+
+## Plan
+
+### BE
+
+1. `GET /partner/stores/{storeId}/programs/{programId}` 신설
+   - `@UseGuards(AuthGuard, PartnerGuard)` 적용
+   - `DRAFT`·`INACTIVE`·`ACTIVE` 전체 상태 반환
+   - `storeId` + 로그인 파트너 소유 검증 (타 파트너 클래스 접근 시 403)
+2. `PATCH /partner/stores/{storeId}/programs/{programId}/status` 구현 확인
+   - `@UseGuards(AuthGuard, PartnerGuard)` 적용
+   - `DRAFT`→`ACTIVE`, `ACTIVE`→`INACTIVE`, `INACTIVE`→`ACTIVE` 전이 검증
+   - 공방 소유 권한 확인 (`storeId` + `partnerId` 매핑)
+3. MSW handler 작성: `GET .../programs/:programId`, `PATCH .../programs/:programId/status`
+
+### FE
+
+4. DESIGN.md에서 클래스 상세 화면 및 바텀시트 variant enum, 상태별 토큰 확인 (Open decisions #3)
+5. MSW mock 데이터 정의 (`program` 응답 픽스처, status별 3종: `DRAFT`, `ACTIVE`, `INACTIVE`)
+6. 클래스 상세 화면 컴포넌트 구현
+   - 대표 이미지 슬라이드(또는 단일 이미지)
+   - 클래스명, 가격, 소요시간, 정원, 평균 제작일, 수령 방식, 설명
+   - 게시 상태 배지
+   - 게시 상태에 따른 CTA 분기 렌더링
+7. 수정 액션 바텀시트 컴포넌트 구현 (기본 정보 수정 / 운영 정보 수정 / 게시 중단 3항목)
+8. 게시 상태 변경 핸들러 연결 (`PATCH .../status` 호출 → 응답 후 화면 갱신)
+9. 에러 처리: 404(클래스 없음), 403(권한 없음) 케이스 화면 처리
+10. MSW mock → 실 API 연동 (Open decisions #1 해소 후)
+11. 연동 검증: 파트너 계정으로 실 API 호출, `status` 전이 후 화면 갱신 확인
+
+## Out (단계별 완료물)
+
+- API: `GET /partner/stores/{storeId}/programs/{programId}` (신설), `PATCH /partner/stores/{storeId}/programs/{programId}/status`
+- UI: 클래스 상세 화면, 수정 액션 바텀시트
+- 연동: 클래스 상세 조회 + 게시 상태 변경 실 API 연결, status 전이 시나리오 확인
+
+## Risks
+
+- 파트너 전용 GET 엔드포인트 신설: API명세 DB에 미등록 엔드포인트이므로 BE에서 신규 구현 필요. Notion API명세 DB에도 추가 필요.
+- 기능명세의 `난이도` 필드: API 명세 및 요구사항에 미정의. 포함 시 스키마 변경 필요.
+
+## Validation
+
+- Tests: `PATCH .../status` 상태 전이 성공/실패(잘못된 전이, 권한 없음) 단위 테스트
+- Manual checks:
+  - `ACTIVE` 클래스 진입 → `클래스 정보 수정하기` 버튼 노출 확인
+  - `INACTIVE` 클래스 진입 → `클래스 게시하기` 버튼 노출 확인
+  - 게시 중단 액션 후 상태 배지 `INACTIVE` 갱신 확인
+  - 게시하기 액션 후 상태 배지 `ACTIVE` 갱신 확인
+  - 타 파트너의 클래스 URL 직접 접근 시 403 처리 확인
+- Observability: `PATCH .../status` 응답 status code 및 error code 로깅
+
+## Decision Log
+
+- 2026-06-01: 기능명세 비고 "일반 사용자 클래스 상세 조회와 동일한 데이터 기반"에 따라 퍼블릭 엔드포인트 재사용 검토. DRAFT/INACTIVE 조회 불가 문제로 파트너 전용 GET 신설 여부를 Open decisions에 올림.
+
+## Outcome
+
+- Status: 계획 수립 완료. Open decisions 전체 해소. Contract 승인 대기.
+- Follow-up: contract 승인 후 BE/FE 병렬 착수 가능. Notion API명세 DB에 `difficulty` 필드 및 파트너 GET 엔드포인트 추가 필요.
 
 ## API Contract (스냅샷)
 
@@ -191,89 +277,3 @@
 **Response 403** — 공방 소유권 없음 (`FORBIDDEN`)
 
 **Response 404** — 프로그램 없음 (`PROGRAM_NOT_FOUND`)
-
-## Scope
-
-- In:
-  - 파트너가 클래스 관리 목록에서 클래스 카드 클릭 시 클래스 상세 화면 진입
-  - 클래스 상세 정보 조회 (대표 이미지, 클래스명, 설명, 가격, 소요시간, 정원, 평균 제작일, 수령 방식, 게시 상태)
-  - 게시 상태에 따른 CTA 분기
-    - `ACTIVE`: `클래스 정보 수정하기` 버튼 노출
-    - `INACTIVE` / `DRAFT`: `클래스 게시하기` 버튼 노출
-  - `클래스 정보 수정하기` 클릭 시 수정 액션 바텀시트 노출 (기본 정보 수정 / 운영 정보 수정 / 게시 중단)
-  - 게시 중단 액션: `ACTIVE` → `INACTIVE` 상태 전이 (`PATCH .../status`)
-  - 게시하기 액션: `INACTIVE`/`DRAFT` → `ACTIVE` 상태 전이 (`PATCH .../status`)
-  - 존재하지 않는 클래스 접근 시 에러 화면 또는 토스트 처리
-  - 권한 없는 공방 클래스 접근 시 403 처리
-- Out:
-  - 기본 정보 수정 화면 구현 (별도 기능: 클래스 수정)
-  - 운영 정보 수정 화면 구현 (별도 기능: 클래스 수정)
-  - 클래스 등록 (별도 기능)
-  - 리뷰 목록 (`GET /stores/{slug}/programs/{programId}/reviews` — 별도 기능)
-  - 타임슬롯 관리 (별도 기능)
-
-## Plan
-
-### BE
-
-1. `GET /partner/stores/{storeId}/programs/{programId}` 신설
-   - `@UseGuards(AuthGuard, PartnerGuard)` 적용
-   - `DRAFT`·`INACTIVE`·`ACTIVE` 전체 상태 반환
-   - `storeId` + 로그인 파트너 소유 검증 (타 파트너 클래스 접근 시 403)
-2. `PATCH /partner/stores/{storeId}/programs/{programId}/status` 구현 확인
-   - `@UseGuards(AuthGuard, PartnerGuard)` 적용
-   - `DRAFT`→`ACTIVE`, `ACTIVE`→`INACTIVE`, `INACTIVE`→`ACTIVE` 전이 검증
-   - 공방 소유 권한 확인 (`storeId` + `partnerId` 매핑)
-3. MSW handler 작성: `GET .../programs/:programId`, `PATCH .../programs/:programId/status`
-
-### FE
-
-4. DESIGN.md에서 클래스 상세 화면 및 바텀시트 variant enum, 상태별 토큰 확인 (Open decisions #3)
-5. MSW mock 데이터 정의 (`program` 응답 픽스처, status별 3종: `DRAFT`, `ACTIVE`, `INACTIVE`)
-6. 클래스 상세 화면 컴포넌트 구현
-   - 대표 이미지 슬라이드(또는 단일 이미지)
-   - 클래스명, 가격, 소요시간, 정원, 평균 제작일, 수령 방식, 설명
-   - 게시 상태 배지
-   - 게시 상태에 따른 CTA 분기 렌더링
-7. 수정 액션 바텀시트 컴포넌트 구현 (기본 정보 수정 / 운영 정보 수정 / 게시 중단 3항목)
-8. 게시 상태 변경 핸들러 연결 (`PATCH .../status` 호출 → 응답 후 화면 갱신)
-9. 에러 처리: 404(클래스 없음), 403(권한 없음) 케이스 화면 처리
-10. MSW mock → 실 API 연동 (Open decisions #1 해소 후)
-11. 연동 검증: 파트너 계정으로 실 API 호출, `status` 전이 후 화면 갱신 확인
-
-## Status
-
-- [ ] API 구현
-- [ ] UI 구현
-- [ ] API 연동
-
-## Out (단계별 완료물)
-
-- API: `GET /partner/stores/{storeId}/programs/{programId}` (신설), `PATCH /partner/stores/{storeId}/programs/{programId}/status`
-- UI: 클래스 상세 화면, 수정 액션 바텀시트
-- 연동: 클래스 상세 조회 + 게시 상태 변경 실 API 연결, status 전이 시나리오 확인
-
-## Risks
-
-- 파트너 전용 GET 엔드포인트 신설: API명세 DB에 미등록 엔드포인트이므로 BE에서 신규 구현 필요. Notion API명세 DB에도 추가 필요.
-- 기능명세의 `난이도` 필드: API 명세 및 요구사항에 미정의. 포함 시 스키마 변경 필요.
-
-## Validation
-
-- Tests: `PATCH .../status` 상태 전이 성공/실패(잘못된 전이, 권한 없음) 단위 테스트
-- Manual checks:
-  - `ACTIVE` 클래스 진입 → `클래스 정보 수정하기` 버튼 노출 확인
-  - `INACTIVE` 클래스 진입 → `클래스 게시하기` 버튼 노출 확인
-  - 게시 중단 액션 후 상태 배지 `INACTIVE` 갱신 확인
-  - 게시하기 액션 후 상태 배지 `ACTIVE` 갱신 확인
-  - 타 파트너의 클래스 URL 직접 접근 시 403 처리 확인
-- Observability: `PATCH .../status` 응답 status code 및 error code 로깅
-
-## Decision Log
-
-- 2026-06-01: 기능명세 비고 "일반 사용자 클래스 상세 조회와 동일한 데이터 기반"에 따라 퍼블릭 엔드포인트 재사용 검토. DRAFT/INACTIVE 조회 불가 문제로 파트너 전용 GET 신설 여부를 Open decisions에 올림.
-
-## Outcome
-
-- Status: 계획 수립 완료. Open decisions 전체 해소. Contract 승인 대기.
-- Follow-up: contract 승인 후 BE/FE 병렬 착수 가능. Notion API명세 DB에 `difficulty` 필드 및 파트너 GET 엔드포인트 추가 필요.
