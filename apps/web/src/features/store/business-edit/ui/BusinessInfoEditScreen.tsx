@@ -6,13 +6,13 @@ import {
     formatBusinessNumber,
     type PartnerStoreDetail,
 } from '@todam/shared';
-import { BottomBar, Button, LeftIcon, TextInput } from '@todam/ui';
+import { BottomBar, Button, TextInput } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 
 import { ApiError } from '../../../../shared/api';
 import { openPostcode } from '../../../../shared/lib/daumPostcode';
 import { useEditableForm } from '../../../../shared/lib/useEditableForm';
-import { useLeaveGuard } from '../../../../shared/lib/useLeaveGuard';
+import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
 import { useToast } from '../../../../shared/model';
 import { ImageUploadField, type ImageUploadGridItem } from '../../../../shared/ui';
 import { usePartnerStoreDetail } from '../../detail';
@@ -74,7 +74,13 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
     const mutation = useUpdateBusinessDocument(storeId);
     const saving = mutation.isPending;
 
-    useLeaveGuard(isDirty);
+    // 전역 Header override: 타이틀 + 뒤로가기(상세 복귀). 우측 액션 없음.
+    useHeaderOverride({
+        title: '사업자 정보 수정',
+        onBack: () => router.back(),
+        hideRightAction: true,
+        guardDirty: isDirty,
+    });
 
     const numberError =
         form.businessNumber.length > 0 && !isBizNumber(form.businessNumber)
@@ -131,21 +137,6 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
 
     return (
         <div className="flex flex-1 flex-col overflow-hidden">
-            <header className="flex h-15 shrink-0 items-center bg-transparent pt-safe">
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<LeftIcon />}
-                    aria-label="뒤로가기"
-                    onClick={() => router.back()}
-                    className="hover:!bg-transparent hover:!text-foreground"
-                />
-                <span className="flex-1 truncate text-lg font-medium leading-6 text-foreground">
-                    사업자 정보 수정
-                </span>
-            </header>
-
             <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-16 pt-2">
                 <ImageUploadField
                     label="사업자 등록증"
