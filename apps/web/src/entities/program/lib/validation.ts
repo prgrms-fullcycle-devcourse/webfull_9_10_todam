@@ -3,10 +3,6 @@ export const TITLE_MIN = 2;
 export const TITLE_MAX = 60;
 export const DESCRIPTION_MAX = 1000;
 
-export const DURATION_STEP = 30; // 30분 단위
-export const DURATION_MIN = 30;
-export const LEAD_TIME_MIN = 0;
-
 // ─── 필드 단위 검증 (에러 메시지 반환, 통과 시 undefined) ─────────
 export function validateTitle(title: string): string | undefined {
     if (title.length < TITLE_MIN) return `클래스명은 ${TITLE_MIN}자 이상 입력해 주세요.`;
