@@ -1,0 +1,37 @@
+// 클래스 폼 제약 (contract: program-edit / store-programs 기준 단일 출처).
+export const TITLE_MIN = 2;
+export const TITLE_MAX = 60;
+export const DESCRIPTION_MAX = 1000;
+
+export const DURATION_STEP = 30; // 30분 단위
+export const DURATION_MIN = 30;
+export const CAPACITY_MIN = 1;
+export const LEAD_TIME_MIN = 0;
+
+// ─── 필드 단위 검증 (에러 메시지 반환, 통과 시 undefined) ─────────
+export function validateTitle(title: string): string | undefined {
+    if (title.length < TITLE_MIN) return `클래스명은 ${TITLE_MIN}자 이상 입력해 주세요.`;
+    if (title.length > TITLE_MAX) return `클래스명은 ${TITLE_MAX}자 이하로 입력해 주세요.`;
+    return undefined;
+}
+
+export function validateDescription(description: string): string | undefined {
+    if (description.length > DESCRIPTION_MAX)
+        return `상세 설명은 ${DESCRIPTION_MAX}자 이하로 입력해 주세요.`;
+    return undefined;
+}
+
+export function validatePrice(price: number): string | undefined {
+    if (!price || price <= 0) return '가격을 입력해 주세요.';
+    return undefined;
+}
+
+export function validateCapacity(capacity: number): string | undefined {
+    if (capacity < CAPACITY_MIN) return `정원은 ${CAPACITY_MIN}명 이상이어야 합니다.`;
+    return undefined;
+}
+
+export function validateDurationMinutes(durationMinutes: number): string | undefined {
+    if (!durationMinutes) return '소요 시간을 입력해 주세요.';
+    return undefined;
+}
