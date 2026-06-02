@@ -22,3 +22,11 @@ Commit changes in logical groups using the Todam convention.
 
 Do not stage unrelated existing changes unless the user explicitly includes them.
 
+## Completion Response
+
+Respond briefly after execution:
+
+- `성공: <커밋 해시와 메시지>`
+- `실패: <실패한 workflow 단계와 이유>`
+
+Success/failure is based on commit workflow completion, not Supabase insert success.

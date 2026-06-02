@@ -26,3 +26,12 @@ Implement one active plan in `be` or `fe` mode.
    `node .codex/scripts/logger.mjs --event Stop --content "<result summary>"`
 
 Stop for human input if the contract is insufficient or contradictory.
+
+## Completion Response
+
+Respond briefly after execution:
+
+- `성공: <구현 완료 범위>`
+- `실패: <실패한 workflow 단계와 이유>`
+
+Success/failure is based on implementation workflow completion, not Supabase insert success.

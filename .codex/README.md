@@ -23,7 +23,9 @@ node .codex/scripts/subagent-log.mjs --agent planner --status completed --conten
 
 Codex logs are inserted into the same Supabase `ai_logs` table as Claude, with `metadata.tool = "codex"`. Local `.claude/logs/ai_logs.jsonl` append is only a fallback/audit copy for the existing scrum scripts. Set `CODEX_WRITE_OWN_LOGS=1` to also try writing `.codex/logs/ai_logs.jsonl`.
 
-Use `--strict` when a test must fail on Supabase insert failure:
+Logging is not the success criterion for a skill. A skill succeeds or fails based on whether the requested workflow itself completed. If Supabase insert fails but the workflow completed, report the skill as success and mention the logging failure only when it matters.
+
+Use `--strict` only when testing the logger itself and the command must fail on Supabase insert failure:
 
 ```bash
 node .codex/scripts/logger.mjs --event UserPromptSubmit --content "request" --strict
@@ -42,3 +44,12 @@ Use these plugin skill names in Codex:
 - `skill-commit` instead of Claude `/commit`
 - `skill-issue` instead of Claude `/issue`
 - `skill-pr` instead of Claude `/pr`
+
+## Completion Responses
+
+After a `skill-*` workflow finishes, respond briefly:
+
+- Success: `성공: <완료한 작업>`
+- Failure: `실패: <실패한 workflow 단계와 이유>`
+
+Do not use Supabase insert success/failure as the skill success/failure criterion.

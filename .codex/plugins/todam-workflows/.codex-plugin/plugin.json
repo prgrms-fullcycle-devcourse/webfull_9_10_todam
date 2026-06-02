@@ -1,6 +1,6 @@
 {
   "name": "todam-workflows",
-  "version": "0.1.0+codex.20260602092841",
+  "version": "0.1.0+codex.20260602103134",
   "description": "Todam feature planning, implementation, review, completion, and scrum logging workflows for Codex.",
   "author": {
     "name": "Local developer"

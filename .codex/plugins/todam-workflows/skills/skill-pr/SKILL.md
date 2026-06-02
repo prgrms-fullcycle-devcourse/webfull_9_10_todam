@@ -23,3 +23,11 @@ Create a PR to `dev` using Todam conventions.
 
 Mark checklist items only when they are actually true.
 
+## Completion Response
+
+Respond briefly after execution:
+
+- `성공: <생성한 PR URL>`
+- `실패: <실패한 workflow 단계와 이유>`
+
+Success/failure is based on PR workflow completion, not Supabase insert success.

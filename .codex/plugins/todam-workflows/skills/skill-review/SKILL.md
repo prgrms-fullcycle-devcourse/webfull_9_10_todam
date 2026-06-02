@@ -24,3 +24,12 @@ Review implementation against the active plan and API Contract.
 ## Output
 
 Findings first, then phase verdicts, then `skill-complete` eligibility.
+
+## Completion Response
+
+Respond briefly after execution:
+
+- `성공: <review 판정 요약>`
+- `실패: <실패한 workflow 단계와 이유>`
+
+Success/failure is based on review workflow completion, not Supabase insert success.

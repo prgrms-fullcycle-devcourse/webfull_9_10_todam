@@ -20,3 +20,11 @@ Create a GitHub issue from `.github/ISSUE_TEMPLATE/`.
 8. Log the final result:
    `node .codex/scripts/logger.mjs --event Stop --content "<issue URL or result summary>"`
 
+## Completion Response
+
+Respond briefly after execution:
+
+- `성공: <생성한 이슈 URL>`
+- `실패: <실패한 workflow 단계와 이유>`
+
+Success/failure is based on issue workflow completion, not Supabase insert success.

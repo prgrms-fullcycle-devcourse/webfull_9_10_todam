@@ -21,3 +21,12 @@ Create a KST Daily Scrum summary from `ai_logs`.
 7. Report the Notion URL.
 8. Log the final result:
    `node .codex/scripts/logger.mjs --event Stop --content "<Notion URL or result>"`
+
+## Completion Response
+
+Respond briefly after execution:
+
+- `성공: <작성한 Notion URL>`
+- `실패: <실패한 workflow 단계와 이유>`
+
+Success/failure is based on summary workflow completion, not Supabase insert success.

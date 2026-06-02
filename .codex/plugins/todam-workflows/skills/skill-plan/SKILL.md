@@ -28,3 +28,12 @@ Create one feature execution plan for `todam`.
 ## Output
 
 Return the plan path, inferred API list, and contract decisions that need human approval.
+
+## Completion Response
+
+Respond briefly after execution:
+
+- `성공: <생성한 plan 경로>`
+- `실패: <실패한 workflow 단계와 이유>`
+
+Success/failure is based on plan workflow completion, not Supabase insert success.
