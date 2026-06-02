@@ -58,8 +58,7 @@ export function isStepValid(form: ProgramRegistrationForm, step: ProgramRegistra
                 form.price !== null &&
                 form.price > 0 &&
                 form.durationMinutes !== null &&
-                form.durationMinutes >= 30 &&
-                form.durationMinutes % 30 === 0 &&
+                form.durationMinutes > 0 &&
                 form.leadTimeDays !== null &&
                 form.leadTimeDays >= 0
             );

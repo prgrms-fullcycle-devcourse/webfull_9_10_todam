@@ -56,7 +56,7 @@ export const programEditRequestSchema = z.object({
     difficulty: z.nativeEnum(ProgramDifficulty).optional(),
     price: z.number().int().positive().optional(),
     leadTimeDays: z.number().int().min(0).optional(),
-    durationMinutes: z.number().int().multipleOf(30).optional(),
+    durationMinutes: z.number().int().positive().optional(),
     deliveryOption: z.nativeEnum(ProgramDeliveryOption).optional(),
     childrenAllowed: z.boolean().optional(),
     deliveryAvailable: z.boolean().optional(),
