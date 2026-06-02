@@ -665,9 +665,7 @@ export function updateStoreDetail(
     if (body.slug !== undefined) detail.slug = body.slug;
     if (body.description !== undefined) detail.description = body.description;
     if (body.phone !== undefined) detail.phone = body.phone;
-    if (body.address !== undefined) detail.address = body.address;
-    if (body.latitude !== undefined) detail.latitude = body.latitude;
-    if (body.longitude !== undefined) detail.longitude = body.longitude;
+    // 주소(address/위경도)는 수정 Out scope — PATCH 대상 아님.
     if (body.convenienceInfo !== undefined) detail.convenienceInfo = body.convenienceInfo;
     if (body.autoConfirm !== undefined) detail.autoConfirm = body.autoConfirm;
     if (body.cancelDeadlineDays !== undefined) detail.cancelDeadlineDays = body.cancelDeadlineDays;
