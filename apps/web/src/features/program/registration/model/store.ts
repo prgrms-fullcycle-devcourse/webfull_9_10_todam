@@ -17,8 +17,8 @@ function initialForm(): ProgramRegistrationForm {
         price: null,
         durationMinutes: null,
         leadTimeDays: null,
-        childrenAllowed: false,
-        deliveryAvailable: false,
+        childFriendly: false,
+        deliverable: false,
     };
 }
 
@@ -85,7 +85,7 @@ export function isDirty(form: ProgramRegistrationForm): boolean {
         form.price !== null ||
         form.durationMinutes !== null ||
         form.leadTimeDays !== null ||
-        form.childrenAllowed ||
-        form.deliveryAvailable
+        form.childFriendly ||
+        form.deliverable
     );
 }

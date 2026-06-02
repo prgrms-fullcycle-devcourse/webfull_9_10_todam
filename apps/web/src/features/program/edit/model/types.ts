@@ -1,5 +1,3 @@
-import type { ProgramDeliveryOption } from '@todam/shared';
-
 // 대기 이미지 타입은 shared/model 단일 출처 재노출.
 export type { PendingImage } from '../../../../shared/model';
 
@@ -8,7 +6,6 @@ export interface ProgramOperationsFormState {
     price: number;
     leadTimeDays: number;
     durationMinutes: number;
-    deliveryOption: ProgramDeliveryOption;
-    childrenAllowed: boolean;
-    deliveryAvailable: boolean;
+    childFriendly: boolean;
+    deliverable: boolean;
 }

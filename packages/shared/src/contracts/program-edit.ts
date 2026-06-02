@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import { ProgramDeliveryOption } from '../enums/program-delivery-option';
 import { ProgramDifficulty } from '../enums/program-difficulty';
 import { ProgramStatus } from '../enums/program-status';
 
@@ -34,12 +33,9 @@ export const programDetailSchema = z.object({
     durationMinutes: z.number(),
     leadTimeDays: z.number(),
     difficulty: z.nativeEnum(ProgramDifficulty).optional(),
-    deliveryOption: z.nativeEnum(ProgramDeliveryOption),
-    childrenAllowed: z.boolean().optional(),
-    deliveryAvailable: z.boolean().optional(),
+    childFriendly: z.boolean(),
+    deliverable: z.boolean(),
     status: z.nativeEnum(ProgramStatus),
-    // 표시용 특성 태그 (예: "어린이 가능", "배송 가능"). BE 제공.
-    featureTags: z.array(z.string()),
     images: z.array(programImageSchema),
 });
 export type ProgramDetail = z.infer<typeof programDetailSchema>;
@@ -57,9 +53,8 @@ export const programEditRequestSchema = z.object({
     price: z.number().int().positive().optional(),
     leadTimeDays: z.number().int().min(0).optional(),
     durationMinutes: z.number().int().positive().optional(),
-    deliveryOption: z.nativeEnum(ProgramDeliveryOption).optional(),
-    childrenAllowed: z.boolean().optional(),
-    deliveryAvailable: z.boolean().optional(),
+    childFriendly: z.boolean().optional(),
+    deliverable: z.boolean().optional(),
 });
 export type ProgramEditRequest = z.infer<typeof programEditRequestSchema>;
 

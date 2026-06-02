@@ -2,7 +2,6 @@
 
 import { CheckboxInput, TextInput } from '@todam/ui';
 
-import { isDeliveryCapable } from '../../../../entities/program';
 import type { ProgramOperationsFormState } from '../model/types';
 
 type Props = {
@@ -15,9 +14,6 @@ type Props = {
 const numValue = (n: number) => (n === 0 ? '' : String(n));
 
 export function ProgramOperationsEditForm({ form, errors, onChange }: Props) {
-    // 해당 클래스가 배송 가능한 경우에만 택배 옵션 노출
-    const deliveryCapable = isDeliveryCapable(form.deliveryOption);
-
     return (
         <div className="flex flex-col gap-4">
             {/* 소요시간 / 리드타임 */}
@@ -63,19 +59,17 @@ export function ProgramOperationsEditForm({ form, errors, onChange }: Props) {
             <CheckboxInput
                 bordered
                 label="어린이 동반 가능"
-                checked={form.childrenAllowed}
-                onCheckedChange={(v) => onChange({ childrenAllowed: v })}
+                checked={form.childFriendly}
+                onCheckedChange={(v) => onChange({ childFriendly: v })}
             />
 
-            {/* 택배 배송 가능 — 배송 가능한 클래스에만 노출 */}
-            {deliveryCapable && (
-                <CheckboxInput
-                    bordered
-                    label="택배 배송 가능"
-                    checked={form.deliveryAvailable}
-                    onCheckedChange={(v) => onChange({ deliveryAvailable: v })}
-                />
-            )}
+            {/* 택배 배송 가능 */}
+            <CheckboxInput
+                bordered
+                label="택배 배송 가능"
+                checked={form.deliverable}
+                onCheckedChange={(v) => onChange({ deliverable: v })}
+            />
         </div>
     );
 }

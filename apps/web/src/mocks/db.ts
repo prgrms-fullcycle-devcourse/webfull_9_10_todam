@@ -5,7 +5,6 @@ import {
     ReservationDeliveryMethod,
     ReservationStatus,
     StoreStatus,
-    ProgramDeliveryOption,
     ProgramDifficulty,
     type ConvenienceInfo,
     type DayOfWeek,
@@ -252,9 +251,8 @@ export interface ProgramRow {
     durationMinutes: number;
     leadTimeDays: number;
     difficulty: ProgramDifficulty;
-    deliveryOption: ProgramDeliveryOption;
-    childrenAllowed: boolean;
-    deliveryAvailable: boolean;
+    childFriendly: boolean;
+    deliverable: boolean;
     status: ProgramStatus;
     updatedAt: string;
 }
@@ -282,9 +280,8 @@ export const seededPrograms: ProgramRow[] = [
         durationMinutes: 120,
         leadTimeDays: 30,
         difficulty: ProgramDifficulty.BASIC,
-        deliveryOption: ProgramDeliveryOption.CUSTOMER_SELECT,
-        childrenAllowed: true,
-        deliveryAvailable: false,
+        childFriendly: true,
+        deliverable: false,
         status: ProgramStatus.ACTIVE,
         updatedAt: '2026-05-25T19:05:00.000Z',
     },
@@ -299,9 +296,8 @@ export const seededPrograms: ProgramRow[] = [
         durationMinutes: 120,
         leadTimeDays: 28,
         difficulty: ProgramDifficulty.BASIC,
-        deliveryOption: ProgramDeliveryOption.CUSTOMER_SELECT,
-        childrenAllowed: true,
-        deliveryAvailable: true,
+        childFriendly: true,
+        deliverable: true,
         status: ProgramStatus.ACTIVE,
         updatedAt: '2026-05-21T09:00:00.000Z',
     },
@@ -315,9 +311,8 @@ export const seededPrograms: ProgramRow[] = [
         durationMinutes: 90,
         leadTimeDays: 30,
         difficulty: ProgramDifficulty.INTERMEDIATE,
-        deliveryOption: ProgramDeliveryOption.PICKUP,
-        childrenAllowed: false,
-        deliveryAvailable: false,
+        childFriendly: false,
+        deliverable: false,
         status: ProgramStatus.DRAFT,
         updatedAt: '2026-05-22T09:00:00.000Z',
     },
@@ -331,9 +326,8 @@ export const seededPrograms: ProgramRow[] = [
         durationMinutes: 150,
         leadTimeDays: 35,
         difficulty: ProgramDifficulty.ADVANCED,
-        deliveryOption: ProgramDeliveryOption.DELIVERY,
-        childrenAllowed: false,
-        deliveryAvailable: true,
+        childFriendly: false,
+        deliverable: true,
         status: ProgramStatus.INACTIVE,
         updatedAt: '2026-05-23T09:00:00.000Z',
     },
@@ -399,10 +393,6 @@ export function programToApiShape(program: ProgramRow): object {
         thumbnailUrl: img.thumbnailUrl,
         isThumbnail: img.isThumbnail,
     }));
-    const featureTags = [
-        program.childrenAllowed && '어린이 가능',
-        program.deliveryAvailable && '배송 가능',
-    ].filter(Boolean) as string[];
     return {
         id: program.id,
         storeId: program.storeId,
@@ -413,11 +403,9 @@ export function programToApiShape(program: ProgramRow): object {
         durationMinutes: program.durationMinutes,
         leadTimeDays: program.leadTimeDays,
         difficulty: program.difficulty,
-        deliveryOption: program.deliveryOption,
-        childrenAllowed: program.childrenAllowed,
-        deliveryAvailable: program.deliveryAvailable,
+        childFriendly: program.childFriendly,
+        deliverable: program.deliverable,
         status: program.status,
-        featureTags,
         images,
     };
 }

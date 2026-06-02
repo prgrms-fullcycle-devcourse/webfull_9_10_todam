@@ -2,12 +2,11 @@ import { CalendarIcon, ClockIcon, FlagIcon, NametagIcon } from '@todam/ui';
 import { formatDuration, type ProgramDetail } from '@todam/shared';
 
 import { InfoTable, type InfoTableRow } from '../../../../shared/ui';
-import { getDeliveryLabel } from '../../../../entities/program';
 
 const ICON_SIZE = 16;
 
 type Props = {
-    program: Pick<ProgramDetail, 'price' | 'durationMinutes' | 'leadTimeDays' | 'deliveryOption'>;
+    program: Pick<ProgramDetail, 'price' | 'durationMinutes' | 'leadTimeDays' | 'deliverable'>;
 };
 
 // 클래스 상세 정보 테이블 (가격·소요시간·평균제작일·작품수령).
@@ -30,7 +29,7 @@ export function ClassInfoTable({ program }: Props) {
         },
         {
             label: '작품 수령 방법',
-            value: getDeliveryLabel(program.deliveryOption),
+            value: program.deliverable ? '택배·매장 수령' : '매장 수령',
             icon: <FlagIcon size={ICON_SIZE} />,
         },
     ];

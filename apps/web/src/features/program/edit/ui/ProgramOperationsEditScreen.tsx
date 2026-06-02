@@ -28,9 +28,8 @@ export function ProgramOperationsEditScreen({ programId, program }: Props) {
         price: program.price,
         leadTimeDays: program.leadTimeDays,
         durationMinutes: program.durationMinutes,
-        deliveryOption: program.deliveryOption,
-        childrenAllowed: program.childrenAllowed ?? false,
-        deliveryAvailable: program.deliveryAvailable ?? false,
+        childFriendly: program.childFriendly,
+        deliverable: program.deliverable,
     };
     const { form, patch, isDirty } = useEditableForm(baseline);
 
@@ -53,9 +52,8 @@ export function ProgramOperationsEditScreen({ programId, program }: Props) {
                 price: form.price,
                 leadTimeDays: form.leadTimeDays,
                 durationMinutes: form.durationMinutes,
-                deliveryOption: form.deliveryOption,
-                childrenAllowed: form.childrenAllowed,
-                deliveryAvailable: form.deliveryAvailable,
+                childFriendly: form.childFriendly,
+                deliverable: form.deliverable,
             });
 
             pushToast({ message: '수정된 클래스 정보가 반영되었어요.' });

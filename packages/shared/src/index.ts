@@ -4,7 +4,6 @@ export { OAuthProvider } from './enums/oauth-provider';
 export { PartnerStatus } from './enums/partner-status';
 export { StoreStatus } from './enums/store-status';
 export { OcrStatus } from './enums/ocr-status';
-export { ProgramDeliveryOption } from './enums/program-delivery-option';
 export { ProgramDifficulty } from './enums/program-difficulty';
 export { ProgramStatus } from './enums/program-status';
 export { ProgramTimeSlotStatus } from './enums/program-time-slot-status';

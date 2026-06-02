@@ -33,8 +33,12 @@ export default function PartnerClassDetailPage({ params }: PageProps) {
     }
 
     const isPublished = program.status === ProgramStatus.ACTIVE;
-    // reviewCount 는 리뷰 API 후행(임시 0)
+    // reviewCount 는 리뷰 API 후행(임시 0). featureTags 는 운영 플래그에서 파생.
     const reviewCount = 0;
+    const featureTags = [
+        program.childFriendly && '어린이 가능',
+        program.deliverable && '배송 가능',
+    ].filter(Boolean) as string[];
 
     const handleCta = () => {
         if (!isPublished) return;
@@ -73,7 +77,7 @@ export default function PartnerClassDetailPage({ params }: PageProps) {
                             <Tag className="!bg-primary-subtle !text-primary-darker">
                                 {getDifficultyLabel(program.difficulty ?? ProgramDifficulty.BASIC)}
                             </Tag>
-                            {program.featureTags.map((tag) => (
+                            {featureTags.map((tag) => (
                                 <Tag key={tag}>{tag}</Tag>
                             ))}
                         </div>

@@ -32,6 +32,6 @@ export interface ProgramRegistrationForm {
     price: number | null; // 양의 정수 (원)
     durationMinutes: number | null; // 양의 정수 (분)
     leadTimeDays: number | null; // 0일 이상
-    childrenAllowed: boolean; // 어린이 동반 가능
-    deliveryAvailable: boolean; // 택배 배송 가능
+    childFriendly: boolean; // 어린이 동반 가능
+    deliverable: boolean; // 택배 배송 가능
 }
