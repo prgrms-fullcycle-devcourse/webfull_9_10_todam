@@ -31,8 +31,8 @@ import {
     type StoreRegistrationSubmitResult,
     type SlugAvailabilityResult,
     type StoreUpdateResult,
-    type ToggleLikeRequest,
-    type ToggleLikeResult,
+    type ToggleFavoriteResult,
+    type FavoriteStoreListResult,
     type PartnerStoreListResult,
     type ProgramDetailResult,
     type ProgramEditResult,
@@ -64,14 +64,17 @@ import {
     isBusinessNumberRegistered,
     isSlugTaken,
     isSlugTakenByOther,
+    listFavoriteStores,
     listMyReservations,
     listPartnerStores,
     mockGeocode,
     nowIso,
-    setLike,
+    toggleFavorite,
     updateStoreDetail,
     upsertDeliveryEdit,
 } from './db';
+
+const FAVORITE_LIST_DEFAULT_LIMIT = 10;
 
 // 봉투 빌더 — apps/api 응답 형태와 일치.
 function ok<T>(path: string, data: T, message = '요청이 처리되었습니다.', statusCode = 200) {
@@ -445,14 +448,55 @@ export const handlers = [
         },
     ),
 
-    // 찜 토글
-    http.post(`${API}/stores/:storeId/like`, async ({ request, params }) => {
+    // 공방 찜 등록/해제 (토글). Request body 없음 — path param storeId 만.
+    // plan: docs/exec-plans/active/유저 마이 - 찜한 공방 목록 조회, 공방 찜 등록_해제.md
+    // 시뮬: ?unauth=1 → 401.
+    http.post(`${API}/stores/:storeId/favorite`, ({ params, request }) => {
         const storeId = String(params.storeId);
-        const path = `/api/v1/stores/${storeId}/like`;
-        const body = (await request.json()) as ToggleLikeRequest;
-        const liked = setLike(storeId, !!body?.liked);
-        const result: ToggleLikeResult = { storeId, liked };
-        return ok(path, result, liked ? '찜했습니다.' : '찜을 해제했습니다.');
+        const path = `/api/v1/stores/${storeId}/favorite`;
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '찜하기 기능을 이용하려면 로그인이 필요합니다.');
+        }
+
+        const isFavorite = toggleFavorite(storeId);
+        const result: ToggleFavoriteResult = { storeId, isFavorite };
+        return ok(path, result, isFavorite ? '찜했습니다.' : '찜을 해제했습니다.');
+    }),
+
+    // 찜한 공방 목록 조회 (인증 필요, 본인 찜만, 커서 페이지네이션, PUBLISHED·최신 찜순).
+    // plan: docs/exec-plans/active/유저 마이 - 찜한 공방 목록 조회, 공방 찜 등록_해제.md
+    // 시뮬: ?unauth=1 → 401, ?empty=1 → 빈 목록, ?simulate=500 → 500.
+    http.get(`${API}/users/me/favorite-stores`, ({ request }) => {
+        const path = '/api/v1/users/me/favorite-stores';
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '찜하기 기능을 이용하려면 로그인이 필요합니다.');
+        }
+        if (url.searchParams.get('simulate') === '500') {
+            return fail(
+                path,
+                500,
+                'INTERNAL_SERVER_ERROR',
+                '찜한 공방 조회 중 서버 오류가 발생했습니다.',
+            );
+        }
+        if (url.searchParams.get('empty') === '1') {
+            const result: FavoriteStoreListResult = { favoriteStores: [], nextCursor: null };
+            return ok(path, result, '찜한 공방 목록이 성공적으로 조회되었습니다.');
+        }
+
+        const cursor = url.searchParams.get('cursor');
+        const limitParam = Number(url.searchParams.get('limit'));
+        const limit =
+            Number.isFinite(limitParam) && limitParam > 0
+                ? limitParam
+                : FAVORITE_LIST_DEFAULT_LIMIT;
+
+        const result: FavoriteStoreListResult = listFavoriteStores(cursor, limit);
+        return ok(path, result, '찜한 공방 목록이 성공적으로 조회되었습니다.');
     }),
 
     // 나의 예약 목록 조회 (인증 필요, 본인 예약만, 커서 페이지네이션)
@@ -686,6 +730,41 @@ export const handlers = [
             'Pre-signed URL이 성공적으로 발급되었습니다. 5분 이내에 업로드를 완료해주세요.',
             201,
         );
+    }),
+
+    // 리뷰 삭제 (DELETE /reviews/:reviewId).
+    // contract: docs/exec-plans/active/유저 예약 - 나의 리뷰 상세 조회, 나의 리뷰 삭제.md
+    //   ?unauth=1 → 401 UNAUTHORIZED
+    //   ?simulate=403 → 403 FORBIDDEN (타인 리뷰 가정)
+    //   ?simulate=404 → 404 REVIEW_NOT_FOUND (이미 삭제됨)
+    //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
+    //   정상 → 200 data:null
+    http.delete(`${API}/reviews/:reviewId`, ({ params, request }) => {
+        const reviewId = String(params.reviewId);
+        const path = `/api/v1/reviews/${reviewId}`;
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '인증이 필요합니다.');
+        }
+
+        const simulate = url.searchParams.get('simulate');
+        if (simulate === '403') {
+            return fail(path, 403, 'FORBIDDEN', '해당 리뷰에 대한 접근 권한이 없습니다.');
+        }
+        if (simulate === '404') {
+            return fail(path, 404, 'REVIEW_NOT_FOUND', '리뷰를 찾을 수 없습니다.');
+        }
+        if (simulate === '500') {
+            return fail(
+                path,
+                500,
+                'INTERNAL_SERVER_ERROR',
+                '리뷰 삭제 중 서버 오류가 발생했습니다.',
+            );
+        }
+
+        return ok(path, null, '리뷰가 성공적으로 삭제되었습니다.');
     }),
 
     // 배송 정보 등록/수정 (인증 필요, 본인 예약만, DELIVERY 만)

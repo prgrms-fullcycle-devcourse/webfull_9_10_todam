@@ -39,13 +39,14 @@ export * from './constants/regex';
 export * from './contracts/fields';
 export * from './contracts/store-registration';
 export * from './contracts/store-edit';
-export * from './contracts/like';
+export * from './contracts/favorite';
 export * from './contracts/store-list';
 export * from './contracts/program-edit';
 export * from './contracts/store-programs';
 export * from './contracts/reservation-list';
 export * from './contracts/reservation-detail';
 export * from './contracts/review-write';
+export * from './contracts/review-actions';
 export * from './contracts/delivery-edit';
 export * from './contracts/artwork-detail';
 
