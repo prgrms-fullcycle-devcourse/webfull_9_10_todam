@@ -34,5 +34,3 @@ export const DURATION_OPTIONS: { label: string; value: number }[] = [
     { label: '3시간', value: 180 },
     { label: '4시간', value: 240 },
 ];
-
-export { MAX_PROGRAM_IMAGES, MAX_FILE_SIZE_BYTES, ALLOWED_IMAGE_TYPES } from '../lib/imageFile';

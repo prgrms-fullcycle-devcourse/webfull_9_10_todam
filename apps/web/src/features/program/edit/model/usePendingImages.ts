@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 
 import type { ProgramImage } from '@todam/shared';
 
-import { filterValidImageFiles } from '../lib/imageFile';
+import { filterValidImageFiles } from '../../../../shared/lib/imageFile';
 import type { PendingImage } from './types';
 
 export interface PendingImagesState {

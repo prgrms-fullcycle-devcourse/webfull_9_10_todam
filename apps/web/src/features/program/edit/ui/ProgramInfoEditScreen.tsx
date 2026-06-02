@@ -11,7 +11,7 @@ import { validateDescription, validateTitle } from '../../../../entities/program
 import { useDeleteProgramImage, usePatchProgram, useUploadProgramImage } from '../queries';
 import { usePendingImages } from '../model/usePendingImages';
 import { ProgramEditScaffold } from './ProgramEditScaffold';
-import { ProgramImageGrid } from './ProgramImageGrid';
+import { ProgramImageField } from './ProgramImageField';
 import { ProgramInfoEditForm, type ProgramInfoFields } from './ProgramInfoEditForm';
 
 type Props = {
@@ -111,7 +111,7 @@ export function ProgramInfoEditScreen({ programId, program }: Props) {
             backTo={backTo}
         >
             <div className="flex flex-col gap-4">
-                <ProgramImageGrid
+                <ProgramImageField
                     existingImages={images.existingImages}
                     pendingImages={images.pendingImages}
                     onAdd={images.addFiles}
