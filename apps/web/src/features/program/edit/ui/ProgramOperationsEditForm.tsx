@@ -2,8 +2,7 @@
 
 import { CheckboxInput, TextInput } from '@todam/ui';
 
-import { ProgramDeliveryOption } from '@todam/shared';
-
+import { isDeliveryCapable } from '../../../../entities/program';
 import type { ProgramOperationsFormState } from '../model/types';
 
 type Props = {
@@ -17,9 +16,7 @@ const numValue = (n: number) => (n === 0 ? '' : String(n));
 
 export function ProgramOperationsEditForm({ form, errors, onChange }: Props) {
     // 해당 클래스가 배송 가능한 경우에만 택배 옵션 노출
-    const deliveryCapable =
-        form.deliveryOption === ProgramDeliveryOption.DELIVERY ||
-        form.deliveryOption === ProgramDeliveryOption.CUSTOMER_SELECT;
+    const deliveryCapable = isDeliveryCapable(form.deliveryOption);
 
     return (
         <div className="flex flex-col gap-4">

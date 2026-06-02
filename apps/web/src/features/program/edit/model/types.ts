@@ -1,17 +1,4 @@
-import type { ProgramDeliveryOption, ProgramDifficulty, ProgramImage } from '@todam/shared';
-
-// 기본 정보 수정 폼 상태
-export interface ProgramInfoFormState {
-    title: string;
-    description: string;
-    difficulty: ProgramDifficulty;
-    // 기존 이미지 목록 (서버에서 로드)
-    existingImages: ProgramImage[];
-    // 신규 업로드 대기 파일
-    pendingImages: PendingImage[];
-    // 삭제 예정 imageId 목록
-    deletedImageIds: string[];
-}
+import type { ProgramDeliveryOption } from '@todam/shared';
 
 // 운영 정보 수정 폼 상태
 export interface ProgramOperationsFormState {
@@ -48,6 +35,4 @@ export const DURATION_OPTIONS: { label: string; value: number }[] = [
     { label: '4시간', value: 240 },
 ];
 
-export const MAX_PROGRAM_IMAGES = 5;
-export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
-export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/heic'];
+export { MAX_PROGRAM_IMAGES, MAX_FILE_SIZE_BYTES, ALLOWED_IMAGE_TYPES } from '../lib/imageFile';
