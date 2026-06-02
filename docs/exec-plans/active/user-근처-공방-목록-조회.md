@@ -37,12 +37,12 @@
      - `thumbnailUrl: string | null` — 대표 이미지
      - `rating: number | null` — 별점. **리뷰 0건이면 `null`** (FE는 미표시)
      - `reviewCount: number` — 리뷰 수. 없으면 `0`
-     - `region: string` — 행정동명(예: `성수동`). **카카오 `coord2regioncode`를 공방 등록/주소수정 시점에 1회 호출해 컬럼에 저장**, 목록 조회는 저장값만 반환(조회당 외부 API 호출 0). 사용자 현재위치 라벨은 FE가 본인 좌표로 카카오 1회 호출.
+     - `region: string` — 행정동명(예: `성수동`). **카카오 `coord2regioncode`를 공방 등록/주소수정 시점에 1회 호출해 컬럼에 저장**, 목록 조회는 저장값만 반환(조회당 외부 API 호출 0). **Store에 `region` 컬럼 신규 추가 필요 + 기존 데이터 백필.** 사용자 현재위치 라벨은 FE가 본인 좌표로 카카오 1회 호출.
      - `distance: number` — 사용자 좌표 기준 거리, **미터(정수)**. FE가 km로 포맷.
-     - `representativeClass: { name: string, price: number } | null` — 대표 클래스명·가격(KRW 정수)
-     - `isOperating: boolean` — 현재 공방 운영시간 내 여부. `false` 면 카드 썸네일에 **"준비 중"** 뱃지. (※ 운영시간 데이터 의존 — Risks 참조)
+     - `representativeClass: { name: string, price: number, hasMore: boolean } | null` — **최저가 클래스**(노출 가능 Program 중 `price` 최소, 동가는 `sortOrder`→`id` tie-break). `hasMore`=노출 클래스 2개 이상이면 `true` → FE가 가격 뒤 **"~"** 표시(예: `10,000~`). 1개면 `false`(`10,000원`). 노출 클래스 0개면 `null`.
+     - `isOperating: boolean` — 현재 공방 운영시간 내 여부. `false` 면 카드 썸네일에 **"준비 중"** 뱃지. **`StoreOperatingHour` 테이블 존재 확인됨** → 요일·`openTime`/`closeTime`(+`breakStart`/`breakEnd`)과 현재시각 비교로 계산.
   2. **(거리/반경) — 결정됨(2026-06-02): 반경 제한 없음, distance 응답 포함.** `radius` 파라미터를 두지 않고 거리순 정렬 + 무한스크롤로 전체를 페이징한다. `distance`(미터)는 응답에 포함(#1).
-  3. **(페이지네이션) — 결정됨(2026-06-02): 무한스크롤 적용.** 메인 목록은 무한스크롤로 페이징한다. 이에 따라 `GET /stores`에 페이지네이션 파라미터/응답 메타가 추가되어야 함(아래 Contract 스냅샷 반영). cursor 기반 vs offset(page/limit) 기반 중 **offset(page/limit) 기준**으로 잠정 확정하되, 정렬이 거리순이므로 페이지 경계 안정성(동일 거리 tie-break)은 BE에서 `id` 보조정렬로 보장. → **BE는 API명세 갱신 후 구현.**
+  3. **(페이지네이션) — 결정됨(2026-06-02): 커서 기반 무한스크롤.** 메인 목록은 **cursor 기반** 무한스크롤로 페이징한다(offset `page` 아님). `GET /stores`에 `cursor`/`limit` 쿼리 + 응답 `pageInfo{nextCursor, hasNext}` 추가. 커서는 정렬키(거리, `id`)를 인코딩(opaque)하며, **클라이언트는 후속 페이지 요청 시 최초의 `lat`/`lng`를 동일하게 유지**해야 한다(거리 정렬 기준 고정). `total`은 제공하지 않음(커서 방식). → **BE는 API명세 갱신 후 구현.**
   4. **(위치 권한 거부 폴백) — 결정됨(2026-06-02): 기본 위치 = 성수동.** 권한 거부/획득 실패 시 FE가 성수동 기준 좌표(`lat=37.5446`, `lng=127.0560`)를 채워서 `GET /stores`를 호출한다(BE는 lat/lng를 항상 좌표로만 처리, 기본값 로직은 FE 보유). 향후 기준점 변경 가능성 대비 상수로 분리.
 
 ## API Contract (스냅샷)
@@ -63,13 +63,13 @@
 | `status` | string | 항상 `PUBLISHED`만 반환 |
 | `convenienceInfo` | object | `{ parking: boolean, pet: boolean, wifi: boolean }` |
 | `autoConfirm` | boolean | 자동 예약 확정 여부 |
-| `region` | string | 행정동명(예: `성수동`). 카카오 coord2regioncode 등록시 저장 |
-| `thumbnailUrl` | string \| null | 카드 대표 이미지 |
-| `rating` | number \| null | 별점. 리뷰 0건이면 `null` |
-| `reviewCount` | number | 리뷰 수. 없으면 `0` |
-| `distance` | number | 사용자 좌표 기준 거리, **미터(정수)**. FE가 km 포맷 |
-| `representativeClass` | object \| null | `{ name: string, price: number(KRW) }`. 대표 클래스 |
-| `isOperating` | boolean | 현재 운영시간 내 여부. `false`→"준비 중" 뱃지 |
+| `region` | string | 행정동명(예: `성수동`). 카카오 coord2regioncode 등록시 저장. **Store 신규 컬럼** |
+| `thumbnailUrl` | string \| null | 카드 대표 이미지 (`StoreImage.thumbnailUrl`, `isThumbnail`) |
+| `rating` | number \| null | 별점. `Review.rating` 평균(`isVisible=true`). 리뷰 0건이면 `null` |
+| `reviewCount` | number | 리뷰 수(`isVisible=true`). 없으면 `0` |
+| `distance` | number | 사용자 좌표 기준 거리, **미터(정수)**. `Store.latitude/longitude` 기준. FE가 km 포맷 |
+| `representativeClass` | object \| null | `{ name: string, price: number(KRW), hasMore: boolean }`. **최저가 Program**, `hasMore`=노출 클래스 2개↑ → FE "~" 표시 |
+| `isOperating` | boolean | 현재 운영시간 내 여부(`StoreOperatingHour` 기준). `false`→"준비 중" 뱃지 |
 | `publishedAt` | string (ISO) | 공개 시각 |
 | `createdAt` | string (ISO) | 생성 시각 |
 
@@ -85,16 +85,18 @@
   - `lat`: 검색 중심 위도 (예: `37.5665`) — 권한 거부 시 FE가 성수동 기본값 `37.5446` 전송 (Open decisions #4)
   - `lng`: 검색 중심 경도 (예: `126.9780`) — 권한 거부 시 FE가 성수동 기본값 `127.0560` 전송 (Open decisions #4)
   - `keyword`: 공방 이름(`name`) 또는 주소(`address`) 부분일치(LIKE) 검색어
-  - `page`: 페이지 번호 (1부터, 기본 `1`) — 무한스크롤 (Open decisions #3, **API명세 갱신 필요**)
-  - `limit`: 페이지당 항목 수 (기본 `20`) — 무한스크롤 (Open decisions #3, **API명세 갱신 필요**)
+  - `cursor`: 다음 페이지 커서 (opaque, 첫 페이지는 미전송) — 커서 기반 무한스크롤 (Open decisions #3, **API명세 갱신 필요**)
+  - `limit`: 페이지당 항목 수 (기본 `20`) — (Open decisions #3, **API명세 갱신 필요**)
 - 시스템 처리:
   - 파라미터 형식 검증
   - `status = 'PUBLISHED'` 공방만 필터
   - `keyword` 있으면 `name` 또는 `address` LIKE 필터
   - `lat`/`lng` 기준 좌표↔공방 좌표 거리 연산 → `distance`(미터) 산출, 거리순 정렬 (동일 거리는 `id` 보조정렬로 페이지 경계 안정화)
   - **반경(radius) 제한 없음** — 전체를 거리순 정렬 후 무한스크롤로 페이징 (Open decisions #2)
-  - `rating`/`reviewCount`(리뷰 집계), `representativeClass`(대표 클래스), `isOperating`(운영시간 대비 현재시각) 산출
-  - `page`/`limit` 로 offset 페이징
+  - `rating`(`Review.rating` 평균, `isVisible=true`)/`reviewCount`(count) 집계, `representativeClass`(노출 Program 중 최저가 + `hasMore`), `isOperating`(`StoreOperatingHour` vs 현재 요일·시각) 산출
+  - `region`은 저장된 컬럼값 반환(조회 시 카카오 호출 없음)
+  - **커서 기반 페이징**: `cursor` 디코드 → 해당 지점 이후부터 `limit`개 조회, 다음 `nextCursor`(없으면 `null`) 및 `hasNext` 산출.
+    - 커서 payload는 정렬키에 따라 분기: **lat/lng 있으면 `{ distance, id }`**(거리순+id), **없으면 `{ id }`**(또는 `{ publishedAt, id }`). 좌표 있을 때는 후속 요청에 lat/lng 고정 필수.
 - 응답 `200 OK`:
 
 ```json
@@ -121,16 +123,14 @@
         "rating": 4.9,
         "reviewCount": 253,
         "distance": 1400,
-        "representativeClass": { "name": "머그컵 만들기", "price": 45000 },
+        "representativeClass": { "name": "머그컵 만들기", "price": 45000, "hasMore": true },
         "isOperating": true,
         "publishedAt": "2026-05-25T10:00:00.000Z",
         "createdAt": "2026-05-24T12:00:00.000Z"
       }
     ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 137,
+    "pageInfo": {
+      "nextCursor": "eyJkaXN0YW5jZSI6MTQwMCwiaWQiOiJhMWIyYzNkNCJ9",
       "hasNext": true
     }
   },
@@ -138,7 +138,7 @@
 }
 ```
 
-> 주의: `data.pagination` 은 무한스크롤 결정(Open decisions #3)에 따라 plan에서 추가한 contract이며, **API명세 DB 원본에는 아직 없음**. BE 구현 전 API명세 갱신으로 확정 필요.
+> 주의: `data.pageInfo`(커서 기반)는 무한스크롤 결정(Open decisions #3)에 따라 plan에서 추가한 contract이며, **API명세 DB 원본에는 아직 없음**. BE 구현 전 API명세 갱신으로 확정 필요. `nextCursor`는 마지막 페이지에서 `null`.
 
 - 응답 `400 Bad Request` (`INVALID_QUERY_PARAMETERS`): 위도/경도가 숫자 형식이 아닌 경우 — `data: null`
 - 응답 `500 Internal Server Error` (`INTERNAL_SERVER_ERROR`): 서버 내부 오류 — `data: null`
@@ -161,7 +161,7 @@
 
 1. **Contract 확정**: Open decisions #1~#4 모두 확정됨(UI 기준). 남은 작업은 **API명세 DB를 이 스냅샷대로 갱신**(카드 필드·pagination·radius 없음 반영)하는 것.
 2. **BE**: `GET /stores` 구현 — 쿼리 검증, PUBLISHED 필터, keyword LIKE, lat/lng 거리순 정렬(+`distance` 미터 산출), `region`/`thumbnailUrl`/`rating`/`reviewCount`/`representativeClass`/`isOperating` 응답, offset 페이징. 응답 envelope 준수.
-3. **FE — 데이터 계층**: `GET /stores` 호출 클라이언트 + 응답 타입(Store, Pagination) 정의. 위치 권한(Geolocation) 획득 → 성공 시 lat/lng 전달, 거부/실패 시 **성수동 기본 좌표(`37.5446`, `127.0560`) 상수로 폴백**(#4). 무한스크롤: `page` 증가 + `hasNext` 기반 다음 페이지 fetch(#3).
+3. **FE — 데이터 계층**: `GET /stores` 호출 클라이언트 + 응답 타입(Store, Pagination) 정의. 위치 권한(Geolocation) 획득 → 성공 시 lat/lng 전달, 거부/실패 시 **성수동 기본 좌표(`37.5446`, `127.0560`) 상수로 폴백**(#4). 커서 기반 무한스크롤: 응답 `nextCursor`를 다음 요청 `cursor`로 전달, `hasNext`로 종료 판단. 후속 요청에 최초 `lat`/`lng` 동일 유지(#3).
 4. **FE — UI**: 메인 공방 목록 섹션 + 공방 카드 컴포넌트(DESIGN.md 준수). 로딩/빈상태/에러 상태 + **무한스크롤(IntersectionObserver 등)**. 카드 클릭 → `/stores/[slug]`.
 5. **연동**: MSW mock → 실 API 전환 검증. 권한 허용/거부 두 경로 모두 확인.
 
@@ -171,10 +171,9 @@
 - UI: <!-- 메인 공방 목록 섹션, 공방 카드 컴포넌트 -->
 - 연동: <!-- 실 GET /stores 바인딩, 권한 허용/거부 경로 검증 결과 -->
 
-## Risks
-
-- **운영시간 데이터 의존 (높음)**: `isOperating`("준비 중")은 공방 운영시간 데이터가 있어야 계산 가능. 현재 Store 모델에 운영시간 필드가 없으면 선행/병행으로 운영시간 스키마가 필요(이 기능 범위 밖일 수 있음). 미비 시 `isOperating` 산출 불가 → BE 확인 필요.
-- **카카오 coord2regioncode 의존**: `region`은 공방 등록/주소수정 시 카카오 API로 채워야 함. 기존 공방 데이터에 `region` 백필(backfill) 필요. 외부 API 장애/쿼터 고려.
+- **운영시간 데이터 = 확보됨**: `isOperating`("준비 중")은 `StoreOperatingHour`(요일·openTime·closeTime·breakStart/End) 기준으로 계산. 스키마 존재 확인 완료(별도 선행작업 불필요). 시간대(KST) 경계·휴게시간 처리만 주의.
+- **신규 스키마 작업 — `Store.region` 컬럼 추가(nullable) + 마이그레이션 + 기존 데이터 백필**(카카오 coord2regioncode). 외부 API 장애/쿼터 고려. 행정동 depth/접미사 정리 규칙 확정 필요.
+- **`representativeClass` 선정 기준**: 노출 가능 Program 중 최저가. "노출 가능"으로 볼 `Program.status` 값 확정 필요. 가격 표시 "~"는 `hasMore`로 FE에서 처리.
 - **집계 비용**: `rating`/`reviewCount` 실시간 집계가 목록 N건마다 비싸지면 캐시/비정규화 컬럼 고려.
 - Geolocation 권한 거부/타임아웃 처리 미흡 시 메인 진입 경험 저하(폴백 성수동).
 - 거리 연산을 DB/앱 중 어디서 수행하는지에 따라 성능 차이(공간 인덱스 필요 여부). 반경 제한 없이 전체 정렬이므로 데이터 증가 시 인덱스·페이징 효율 중요.
@@ -189,12 +188,14 @@
 
 - 2026-06-02: 기능명 `user-근처-공방-목록-조회` 는 기능명세 DB의 `근처 공방 목록 조회`(실행주체 guest·user, 도메인 store)로 매칭 확정. 정확 일치 항목은 없었고 후보 중 유일한 의미 일치 항목.
 - 2026-06-02: 매핑 API = `GET /stores?lat=&lng=&keyword=` ("공방 목록 탐색 (위치/키워드)"). 별도 `/stores/search`, `/stores/search/autocomplete` 는 검색 전용 기능으로 Out 처리.
-- 2026-06-02: Open decision #3 → **무한스크롤 적용** 확정. `page`/`limit` query + `data.pagination{page,limit,total,hasNext}` 응답 메타를 contract에 추가(API명세 DB 갱신 필요). offset 페이징, 거리 동률은 `id` 보조정렬.
+- 2026-06-02: Open decision #3 → **커서 기반 무한스크롤** 확정. `cursor`/`limit` query + `data.pageInfo{nextCursor, hasNext}` 응답 메타를 contract에 추가(API명세 DB 갱신 필요). 커서는 정렬키별 분기 인코딩 — **lat/lng 있으면 `{distance, id}`, 없으면 `{id}`(또는 `{publishedAt, id}`)**. 좌표 있을 때 후속 요청 `lat`/`lng` 고정. `total` 미제공. (※ 초기엔 offset page/limit로 검토했으나 커서 기반으로 변경)
 - 2026-06-02: Open decision #4 → **위치 권한 거부 시 기본 위치 = 성수동** 확정. FE가 `lat=37.5446`, `lng=127.0560` 을 채워 호출. 기본 좌표는 FE 상수로 분리.
 - 2026-06-02: **Source of truth = 검수 완료된 UI 화면**으로 합의. 메인 "근처 공방" 카드 디자인 기준으로 #1·#2 확정.
 - 2026-06-02: Open decision #1 → **(a) `/stores` 응답에 카드 필드 추가** 확정. `thumbnailUrl, rating(리뷰0=null), reviewCount, region, distance(미터), representativeClass{name,price}, isOperating` 추가. `isOperating`은 운영시간 기준 현재 운영여부(="준비 중" 반대).
 - 2026-06-02: Open decision #2 → **반경 제한 없음 + distance(미터) 응답 포함** 확정. radius 파라미터 미도입, 거리순 정렬 + 무한스크롤.
-- 2026-06-02: `region`은 **카카오 `coord2regioncode`를 공방 등록/주소수정 시점에 호출해 컬럼 저장**하는 방식으로 확정(조회당 외부호출 0). 사용자 위치 라벨만 FE가 카카오 1회 호출.
+- 2026-06-02: `region`은 **카카오 `coord2regioncode`를 공방 등록/주소수정 시점에 호출해 컬럼 저장**하는 방식으로 확정(조회당 외부호출 0). 사용자 위치 라벨만 FE가 카카오 1회 호출. → **`Store.region` 컬럼 신규 추가 + 기존 데이터 백필** 필요.
+- 2026-06-02: 스키마 직접 확인 — `StoreOperatingHour`(운영시간), `Review.rating/isVisible`(평점·리뷰수), `StoreImage.thumbnailUrl/isThumbnail`(썸네일), `Program.price/sortOrder/status`(클래스), `Store.latitude/longitude`(거리) 모두 존재. **신규 작업은 `Store.region` 컬럼뿐.** `isOperating` 운영시간 의존 리스크 해소.
+- 2026-06-02: `representativeClass` → **최저가 Program**을 대표로 선정(동가 `sortOrder`→`id`). 응답에 `hasMore: boolean`(노출 클래스 2개↑) 추가 → FE가 가격 뒤 "~" 표시(예: `10,000~`). 0개면 `null`.
 
 ## Outcome
 
