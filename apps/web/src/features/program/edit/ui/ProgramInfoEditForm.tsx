@@ -25,7 +25,6 @@ export function ProgramInfoEditForm({ fields, errors, onChange }: Props) {
             {/* 클래스명 */}
             <TextInput
                 label="클래스명"
-                required
                 placeholder="클래스 이름을 입력해 주세요"
                 value={fields.title}
                 error={!!errors.title}
@@ -56,6 +55,7 @@ export function ProgramInfoEditForm({ fields, errors, onChange }: Props) {
             <TextArea
                 label="상세 설명"
                 placeholder="클래스의 특징, 준비물 등을 자유롭게 소개해 주세요"
+                optional
                 showCount
                 maxLength={DESCRIPTION_MAX}
                 value={fields.description}

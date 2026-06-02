@@ -130,7 +130,8 @@ export function StoreInfoFields({
             />
 
             <TextArea
-                label="공방 소개글 (선택)"
+                label="공방 소개글"
+                optional
                 placeholder="공방의 분위기나 작가님의 철학을 소개해 주세요"
                 showCount
                 maxLength={descriptionMaxLength}

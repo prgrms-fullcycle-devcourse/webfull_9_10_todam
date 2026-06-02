@@ -33,7 +33,6 @@ export function BasicInfoStep() {
 
             <TextInput
                 label="클래스명"
-                required
                 placeholder="클래스 이름을 입력해 주세요"
                 maxLength={TITLE_MAX}
                 value={form.title}
@@ -43,7 +42,7 @@ export function BasicInfoStep() {
             {/* 난이도 (3개 분리 버튼, 선택=검정 채움) */}
             <div className="flex flex-col gap-2">
                 <span className="px-[5px] text-sm font-semibold text-foreground-tertiary">
-                    난이도 <span className="text-danger">*</span>
+                    난이도
                 </span>
                 <div className="flex gap-2">
                     {DIFFICULTY_OPTIONS.map(({ label, value }) => (
@@ -60,7 +59,8 @@ export function BasicInfoStep() {
             </div>
 
             <TextArea
-                label="상세 설명 (선택)"
+                label="상세 설명"
+                optional
                 placeholder="클래스의 특징이나 진행 방식을 설명해 주세요"
                 showCount
                 maxLength={DESCRIPTION_MAX}
