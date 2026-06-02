@@ -142,6 +142,10 @@ export class CreateStoreDto {
     })
     reservationIntervalMinutes!: number;
 
+    @ApiProperty({ example: 6, description: '슬롯당 최대 예약 정원(공방 단위, 클래스 공통)' })
+    @IsNumber()
+    maxCapacityPerSlot!: number;
+
     @ApiProperty({ type: [OperatingHourDto] })
     @IsArray()
     @ValidateNested({ each: true })
