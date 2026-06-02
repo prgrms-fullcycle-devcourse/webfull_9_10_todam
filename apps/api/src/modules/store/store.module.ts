@@ -9,6 +9,7 @@ import { GetPartnerStoreDetailUseCase } from './application/use-cases/get-partne
 import { ListPartnerStoreProgramsUseCase } from './application/use-cases/list-partner-store-programs.use-case';
 import { UpdateStoreUseCase } from './application/use-cases/update-store.use-case';
 import { DeleteStoreImageUseCase } from './application/use-cases/delete-store-image.use-case';
+import { ListStoresUseCase } from './application/use-cases/list-stores.use-case';
 import { PartnerGuard } from '../../common/guards/partner.guard';
 import { StoreController } from './presentation/controllers/store.controller';
 
@@ -25,6 +26,7 @@ import { StoreController } from './presentation/controllers/store.controller';
         ListPartnerStoreProgramsUseCase,
         UpdateStoreUseCase,
         DeleteStoreImageUseCase,
+        ListStoresUseCase,
         PartnerGuard,
     ],
 })
