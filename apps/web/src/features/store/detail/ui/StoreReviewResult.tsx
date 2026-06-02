@@ -12,8 +12,8 @@ import {
     DotIcon,
     EmailIcon,
 } from '@todam/ui';
+
 import { ResultTable } from '../../../../shared/ui';
-import { useStoreRegistrationStatus } from '../queries';
 
 function formatDateTime(iso: string): string {
     if (!iso) return '-';
@@ -22,25 +22,37 @@ function formatDateTime(iso: string): string {
     return `${d.getFullYear()}. ${p(d.getMonth() + 1)}. ${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-export function StoreRegistrationComplete({
-    onClose,
-    onEditInfo,
-}: {
-    onClose: () => void;
+type Props = {
+    storeName: string;
+    // PENDING(심사 중) | REJECTED(반려) 만 진입.
+    status: StoreStatus;
+    rejectedReason?: string | null;
+    address?: string;
+    businessNumber?: string;
+    email?: string;
+    createdAt?: string;
     onEditInfo: () => void;
-}) {
-    // dev 미리보기: window.__onboardingPreviewRejected = true 시 반려 화면
-    const preview =
-        typeof window !== 'undefined' &&
-        (window as unknown as { __onboardingPreviewRejected?: boolean }).__onboardingPreviewRejected
-            ? 'rejected'
-            : undefined;
-    const { data: status } = useStoreRegistrationStatus(preview);
+    onBack: () => void;
+};
 
-    const rejected = status?.storeStatus === StoreStatus.REJECTED;
+// 심사중·반려 공방 진입 시 결과(검수 상태) 화면. 일반 상세 대신 노출.
+// 심사 결과는 스토어 단위(store.status) 기준.
+export function StoreReviewResult({
+    storeName,
+    status,
+    rejectedReason,
+    address,
+    businessNumber,
+    email,
+    createdAt,
+    onEditInfo,
+    onBack,
+}: Props) {
+    const rejected = status === StoreStatus.REJECTED;
 
     return (
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex h-full flex-col bg-background">
+            {/* 검수 결과 안내 전용 화면 → 헤더 없음(검토중·반려 동일). 이동은 하단 버튼. */}
             <div className="flex flex-1 flex-col overflow-y-auto">
                 {/* hero */}
                 <section
@@ -71,7 +83,6 @@ export function StoreRegistrationComplete({
                     </div>
                 </section>
 
-                {/* Container */}
                 <div className="flex flex-col gap-2 px-4 pb-16 pt-2">
                     {/* 검수 상태 카드 */}
                     <div className="flex flex-col gap-3 rounded-2xl bg-surface px-4 py-4">
@@ -92,8 +103,7 @@ export function StoreRegistrationComplete({
                         {rejected && (
                             <div className="flex flex-col gap-2 border-t border-border-subtle pt-3">
                                 <p className="text-xs text-foreground-secondary">
-                                    사유:{' '}
-                                    {status?.rejectedReason ?? '반려 사유가 등록되지 않았습니다.'}
+                                    사유: {rejectedReason ?? '반려 사유가 등록되지 않았습니다.'}
                                 </p>
                                 <Button variant="outline" size="sm" onClick={onEditInfo}>
                                     정보 수정하기
@@ -104,22 +114,22 @@ export function StoreRegistrationComplete({
 
                     {/* 공방 요약 */}
                     <ResultTable
-                        title={status?.storeName ?? '-'}
-                        location={status?.address}
+                        title={storeName}
+                        location={address}
                         rows={[
                             {
                                 label: '사업자 등록번호',
-                                value: status?.businessNumber ?? '-',
+                                value: businessNumber ?? '-',
                                 icon: <ConfirmIcon size={16} />,
                             },
                             {
                                 label: '신청일시',
-                                value: formatDateTime(status?.createdAt ?? ''),
+                                value: formatDateTime(createdAt ?? ''),
                                 icon: <ClockIcon size={16} />,
                             },
                             {
                                 label: '이메일',
-                                value: status?.email ?? '-',
+                                value: email ?? '-',
                                 icon: <EmailIcon size={16} />,
                             },
                         ]}
@@ -128,8 +138,8 @@ export function StoreRegistrationComplete({
             </div>
 
             <BottomBar>
-                <Button className="w-full" onClick={onClose}>
-                    홈으로
+                <Button className="w-full" onClick={onBack}>
+                    목록으로
                 </Button>
             </BottomBar>
         </div>

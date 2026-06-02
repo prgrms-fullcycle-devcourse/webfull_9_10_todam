@@ -21,6 +21,7 @@ import {
     type StoreRegistrationSubmitRequest,
     type ProgramImage,
     type StoreUpdateRequest,
+    type BusinessDocumentUpdateRequest,
 } from '@todam/shared';
 
 // 인메모리 mock 저장소. prisma 모델 형태를 최소한으로 흉내낸다.
@@ -277,6 +278,13 @@ const SEEDED_PARTNER_STORES: PartnerStoreListRow[] = [
         ownerName: '김리듬',
         status: StoreStatus.SUSPENDED,
         createdAt: '2026-05-20T10:00:00.000Z',
+    },
+    {
+        id: 'store-seed-0004',
+        name: '가마터 공방',
+        ownerName: '김리듬',
+        status: StoreStatus.REJECTED,
+        createdAt: '2026-05-18T10:00:00.000Z',
     },
 ];
 
@@ -733,6 +741,57 @@ const storeDetails: Record<string, PartnerStoreDetail> = {
         publishedAt: null,
         createdAt: '2026-05-20T10:00:00.000Z',
     },
+    'store-seed-0004': {
+        id: 'store-seed-0004',
+        partnerId: 'partner-seed-0001',
+        name: '가마터 공방',
+        slug: 'gamateo',
+        description: '전통 가마로 굽는 도예 공방.',
+        phone: '02-7777-8888',
+        address: '서울특별시 마포구 와우산로 29',
+        latitude: 37.5519,
+        longitude: 126.9245,
+        convenienceInfo: { parking: true, pet: false, wifi: false },
+        autoConfirm: false,
+        cancelDeadlineDays: 1,
+        reservationIntervalMinutes: 60,
+        maxCapacityPerSlot: 4,
+        status: StoreStatus.REJECTED,
+        rejectedReason:
+            '사업자 등록증 이미지의 글씨가 흐려서 식별이 어렵습니다. 재업로드 부탁드립니다.',
+        suspendedReason: null,
+        rating: 0,
+        reviewCount: 0,
+        inProgressReservationCount: 0,
+        operatingHours: [
+            {
+                dayOfWeek: 'MON',
+                openTime: '10:00',
+                closeTime: '18:00',
+                breakStart: null,
+                breakEnd: null,
+            },
+        ],
+        images: [
+            {
+                id: 'img-seed-0004',
+                imageUrl: 'https://placehold.co/400x300?text=gamateo',
+                thumbnailUrl: 'https://placehold.co/200x150?text=gamateo',
+                isThumbnail: true,
+                sortOrder: 1,
+            },
+        ],
+        businessDocument: {
+            ownerName: '김리듬',
+            email: 'partner@example.com',
+            businessName: '가마터 공방',
+            businessNumber: '444-55-66666',
+            businessAddress: '서울특별시 마포구 와우산로 29',
+            ocrStatus: OcrStatus.VERIFIED,
+        },
+        publishedAt: null,
+        createdAt: '2026-05-18T10:00:00.000Z',
+    },
 };
 
 // 온보딩(db.stores)으로 생성된 공방을 상세 형태로 lazy 변환.
@@ -882,6 +941,33 @@ export function updateStoreDetail(
             };
         });
         detail.images = next;
+    }
+    return detail;
+}
+
+// 사업자 정보 수정 → 변경 필드 부분 갱신. 반려(REJECTED) 공방은 저장 시 재심사(PENDING) 전이.
+export function updateStoreBusinessDocument(
+    id: string,
+    body: BusinessDocumentUpdateRequest,
+): PartnerStoreDetail | undefined {
+    const detail = getStoreDetail(id);
+    if (!detail) return undefined;
+    const doc = detail.businessDocument;
+    if (body.businessNumber !== undefined) doc.businessNumber = body.businessNumber;
+    if (body.businessName !== undefined) doc.businessName = body.businessName;
+    if (body.ownerName !== undefined) doc.ownerName = body.ownerName;
+    if (body.businessAddress !== undefined) doc.businessAddress = body.businessAddress;
+    if (body.email !== undefined) doc.email = body.email;
+    // documentUrl 은 상세 응답에 미포함(참조용 스키마). 갱신 시 무시(재업로드는 presigned 후행).
+
+    // 반려 → 재심사 전이 + 사유 초기화. 목록 시드/생성분 status 동기화.
+    if (detail.status === StoreStatus.REJECTED) {
+        detail.status = StoreStatus.PENDING;
+        detail.rejectedReason = null;
+        const seeded = SEEDED_PARTNER_STORES.find((s) => s.id === id);
+        if (seeded) seeded.status = StoreStatus.PENDING;
+        const created = db.stores.find((s) => s.id === id);
+        if (created) created.status = StoreStatus.PENDING;
     }
     return detail;
 }

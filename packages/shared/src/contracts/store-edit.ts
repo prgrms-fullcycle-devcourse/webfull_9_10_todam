@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { OcrStatus } from '../enums/ocr-status';
 import { StoreStatus } from '../enums/store-status';
 
-import { phoneSchema, slugSchema } from './fields';
+import { businessNumberSchema, emailSchema, phoneSchema, slugSchema } from './fields';
 import { convenienceInfoSchema, operatingHourInputSchema } from './store-registration';
 
 // ─── 에러 코드 (web mock·api 공통 계약) ──────────────────────────
@@ -132,3 +132,24 @@ export const storeImageConfirmResultSchema = z.object({
     }),
 });
 export type StoreImageConfirmResult = z.infer<typeof storeImageConfirmResultSchema>;
+
+// ─── 사업자 정보 수정 (PATCH /partner/stores/{storeId}/business-document) ─────
+// 반려(REJECTED) 공방 재수정용. 변경 필드만 부분 갱신. 저장 시 재심사(REJECTED→PENDING) 전이.
+export const businessDocumentUpdateRequestSchema = z.object({
+    businessNumber: businessNumberSchema.optional(),
+    businessName: z.string().min(1).optional(),
+    ownerName: z.string().min(1).optional(),
+    businessAddress: z.string().min(1).optional(),
+    email: emailSchema.optional(),
+    documentUrl: z.string().nullable().optional(),
+});
+export type BusinessDocumentUpdateRequest = z.infer<typeof businessDocumentUpdateRequestSchema>;
+
+export const businessDocumentUpdateResultSchema = z.object({
+    store: z.object({
+        id: z.string(),
+        status: z.nativeEnum(StoreStatus),
+        updatedAt: z.string(),
+    }),
+});
+export type BusinessDocumentUpdateResult = z.infer<typeof businessDocumentUpdateResultSchema>;

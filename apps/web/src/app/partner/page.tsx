@@ -1,3 +1,12 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+import { StoreStatus } from '@todam/shared';
+
+import { useStoreRegistrationStatus } from '../../features/store/registration';
+
 const sections = [
     { title: '대기 중인 예약', count: 4 },
     { title: '오늘의 일정', count: 4 },
@@ -5,6 +14,23 @@ const sections = [
 ];
 
 export default function PartnerHomePage() {
+    const router = useRouter();
+    // 등록 신청 내역(onboarding)이 있고 아직 미게시면 검수 결과 화면으로. 시드 공방엔 onboarding 없음.
+    const { data: onboarding } = useStoreRegistrationStatus();
+    const pendingReview =
+        !!onboarding && onboarding.storeStatus !== StoreStatus.PUBLISHED
+            ? onboarding.storeId
+            : null;
+
+    useEffect(() => {
+        if (pendingReview) {
+            router.replace(`/partner/stores/${pendingReview}`);
+        }
+    }, [pendingReview, router]);
+
+    // 리다이렉트 직전 깜빡임 방지.
+    if (pendingReview) return null;
+
     return (
         <>
             <main className="flex-1 overflow-y-auto">
