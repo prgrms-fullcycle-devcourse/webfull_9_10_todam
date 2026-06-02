@@ -20,6 +20,7 @@ export { PolicyType } from './enums/policy-type';
 export {
     MAX_FILE_SIZE_BYTES,
     MAX_ARTWORK_PHOTO_COUNT,
+    MAX_PROGRAM_IMAGE_COUNT,
     ALLOWED_IMAGE_TYPES,
     ALLOWED_DOCUMENT_TYPES,
 } from './constants/file';
