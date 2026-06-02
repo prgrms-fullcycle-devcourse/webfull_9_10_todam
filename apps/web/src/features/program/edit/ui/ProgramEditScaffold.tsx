@@ -40,7 +40,6 @@ export function ProgramEditScaffold({ title, isDirty, isSaving, onSave, children
                     router.back();
                 }}
                 onCancel={closeModal}
-                onBackdropClick={closeModal}
             />,
         );
     };

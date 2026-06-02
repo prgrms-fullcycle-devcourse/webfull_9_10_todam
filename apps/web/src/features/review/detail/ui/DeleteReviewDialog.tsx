@@ -23,7 +23,6 @@ export function DeleteReviewDialog({ onConfirm, onClose }: DeleteReviewDialogPro
                 onConfirm();
                 onClose();
             }}
-            onBackdropClick={onClose}
         />
     );
 }

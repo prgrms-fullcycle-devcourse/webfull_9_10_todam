@@ -34,7 +34,6 @@ export function CancelDialog({
                     onConfirmCancel?.();
                     onClose();
                 }}
-                onBackdropClick={onClose}
             />
         );
     }
@@ -57,7 +56,6 @@ export function CancelDialog({
                 onContactStore?.();
                 onClose();
             }}
-            onBackdropClick={onClose}
         />
     );
 }
