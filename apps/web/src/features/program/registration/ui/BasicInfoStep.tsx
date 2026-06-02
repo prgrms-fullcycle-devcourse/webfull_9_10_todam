@@ -1,6 +1,6 @@
 'use client';
 
-import { TextArea, TextInput } from '@todam/ui';
+import { Slot, TextArea, TextInput } from '@todam/ui';
 
 import { ImageUploadField, type ImageUploadGridItem } from '../../../../shared/ui';
 import { useProgramRegistrationStore } from '../model/store';
@@ -46,25 +46,16 @@ export function BasicInfoStep() {
                     난이도 <span className="text-danger">*</span>
                 </span>
                 <div className="flex gap-2">
-                    {DIFFICULTY_OPTIONS.map(({ label, value }) => {
-                        const selected = form.difficulty === value;
-                        return (
-                            <button
-                                key={value}
-                                type="button"
-                                aria-pressed={selected}
-                                onClick={() => patch({ difficulty: value })}
-                                className={[
-                                    'flex h-12 flex-1 items-center justify-center rounded-2xl text-base transition-colors',
-                                    selected
-                                        ? 'bg-inverse font-semibold text-foreground-inverse'
-                                        : 'border border-border-subtle bg-surface text-foreground-secondary',
-                                ].join(' ')}
-                            >
-                                {label}
-                            </button>
-                        );
-                    })}
+                    {DIFFICULTY_OPTIONS.map(({ label, value }) => (
+                        <Slot
+                            key={value}
+                            selected={form.difficulty === value}
+                            onClick={() => patch({ difficulty: value })}
+                            className="flex-1"
+                        >
+                            {label}
+                        </Slot>
+                    ))}
                 </div>
             </div>
 
