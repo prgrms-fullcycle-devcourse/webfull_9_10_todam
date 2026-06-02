@@ -71,6 +71,7 @@ export class CreateStoreUseCase {
                 autoConfirm: dto.autoConfirm,
                 cancelDeadlineDays: dto.cancelDeadlineDays,
                 reservationIntervalMinutes: dto.reservationIntervalMinutes,
+                maxCapacityPerSlot: dto.maxCapacityPerSlot,
                 status: 'DRAFT',
                 operatingHours: {
                     create: dto.operatingHours.map((h) => ({
