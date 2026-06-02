@@ -28,9 +28,18 @@ const patternConfig: Array<{ test: RegExp; config: HeaderConfig }> = [
         test: /^\/partner\/classes\/(?!new$)[^/]+$/,
         config: { type: 'sub', title: '클래스 미리보기' },
     },
+    // 배송 정보 수정 — 예약 상세 하위 라우트. 정확 일치를 위해 동적 id 패턴 앞에 둠.
+    {
+        test: /^\/my\/reservations\/[^/]+\/delivery\/edit$/,
+        config: { type: 'sub', title: '배송 정보' },
+    },
     {
         test: /^\/my\/reservations\/[^/]+$/,
         config: { type: 'sub', title: '예약 자세히보기' },
+    },
+    {
+        test: /^\/my\/artworks\/[^/]+$/,
+        config: { type: 'sub', title: '작품 제작 단계' },
     },
 ];
 

@@ -136,6 +136,7 @@ model Store {
   autoConfirm        Boolean              @default(false) @map("auto_confirm")
   cancelDeadlineDays Int?                 @map("cancel_deadline_days")
   reservationIntervalMinutes Int?         @map("reservation_interval_minutes") // 타임슬롯 생성 기준 간격(분)
+  maxCapacityPerSlot Int?                 @map("max_capacity_per_slot") // 슬롯당 최대 예약 정원(공방 단위 — 클래스 공통, 같은 슬롯 합산 한도)
   status             StoreStatus          @default(DRAFT)
   publishedAt        DateTime?            @map("published_at") @db.Timestamptz(6)
   createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -206,8 +207,10 @@ model Program {
   price           Int
   durationMinutes Int                   @map("duration_minutes")
   capacity        Int
+  difficulty      ProgramDifficulty     @default(BASIC)
+  childFriendly   Boolean               @default(false) @map("child_friendly")
   leadTimeDays    Int                   @default(30) @map("lead_time_days")
-  deliveryOption  ProgramDeliveryOption @default(CUSTOMER_SELECT) @map("delivery_option")
+  deliverable     Boolean               @default(false)
   status          ProgramStatus         @default(DRAFT)
   sortOrder       Int                   @default(0) @map("sort_order") // [S-10]
   createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -530,10 +533,10 @@ enum StoreStatus {
   SUSPENDED
 }
 
-enum ProgramDeliveryOption {
-  DELIVERY
-  PICKUP
-  CUSTOMER_SELECT
+enum ProgramDifficulty {
+  BASIC
+  INTERMEDIATE
+  ADVANCED
 }
 
 enum ProgramStatus {

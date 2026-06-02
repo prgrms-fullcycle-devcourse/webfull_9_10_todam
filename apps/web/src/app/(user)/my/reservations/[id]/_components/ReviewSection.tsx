@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+
 import { EditIcon, Rating, SectionTitle } from '@todam/ui';
 import type { ReservationDetail } from '@todam/shared';
 
@@ -15,6 +17,7 @@ export type ReviewSectionProps = {
 };
 
 export function ReviewSection({ reservation }: ReviewSectionProps) {
+    const router = useRouter();
     const { push } = useToast();
     const { data, isLoading } = useReservationReview(reservation.id, reservation.hasReview);
 
@@ -24,6 +27,11 @@ export function ReviewSection({ reservation }: ReviewSectionProps) {
 
     const handleEditReview = () => {
         push({ message: '리뷰 수정은 곧 지원돼요.' });
+    };
+
+    // D4: 카드 전체 클릭 → 리뷰 상세 화면 라우팅.
+    const handleViewReview = () => {
+        router.push(`/my/reservations/${reservation.id}/review`);
     };
 
     return (
@@ -61,7 +69,11 @@ export function ReviewSection({ reservation }: ReviewSectionProps) {
                     리뷰를 불러오는 중입니다.
                 </p>
             ) : data ? (
-                <div className="flex w-full items-start gap-3 rounded-2xl border border-border-subtle bg-surface p-3">
+                <button
+                    type="button"
+                    onClick={handleViewReview}
+                    className="flex w-full items-start gap-3 rounded-2xl border border-border-subtle bg-surface p-3 text-left"
+                >
                     {data.review.photos[0] ? (
                         <img
                             src={data.review.photos[0].imageUrl}
@@ -81,7 +93,7 @@ export function ReviewSection({ reservation }: ReviewSectionProps) {
                             {data.review.content}
                         </p>
                     </div>
-                </div>
+                </button>
             ) : (
                 <p className="py-2 text-center text-xs text-foreground-tertiary">
                     리뷰 정보를 불러오지 못했습니다.

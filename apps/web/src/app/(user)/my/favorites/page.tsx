@@ -1,41 +1,7 @@
-'use client';
+import { FavoritesListClient } from './_components/FavoritesListClient';
 
-import Image from 'next/image';
-
-import { LikeToggleButton } from '../../../../features/store/toggle-like';
-
-type LikedStore = { id: string; name: string; address: string; imageSrc?: string };
-
-const MOCK: LikedStore[] = [
-    { id: '1', name: '흙담', address: '서울특별시 성동구 뚝섬로 273' },
-    { id: '2', name: '토담 공방', address: '서울특별시 종로구 도담길 12' },
-];
-
+// 서버 컴포넌트. 동적 동작(react-query / 401 리다이렉트 / 무한 스크롤 / 낙관적 해제)은
+// FavoritesListClient 로 캡슐화. 페이지 자체에는 'use client' 불필요.
 export default function FavoritesPage() {
-    return (
-        <main className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6">
-            {MOCK.map((store) => (
-                <div key={store.id} className="flex w-full items-center gap-3">
-                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted">
-                        {store.imageSrc && (
-                            <Image
-                                src={store.imageSrc}
-                                alt={store.name}
-                                fill
-                                sizes="80px"
-                                className="object-cover"
-                            />
-                        )}
-                    </div>
-                    <div className="flex min-w-0 flex-1 flex-col gap-2">
-                        <p className="truncate text-base font-semibold leading-5 text-foreground">
-                            {store.name}
-                        </p>
-                        <p className="truncate text-xs text-foreground-tertiary">{store.address}</p>
-                    </div>
-                    <LikeToggleButton storeId={store.id} initialLiked />
-                </div>
-            ))}
-        </main>
-    );
+    return <FavoritesListClient />;
 }

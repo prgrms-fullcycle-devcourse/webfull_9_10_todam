@@ -8,6 +8,8 @@ import type {
     CreateStoreImageResponseDto,
 } from '../../presentation/dto/store-image.dto';
 
+const MAX_STORE_IMAGES = 5;
+
 @Injectable()
 export class CreateStoreImageUseCase {
     constructor(
@@ -41,20 +43,41 @@ export class CreateStoreImageUseCase {
             );
         }
 
+        // 대표이미지 최대 5장 제약. 이미 5장이면 추가 차단.
+        const imageCount = await this.prisma.storeImage.count({ where: { storeId } });
+        if (imageCount >= MAX_STORE_IMAGES) {
+            throw new BusinessException(
+                'IMAGE_LIMIT_EXCEEDED',
+                `공방 대표 이미지는 최대 ${MAX_STORE_IMAGES}장까지 등록할 수 있습니다.`,
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+
         const key = buildObjectKey(`stores/${storeId}/images`, dto.fileType, dto.fileName);
 
         const { uploadUrl } = await this.s3.createPresignedPutUrl(key, dto.fileType, 300);
 
         const imageUrl = `${CDN_BASE}/${key}`;
 
-        const image = await this.prisma.storeImage.create({
-            data: {
-                storeId,
-                imageUrl,
-                isThumbnail: dto.isThumbnail,
-                status: 'PENDING',
-            },
-            select: { id: true },
+        // 대표 이미지(isThumbnail)는 공방당 최대 1개 불변식. 클라이언트 값을 믿지 않고
+        // 새 대표 등록 시 기존 대표를 모두 내린 뒤 생성한다(트랜잭션).
+        const image = await this.prisma.$transaction(async (tx) => {
+            if (dto.isThumbnail) {
+                await tx.storeImage.updateMany({
+                    where: { storeId, isThumbnail: true },
+                    data: { isThumbnail: false },
+                });
+            }
+
+            return tx.storeImage.create({
+                data: {
+                    storeId,
+                    imageUrl,
+                    isThumbnail: dto.isThumbnail,
+                    status: 'PENDING',
+                },
+                select: { id: true },
+            });
         });
 
         return {

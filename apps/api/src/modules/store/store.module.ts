@@ -4,6 +4,12 @@ import { CreateStoreUseCase } from './application/use-cases/create-store.use-cas
 import { CreateStoreImageUseCase } from './application/use-cases/create-store-image.use-case';
 import { ConfirmStoreImageUseCase } from './application/use-cases/confirm-store-image.use-case';
 import { SubmitStoreUseCase } from './application/use-cases/submit-store.use-case';
+import { ListPartnerStoresUseCase } from './application/use-cases/list-partner-stores.use-case';
+import { GetPartnerStoreDetailUseCase } from './application/use-cases/get-partner-store-detail.use-case';
+import { ListPartnerStoreProgramsUseCase } from './application/use-cases/list-partner-store-programs.use-case';
+import { UpdateStoreUseCase } from './application/use-cases/update-store.use-case';
+import { DeleteStoreImageUseCase } from './application/use-cases/delete-store-image.use-case';
+import { PartnerGuard } from '../../common/guards/partner.guard';
 import { StoreController } from './presentation/controllers/store.controller';
 
 @Module({
@@ -14,6 +20,12 @@ import { StoreController } from './presentation/controllers/store.controller';
         CreateStoreImageUseCase,
         ConfirmStoreImageUseCase,
         SubmitStoreUseCase,
+        ListPartnerStoresUseCase,
+        GetPartnerStoreDetailUseCase,
+        ListPartnerStoreProgramsUseCase,
+        UpdateStoreUseCase,
+        DeleteStoreImageUseCase,
+        PartnerGuard,
     ],
 })
 export class StoreModule {}
