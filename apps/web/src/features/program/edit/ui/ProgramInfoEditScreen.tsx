@@ -1,15 +1,16 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 
 import { ProgramDifficulty, type ProgramDetail } from '@todam/shared';
 
 import { ApiError } from '../../../../shared/api';
 import { useToast } from '../../../../shared/model/toast';
 import { validateDescription, validateTitle } from '../../../../entities/program';
+import { usePendingImages } from '../../../../shared/model';
+import { useEditableForm } from '../../../../shared/lib/useEditableForm';
+import { useFormValidation } from '../../../../shared/lib/useFormValidation';
 import { useDeleteProgramImage, usePatchProgram, useUploadProgramImage } from '../queries';
-import { usePendingImages } from '../model/usePendingImages';
 import { ProgramEditScaffold } from './ProgramEditScaffold';
 import { ProgramImageField } from './ProgramImageField';
 import { ProgramInfoEditForm, type ProgramInfoFields } from './ProgramInfoEditForm';
@@ -24,34 +25,26 @@ export function ProgramInfoEditScreen({ programId, program }: Props) {
     const { push: pushToast } = useToast();
     const backTo = `/partner/classes/${programId}`;
 
-    // 서버 데이터로 폼 초기값 1회 구성 (lazy initializer — setState-in-effect 회피)
-    const [fields, setFields] = useState<ProgramInfoFields>(() => ({
+    // 서버 데이터 baseline → 폼 1회 초기화 + dirty 파생
+    const baseline: ProgramInfoFields = {
         title: program.title,
         description: program.description ?? '',
         difficulty: program.difficulty ?? ProgramDifficulty.BASIC,
-    }));
+    };
+    const { form: fields, patch, isDirty: fieldsDirty } = useEditableForm(baseline);
 
-    const images = usePendingImages(program.images);
+    // ProgramImage(programImageId) → ExistingImage(id) 매핑.
+    const images = usePendingImages(
+        program.images.map((img) => ({ ...img, id: img.programImageId })),
+    );
 
-    // ─── dirty 판정 ─────────────────────────────────────────────
-    const fieldsDirty =
-        fields.title !== program.title ||
-        fields.description !== (program.description ?? '') ||
-        fields.difficulty !== (program.difficulty ?? ProgramDifficulty.BASIC);
     const isDirty = fieldsDirty || images.isDirty;
 
     // ─── 유효성 검사 ─────────────────────────────────────────────
-    const [errors, setErrors] = useState<Partial<Record<'title' | 'description', string>>>({});
-
-    function validate(): boolean {
-        const errs: Partial<Record<'title' | 'description', string>> = {};
-        const titleError = validateTitle(fields.title);
-        if (titleError) errs.title = titleError;
-        const descError = validateDescription(fields.description);
-        if (descError) errs.description = descError;
-        setErrors(errs);
-        return Object.keys(errs).length === 0;
-    }
+    const { errors, validate } = useFormValidation<ProgramInfoFields>({
+        title: validateTitle,
+        description: validateDescription,
+    });
 
     // ─── mutations ──────────────────────────────────────────────
     const storeId = program.storeId;
@@ -64,7 +57,7 @@ export function ProgramInfoEditScreen({ programId, program }: Props) {
 
     // ─── 저장 ────────────────────────────────────────────────────
     const handleSave = async () => {
-        if (!validate() || isSaving) return;
+        if (!validate(fields) || isSaving) return;
 
         try {
             // 1. 삭제 예정 이미지 먼저 삭제
@@ -118,11 +111,7 @@ export function ProgramInfoEditScreen({ programId, program }: Props) {
                     onRemoveExisting={images.removeExisting}
                     onRemovePending={images.removePending}
                 />
-                <ProgramInfoEditForm
-                    fields={fields}
-                    errors={errors}
-                    onChange={(patch) => setFields((prev) => ({ ...prev, ...patch }))}
-                />
+                <ProgramInfoEditForm fields={fields} errors={errors} onChange={patch} />
             </div>
         </ProgramEditScaffold>
     );

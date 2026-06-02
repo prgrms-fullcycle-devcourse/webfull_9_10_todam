@@ -1,12 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 
 import type { ProgramDetail } from '@todam/shared';
 
 import { ApiError } from '../../../../shared/api';
 import { useToast } from '../../../../shared/model/toast';
+import { useEditableForm } from '../../../../shared/lib/useEditableForm';
+import { useFormValidation } from '../../../../shared/lib/useFormValidation';
 import {
     validateCapacity,
     validateDurationMinutes,
@@ -27,8 +28,8 @@ export function ProgramOperationsEditScreen({ programId, program }: Props) {
     const { push: pushToast } = useToast();
     const backTo = `/partner/classes/${programId}`;
 
-    // 서버 데이터로 폼 초기값 1회 구성 (lazy initializer — setState-in-effect 회피)
-    const [form, setForm] = useState<ProgramOperationsFormState>(() => ({
+    // 서버 데이터 baseline → 폼 1회 초기화 + dirty 파생
+    const baseline: ProgramOperationsFormState = {
         price: program.price,
         capacity: program.capacity,
         leadTimeDays: program.leadTimeDays,
@@ -36,34 +37,15 @@ export function ProgramOperationsEditScreen({ programId, program }: Props) {
         deliveryOption: program.deliveryOption,
         childrenAllowed: program.childrenAllowed ?? false,
         deliveryAvailable: program.deliveryAvailable ?? false,
-    }));
-
-    // ─── dirty 판정 ─────────────────────────────────────────────
-    const isDirty =
-        form.price !== program.price ||
-        form.capacity !== program.capacity ||
-        form.leadTimeDays !== program.leadTimeDays ||
-        form.durationMinutes !== program.durationMinutes ||
-        form.deliveryOption !== program.deliveryOption ||
-        form.childrenAllowed !== (program.childrenAllowed ?? false) ||
-        form.deliveryAvailable !== (program.deliveryAvailable ?? false);
+    };
+    const { form, patch, isDirty } = useEditableForm(baseline);
 
     // ─── 유효성 검사 ─────────────────────────────────────────────
-    const [errors, setErrors] = useState<Partial<Record<keyof ProgramOperationsFormState, string>>>(
-        {},
-    );
-
-    function validate(): boolean {
-        const errs: Partial<Record<keyof ProgramOperationsFormState, string>> = {};
-        const priceError = validatePrice(form.price);
-        if (priceError) errs.price = priceError;
-        const capacityError = validateCapacity(form.capacity);
-        if (capacityError) errs.capacity = capacityError;
-        const durationError = validateDurationMinutes(form.durationMinutes);
-        if (durationError) errs.durationMinutes = durationError;
-        setErrors(errs);
-        return Object.keys(errs).length === 0;
-    }
+    const { errors, validate } = useFormValidation<ProgramOperationsFormState>({
+        price: validatePrice,
+        capacity: validateCapacity,
+        durationMinutes: validateDurationMinutes,
+    });
 
     // ─── mutation ───────────────────────────────────────────────
     const patchMutation = usePatchProgram(program.storeId, programId);
@@ -71,7 +53,7 @@ export function ProgramOperationsEditScreen({ programId, program }: Props) {
 
     // ─── 저장 ────────────────────────────────────────────────────
     const handleSave = async () => {
-        if (!validate() || isSaving) return;
+        if (!validate(form) || isSaving) return;
 
         try {
             await patchMutation.mutateAsync({
@@ -103,11 +85,7 @@ export function ProgramOperationsEditScreen({ programId, program }: Props) {
             onSave={handleSave}
             backTo={backTo}
         >
-            <ProgramOperationsEditForm
-                form={form}
-                errors={errors}
-                onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
-            />
+            <ProgramOperationsEditForm form={form} errors={errors} onChange={patch} />
         </ProgramEditScaffold>
     );
 }

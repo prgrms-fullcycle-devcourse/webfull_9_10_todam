@@ -2,21 +2,33 @@
 
 import { useCallback, useState } from 'react';
 
-import type { ProgramImage } from '@todam/shared';
+import { filterValidImageFiles } from '../lib/imageFile';
 
-import { filterValidImageFiles } from '../../../../shared/lib/imageFile';
-import type { PendingImage } from './types';
+// 신규 업로드 대기 이미지.
+export interface PendingImage {
+    file: File;
+    previewUrl: string;
+    isThumbnail: boolean;
+    // 업로드 완료 후 채워지는 서버 식별자/URL.
+    uploadedId?: string;
+    uploadedUrl?: string;
+}
 
-export interface PendingImagesState {
-    existingImages: ProgramImage[];
+// 기존(서버) 이미지 최소 형태. 도메인별로 확장해 사용. id = 삭제·key 식별자.
+export interface ExistingImage {
+    id: string;
+}
+
+export interface PendingImagesState<T extends ExistingImage> {
+    existingImages: T[];
     pendingImages: PendingImage[];
     deletedImageIds: string[];
 }
 
-// 기존/신규/삭제 예정 이미지 상태와 추가·삭제 핸들러를 캡슐화.
-// 파일 검증(타입·크기)과 objectURL 정리도 함께 담당.
-export function usePendingImages(initialExisting: ProgramImage[]) {
-    const [state, setState] = useState<PendingImagesState>(() => ({
+// 기존/신규/삭제 예정 이미지 상태 + 추가·삭제 핸들러 캡슐화 (파일 검증·objectURL 정리 포함).
+// 도메인 이미지 타입(T)은 ExistingImage 를 확장하면 그대로 사용 가능.
+export function usePendingImages<T extends ExistingImage>(initialExisting: T[]) {
+    const [state, setState] = useState<PendingImagesState<T>>(() => ({
         existingImages: initialExisting,
         pendingImages: [],
         deletedImageIds: [],
@@ -37,11 +49,11 @@ export function usePendingImages(initialExisting: ProgramImage[]) {
         });
     }, []);
 
-    const removeExisting = useCallback((imageId: string) => {
+    const removeExisting = useCallback((id: string) => {
         setState((prev) => ({
             ...prev,
-            existingImages: prev.existingImages.filter((img) => img.programImageId !== imageId),
-            deletedImageIds: [...prev.deletedImageIds, imageId],
+            existingImages: prev.existingImages.filter((img) => img.id !== id),
+            deletedImageIds: [...prev.deletedImageIds, id],
         }));
     }, []);
 

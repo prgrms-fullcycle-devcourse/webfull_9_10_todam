@@ -3,13 +3,13 @@
 import { MAX_PROGRAM_IMAGE_COUNT, type ProgramImage } from '@todam/shared';
 
 import { ImageUploadField, type ImageUploadGridItem } from '../../../../shared/ui';
-import type { PendingImage } from '../model/types';
+import type { ExistingImage, PendingImage } from '../../../../shared/model';
 
 type Props = {
-    existingImages: ProgramImage[];
+    existingImages: (ProgramImage & ExistingImage)[];
     pendingImages: PendingImage[];
     onAdd: (files: File[]) => void;
-    onRemoveExisting: (imageId: string) => void;
+    onRemoveExisting: (id: string) => void;
     onRemovePending: (index: number) => void;
 };
 
@@ -24,9 +24,9 @@ export function ProgramImageField({
     const items: ImageUploadGridItem[] = [
         ...existingImages.map((img) => ({
             src: img.thumbnailUrl,
-            key: img.programImageId,
+            key: img.id,
             alt: '클래스 이미지',
-            onRemove: () => onRemoveExisting(img.programImageId),
+            onRemove: () => onRemoveExisting(img.id),
         })),
         ...pendingImages.map((p, i) => ({
             src: p.previewUrl,
