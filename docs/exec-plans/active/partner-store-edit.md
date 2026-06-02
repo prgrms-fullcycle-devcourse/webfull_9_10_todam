@@ -8,7 +8,7 @@
 
 ## Status
 
-- [ ] API 구현
+- [x] API 구현
 - [x] UI 구현
 - [ ] API 연동
 
@@ -28,7 +28,7 @@
   - `DELETE /partner/stores/{storeId}/images/{imageId}` — 공방 이미지 삭제
 - Relevant design docs: DESIGN.md — UI는 DESIGN.md 준수. 화면 이탈 확인 다이얼로그는 `AppModal`, 저장 완료 토스트는 `AppToast`(completed/toast-modal-sheet.md). 변경 감지/저장 버튼 활성화는 dirty 상태 기반. UI: DESIGN.md 준수.
 - 확정된 결정:
-  - (OD-1 확정) `GET /partner/stores/{storeId}` 상세 응답에 `reservationIntervalMinutes`, `maxCapacityPerSlot` 추가 (예약 정보 수정화면 preload용). API명세 응답 스키마 보강 = 승인된 보강(drift 아님). **BE 작업 항목**.
+  - (OD-1 확정) `GET /partner/stores/{storeId}` 상세 응답에 `reservationIntervalMinutes`, `maxCapacityPerSlot` 추가 (예약 정보 수정화면 preload용). API명세 응답 스키마 보강 = 승인된 보강(drift 아님). **BE 작업 항목**. (`maxCapacityPerSlot` 저장 위치·수정 가능 여부는 DEC-5 개정 참조)
   - (OD-2 확정) `PATCH /partner/stores/{storeId}` slug 중복 시 등록과 동일한 `409 STORE_SLUG_DUPLICATED` 반환. **BE 작업 항목**(에러코드 contract 반영 완료). FE는 409 수신 시 slug 필드에 중복 에러 표시.
   - (OD-3 확정) 이미지 업로드는 FE presigned 플로우(`POST .../images` → S3 PUT → `PATCH .../images/{imageId}/confirm`). 최종 이미지 key 목록은 저장(`PATCH /partner/stores/{storeId}`)의 `images[]`로 반영 — 저장 전까지 대표이미지 미반영이라 이탈 시 롤백 문제 없음. DELETE는 X 클릭 시 호출하되 최종 반영은 PATCH `images[]` 기준. 등록 플로우와 동일 패턴 재사용.
   - (DEC-1 확정) slug(공방 URL) 변경 시 **redirect·이전 slug 보존(history) 없이 신규 slug로 즉시 교체**. 기존 공유 링크는 깨질 수 있음(허용). slug 수정 자체는 OD-2로 허용·In scope, 변경 후 정책은 본 결정으로 확정.
@@ -37,6 +37,7 @@
   - (DEC-4 확정) **`name` / `operatingHours` PATCH payload 스키마 확정** (스펙 body 예시엔 없으나 핵심 수정 대상이므로 contract 고정):
     - `name?`: string, 2~40자. PATCH body 포함.
     - `operatingHours?`: `OperatingHourInput[]` — **배열 전체 치환**. 항목 = `{ dayOfWeek: "MON"~"SUN", openTime: "HH:mm", closeTime: "HH:mm", breakStart: string|null, breakEnd: string|null }`. 등록 제출 스키마와 동일. businessDays(운영요일)별로 확장.
+  - (DEC-5 개정 확정, 2026-06-02) **`maxCapacityPerSlot`(슬롯당 최대 예약 정원)은 공방(Store) 단위 필드다.** 예약 최대 정원은 클래스(program)별이 아니라 **공방별**이며, 같은 슬롯에서 모든 클래스의 예약 인원 합산이 이 값을 넘을 수 없다(예: 공방 정원 10명 → 클래스 A 5명 + 클래스 B 5명이면 만석). 따라서 **`Store` 테이블에 `maxCapacityPerSlot`(`max_capacity_per_slot`) 컬럼을 추가**하고, GET 상세는 이 컬럼을 반환(미설정 시 0), **`PATCH /partner/stores/{storeId}` 의 수정 대상**(`UpdateStoreDto.maxCapacityPerSlot?`), 등록(`POST /partner/stores`)에서도 필수 입력(`CreateStoreDto.maxCapacityPerSlot`)으로 저장한다. FE는 정원을 편집 가능 필드로 다루며 dirty 시 PATCH body에 담는다. (이전 "program capacity 최댓값 도출 read-only" 결정은 폐기 — 사용자 확정 "예약 최대 정원은 공방별".)
 - Open decisions (미결): (없음 — 전 결정 확정)
 
 ## Scope
@@ -67,6 +68,15 @@
 ## Out (단계별 완료물)
 
 - API:
+  - **스키마/마이그레이션 (DEC-5 개정)**: `apps/api/prisma/schema.prisma` `Store.maxCapacityPerSlot Int? @map("max_capacity_per_slot")` 추가. 마이그레이션 `apps/api/prisma/migrations/20260602120000_add_store_max_capacity_per_slot/migration.sql` (`ALTER TABLE "stores" ADD COLUMN "max_capacity_per_slot" INTEGER`).
+  - `GET /partner/stores/{storeId}` (기존 재사용 + OD-1 보강): `apps/api/src/modules/store/application/use-cases/get-partner-store-detail.use-case.ts` — 응답에 `reservationIntervalMinutes`(store 컬럼), `maxCapacityPerSlot`(store 컬럼 직접 반환, 미설정 시 0 — DEC-5 개정으로 program aggregate 도출 제거) 추가. DTO 보강: `apps/api/src/modules/store/presentation/dto/get-partner-store-detail.dto.ts`. (소유권 검증·404·403 기구현 재사용)
+  - `POST /partner/stores` 등록(`create-store.use-case.ts`/`create-store.dto.ts`): `maxCapacityPerSlot` 필수 입력으로 추가·저장(DEC-5 개정 — 등록 시점에 공방 정원 확정).
+  - `PATCH /partner/stores/{storeId}` (신규): use-case `apps/api/src/modules/store/application/use-cases/update-store.use-case.ts`, DTO `apps/api/src/modules/store/presentation/dto/update-store.dto.ts`. `AuthGuard+PartnerGuard`, 소유권만 검증(DEC-3 — 상태 차단 없음, INVALID_STORE_STATUS 미발생), 전달 필드만 부분 갱신(`maxCapacityPerSlot?` 포함 — DEC-5 개정), `operatingHours`/`images[]` 배열 전체 치환, status 불변, updatedAt 자동 갱신. slug 중복 시 `409 STORE_SLUG_DUPLICATED`(OD-2/DEC-1). 응답 `data.store = { id, name, slug, status, updatedAt }`.
+  - `POST /partner/stores/{storeId}/images` (기존 재사용 + 5장 제약 보강): `apps/api/src/modules/store/application/use-cases/create-store-image.use-case.ts` — 이미지 5장 초과 시 `400 IMAGE_LIMIT_EXCEEDED` 차단. presigned PUT(5분)·row 선생성·응답(imageId/uploadUrl/imageUrl) 기구현.
+  - `PATCH /partner/stores/{storeId}/images/{imageId}/confirm` (기존 재사용): `apps/api/src/modules/store/application/use-cases/confirm-store-image.use-case.ts` — PENDING→UPLOADED, 응답 `data.image = { id, status }`.
+  - `DELETE /partner/stores/{storeId}/images/{imageId}` (신규): `apps/api/src/modules/store/application/use-cases/delete-store-image.use-case.ts` — 소유권+소속 확인 → S3 원본·썸네일 삭제 → row 삭제. 미존재 시 `404 IMAGE_NOT_FOUND`.
+  - 컨트롤러/모듈 배선: `apps/api/src/modules/store/presentation/controllers/store.controller.ts`(PATCH store, DELETE image 라우트 추가), `apps/api/src/modules/store/store.module.ts`(UpdateStoreUseCase, DeleteStoreImageUseCase 등록).
+  - 검증: apps/api typecheck/build 통과, store 모듈 lint 0 error.
 - UI:
   - 수정 화면 3종 (등록 스텝 구조 재사용):
     - `apps/web/src/features/store/edit/ui/InfoEditSection.tsx` (공방: 대표이미지/공방명/공방URL/전화번호/소개글)
@@ -113,6 +123,8 @@
 - 2026-06-01: DEC-2 확정 — FE가 변경된(dirty) 필드만 PATCH body에 담아 부분 갱신. `operatingHours`/`images[]`는 배열 단위 전체 치환.
 - 2026-06-01: DEC-3 확정 — 수정 가능 상태 = 전 상태(DRAFT/PENDING/PUBLISHED/SUSPENDED) 허용(기능명세 "검수 상태 무관" 기준). BE 상태 기반 차단 제거(소유권만 검증), `400 INVALID_STORE_STATUS` 미발생, 수정 진입점 전 상태 노출.
 - 2026-06-01: DEC-4 확정 — PATCH `name?`(string 2~40자), `operatingHours?`(`OperatingHourInput[]` 배열 전체 치환, 항목 = dayOfWeek/openTime/closeTime/breakStart/breakEnd, 등록 제출 스키마 동일) contract 고정. PATCH body 예시에 반영.
+- 2026-06-02: DEC-5(초안) — `maxCapacityPerSlot`을 program capacity 최댓값 도출 read-only로 판단. → **같은 날 개정·폐기**.
+- 2026-06-02: DEC-5 개정 확정 — 예약 최대 정원은 클래스(program)별이 아니라 **공방(Store)별**(같은 슬롯 전 클래스 합산 한도). `Store.max_capacity_per_slot` 컬럼 추가(마이그레이션 `20260602120000_add_store_max_capacity_per_slot`). GET 상세가 컬럼 반환(미설정 0), `PATCH`·`POST(등록)` 모두 저장 대상. BE `UpdateStoreDto`/`CreateStoreDto`에 필드 추가, get-detail use-case의 program aggregate 도출 제거. 사용자 확정 — "공방 예약 최대 정원은 클래스별이 아니라 공방별".
 
 ## Outcome
 
@@ -140,7 +152,7 @@
 | `autoConfirm` | boolean | 자동 예약 확정 여부 (예약 승인 방식) |
 | `cancelDeadlineDays` | number | 예약 취소 가능 기한(d-day) |
 | `reservationIntervalMinutes` | number | 예약 시간 간격(분). 예약 정보 수정화면 preload용 (OD-1 확정 — BE 응답 보강) |
-| `maxCapacityPerSlot` | number | 슬롯당 최대 수용 인원. 예약 정보 수정화면 preload용 (OD-1 확정 — BE 응답 보강) |
+| `maxCapacityPerSlot` | number | 슬롯당 최대 예약 정원. **공방(Store) 단위 필드 — 클래스 공통, 같은 슬롯 합산 한도**(DEC-5 개정). `Store.max_capacity_per_slot` 컬럼 저장, 미설정 시 0. **PATCH 수정 대상**. (OD-1 — GET 응답 보강) |
 | `status` | enum | `DRAFT` \| `PENDING` \| `PUBLISHED` \| `SUSPENDED` |
 | `rejectedReason` | string \| null | 반려 사유 |
 | `suspededReason` | string \| null | 노출 중단 사유 (스펙 표기 그대로, 오타 추정) |
@@ -251,7 +263,7 @@
     "images": ["img-uuid-001", "img-uuid-002"]
   }
   ```
-  > 필드별 contract: `name?` string 2~40자(DEC-4). `slug?` 수정 허용(OD-2, 중복 시 `409 STORE_SLUG_DUPLICATED`, redirect/보존 없이 즉시 교체 — DEC-1). `operatingHours?` `OperatingHourInput[]` 배열 전체 치환(DEC-4, 항목 = `{ dayOfWeek, openTime, closeTime, breakStart, breakEnd }`, 운영요일별 확장). `images[]` 최종 이미지 id 목록(OD-3, 배열 전체 치환).
+  > 필드별 contract: `name?` string 2~40자(DEC-4). `slug?` 수정 허용(OD-2, 중복 시 `409 STORE_SLUG_DUPLICATED`, redirect/보존 없이 즉시 교체 — DEC-1). `maxCapacityPerSlot?` number, 공방 단위 슬롯당 최대 예약 정원(DEC-5 개정 — Store 컬럼 저장, 수정 대상). `operatingHours?` `OperatingHourInput[]` 배열 전체 치환(DEC-4, 항목 = `{ dayOfWeek, openTime, closeTime, breakStart, breakEnd }`, 운영요일별 확장). `images[]` 최종 이미지 id 목록(OD-3, 배열 전체 치환).
 - 시스템 처리: 파트너 capability 검증 → storeId 조회 + 소유권 확인(상태 검증 없음 — DEC-3 전 상태 허용) → 전달된 필드만 업데이트 + `updated_at` 갱신 → 응답. status 불변(재검수 전이 없음).
 - Response `200 OK`:
   ```json

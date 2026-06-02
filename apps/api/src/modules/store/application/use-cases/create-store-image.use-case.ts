@@ -8,6 +8,8 @@ import type {
     CreateStoreImageResponseDto,
 } from '../../presentation/dto/store-image.dto';
 
+const MAX_STORE_IMAGES = 5;
+
 @Injectable()
 export class CreateStoreImageUseCase {
     constructor(
@@ -38,6 +40,16 @@ export class CreateStoreImageUseCase {
                 'FORBIDDEN',
                 '공방 소유 권한이 없습니다.',
                 HttpStatus.FORBIDDEN,
+            );
+        }
+
+        // 대표이미지 최대 5장 제약. 이미 5장이면 추가 차단.
+        const imageCount = await this.prisma.storeImage.count({ where: { storeId } });
+        if (imageCount >= MAX_STORE_IMAGES) {
+            throw new BusinessException(
+                'IMAGE_LIMIT_EXCEEDED',
+                `공방 대표 이미지는 최대 ${MAX_STORE_IMAGES}장까지 등록할 수 있습니다.`,
+                HttpStatus.BAD_REQUEST,
             );
         }
 

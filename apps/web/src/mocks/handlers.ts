@@ -9,6 +9,7 @@ import {
     PartnerStatus,
     StoreStatus,
     ProgramEditErrorCode,
+    type ArtworkDetailResult,
     type GeocodeResult,
     type PartnerProgramListResult,
     type PartnerStoreDetailResult,
@@ -40,6 +41,7 @@ import {
     createPendingImage,
     createStoreRegistration,
     deleteStoreImage,
+    findArtworkDetail,
     findLatestStoreRegistration,
     findProgramBySlugAndId,
     findProgramByStoreAndId,
@@ -679,5 +681,54 @@ export const handlers = [
             'Pre-signed URL이 성공적으로 발급되었습니다. 5분 이내에 업로드를 완료해주세요.',
             201,
         );
+    }),
+
+    // 작품 상세 조회 (인증 필요, 본인 예약과 연결된 작품).
+    // plan: docs/exec-plans/active/유저 예약 - 작품 상세 조회.md API Contract (스냅샷) 기준.
+    // 시뮬 토글:
+    //   ?unauth=1 → 401 UNAUTHORIZED
+    //   ?simulate=403 → 403 FORBIDDEN (타인 작품 가정)
+    //   ?simulate=404 → 404 ARTWORK_NOT_FOUND
+    //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
+    //   ?empty=1 → timeline 빈 배열 (등록 단계 없음)
+    http.get(`${API}/artworks/:artworkId`, ({ params, request }) => {
+        const artworkId = String(params.artworkId);
+        const path = `/api/v1/artworks/${artworkId}`;
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '인증이 필요합니다.');
+        }
+        const simulate = url.searchParams.get('simulate');
+        if (simulate === '500') {
+            return fail(
+                path,
+                500,
+                'INTERNAL_SERVER_ERROR',
+                '작품 제작 단계 조회 중 서버 오류가 발생했습니다.',
+            );
+        }
+        if (simulate === '403') {
+            return fail(path, 403, 'FORBIDDEN', '해당 작품에 대한 접근 권한이 없습니다.');
+        }
+        if (simulate === '404') {
+            return fail(path, 404, 'ARTWORK_NOT_FOUND', '작품을 찾을 수 없습니다.');
+        }
+
+        const artwork = findArtworkDetail(artworkId);
+        if (!artwork) {
+            return fail(path, 404, 'ARTWORK_NOT_FOUND', '작품을 찾을 수 없습니다.');
+        }
+
+        // ?empty=1 → timeline 빈 배열 변형.
+        if (url.searchParams.get('empty') === '1') {
+            const result: ArtworkDetailResult = {
+                artwork: { ...artwork, timeline: [] },
+            };
+            return ok(path, result, '작품 제작 단계가 성공적으로 조회되었습니다.');
+        }
+
+        const result: ArtworkDetailResult = { artwork };
+        return ok(path, result, '작품 제작 단계가 성공적으로 조회되었습니다.');
     }),
 ];
