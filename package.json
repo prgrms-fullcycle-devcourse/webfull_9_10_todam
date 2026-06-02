@@ -10,13 +10,25 @@
     "test": "turbo test",
     "typecheck": "turbo typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
-    "prepare": "husky"
+    "prepare": "husky",
+    "api": "turbo dev --filter=@todam/api",
+    "web": "turbo dev --filter=@todam/web",
+    "admin": "turbo dev --filter=@todam/admin",
+    "storybook": "turbo dev --filter=@todam/storybook"
   },
   "lint-staged": {
     "apps/api/**/*.ts": ["eslint --fix", "prettier --write"],
     "apps/web/**/*.{ts,tsx}": ["eslint --fix", "prettier --write"],
     "apps/admin/**/*.{ts,tsx}": ["eslint --fix", "prettier --write"],
     "packages/**/*.ts": ["prettier --write"]
+  },
+  "pnpm": {
+    "overrides": {
+      "@typescript-eslint/eslint-plugin": ">=8.0.0 <8.59.0",
+      "@typescript-eslint/parser": ">=8.0.0 <8.59.0",
+      "@typescript-eslint/scope-manager": ">=8.0.0 <8.59.0",
+      "typescript": "5.9.3"
+    }
   },
   "devDependencies": {
     "husky": "^9.1.7",

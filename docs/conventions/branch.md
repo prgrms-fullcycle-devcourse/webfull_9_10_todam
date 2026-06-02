@@ -7,15 +7,19 @@
 
 ## Working Branch
 
-- 작업 브랜치는 커밋 타입과 동일한 prefix를 사용한다.
-- 브랜치명은 `type/작업명` 형식으로 작성한다.
+- 작업 브랜치는 작업 유형을 prefix로 사용한다.
+- 기능 개발 브랜치는 `feature/`를 사용한다. (커밋 타입은 `feat`이지만 브랜치 prefix는 `feature`)
+- **계획(plan) 선행 브랜치는 `plan/`을 사용한다.** plan 문서를 먼저 올려 contract를 공유하고, 같은 브랜치에 구현을 이어간다. (plan 없이 기능 작업 시작 시)
+- 그 외 작업은 커밋 타입과 동일한 prefix(`fix`, `docs`, `refactor`, `chore` 등)를 사용한다.
+- 브랜치명은 `prefix/작업명` 형식으로 작성한다.
 - 브랜치명은 작업 내용을 식별할 수 있게 짧고 명확하게 작성한다.
 - 긴급 수정은 `hotfix/작업명` 형식을 사용한다.
 
 예시:
 
 ```text
-feat/create-reservation-api
+plan/partner-store-list
+feature/create-reservation-api
 fix/reservation-slug-collision
 docs/branch-conventions
 hotfix/auth-token-expiry
@@ -35,8 +39,8 @@ hotfix/auth-token-expiry
 ```bash
 git checkout dev
 git pull origin dev
-git checkout -b feat/create-reservation-api
+git checkout -b feature/create-reservation-api
 git add .
 git commit -m "feat: 예약 생성 API 구현"
-git push -u origin feat/create-reservation-api
+git push -u origin feature/create-reservation-api
 ```

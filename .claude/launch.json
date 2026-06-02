@@ -1,0 +1,33 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "storybook",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter=@todam/storybook", "dev"],
+      "port": 6006,
+      "autoPort": true
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter=@todam/web", "dev"],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "web-3001",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter=@todam/web", "exec", "next", "dev", "--port", "3001"],
+      "port": 3001,
+      "autoPort": true
+    },
+    {
+      "name": "web-4001",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter=@todam/web", "exec", "next", "dev", "--port", "4001"],
+      "port": 4001,
+      "autoPort": true
+    }
+  ]
+}

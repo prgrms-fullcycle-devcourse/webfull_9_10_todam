@@ -22,3 +22,9 @@ pnpm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# 로컬
+.claude/settings.local.json
+.claude/logs/
+.claude/.env
+.vscode

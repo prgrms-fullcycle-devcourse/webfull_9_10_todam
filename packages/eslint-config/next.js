@@ -1,12 +1,10 @@
-const { FlatCompat } = require('@eslint/eslintrc')
 const base = require('./base')
-
-const compat = new FlatCompat({ baseDirectory: __dirname })
+const nextConfig = require('eslint-config-next/core-web-vitals')
 
 module.exports = [
   { ignores: ['.next/**', 'node_modules/**'] },
   ...base,
-  ...compat.extends('next/core-web-vitals'),
+  ...(Array.isArray(nextConfig) ? nextConfig : [nextConfig]),
   {
     rules: {
       'react/react-in-jsx-scope': 'off',

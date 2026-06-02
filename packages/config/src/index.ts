@@ -12,12 +12,20 @@ const apiSchema = z.object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     PORT: z.string().default(String(DEFAULT_API_PORT)),
     DATABASE_URL: z.string(),
-    JWT_SECRET: z.string(),
+    JWT_ACCESS_SECRET: z.string(),
+    JWT_REFRESH_SECRET: z.string(),
+    REDIS_URL: z.string().default('redis://localhost:6379'),
     S3_BUCKET_NAME: z.string(),
     S3_REGION: z.string().default('ap-northeast-2'),
     CORS_ORIGINS: z
         .string()
         .default('http://localhost:3000,https://todam.app,https://www.todam.app'),
+    KAKAO_CLIENT_ID: z.string(),
+    KAKAO_CLIENT_SECRET: z.string(),
+    KAKAO_REDIRECT_URI: z.string(),
+    GOOGLE_CLIENT_ID: z.string(),
+    GOOGLE_CLIENT_SECRET: z.string(),
+    GOOGLE_REDIRECT_URI: z.string(),
 });
 
 // ─── Web 환경변수 스키마 ──────────────────────────────────
