@@ -47,14 +47,25 @@ export class CreateStoreImageUseCase {
 
         const imageUrl = `${CDN_BASE}/${key}`;
 
-        const image = await this.prisma.storeImage.create({
-            data: {
-                storeId,
-                imageUrl,
-                isThumbnail: dto.isThumbnail,
-                status: 'PENDING',
-            },
-            select: { id: true },
+        // 대표 이미지(isThumbnail)는 공방당 최대 1개 불변식. 클라이언트 값을 믿지 않고
+        // 새 대표 등록 시 기존 대표를 모두 내린 뒤 생성한다(트랜잭션).
+        const image = await this.prisma.$transaction(async (tx) => {
+            if (dto.isThumbnail) {
+                await tx.storeImage.updateMany({
+                    where: { storeId, isThumbnail: true },
+                    data: { isThumbnail: false },
+                });
+            }
+
+            return tx.storeImage.create({
+                data: {
+                    storeId,
+                    imageUrl,
+                    isThumbnail: dto.isThumbnail,
+                    status: 'PENDING',
+                },
+                select: { id: true },
+            });
         });
 
         return {
