@@ -6,7 +6,6 @@ import {
     ReservationDeliveryMethod,
     ReservationStatus,
     StoreStatus,
-    ProgramDeliveryOption,
     ProgramDifficulty,
     type ArtworkDetail,
     type ConvenienceInfo,
@@ -398,12 +397,10 @@ export interface ProgramRow {
     materials: string | null;
     price: number;
     durationMinutes: number;
-    capacity: number;
     leadTimeDays: number;
     difficulty: ProgramDifficulty;
-    deliveryOption: ProgramDeliveryOption;
-    childrenAllowed: boolean;
-    deliveryAvailable: boolean;
+    childFriendly: boolean;
+    deliverable: boolean;
     status: ProgramStatus;
     updatedAt: string;
 }
@@ -429,14 +426,58 @@ export const seededPrograms: ProgramRow[] = [
         materials: '앞치마 (공방 제공), 편한 복장',
         price: 45000,
         durationMinutes: 120,
-        capacity: 6,
         leadTimeDays: 30,
         difficulty: ProgramDifficulty.BASIC,
-        deliveryOption: ProgramDeliveryOption.CUSTOMER_SELECT,
-        childrenAllowed: true,
-        deliveryAvailable: false,
+        childFriendly: true,
+        deliverable: false,
         status: ProgramStatus.ACTIVE,
         updatedAt: '2026-05-25T19:05:00.000Z',
+    },
+    // 클래스 목록(storePrograms) 항목들의 상세 데이터 — 목록→상세 진입 시 조회됨.
+    {
+        id: 'prog-seed-0001',
+        storeId: MOCK_STORE_ID,
+        title: '도자기 물레 원데이 클래스',
+        description: '물레로 그릇을 빚어보는 원데이 클래스입니다.',
+        materials: '앞치마 (공방 제공)',
+        price: 45000,
+        durationMinutes: 120,
+        leadTimeDays: 28,
+        difficulty: ProgramDifficulty.BASIC,
+        childFriendly: true,
+        deliverable: true,
+        status: ProgramStatus.ACTIVE,
+        updatedAt: '2026-05-21T09:00:00.000Z',
+    },
+    {
+        id: 'prog-seed-0002',
+        storeId: MOCK_STORE_ID,
+        title: '핸드빌딩 머그컵 만들기',
+        description: '손으로 빚어 나만의 머그컵을 만듭니다.',
+        materials: null,
+        price: 38000,
+        durationMinutes: 90,
+        leadTimeDays: 30,
+        difficulty: ProgramDifficulty.INTERMEDIATE,
+        childFriendly: false,
+        deliverable: false,
+        status: ProgramStatus.DRAFT,
+        updatedAt: '2026-05-22T09:00:00.000Z',
+    },
+    {
+        id: 'prog-seed-0003',
+        storeId: MOCK_STORE_ID,
+        title: '커플 도자기 클래스',
+        description: '둘이 함께 만드는 도자기 클래스입니다.',
+        materials: null,
+        price: 88000,
+        durationMinutes: 150,
+        leadTimeDays: 35,
+        difficulty: ProgramDifficulty.ADVANCED,
+        childFriendly: false,
+        deliverable: true,
+        status: ProgramStatus.INACTIVE,
+        updatedAt: '2026-05-23T09:00:00.000Z',
     },
 ];
 
@@ -508,12 +549,10 @@ export function programToApiShape(program: ProgramRow): object {
         materials: program.materials,
         price: program.price,
         durationMinutes: program.durationMinutes,
-        capacity: program.capacity,
         leadTimeDays: program.leadTimeDays,
         difficulty: program.difficulty,
-        deliveryOption: program.deliveryOption,
-        childrenAllowed: program.childrenAllowed,
-        deliveryAvailable: program.deliveryAvailable,
+        childFriendly: program.childFriendly,
+        deliverable: program.deliverable,
         status: program.status,
         images,
     };
@@ -758,7 +797,10 @@ export function getStoreDetail(id: string): PartnerStoreDetail | undefined {
 
 // ─── 운영 클래스 목록 시드 (GET /partner/stores/{storeId}/programs) ──
 // store-seed-0001 만 보유, store-seed-0002 는 empty([]) — empty UI 확인용.
-const storePrograms: Record<string, PartnerProgramListItem[]> = {
+// level·leadTimeDays 는 Contract 외 mock 표시 확장 필드(서브텍스트 "난이도・소요시간・평균제작일"용).
+type PartnerProgramListSeed = PartnerProgramListItem & { level?: string; leadTimeDays?: number };
+
+const storePrograms: Record<string, PartnerProgramListSeed[]> = {
     'store-seed-0001': [
         {
             id: 'prog-seed-0001',
@@ -767,9 +809,10 @@ const storePrograms: Record<string, PartnerProgramListItem[]> = {
             thumbnailUrl: 'https://placehold.co/200x150?text=wheel',
             price: 45000,
             durationMinutes: 120,
-            capacity: 6,
             sortOrder: 1,
             createdAt: '2026-05-21T09:00:00.000Z',
+            level: '기본',
+            leadTimeDays: 28,
         },
         {
             id: 'prog-seed-0002',
@@ -778,26 +821,28 @@ const storePrograms: Record<string, PartnerProgramListItem[]> = {
             thumbnailUrl: 'https://placehold.co/200x150?text=mug',
             price: 38000,
             durationMinutes: 90,
-            capacity: 8,
             sortOrder: 2,
             createdAt: '2026-05-22T09:00:00.000Z',
+            level: '중급',
+            leadTimeDays: 30,
         },
         {
             id: 'prog-seed-0003',
-            title: '커플 도자기 클래스 (일시 중단)',
+            title: '커플 도자기 클래스',
             status: ProgramStatus.INACTIVE,
             thumbnailUrl: 'https://placehold.co/200x150?text=couple',
             price: 88000,
             durationMinutes: 150,
-            capacity: 2,
             sortOrder: 3,
             createdAt: '2026-05-23T09:00:00.000Z',
+            level: '심화',
+            leadTimeDays: 35,
         },
     ],
 };
 
 // 운영 클래스 목록 조회. 공방 미존재 시 null(→404), 존재하나 클래스 없으면 [].
-export function findPartnerStorePrograms(id: string): PartnerProgramListItem[] | null {
+export function findPartnerStorePrograms(id: string): PartnerProgramListSeed[] | null {
     if (!getStoreDetail(id)) return null;
     return storePrograms[id] ?? [];
 }

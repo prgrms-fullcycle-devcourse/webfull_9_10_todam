@@ -1,6 +1,7 @@
 export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 export const MAX_ARTWORK_PHOTO_COUNT = 5;
+export const MAX_PROGRAM_IMAGE_COUNT = 1;
 
 export const MAX_REVIEW_PHOTO_COUNT = 3;
 

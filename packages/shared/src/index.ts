@@ -4,7 +4,6 @@ export { OAuthProvider } from './enums/oauth-provider';
 export { PartnerStatus } from './enums/partner-status';
 export { StoreStatus } from './enums/store-status';
 export { OcrStatus } from './enums/ocr-status';
-export { ProgramDeliveryOption } from './enums/program-delivery-option';
 export { ProgramDifficulty } from './enums/program-difficulty';
 export { ProgramStatus } from './enums/program-status';
 export { ProgramTimeSlotStatus } from './enums/program-time-slot-status';
@@ -20,6 +19,7 @@ export { PolicyType } from './enums/policy-type';
 export {
     MAX_FILE_SIZE_BYTES,
     MAX_ARTWORK_PHOTO_COUNT,
+    MAX_PROGRAM_IMAGE_COUNT,
     MAX_REVIEW_PHOTO_COUNT,
     ALLOWED_IMAGE_TYPES,
     ALLOWED_DOCUMENT_TYPES,

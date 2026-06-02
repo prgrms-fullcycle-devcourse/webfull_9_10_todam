@@ -3,6 +3,7 @@
 import { use } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { ProgramStatus } from '@todam/shared';
 import {
     BottomBar,
     Button,
@@ -22,12 +23,12 @@ import {
 } from '../../../../features/store/detail';
 import {
     ConvenienceChips,
-    ProgramListItem,
     StoreImageCarousel,
     StoreInfoSummary,
     StoreLocation,
     formatOperatingDays,
 } from '../../../../entities/store';
+import { ClassItem } from '../../../../entities/program';
 import { ApiError } from '../../../../shared/api';
 import { useSheet } from '../../../../shared/model';
 import { EmptyState } from '../../../../shared/ui';
@@ -184,10 +185,15 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                         {!programs.isLoading && !programs.isError && hasPrograms && (
                             <div className="flex flex-col gap-2">
                                 {programList.map((program) => (
-                                    <ProgramListItem
+                                    <ClassItem
                                         key={program.id}
-                                        program={program}
-                                        operatingDays={operatingDays}
+                                        programName={program.title}
+                                        metaItems={[
+                                            `${program.durationMinutes}분`,
+                                            operatingDays,
+                                        ].filter(Boolean)}
+                                        price={`${program.price.toLocaleString('ko-KR')}원`}
+                                        isClosed={program.status === ProgramStatus.INACTIVE}
                                     />
                                 ))}
                             </div>

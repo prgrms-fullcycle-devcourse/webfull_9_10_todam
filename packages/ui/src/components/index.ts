@@ -28,3 +28,4 @@ export * from './Toggle';
 export * from './Tooltip';
 export * from './DescriptionBlock';
 export * from './Counter';
+export * from './Slot';

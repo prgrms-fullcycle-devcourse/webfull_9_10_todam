@@ -27,12 +27,7 @@ export function Menu({
   return (
     <div
       role="menu"
-      className={[
-        "flex w-full flex-col overflow-hidden rounded-xl bg-surface shadow-[0_0_10px_rgba(0,0,0,0.1)]",
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={["flex w-full flex-col overflow-hidden rounded-xl bg-surface shadow-[0_0_10px_rgba(0,0,0,0.1)]", className].filter(Boolean).join(" ")}
       {...props}
     >
       {title && (
@@ -48,16 +43,13 @@ export function Menu({
           aria-checked={item.selected ?? false}
           disabled={item.disabled ?? false}
           onClick={() => onItemSelect?.(index)}
-          className="group flex h-10 w-full items-center border-t border-border-subtle px-1 disabled:cursor-not-allowed"
+          className="group flex h-10 w-full cursor-pointer items-center border-t border-border-subtle px-1 disabled:cursor-not-allowed"
         >
-          <span className="flex h-8 w-full items-center justify-between gap-2.5 rounded-lg px-2 text-sm text-foreground transition-colors duration-200 ease-in-out group-hover:bg-muted group-disabled:text-foreground-disabled group-disabled:group-hover:bg-transparent">
+          <span className="flex h-8 w-full cursor-pointer items-center justify-between gap-2.5 rounded-lg px-2 text-sm text-foreground transition-colors duration-200 ease-in-out group-hover:bg-muted group-disabled:text-foreground-disabled group-disabled:group-hover:bg-transparent">
             <span>{item.label}</span>
             {item.selected ? (
               <CheckIcon size={20} className="shrink-0 text-inverse" />
-            ) : (
-              item.icon &&
-              cloneElement(item.icon, { size: 20 })
-            )}
+            ) : item.icon && cloneElement(item.icon, { size: 20 })}
           </span>
         </button>
       ))}

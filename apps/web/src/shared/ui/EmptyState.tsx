@@ -15,8 +15,8 @@ export function EmptyState({ message, children, className }: EmptyStateProps) {
                 .join(' ')}
         >
             <div className="flex flex-col items-center gap-2.5 py-2">
-                {children}
                 <p className="text-base font-semibold leading-5 text-foreground">{message}</p>
+                {children}
             </div>
         </div>
     );
