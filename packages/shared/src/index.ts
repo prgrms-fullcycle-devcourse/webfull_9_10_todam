@@ -46,6 +46,7 @@ export * from './contracts/store-programs';
 export * from './contracts/reservation-list';
 export * from './contracts/reservation-detail';
 export * from './contracts/review-write';
+export * from './contracts/delivery-edit';
 export * from './contracts/artwork-detail';
 
 export * from './utils/format-scheduled';
