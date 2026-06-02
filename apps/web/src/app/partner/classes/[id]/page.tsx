@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import { Button, Tag, RightIcon } from '@todam/ui';
+import { Button, Tag, RightIcon, BottomBar } from '@todam/ui';
 import { ProgramDifficulty, ProgramStatus } from '@todam/shared';
 
 import { useHeaderActionStore, useSheet } from '../../../../shared/model';
@@ -104,11 +104,11 @@ export default function PartnerClassDetailPage({ params }: PageProps) {
             </main>
 
             {/* 하단 고정 CTA */}
-            <div className="shrink-0 border-t border-border-subtle bg-surface px-4 pb-7 pt-4">
+            <BottomBar>
                 <Button variant="filled" size="lg" className="w-full" onClick={handleCta}>
                     {isPublished ? '클래스 정보 수정하기' : '클래스 게시하기'}
                 </Button>
-            </div>
+            </BottomBar>
         </>
     );
 }

@@ -68,7 +68,7 @@ export function ClassEditSheet({ programId, title, reservationCount, onClose }: 
             title={title}
             subTitle={`현재 진행 중인 예약이 ${reservationCount}건 있어요`}
             actionLabel="닫기"
-            actionVariant="outline"
+            actionVariant="ghost"
             onAction={onClose}
         >
             <div className="flex flex-col gap-2">
@@ -77,7 +77,7 @@ export function ClassEditSheet({ programId, title, reservationCount, onClose }: 
                         key={action.key}
                         type="button"
                         onClick={action.onClick}
-                        className="flex items-center gap-5 rounded-2xl border border-border-subtle p-4 text-left transition-colors hover:bg-muted"
+                        className="flex cursor-pointer items-center gap-5 rounded-2xl border border-border-subtle p-4 text-left transition-colors hover:bg-muted"
                     >
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary-subtle text-secondary-darker">
                             {action.icon}
