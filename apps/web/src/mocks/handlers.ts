@@ -569,6 +569,41 @@ export const handlers = [
         return ok(path, result, '리뷰가 성공적으로 조회되었습니다.');
     }),
 
+    // 리뷰 삭제 (DELETE /reviews/:reviewId).
+    // contract: docs/exec-plans/active/유저 예약 - 나의 리뷰 상세 조회, 나의 리뷰 삭제.md
+    //   ?unauth=1 → 401 UNAUTHORIZED
+    //   ?simulate=403 → 403 FORBIDDEN (타인 리뷰 가정)
+    //   ?simulate=404 → 404 REVIEW_NOT_FOUND (이미 삭제됨)
+    //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
+    //   정상 → 200 data:null
+    http.delete(`${API}/reviews/:reviewId`, ({ params, request }) => {
+        const reviewId = String(params.reviewId);
+        const path = `/api/v1/reviews/${reviewId}`;
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '인증이 필요합니다.');
+        }
+
+        const simulate = url.searchParams.get('simulate');
+        if (simulate === '403') {
+            return fail(path, 403, 'FORBIDDEN', '해당 리뷰에 대한 접근 권한이 없습니다.');
+        }
+        if (simulate === '404') {
+            return fail(path, 404, 'REVIEW_NOT_FOUND', '리뷰를 찾을 수 없습니다.');
+        }
+        if (simulate === '500') {
+            return fail(
+                path,
+                500,
+                'INTERNAL_SERVER_ERROR',
+                '리뷰 삭제 중 서버 오류가 발생했습니다.',
+            );
+        }
+
+        return ok(path, null, '리뷰가 성공적으로 삭제되었습니다.');
+    }),
+
     // 배송 정보 등록/수정 (인증 필요, 본인 예약만, DELIVERY 만)
     // contract: docs/exec-plans/active/유저 예약 - 나의 배송 정보 수정.md API Contract (스냅샷)
     // 시뮬 토글(URL forwarding 미적용 환경 한정):
