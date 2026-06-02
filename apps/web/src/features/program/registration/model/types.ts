@@ -1,5 +1,13 @@
 import { ProgramDifficulty } from '@todam/shared';
 
+// 폼 제약·난이도 옵션은 entities/program 단일 출처에서 재노출.
+export {
+    TITLE_MIN,
+    TITLE_MAX,
+    DESCRIPTION_MAX,
+    DIFFICULTY_OPTIONS,
+} from '../../../../entities/program';
+
 // 클래스 등록 2단계. (이번 구현: 1단계 기본정보. 2단계 운영정보는 후행)
 export enum ProgramRegistrationStep {
     BasicInfo = 0, // 기본 정보
@@ -12,18 +20,6 @@ export const STEP_TITLES: Record<ProgramRegistrationStep, string> = {
 };
 
 export const TOTAL_STEPS = 2;
-
-// title 길이 제약 (contract: 2~60자)
-export const TITLE_MIN = 2;
-export const TITLE_MAX = 60;
-export const DESCRIPTION_MAX = 1000;
-
-// 난이도 세그먼트: 표시 label ↔ contract enum 매핑 (표시 순서 = 기본/중급/심화)
-export const DIFFICULTY_OPTIONS: { label: string; value: ProgramDifficulty }[] = [
-    { label: '기본', value: ProgramDifficulty.BASIC },
-    { label: '중급', value: ProgramDifficulty.INTERMEDIATE },
-    { label: '심화', value: ProgramDifficulty.ADVANCED },
-];
 
 export interface ProgramRegistrationForm {
     // 1단계: 기본 정보
