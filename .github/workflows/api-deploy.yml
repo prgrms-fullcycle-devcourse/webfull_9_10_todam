@@ -61,6 +61,8 @@ jobs:
 
             docker run -d \
               --name todam-api \
+              --network todam-net \
+              --restart unless-stopped \
               --env-file .env.api \
               -p 127.0.0.1:4000:4000 \
               ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:latest
