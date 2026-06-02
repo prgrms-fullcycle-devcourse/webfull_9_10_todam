@@ -50,5 +50,6 @@ export * from './contracts/review-actions';
 export * from './contracts/delivery-edit';
 export * from './contracts/artwork-detail';
 
+export * from './utils/date';
 export * from './utils/format-scheduled';
 export * from './utils/format';
