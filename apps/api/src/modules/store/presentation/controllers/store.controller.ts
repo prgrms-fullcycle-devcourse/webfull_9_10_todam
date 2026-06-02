@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Get,
     HttpCode,
     HttpStatus,
     Param,
@@ -10,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
+import { PartnerGuard } from '../../../../common/guards/partner.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../../../common/decorators/response-message.decorator';
 import type { RequestUser } from '../../../../common/types/request-user.type';
@@ -20,9 +22,11 @@ import {
     ConfirmStoreImageResponseDto,
 } from '../../application/use-cases/confirm-store-image.use-case';
 import { SubmitStoreUseCase } from '../../application/use-cases/submit-store.use-case';
+import { ListPartnerStoresUseCase } from '../../application/use-cases/list-partner-stores.use-case';
 import { CreateStoreDto, CreateStoreResponseDto } from '../dto/create-store.dto';
 import { CreateStoreImageDto, CreateStoreImageResponseDto } from '../dto/store-image.dto';
 import { SubmitStoreResponseDto } from '../dto/submit-store.dto';
+import { ListPartnerStoresResponseDto } from '../dto/list-partner-stores.dto';
 
 @ApiTags('stores')
 @ApiBearerAuth()
@@ -33,7 +37,19 @@ export class StoreController {
         private readonly createStoreImageUseCase: CreateStoreImageUseCase,
         private readonly confirmStoreImageUseCase: ConfirmStoreImageUseCase,
         private readonly submitStoreUseCase: SubmitStoreUseCase,
+        private readonly listPartnerStoresUseCase: ListPartnerStoresUseCase,
     ) {}
+
+    @Get('partner/stores')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('내 공방 목록이 성공적으로 조회되었습니다.')
+    @ApiOkResponse({ description: '내 공방 목록 조회 성공', type: ListPartnerStoresResponseDto })
+    async listPartnerStores(
+        @CurrentUser() user: RequestUser,
+    ): Promise<ListPartnerStoresResponseDto> {
+        return this.listPartnerStoresUseCase.execute(user.id);
+    }
 
     @Post('stores')
     @UseGuards(AuthGuard)

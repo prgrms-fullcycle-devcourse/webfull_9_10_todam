@@ -8,7 +8,7 @@
 
 ## Status
 
-- [ ] API 구현
+- [x] API 구현
 - [x] UI 구현
 - [ ] API 연동
 
@@ -51,7 +51,14 @@
 
 ## Out (단계별 완료물)
 
-- API(mock): `apps/web/src/mocks/handlers.ts` `GET */api/v1/partner/stores`, `mocks/db.ts` `listPartnerStores()` + 시드 3종(최신 생성순). **실 BE 미구현.**
+- API(mock): `apps/web/src/mocks/handlers.ts` `GET */api/v1/partner/stores`, `mocks/db.ts` `listPartnerStores()` + 시드 3종(최신 생성순).
+- API(실 BE, apps/api): `GET /api/v1/partner/stores` 구현 완료.
+  - `modules/store/presentation/controllers/store.controller.ts` — `@Get('partner/stores')` 라우트 추가(`@UseGuards(AuthGuard, PartnerGuard)`, `@ResponseMessage('내 공방 목록이 성공적으로 조회되었습니다.')`).
+  - `modules/store/application/use-cases/list-partner-stores.use-case.ts` — userId→partner.id 식별, `store.findMany({ where:{partnerId}, orderBy:{createdAt:'desc'} })`, BusinessDocument(최초 1건) join으로 ownerName 매핑, createdAt ISO8601 직렬화.
+  - `modules/store/presentation/dto/list-partner-stores.dto.ts` — `PartnerStoreListItemDto`(id/name/ownerName/status/createdAt) + `ListPartnerStoresResponseDto`({ stores }). contract 스냅샷 1:1.
+  - `modules/store/store.module.ts` — `ListPartnerStoresUseCase`, `PartnerGuard` provider 등록.
+  - 응답 봉투/에러는 기존 `ResponseInterceptor`·`AuthGuard`(401)·`PartnerGuard`(403) 재사용. 빌드/타입체크 통과.
+  - 스키마 메모: Store에 `deletedAt` 컬럼 없음(soft-delete 미도입) → "삭제 공방 제외" 필터는 현 스키마에 적용 불가하여 생략. ownerName은 Store에 없고 `BusinessDocument.ownerName`이 유일 출처 → store의 최초 BusinessDocument를 join하여 매핑.
 - UI:
   - `entities/store/ui/StoreManagementItem.tsx` — 공방 카드(공방명/대표자/Badge slot)
   - `entities/store/ui/StoreStatusBadge.tsx` — status→tone+label+dot 매핑
