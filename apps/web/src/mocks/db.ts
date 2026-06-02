@@ -948,7 +948,8 @@ export function listMyReservations(): ReservationListItem[] {
 //
 // 디자인 정본: 머그컵 만들기 · 흙과 사람 (성수동) · 2026.04.18 (토) 15:00 · 2명 · 90,000원 · 택배.
 const SEEDED_RESERVATION_DETAILS: Record<string, ReservationDetail> = {
-    // 변형 A — 체험 전 (CONFIRMED + 배송 미입력 + 다음 단계 안내). cancelable.
+    // 변형 A — 체험 전 (CONFIRMED + 배송 입력됨 + 다음 단계 안내). cancelable.
+    // 본 시드는 "배송 정보 수정 — 입력됨 케이스" 흐름의 prefill 검증용으로 delivery 5필드를 채움.
     'res-seed-0002': {
         id: 'res-seed-0002',
         storeId: 'store-seed-0050',
@@ -960,7 +961,7 @@ const SEEDED_RESERVATION_DETAILS: Record<string, ReservationDetail> = {
         reserverPhone: '010-0000-0000',
         participantCount: 2,
         deliveryMethod: ReservationDeliveryMethod.DELIVERY,
-        shippingAddress: null,
+        shippingAddress: '서울특별시 마포구 월드컵북로 12',
         requestMemo: null,
         status: ReservationStatus.CONFIRMED,
         displayState: {
@@ -971,7 +972,13 @@ const SEEDED_RESERVATION_DETAILS: Record<string, ReservationDetail> = {
         artworkId: null,
         createdAt: '2026-05-31T18:00:00.000Z',
         totalPrice: 90000,
-        delivery: null, // 배송 정보 미입력 → 빈 상태 카드.
+        delivery: {
+            recipientName: '김리듬',
+            recipientPhone: '010-9876-5432',
+            address: '서울특별시 마포구 월드컵북로 12',
+            carrier: null,
+            trackingNumber: null,
+        },
         canCancel: true,
         cancelDeadlineDays: 3,
         artwork: null,
@@ -1103,6 +1110,45 @@ const SEEDED_REVIEW_DETAILS: Record<string, ReviewDetail> = {
 
 export function findReservationDetail(id: string): ReservationDetail | undefined {
     return SEEDED_RESERVATION_DETAILS[id];
+}
+
+// ─── 배송 정보 in-memory 저장소 (PATCH /reservations/:id/delivery) ──────
+// 본 endpoint 응답은 5필드(recipientName/recipientPhone/postalCode/address/addressDetail)지만
+// 예약 상세 응답의 delivery 는 5필드 중 postalCode/addressDetail 없는 다른 shape(+carrier/trackingNumber).
+// 두 shape 합치지 않고 별도 저장 — 본 store 는 PATCH 응답 echo + 예약 상세 5필드 부분 머지.
+type DeliveryEditRecord = {
+    recipientName: string;
+    recipientPhone: string;
+    postalCode: string;
+    address: string;
+    addressDetail?: string;
+};
+const deliveryEdits: Record<string, DeliveryEditRecord> = {};
+
+export function getDeliveryEdit(reservationId: string): DeliveryEditRecord | undefined {
+    return deliveryEdits[reservationId];
+}
+
+export function upsertDeliveryEdit(
+    reservationId: string,
+    record: DeliveryEditRecord,
+): DeliveryEditRecord {
+    deliveryEdits[reservationId] = record;
+    // 예약 상세 시드의 delivery 객체에 5필드 중 reservation-detail contract 가 갖는 부분만 미러링.
+    // (carrier/trackingNumber 는 본 endpoint 비책임 — 기존 값 보존)
+    const reservation = SEEDED_RESERVATION_DETAILS[reservationId];
+    if (reservation) {
+        const prev = reservation.delivery;
+        reservation.delivery = {
+            recipientName: record.recipientName,
+            recipientPhone: record.recipientPhone,
+            address: record.address,
+            carrier: prev?.carrier ?? null,
+            trackingNumber: prev?.trackingNumber ?? null,
+        };
+        reservation.shippingAddress = record.address;
+    }
+    return record;
 }
 
 export function findReviewByReservation(reservationId: string): ReviewDetail | undefined {

@@ -1,4 +1,7 @@
 import {
+    deliveryEditRequestSchema,
+    DeliveryEditErrorCode,
+    ReservationDeliveryMethod,
     StoreEditErrorCode,
     RESERVATION_LIST_DEFAULT_LIMIT,
     ReservationStatus,
@@ -8,6 +11,7 @@ import {
     PartnerStatus,
     StoreStatus,
     ProgramEditErrorCode,
+    type DeliveryEditResult,
     type GeocodeResult,
     type PartnerProgramListResult,
     type PartnerStoreDetailResult,
@@ -56,6 +60,7 @@ import {
     nowIso,
     setLike,
     updateStoreDetail,
+    upsertDeliveryEdit,
 } from './db';
 
 // 봉투 빌더 — apps/api 응답 형태와 일치.
@@ -560,5 +565,105 @@ export const handlers = [
 
         const result: ReviewDetailResult = { review };
         return ok(path, result, '리뷰가 성공적으로 조회되었습니다.');
+    }),
+
+    // 배송 정보 등록/수정 (인증 필요, 본인 예약만, DELIVERY 만)
+    // contract: docs/exec-plans/active/유저 예약 - 나의 배송 정보 수정.md API Contract (스냅샷)
+    // 시뮬 토글(URL forwarding 미적용 환경 한정):
+    //   ?unauth=1 → 401 UNAUTHORIZED
+    //   ?simulate=403 → 403 FORBIDDEN (타인 예약 가정)
+    //   ?simulate=404 → 404 RESERVATION_NOT_FOUND
+    //   ?simulate=409 → 409 DELIVERY_NOT_EDITABLE
+    //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
+    http.patch(`${API}/reservations/:reservationId/delivery`, async ({ params, request }) => {
+        const reservationId = String(params.reservationId);
+        const path = `/api/v1/reservations/${reservationId}/delivery`;
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, DeliveryEditErrorCode.UNAUTHORIZED, '인증이 필요합니다.');
+        }
+        const simulate = url.searchParams.get('simulate');
+        if (simulate === '500') {
+            return fail(
+                path,
+                500,
+                DeliveryEditErrorCode.INTERNAL_SERVER_ERROR,
+                '배송 정보 저장 중 서버 오류가 발생했습니다.',
+            );
+        }
+        if (simulate === '403') {
+            return fail(
+                path,
+                403,
+                DeliveryEditErrorCode.FORBIDDEN,
+                '본인 예약의 배송 정보만 수정할 수 있습니다.',
+            );
+        }
+        if (simulate === '404') {
+            return fail(
+                path,
+                404,
+                DeliveryEditErrorCode.RESERVATION_NOT_FOUND,
+                '예약을 찾을 수 없습니다.',
+            );
+        }
+        if (simulate === '409') {
+            return fail(
+                path,
+                409,
+                DeliveryEditErrorCode.DELIVERY_NOT_EDITABLE,
+                '이미 발송된 작품의 배송 정보는 수정할 수 없습니다.',
+            );
+        }
+
+        const reservation = findReservationDetail(reservationId);
+        if (!reservation) {
+            return fail(
+                path,
+                404,
+                DeliveryEditErrorCode.RESERVATION_NOT_FOUND,
+                '예약을 찾을 수 없습니다.',
+            );
+        }
+
+        // PICKUP 예약 — 본 endpoint 자체로 거부 (FE 가드와 정합).
+        if (reservation.deliveryMethod === ReservationDeliveryMethod.PICKUP) {
+            return fail(
+                path,
+                409,
+                DeliveryEditErrorCode.DELIVERY_NOT_EDITABLE,
+                '픽업 예약은 배송 정보를 수정할 수 없습니다.',
+            );
+        }
+
+        // 잠금 상태 — SHIPPED/DELIVERED 는 수정 불가 (FE 가드와 정합).
+        if (
+            reservation.status === ReservationStatus.SHIPPED ||
+            reservation.status === ReservationStatus.DELIVERED
+        ) {
+            return fail(
+                path,
+                409,
+                DeliveryEditErrorCode.DELIVERY_NOT_EDITABLE,
+                '이미 발송된 작품의 배송 정보는 수정할 수 없습니다.',
+            );
+        }
+
+        const raw = await request.json();
+        const parsed = deliveryEditRequestSchema.safeParse(raw);
+        if (!parsed.success) {
+            return fail(
+                path,
+                400,
+                DeliveryEditErrorCode.DELIVERY_INFO_INVALID,
+                parsed.error.issues[0]?.message ??
+                    '필수 배송 정보(수령인·연락처·주소)를 입력해야 합니다.',
+            );
+        }
+
+        const saved = upsertDeliveryEdit(reservationId, parsed.data);
+        const result: DeliveryEditResult = { delivery: saved };
+        return ok(path, result, '배송 정보가 저장되었습니다.');
     }),
 ];
