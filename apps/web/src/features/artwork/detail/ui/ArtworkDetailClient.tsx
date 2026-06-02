@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 
 import type { ArtworkPhoto } from '@todam/shared';
 
-import { useArtworkDetail } from '../../../../../../features/artwork/detail';
-import { ApiError } from '../../../../../../shared/api';
+import { Stepper } from '../../../../entities/artwork';
+import { ApiError } from '../../../../shared/api';
+import { useArtworkDetail } from '../queries';
 
 import { ArtworkDetailEmpty } from './ArtworkDetailEmpty';
 import { ArtworkDetailError } from './ArtworkDetailError';
 import { ImageModal } from './ImageModal';
-import { Stepper } from './Stepper';
 
 // 작품 상세 클라이언트.
 // 서버 컴포넌트(page.tsx) 가 artworkId 만 넘기고 동적 동작은 본 컴포넌트가 캡슐화.
