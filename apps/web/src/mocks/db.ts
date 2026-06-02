@@ -610,7 +610,10 @@ export function getStoreDetail(id: string): PartnerStoreDetail | undefined {
 
 // ─── 운영 클래스 목록 시드 (GET /partner/stores/{storeId}/programs) ──
 // store-seed-0001 만 보유, store-seed-0002 는 empty([]) — empty UI 확인용.
-const storePrograms: Record<string, PartnerProgramListItem[]> = {
+// level·leadTimeDays 는 Contract 외 mock 표시 확장 필드(서브텍스트 "난이도・소요시간・평균제작일"용).
+type PartnerProgramListSeed = PartnerProgramListItem & { level?: string; leadTimeDays?: number };
+
+const storePrograms: Record<string, PartnerProgramListSeed[]> = {
     'store-seed-0001': [
         {
             id: 'prog-seed-0001',
@@ -622,6 +625,8 @@ const storePrograms: Record<string, PartnerProgramListItem[]> = {
             capacity: 6,
             sortOrder: 1,
             createdAt: '2026-05-21T09:00:00.000Z',
+            level: '기본',
+            leadTimeDays: 28,
         },
         {
             id: 'prog-seed-0002',
@@ -633,10 +638,12 @@ const storePrograms: Record<string, PartnerProgramListItem[]> = {
             capacity: 8,
             sortOrder: 2,
             createdAt: '2026-05-22T09:00:00.000Z',
+            level: '중급',
+            leadTimeDays: 30,
         },
         {
             id: 'prog-seed-0003',
-            title: '커플 도자기 클래스 (일시 중단)',
+            title: '커플 도자기 클래스',
             status: ProgramStatus.INACTIVE,
             thumbnailUrl: 'https://placehold.co/200x150?text=couple',
             price: 88000,
@@ -644,12 +651,14 @@ const storePrograms: Record<string, PartnerProgramListItem[]> = {
             capacity: 2,
             sortOrder: 3,
             createdAt: '2026-05-23T09:00:00.000Z',
+            level: '심화',
+            leadTimeDays: 35,
         },
     ],
 };
 
 // 운영 클래스 목록 조회. 공방 미존재 시 null(→404), 존재하나 클래스 없으면 [].
-export function findPartnerStorePrograms(id: string): PartnerProgramListItem[] | null {
+export function findPartnerStorePrograms(id: string): PartnerProgramListSeed[] | null {
     if (!getStoreDetail(id)) return null;
     return storePrograms[id] ?? [];
 }

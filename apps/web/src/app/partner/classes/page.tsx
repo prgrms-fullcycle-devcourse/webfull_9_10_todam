@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ProgramStatus } from '@todam/shared';
 import { Button } from '@todam/ui';
 
-import { ProgramManagementItem, formatDuration, formatPrice } from '../../../entities/program';
+import { ClassItem, formatDuration, formatPrice } from '../../../entities/program';
 import {
     ClassListHeaderMenu,
     usePartnerPrograms,
@@ -61,21 +61,23 @@ export default function PartnerClassesPage() {
             )}
 
             {!isLoading && !isError && programs.length === 0 && (
-                <EmptyState message="아직 등록된 클래스가 없습니다.">
-                    <Button
-                        variant="filled"
-                        size="sm"
-                        onClick={() => router.push('/partner/classes/new')}
-                    >
-                        클래스 등록하기
-                    </Button>
-                </EmptyState>
+                <div className="flex h-full items-center justify-center">
+                    <EmptyState message="아직 등록된 클래스가 없습니다.">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push('/partner/classes/new')}
+                        >
+                            클래스 등록하기
+                        </Button>
+                    </EmptyState>
+                </div>
             )}
 
             {!isLoading && !isError && programs.length > 0 && (
                 <section className="flex flex-col gap-3 py-2">
                     {programs.map((program) => (
-                        <ProgramManagementItem
+                        <ClassItem
                             key={program.id}
                             programName={program.title}
                             metaItems={buildMetaItems(program)}

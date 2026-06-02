@@ -1,24 +1,22 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 
-export type ProgramManagementItemProps = {
+export type ClassItemProps = {
     programName: ReactNode;
-    // 서브텍스트 항목들. `・` 로 구분 렌더링. 예: ['기본', '2시간', '평균 28일'].
     metaItems: string[];
     price: ReactNode;
-    // 비공개(INACTIVE) 상태 표현. true 면 흐리게 + '비공개' 표기.
     isClosed?: boolean;
 } & HTMLAttributes<HTMLDivElement>;
 
-// 파트너 클래스 관리 카드. white 카드, 좌(클래스명+메타) / 우(가격) space-between.
+// 파트너 클래스 관리·공방 상세 운영 클래스 목록 공통 사용
 // isClosed=true(=status INACTIVE) → dim 처리 + 비공개 라벨.
-export function ProgramManagementItem({
+export function ClassItem({
     programName,
     metaItems,
     price,
     isClosed = false,
     className,
     ...props
-}: ProgramManagementItemProps) {
+}: ClassItemProps) {
     return (
         <div
             className={[
