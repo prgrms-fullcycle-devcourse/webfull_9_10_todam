@@ -1,0 +1,18 @@
+{
+  "name": "todam-workflows",
+  "version": "0.1.0+codex.20260602092841",
+  "description": "Todam feature planning, implementation, review, completion, and scrum logging workflows for Codex.",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Todam Workflows",
+    "shortDescription": "Run skill-plan, skill-pr, and related Todam workflows.",
+    "longDescription": "Todam Workflows ports the repository's Claude command and subagent workflow into Codex skills with skill-* names and compatible Supabase AI logging.",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Use skill-plan, skill-impl, skill-review, skill-complete, skill-summary-daily, skill-commit, skill-issue, or skill-pr for Todam workflows."
+  }
+}
