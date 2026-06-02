@@ -5,6 +5,7 @@ import {
     StoreRegistrationErrorCode,
     storeRegistrationSubmitRequestSchema,
     storeUpdateRequestSchema,
+    reviewWriteRequestSchema,
     PartnerStatus,
     StoreStatus,
     ProgramEditErrorCode,
@@ -17,6 +18,10 @@ import {
     type ReservationDetailResult,
     type ReservationListResult,
     type ReviewDetailResult,
+    type ReviewCreateResult,
+    type ReviewUpdateResult,
+    type ReviewImageUploadRequest,
+    type ReviewImageUploadResult,
     type StoreRegistrationStatusResult,
     type StoreRegistrationSubmitResult,
     type SlugAvailabilityResult,
@@ -46,6 +51,9 @@ import {
     findPartnerStorePrograms,
     findReservationDetail,
     findReviewByReservation,
+    createReview,
+    updateReview,
+    createReviewImageUpload,
     getStoreDetail,
     isBusinessNumberRegistered,
     isSlugTaken,
@@ -560,5 +568,116 @@ export const handlers = [
 
         const result: ReviewDetailResult = { review };
         return ok(path, result, '리뷰가 성공적으로 조회되었습니다.');
+    }),
+
+    // 리뷰 작성 — POST /reservations/{reservationId}/review (201).
+    // ?unauth=1 → 401, ?simulate=403|404|409|500 토글, 그 외 201.
+    http.post(`${API}/reservations/:reservationId/review`, async ({ params, request }) => {
+        const reservationId = String(params.reservationId);
+        const path = `/api/v1/reservations/${reservationId}/review`;
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '인증 정보가 유효하지 않거나 만료되었습니다.');
+        }
+        const sim = url.searchParams.get('simulate');
+        if (sim === '403')
+            return fail(
+                path,
+                403,
+                'FORBIDDEN',
+                '본인이 참여한 예약 정보에 대해서만 리뷰 작성이 허용됩니다.',
+            );
+        if (sim === '404')
+            return fail(
+                path,
+                404,
+                'RESERVATION_NOT_FOUND',
+                '요청하신 예약 정보를 찾을 수 없습니다.',
+            );
+        if (sim === '409')
+            return fail(path, 409, 'REVIEW_ALREADY_EXISTS', '이미 리뷰를 작성한 예약입니다.');
+        if (sim === '500')
+            return fail(
+                path,
+                500,
+                'INTERNAL_SERVER_ERROR',
+                '리뷰 등록 중 서버 오류가 발생했습니다.',
+            );
+
+        const parsed = reviewWriteRequestSchema.safeParse(await request.json());
+        if (!parsed.success) {
+            return fail(path, 400, 'BAD_REQUEST', '요청 값이 올바르지 않습니다.');
+        }
+        const review = createReview(reservationId, parsed.data);
+        const result: ReviewCreateResult = { review };
+        return ok(path, result, '리뷰가 성공적으로 등록되었습니다.', 201);
+    }),
+
+    // 리뷰 수정 — PATCH /reviews/{reviewId} (200). 응답 shape: D15(photos URL[] + updatedAt).
+    // ?unauth=1 → 401, ?simulate=400|403|500 토글, 미존재 → 404.
+    http.patch(`${API}/reviews/:reviewId`, async ({ params, request }) => {
+        const reviewId = String(params.reviewId);
+        const path = `/api/v1/reviews/${reviewId}`;
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '인증 정보가 유효하지 않거나 만료되었습니다.');
+        }
+        const sim = url.searchParams.get('simulate');
+        if (sim === '400')
+            return fail(
+                path,
+                400,
+                'REVIEW_EDIT_DEADLINE_EXCEEDED',
+                '리뷰 수정이 가능한 기한(작성일로부터 30일 이내)이 경과하여 수정을 완료할 수 없습니다.',
+            );
+        if (sim === '403')
+            return fail(
+                path,
+                403,
+                'FORBIDDEN',
+                '자신이 직접 등록한 리뷰에 대해서만 수정이 가능합니다.',
+            );
+        if (sim === '500')
+            return fail(
+                path,
+                500,
+                'INTERNAL_SERVER_ERROR',
+                '리뷰 수정 중 서버 오류가 발생했습니다.',
+            );
+
+        const parsed = reviewWriteRequestSchema.safeParse(await request.json());
+        if (!parsed.success) {
+            return fail(path, 400, 'BAD_REQUEST', '요청 값이 올바르지 않습니다.');
+        }
+        const review = updateReview(reviewId, parsed.data);
+        if (!review) {
+            return fail(path, 404, 'REVIEW_NOT_FOUND', '리뷰를 찾을 수 없습니다.');
+        }
+        // D15: PATCH 응답은 photos URL 문자열배열 + updatedAt.
+        const result: ReviewUpdateResult = {
+            review: {
+                id: review.id,
+                rating: review.rating,
+                content: review.content,
+                photos: review.photos.map((p) => p.imageUrl),
+                updatedAt: nowIso(),
+            },
+        };
+        return ok(path, result, '리뷰가 성공적으로 수정되었습니다.');
+    }),
+
+    // 리뷰 사진 presigned — POST /review/images/presigned (D14 추론 mock). 응답에 S3 key 포함.
+    http.post(`${API}/review/images/presigned`, async ({ request }) => {
+        const path = '/api/v1/review/images/presigned';
+        const body = (await request.json()) as ReviewImageUploadRequest;
+        const result: ReviewImageUploadResult = createReviewImageUpload(body.fileName);
+        return ok(
+            path,
+            result,
+            'Pre-signed URL이 성공적으로 발급되었습니다. 5분 이내에 업로드를 완료해주세요.',
+            201,
+        );
     }),
 ];
