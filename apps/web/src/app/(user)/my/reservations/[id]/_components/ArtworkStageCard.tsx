@@ -1,27 +1,23 @@
 'use client';
 
+import Link from 'next/link';
+
 import { RightIcon, SectionTitle } from '@todam/ui';
 import type { ReservationDetail } from '@todam/shared';
-
-import { useToast } from '../../../../../../shared/model';
 
 import { ReservationStatusBadge } from '../../../../../../entities/reservation';
 
 // 디자인 정본 (변형 B/C) — Figma `8118:2615` 작품 제작 단계 카드.
 // status=IN_PROGRESS 시에만 렌더. Badge(substate) + statusMessage + ProgressBar + "N단계 남음" + 자세히보기.
-// 자세히보기: 별도 endpoint 필요 — 본 작업 범위 밖. placeholder 동작.
+// 자세히보기: /my/artworks/{artworkId} 작품 상세로 이동
+// (plan: docs/exec-plans/active/유저 예약 - 작품 상세 조회.md, D7 후보 1).
 export type ArtworkStageCardProps = {
     reservation: ReservationDetail;
 };
 
 export function ArtworkStageCard({ reservation }: ArtworkStageCardProps) {
-    const { push } = useToast();
     const artwork = reservation.artwork;
     if (!artwork) return null;
-
-    const handleViewDetail = () => {
-        push({ message: '작품 제작 단계 자세히보기는 곧 지원돼요.' });
-    };
 
     return (
         <section className="flex w-full flex-col gap-2">
@@ -58,14 +54,13 @@ export function ArtworkStageCard({ reservation }: ArtworkStageCardProps) {
                         <span className="text-xs text-foreground-tertiary">
                             완성까지 {artwork.remainingSteps}단계 남음
                         </span>
-                        <button
-                            type="button"
-                            onClick={handleViewDetail}
+                        <Link
+                            href={`/my/artworks/${artwork.id}`}
                             className="flex items-center gap-1 text-xs text-foreground-secondary"
                         >
                             자세히보기
                             <RightIcon size={16} />
-                        </button>
+                        </Link>
                     </div>
                 </div>
             </div>

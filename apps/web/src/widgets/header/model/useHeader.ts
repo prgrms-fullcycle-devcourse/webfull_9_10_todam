@@ -28,6 +28,10 @@ const patternConfig: Array<{ test: RegExp; config: HeaderConfig }> = [
         test: /^\/my\/reservations\/[^/]+$/,
         config: { type: 'sub', title: '예약 자세히보기' },
     },
+    {
+        test: /^\/my\/artworks\/[^/]+$/,
+        config: { type: 'sub', title: '작품 제작 단계' },
+    },
 ];
 
 export type UseHeaderResult =
