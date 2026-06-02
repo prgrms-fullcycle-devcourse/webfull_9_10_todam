@@ -328,7 +328,11 @@ model Artwork {
 model Delivery {
   id              String      @id @default(uuid()) @db.Uuid
   reservationId   String      @unique @map("reservation_id") @db.Uuid
-  shippingAddress String?     @map("shipping_address")
+  recipientName   String?     @map("recipient_name") @db.VarChar(100) // 수령인(예약자와 다를 수 있음)
+  recipientPhone  String?     @map("recipient_phone") @db.VarChar(20)
+  postalCode      String?     @map("postal_code") @db.VarChar(10) // 우편번호(주소검색 API)
+  shippingAddress String?     @map("shipping_address") // 기본주소(도로명/지번)
+  addressDetail   String?     @map("address_detail") @db.VarChar(200) // 상세주소(동·호수 등)
   trackingNumber  String?     @map("tracking_number") @db.VarChar(100)
   carrier         String?     @db.VarChar(50)
   shippedAt       DateTime?   @map("shipped_at") @db.Date
