@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 
 /**
  * dev 전용 토큰 주입 라우트 (폰 실기 테스트용).
- * scripts/mobile-dev.mjs 가 발급한 URL hash(#token=...&api=...&next=...)를 받아
- * accessToken + 런타임 API base 를 localStorage 에 저장 후 목적지로 이동한다.
- * - 토큰은 query 가 아닌 hash 로 전달(서버 로그·전송 방지). 적용 후 hash 제거.
+ * QR(?n=<nonce>) 로 진입 → /dev-login/token 에서 토큰 조회 →
+ * accessToken + 런타임 API base 를 localStorage 에 저장 후 목적지로 이동.
+ * - 토큰은 URL/QR 에 없고 nonce 로만 서버에서 받아옴(노출 최소화).
  * - production 빌드에서는 비활성(no-op).
  */
 export default function DevLoginPage() {
@@ -20,19 +20,26 @@ export default function DevLoginPage() {
                 if (!cancelled) setMessage('이 페이지는 개발 환경에서만 동작합니다.');
                 return;
             }
-            const params = new URLSearchParams(window.location.hash.slice(1));
-            const token = params.get('token');
-            const apiBase = params.get('api');
-            const next = params.get('next') || '/partner/stores';
-
-            if (!token) {
-                if (!cancelled) setMessage('token 파라미터가 없습니다.');
+            const nonce = new URLSearchParams(window.location.search).get('n');
+            if (!nonce) {
+                if (!cancelled) setMessage('n(nonce) 파라미터가 없습니다.');
                 return;
             }
-            window.localStorage.setItem('accessToken', token);
-            if (apiBase) window.localStorage.setItem('todam_dev_api_base', apiBase);
-            // hash(토큰) 를 히스토리에서 지우며 목적지로 이동.
-            window.location.replace(next);
+            let data;
+            try {
+                const res = await fetch(`/dev-login/token?n=${encodeURIComponent(nonce)}`);
+                if (!res.ok) {
+                    if (!cancelled) setMessage('토큰 조회 실패(만료되었거나 실행 중이 아님).');
+                    return;
+                }
+                data = (await res.json()) as { token: string; api?: string; next?: string };
+            } catch {
+                if (!cancelled) setMessage('토큰 조회 중 오류.');
+                return;
+            }
+            window.localStorage.setItem('accessToken', data.token);
+            if (data.api) window.localStorage.setItem('todam_dev_api_base', data.api);
+            window.location.replace(data.next || '/partner/stores');
         })();
         return () => {
             cancelled = true;

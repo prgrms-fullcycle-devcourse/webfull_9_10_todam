@@ -12,11 +12,14 @@
 //   (선택) TODAM_WEB_PORT=3000  TODAM_API_PORT=4000  TODAM_NEXT=/partner/stores
 
 import { spawn } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+// web dev 라우트(/dev-login/token)가 읽는 토큰 파일. cwd(apps/web) 기준 .dev-login.json.
+const TOKEN_FILE = join(ROOT, 'apps/web/.dev-login.json');
 
 // ── .env.mobile 로드 (단순 파서, process.env 가 우선) ──────────────
 function loadEnvFile(path) {
@@ -54,6 +57,11 @@ function cleanup() {
         } catch {
             /* noop */
         }
+    }
+    try {
+        rmSync(TOKEN_FILE, { force: true });
+    } catch {
+        /* noop */
     }
 }
 process.on('SIGINT', () => {
@@ -137,20 +145,6 @@ async function loginWithRetry(timeoutMs = 120_000) {
     throw lastErr ?? new Error('로그인 타임아웃');
 }
 
-// ── tinyurl 단축 (실패 시 원본 사용) ─────────────────────────────
-async function shorten(longUrl) {
-    try {
-        const res = await fetch(
-            `https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`,
-        );
-        if (!res.ok) return null;
-        const short = (await res.text()).trim();
-        return short.startsWith('http') ? short : null;
-    } catch {
-        return null;
-    }
-}
-
 async function main() {
     console.log('▶ tunnel 시작 중… (cloudflared)');
     const [webUrl, apiUrl] = await Promise.all([
@@ -162,9 +156,13 @@ async function main() {
     const token = await loginWithRetry();
     console.log('✓ accessToken 발급 완료');
 
-    const hash = new URLSearchParams({ token, api: apiUrl, next: NEXT_PATH }).toString();
-    const devUrl = `${webUrl}/dev-login#${hash}`;
-    const short = await shorten(devUrl);
+    // 토큰은 QR/URL 에 넣지 않고 로컬 파일에 기록 → web 라우트가 nonce 로 조회.
+    // (QR 데이터 = nonce 만 → 작게 유지. 토큰이 URL·히스토리·외부에 안 남음)
+    const nonce = randomUUID();
+    writeFileSync(TOKEN_FILE, JSON.stringify({ nonce, token, api: apiUrl, next: NEXT_PATH }));
+
+    const params = new URLSearchParams({ n: nonce }).toString();
+    const devUrl = `${webUrl}/dev-login?${params}`;
 
     let qr = null;
     try {
@@ -179,9 +177,8 @@ async function main() {
     if (qr) qr.generate(devUrl, { small: true });
     else console.log('(QR 보려면 `pnpm add -Dw qrcode-terminal`)');
     console.log('\nURL:', devUrl);
-    if (short) console.log('단축:', short);
-    console.log('\n앱 접속용(토큰 없이):', webUrl);
-    console.log('\nCtrl+C 로 종료 (tunnel 닫힘)\n');
+    console.log('앱 접속용(토큰 없이):', webUrl);
+    console.log('\nCtrl+C 로 종료 (tunnel·토큰파일 정리)\n');
 }
 
 main().catch((e) => {
