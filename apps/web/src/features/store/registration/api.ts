@@ -7,9 +7,9 @@ import {
     type CreateStoreImageResult,
     type CreateStoreRequest,
     type CreateStoreResult,
+    type PartnerOnboardingResult,
     type PartnerStoreDetailResult,
     type SlugAvailabilityResult,
-    type StoreRegistrationStatusResult,
     type SubmitStoreResult,
 } from '@todam/shared';
 
@@ -36,12 +36,10 @@ export function geocode(query: string): Promise<GeocodeCoords> {
     return geocodeAddress(query);
 }
 
-// 파트너 홈(partner/page) 진입 시 미게시 온보딩 감지용. 실 BE 미존재 — mock 전용.
-export function getStoreRegistrationStatus(preview?: 'rejected') {
-    const q = preview ? `?preview=${preview}` : '';
-    return apiFetch<StoreRegistrationStatusResult>(`${MOCK_BASE}/onboarding${q}`, {
-        method: 'GET',
-    });
+// 온보딩 상태 조회 (검수중/반려 영속화). 루트 경로(/partner/onboarding) → MSW(/api/v1) 미가로챔 → 실 BE.
+// 응답: { partnerStatus: PartnerStatus|null, store: {id,status,rejectedReason}|null }
+export function getPartnerOnboarding() {
+    return apiFetch<PartnerOnboardingResult>('/partner/onboarding', { method: 'GET' });
 }
 
 // ─── 실 API 엔드포인트 (plan API Contract 스냅샷 바인딩) ──────────

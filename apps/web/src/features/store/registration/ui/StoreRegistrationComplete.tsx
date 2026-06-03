@@ -1,6 +1,6 @@
 'use client';
 
-import { formatYmdHm, StoreStatus } from '@todam/shared';
+import { formatYmdHm, PartnerStatus, StoreStatus } from '@todam/shared';
 import {
     Badge,
     BottomBar,
@@ -19,16 +19,23 @@ export function StoreRegistrationComplete({
     storeId,
     onClose,
     onEditInfo,
+    partnerStatus,
 }: {
     storeId: string;
     onClose: () => void;
     onEditInfo: () => void;
+    // 게이트/플로우에서 전달. APPROVED 가 아니면 하단 '목록으로'(홈으로) 버튼 숨김.
+    partnerStatus?: PartnerStatus | null;
 }) {
     // 제출된 공방 상세 조회 (GET /partner/stores/{storeId}) → 검수 상태/반려 사유.
     const { data } = useStoreReviewStatus(storeId);
     const store = data?.store;
 
     const rejected = store?.status === StoreStatus.REJECTED;
+    // 게이트에서 진입(partnerStatus 전달)했고 아직 APPROVED 가 아니면 하단 액션 버튼 숨김.
+    // partnerStatus 미전달(같은 세션 제출 직후 플로우)이면 기존 버튼 유지.
+    const showBottomAction =
+        partnerStatus === undefined || partnerStatus === PartnerStatus.APPROVED;
 
     return (
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -118,11 +125,13 @@ export function StoreRegistrationComplete({
                 </div>
             </div>
 
-            <BottomBar>
-                <Button className="w-full" onClick={onClose}>
-                    홈으로
-                </Button>
-            </BottomBar>
+            {showBottomAction && (
+                <BottomBar>
+                    <Button className="w-full" onClick={onClose}>
+                        홈으로
+                    </Button>
+                </BottomBar>
+            )}
         </div>
     );
 }

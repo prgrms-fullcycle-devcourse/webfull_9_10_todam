@@ -9,7 +9,7 @@ import {
     createStore,
     createStoreImage,
     geocode,
-    getStoreRegistrationStatus,
+    getPartnerOnboarding,
     getStoreReviewStatus,
     submitStore,
     uploadToPresignedUrl,
@@ -84,10 +84,12 @@ export function useStoreReviewStatus(storeId: string | null) {
     });
 }
 
-// 파트너 홈 온보딩 감지 (mock 전용 — 실 BE 미존재). partner/page 호환 유지.
-export function useStoreRegistrationStatus(preview?: 'rejected') {
+// 온보딩 상태 조회 (검수중/반려 영속화). 게이트 진입 시 1회 조회용.
+// enabled=false 면 비-게이트 영역(고객 라우트)에서 불필요 조회 방지.
+export function usePartnerOnboarding(enabled = true) {
     return useQuery({
-        queryKey: [...KEY, 'status', preview ?? 'default'],
-        queryFn: () => getStoreRegistrationStatus(preview),
+        queryKey: [...KEY, 'onboarding'],
+        queryFn: getPartnerOnboarding,
+        enabled,
     });
 }
