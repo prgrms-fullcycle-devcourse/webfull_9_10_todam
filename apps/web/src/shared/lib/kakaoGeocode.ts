@@ -1,0 +1,101 @@
+// Kakao Maps JS SDK 기반 주소 → 좌표 변환.
+
+const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
+const SDK_SRC = (key: string) =>
+    `//dapi.kakao.com/v2/maps/sdk.js?appkey=${key}&autoload=false&libraries=services`;
+
+export interface GeocodeCoords {
+    latitude: number;
+    longitude: number;
+}
+
+interface KakaoGeocoderResult {
+    x: string; // longitude
+    y: string; // latitude
+}
+interface KakaoGeocoder {
+    addressSearch: (
+        addr: string,
+        cb: (result: KakaoGeocoderResult[], status: string) => void,
+    ) => void;
+}
+interface KakaoMapsNamespace {
+    load: (cb: () => void) => void;
+    services: {
+        Geocoder: new () => KakaoGeocoder;
+        Status: { OK: string };
+    };
+}
+
+declare global {
+    interface Window {
+        kakao?: { maps?: KakaoMapsNamespace };
+    }
+}
+
+let loading: Promise<void> | null = null;
+
+function loadSdk(): Promise<void> {
+    if (typeof window === 'undefined') return Promise.reject(new Error('no window'));
+    if (!KAKAO_APP_KEY) return Promise.reject(new Error('Kakao Map 키 미설정'));
+    if (window.kakao?.maps?.services) return Promise.resolve();
+    if (loading) return loading;
+
+    loading = new Promise<void>((resolve, reject) => {
+        const existing = document.querySelector<HTMLScriptElement>('script[data-kakao-sdk]');
+        const onReady = () => {
+            const maps = window.kakao?.maps;
+            if (!maps) {
+                loading = null;
+                reject(new Error('Kakao Maps SDK 로드 실패'));
+                return;
+            }
+            // autoload=false → load() 로 services 모듈 준비 후 resolve.
+            maps.load(() => resolve());
+        };
+
+        if (existing) {
+            existing.addEventListener('load', onReady, { once: true });
+            existing.addEventListener(
+                'error',
+                () => {
+                    loading = null;
+                    reject(new Error('Kakao Maps SDK 로드 실패'));
+                },
+                { once: true },
+            );
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = SDK_SRC(KAKAO_APP_KEY);
+        script.async = true;
+        script.dataset.kakaoSdk = 'true';
+        script.onload = onReady;
+        script.onerror = () => {
+            loading = null;
+            reject(new Error('Kakao Maps SDK 로드 실패'));
+        };
+        document.head.appendChild(script);
+    });
+    return loading;
+}
+
+// 주소 문자열 → 좌표. 변환 실패/결과 없음 시 throw (호출측에서 토스트 처리).
+export async function geocodeAddress(address: string): Promise<GeocodeCoords> {
+    await loadSdk();
+    const maps = window.kakao!.maps!;
+    return new Promise<GeocodeCoords>((resolve, reject) => {
+        const geocoder = new maps.services.Geocoder();
+        geocoder.addressSearch(address, (result, status) => {
+            if (status === maps.services.Status.OK && result[0]) {
+                resolve({
+                    latitude: Number(result[0].y),
+                    longitude: Number(result[0].x),
+                });
+                return;
+            }
+            reject(new Error('주소 좌표 변환 실패'));
+        });
+    });
+}

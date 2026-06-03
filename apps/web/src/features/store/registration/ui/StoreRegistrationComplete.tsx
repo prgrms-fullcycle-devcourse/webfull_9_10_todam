@@ -13,24 +13,22 @@ import {
     EmailIcon,
 } from '@todam/ui';
 import { ResultTable } from '@/shared/ui';
-import { useStoreRegistrationStatus } from '../queries';
+import { useStoreReviewStatus } from '../queries';
 
 export function StoreRegistrationComplete({
+    storeId,
     onClose,
     onEditInfo,
 }: {
+    storeId: string;
     onClose: () => void;
     onEditInfo: () => void;
 }) {
-    // dev 미리보기: window.__onboardingPreviewRejected = true 시 반려 화면
-    const preview =
-        typeof window !== 'undefined' &&
-        (window as unknown as { __onboardingPreviewRejected?: boolean }).__onboardingPreviewRejected
-            ? 'rejected'
-            : undefined;
-    const { data: status } = useStoreRegistrationStatus(preview);
+    // 제출된 공방 상세 조회 (GET /partner/stores/{storeId}) → 검수 상태/반려 사유.
+    const { data } = useStoreReviewStatus(storeId);
+    const store = data?.store;
 
-    const rejected = status?.storeStatus === StoreStatus.REJECTED;
+    const rejected = store?.status === StoreStatus.REJECTED;
 
     return (
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -86,7 +84,7 @@ export function StoreRegistrationComplete({
                             <div className="flex flex-col gap-2 border-t border-border-subtle pt-3">
                                 <p className="text-xs text-foreground-secondary">
                                     사유:{' '}
-                                    {status?.rejectedReason ?? '반려 사유가 등록되지 않았습니다.'}
+                                    {store?.rejectedReason ?? '반려 사유가 등록되지 않았습니다.'}
                                 </p>
                                 <Button variant="outline" size="sm" onClick={onEditInfo}>
                                     정보 수정하기
@@ -97,22 +95,22 @@ export function StoreRegistrationComplete({
 
                     {/* 공방 요약 */}
                     <ResultTable
-                        title={status?.storeName ?? '-'}
-                        location={status?.address}
+                        title={store?.name ?? '-'}
+                        location={store?.address}
                         rows={[
                             {
                                 label: '사업자 등록번호',
-                                value: status?.businessNumber ?? '-',
+                                value: store?.businessDocument?.businessNumber ?? '-',
                                 icon: <ConfirmIcon size={16} />,
                             },
                             {
                                 label: '신청일시',
-                                value: formatYmdHm(status?.createdAt ?? '') || '-',
+                                value: formatYmdHm(store?.createdAt ?? '') || '-',
                                 icon: <ClockIcon size={16} />,
                             },
                             {
                                 label: '이메일',
-                                value: status?.email ?? '-',
+                                value: store?.businessDocument?.email ?? '-',
                                 icon: <EmailIcon size={16} />,
                             },
                         ]}

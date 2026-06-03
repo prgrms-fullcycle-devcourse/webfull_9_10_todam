@@ -32,7 +32,16 @@ export function BusinessStep() {
         setAddrLoading(true);
         try {
             const result = await openPostcode();
-            const { latitude, longitude } = await geocodeMutation.mutateAsync(result.roadAddress);
+            // 좌표 변환(Kakao)은 실패해도 주소 선택 자체는 유지(키 미설정 등 graceful). 좌표는 0/0 폴백.
+            let latitude = 0;
+            let longitude = 0;
+            try {
+                const coords = await geocodeMutation.mutateAsync(result.roadAddress);
+                latitude = coords.latitude;
+                longitude = coords.longitude;
+            } catch {
+                push({ message: '주소 좌표를 가져오지 못했어요. 위치 정보 없이 저장됩니다.' });
+            }
             setAddress(result.roadAddress, latitude, longitude);
         } catch {
             push({ message: '주소 검색을 사용할 수 없습니다. 잠시 후 다시 시도해주세요.' });

@@ -105,6 +105,105 @@ export const storeRegistrationSubmitResultSchema = z.object({
 });
 export type StoreRegistrationSubmitResult = z.infer<typeof storeRegistrationSubmitResultSchema>;
 
+// ─── 실 API 계약 (plan API Contract 스냅샷 바인딩) ───────────────
+// 아래 4종은 apps/api 의 실제 엔드포인트 계약. (위 onboarding 계약은 MSW 단일-콜 mock 전용.)
+
+// 1) POST /stores — 공방 초안 생성
+export const createStoreBusinessDocumentSchema = z.object({
+    businessNumber: businessNumberSchema,
+    businessName: z.string().min(1).max(200),
+    ownerName: z.string().min(1).max(100),
+    businessAddress: z.string().min(1).max(500),
+    email: emailSchema.nullable().optional(),
+});
+
+export const createStoreRequestSchema = z.object({
+    name: z.string().min(2).max(40),
+    slug: slugSchema.optional(),
+    description: z.string().max(1000).nullable().optional(),
+    phone: phoneSchema,
+    address: z.string().min(1),
+    latitude: z.number(),
+    longitude: z.number(),
+    convenienceInfo: convenienceInfoSchema,
+    autoConfirm: z.boolean(),
+    cancelDeadlineDays: z.number().int().min(0),
+    reservationIntervalMinutes: z.union([
+        z.literal(60),
+        z.literal(90),
+        z.literal(120),
+        z.literal(180),
+    ]),
+    // BE CreateStoreDto 필수. (contract 본문 예시엔 누락되어 있으나 DTO 기준 필수 — Decision Log 참조)
+    maxCapacityPerSlot: z.number().int().positive(),
+    operatingHours: z.array(operatingHourInputSchema).min(1),
+    businessDocument: createStoreBusinessDocumentSchema,
+});
+export type CreateStoreRequest = z.infer<typeof createStoreRequestSchema>;
+
+export const createStoreResultSchema = z.object({
+    store: z.object({
+        id: z.string(),
+        partnerId: z.string(),
+        name: z.string(),
+        slug: z.string(),
+        status: z.nativeEnum(StoreStatus),
+        createdAt: z.string(),
+    }),
+});
+export type CreateStoreResult = z.infer<typeof createStoreResultSchema>;
+
+// 2) POST /partner/stores/{storeId}/images — presigned PUT URL 발급
+export const createStoreImageRequestSchema = z.object({
+    fileName: z.string(),
+    fileType: z.string(),
+    isThumbnail: z.boolean(),
+});
+export type CreateStoreImageRequest = z.infer<typeof createStoreImageRequestSchema>;
+
+export const createStoreImageResultSchema = z.object({
+    imageId: z.string(),
+    uploadUrl: z.string(),
+    imageUrl: z.string(),
+});
+export type CreateStoreImageResult = z.infer<typeof createStoreImageResultSchema>;
+
+// 3) PATCH /partner/stores/{storeId}/images/{imageId}/confirm — 업로드 확인
+export const confirmStoreImageResultSchema = z.object({
+    image: z.object({
+        id: z.string(),
+        status: z.string(),
+    }),
+});
+export type ConfirmStoreImageResult = z.infer<typeof confirmStoreImageResultSchema>;
+
+// 4) POST /partner/stores/{storeId}/submit — 심사 제출
+export const submitStoreResultSchema = z.object({
+    store: z.object({
+        id: z.string(),
+        status: z.nativeEnum(StoreStatus),
+        updatedAt: z.string(),
+    }),
+});
+export type SubmitStoreResult = z.infer<typeof submitStoreResultSchema>;
+
+// 실 API 에러 코드 (plan 스냅샷). 위 StoreRegistrationErrorCode(=mock 계약)와 별개.
+export const StoreRegistrationApiErrorCode = {
+    BAD_REQUEST: 'BAD_REQUEST',
+    UNAUTHORIZED: 'UNAUTHORIZED',
+    PARTNER_NOT_APPROVED: 'PARTNER_NOT_APPROVED',
+    SLUG_CONFLICT: 'SLUG_CONFLICT',
+    FORBIDDEN: 'FORBIDDEN',
+    NOT_FOUND: 'NOT_FOUND',
+    ALREADY_UPLOADED: 'ALREADY_UPLOADED',
+    MISSING_REQUIRED_FIELDS: 'MISSING_REQUIRED_FIELDS',
+    INVALID_STORE_STATUS: 'INVALID_STORE_STATUS',
+    FILE_SIZE_EXCEEDED: 'FILE_SIZE_EXCEEDED',
+    INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
+} as const;
+export type StoreRegistrationApiErrorCode =
+    (typeof StoreRegistrationApiErrorCode)[keyof typeof StoreRegistrationApiErrorCode];
+
 // ─── 온보딩/검수 상태 조회 ───────────────────────────────────────
 export const storeRegistrationStatusResultSchema = z.object({
     partnerId: z.string(),
