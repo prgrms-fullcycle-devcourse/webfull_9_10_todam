@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 
 import { ReservationDeliveryMethod, ReservationStatus } from '@todam/shared';
 
-import { useReservationDetail } from '@/features/reservation/detail';
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useModal, useToast } from '@/shared/model';
 
+import { useReservationDetail } from '../queries';
 import { ArtworkStageCard } from './ArtworkStageCard';
 import { CancelDialog } from './CancelDialog';
 import { DeliveryInfoSection } from './DeliveryInfoSection';
