@@ -16,6 +16,8 @@ Create a PR to `dev` using Todam conventions.
 5. Use title format `[type] #issue title` when an issue number is provided.
 6. Show the PR draft and wait for approval.
 7. After approval, run `gh pr create --base dev`.
+   - Assign the PR to the author: `--assignee @me`.
+   - Set labels to match the work context (usually the linked issue's labels). e.g. refactor work → `--label "🔨 Refactor"`.
 
 Mark checklist items only when they are actually true.
 
