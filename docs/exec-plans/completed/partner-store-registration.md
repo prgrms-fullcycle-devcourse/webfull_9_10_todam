@@ -15,7 +15,7 @@
 - [x] (2026-06-03 reopen) 사업자등록증 파일 저장 — `BusinessDocumentDto.documentUrl` + `create-store.use-case` `document_url` 저장 복원
 - [x] (2026-06-03 reopen) 사업자등록증 파일 저장 — FE BusinessStep 실 업로드 연동(가짜 `mock://uploads` 제거) + 미리보기 + contract 반영
 - [x] (2026-06-03) 검수중/반려 영속화 — BE `GET /partner/onboarding`(AuthGuard, `{partnerStatus, store{id,status,rejectedReason}}`) 신규
-- [x] (2026-06-03) 검수중/반려 영속화 — FE 온보딩 게이트 layout(`partner/layout.tsx` + `(user)/apply/layout.tsx` + 공유 `PartnerOnboardingGate`)으로 진입 시 서버 상태 분기 렌더
+- [x] (2026-06-03) 검수중/반려 영속화 — FE 온보딩 게이트를 루트 `app/AppShell.tsx`(client)로 구현. `/partner`·`/apply`만 스코프 조회, blocking 시 Header·BottomNav 없이 전체 takeover, 무파트너 `/partner` 진입 → `/apply` 리다이렉트. (별도 layout 게이트 안 → 루트 chrome 레벨 통합)
 - [x] (2026-06-03) 검수중/반려 영속화 — mock(`getStoreRegistrationStatus`, `/api/v1/partner/onboarding`) → 실 `GET /partner/onboarding` 전환(경로/응답 정렬)
 
 ## Context
@@ -169,11 +169,12 @@
 
 ## Outcome
 
-- Status:
+- Status: **완료 (2026-06-03)** — 첫/추가 공방 등록 실 API 연동, 사업자등록증 파일 저장, 검수중/반려 화면 영속화(루트 AppShell 온보딩 게이트)까지 구현·로컬 e2e 확인. Status 전 항목 [x].
 - Follow-up: Admin 검수(승인/반려) — 별도 admin plan. 반려 후 재제출(공방 수정) — 별도 기능. 사업자등록증 **OCR/국세청 진위 확인(`ocrStatus`/`verifiedAt`)** — 백로그. (파일 저장 자체는 2026-06-03 IN scope로 정정.)
-- Follow-up: **추가 공방 등록 APPROVED 가드 구현** — contract `PARTNER_NOT_APPROVED`(403) 추가 + MSW `/partner/onboarding` status 게이트 + FE 403 토스트. (규칙=Decision Log 2026-06-01, 현재 미구현 — Risks 참조.)
+- Follow-up: **FE 인증/라우트 가드 연동** — 현재 FE 로그인 미연동(`LoginForm` TODO, `setAuthTokenGetter` 미연결). 토큰은 테스트용 localStorage stopgap(`auth-token.ts`, 미커밋)으로 주입 중. 로그인+토큰 refresh 연동 시 AppShell 게이트의 `isError`(401) 경로를 로그인 리다이렉트로 처리(현재는 children 통과). [R1]
+- Follow-up: **SUSPENDED/TERMINATED 파트너 게이트 분기** — admin 정지/해지 전이 기능 구현(현재 미구현, 상태 부여 불가) 후, AppShell 게이트에 해당 상태 차단/안내 분기 추가. 현재는 APPROVED 외 예외상태가 파트너센터 통과(데이터 API는 PartnerGuard 403). [R2]
+- Follow-up: **추가 공방 등록 APPROVED 가드** — BE `POST /stores` 는 `PARTNER_NOT_APPROVED`(403) 구현됨(`create-store.use-case`). FE 403 토스트 분기는 미구현(별도).
 - Follow-up: **BE slug-availability 엔드포인트 추가** (별도 be) — 현재 slug 중복확인은 MSW mock 의존(`/api/v1/partner/stores/slug-availability`). 실 BE 엔드포인트 신설 후 FE `checkSlug` 경로를 루트 실 API 로 전환. 제출 시점 `409 SLUG_CONFLICT` 는 이미 실 연동됨.
-- ~~Follow-up: 검수중/반려 화면 영속화~~ → **2026-06-03 본 plan In scope로 승격, contract 스냅샷 완료**(아래 API Contract #5 `GET /partner/onboarding`). Status·Scope·Plan·Decision Log 반영. 구현 대기(미체크).
 
 ## API Contract (스냅샷)
 
