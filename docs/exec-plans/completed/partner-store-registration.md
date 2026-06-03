@@ -170,7 +170,9 @@
 ## Outcome
 
 - Status: **완료 (2026-06-03)** — 첫/추가 공방 등록 실 API 연동, 사업자등록증 파일 저장, 검수중/반려 화면 영속화(루트 AppShell 온보딩 게이트)까지 구현·로컬 e2e 확인. Status 전 항목 [x].
-- Follow-up: Admin 검수(승인/반려) — 별도 admin plan. 반려 후 재제출(공방 수정) — 별도 기능. 사업자등록증 **OCR/국세청 진위 확인(`ocrStatus`/`verifiedAt`)** — 백로그. (파일 저장 자체는 2026-06-03 IN scope로 정정.)
+- Follow-up: Admin 검수(승인/반려) — 별도 admin plan. 사업자등록증 **OCR/국세청 진위 확인(`ocrStatus`/`verifiedAt`)** — 백로그. (파일 저장 자체는 2026-06-03 IN scope로 정정.)
+- 추가 구현(2026-06-03, 반려 재제출 — 사업자정보 수정): BE `PATCH /partner/stores/:storeId/business-document`(AuthGuard+소유권, REJECTED→PENDING 재심사 전이, businessNumber 하이픈 strip, documentUrl objectExists 검증) 신규. FE `features/store/business-edit` 실 BE 전환 — 상세 prefill은 실 `GET /partner/stores/{id}` 격리 조회, businessNumber prefill 하이픈 포맷, 사업자등록증 실 presigned 업로드+썸네일, 저장 시 documentUrl 전송. 루트 `AppShell` 게이트에 정보수정 라우트(`/partner/stores/{id}/business`·`/edit/*`) 차단 예외 + `onEditInfo`→business-edit 경로 정정.
+  - 한계/후속: ① `GET /partner/stores/{id}` 응답(businessDocument)에 `documentUrl` 미포함 → 기존 사업자등록증 prefill 불가(재업로드만). detail 응답 documentUrl 추가는 별도. ② `businessAddress`는 도로명+상세 **결합 단일 저장**이라 편집서 상세 분리 불가 — 결합 단일 필드 유지(분리하려면 `address_detail` 별도 저장 = 등록·스키마·편집 파급, 별도 결정). 공방 주소(store.address)도 동일.
 - Follow-up: **FE 인증/라우트 가드 연동** — 현재 FE 로그인 미연동(`LoginForm` TODO, `setAuthTokenGetter` 미연결). 토큰은 테스트용 localStorage stopgap(`auth-token.ts`, 미커밋)으로 주입 중. 로그인+토큰 refresh 연동 시 AppShell 게이트의 `isError`(401) 경로를 로그인 리다이렉트로 처리(현재는 children 통과). [R1]
 - Follow-up: **SUSPENDED/TERMINATED 파트너 게이트 분기** — admin 정지/해지 전이 기능 구현(현재 미구현, 상태 부여 불가) 후, AppShell 게이트에 해당 상태 차단/안내 분기 추가. 현재는 APPROVED 외 예외상태가 파트너센터 통과(데이터 API는 PartnerGuard 403). [R2]
 - Follow-up: **추가 공방 등록 APPROVED 가드** — BE `POST /stores` 는 `PARTNER_NOT_APPROVED`(403) 구현됨(`create-store.use-case`). FE 403 토스트 분기는 미구현(별도).

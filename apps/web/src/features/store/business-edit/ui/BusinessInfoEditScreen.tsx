@@ -8,6 +8,7 @@ import {
 } from '@todam/shared';
 import { BottomBar, Button, TextInput } from '@todam/ui';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { ApiError } from '@/shared/api';
 import { openPostcode } from '@/shared/lib/daumPostcode';
@@ -15,7 +16,11 @@ import { useEditableForm } from '@/shared/lib/useEditableForm';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useToast } from '@/shared/model';
 import { ImageUploadField, type ImageUploadGridItem } from '@/shared/ui';
-import { useBusinessEditStoreDetail, useUpdateBusinessDocument } from '../queries';
+import {
+    useBusinessEditStoreDetail,
+    useUpdateBusinessDocument,
+    useUploadBusinessDocument,
+} from '../queries';
 
 const isBizNumber = (v: string) => businessNumberSchema.safeParse(v).success;
 const isEmail = (v: string) => emailSchema.safeParse(v).success;
@@ -61,17 +66,24 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
     const doc = store.businessDocument;
 
     const baseline: BusinessForm = {
-        businessNumber: doc.businessNumber,
+        // BE는 하이픈 없는 10자리 저장 → 폼 검증(businessNumberSchema=000-00-00000)에 맞춰 하이픈 포맷.
+        businessNumber: formatBusinessNumber(doc.businessNumber),
         businessName: doc.businessName,
         ownerName: doc.ownerName,
         businessAddress: doc.businessAddress,
         email: doc.email,
+        // 한계: GET /partner/stores/{id} 응답(businessDocument)에 documentUrl 미포함 → prefill 불가.
+        // baseline=null 유지(재업로드만). detail 응답에 documentUrl 추가는 별도 작업.
         documentUrl: null,
     };
     const { form, patch, isDirty } = useEditableForm(baseline);
 
     const mutation = useUpdateBusinessDocument(storeId);
+    const uploadDoc = useUploadBusinessDocument();
     const saving = mutation.isPending;
+
+    // 업로드한 파일의 로컬 미리보기 URL. 이미지일 때만 썸네일(PDF 는 라벨 유지). (등록 BusinessStep 동일 패턴)
+    const [docPreview, setDocPreview] = useState<{ src: string; name: string } | null>(null);
 
     // 전역 Header override: 타이틀 + 뒤로가기(상세 복귀). 우측 액션 없음.
     useHeaderOverride({
@@ -105,12 +117,34 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
         }
     };
 
+    const handleAddDocument = async (files: File[]) => {
+        const file = files[0];
+        if (!file || uploadDoc.isPending) return;
+        try {
+            const { documentUrl } = await uploadDoc.mutateAsync(file);
+            patch({ documentUrl });
+            const isImage = file.type.startsWith('image/');
+            setDocPreview({ src: isImage ? URL.createObjectURL(file) : '', name: file.name });
+        } catch {
+            push({ message: '사업자등록증 업로드에 실패했어요. 잠시 후 다시 시도해주세요.' });
+        }
+    };
+
+    const handleRemoveDocument = () => {
+        if (docPreview?.src) URL.revokeObjectURL(docPreview.src);
+        setDocPreview(null);
+        patch({ documentUrl: null });
+    };
+
+    // 이미지 파일이면 로컬 썸네일(src) 표시, PDF 등은 파일명 라벨 유지. (등록 BusinessStep 동일)
     const documentItems: ImageUploadGridItem[] = form.documentUrl
         ? [
               {
                   key: form.documentUrl,
-                  label: form.documentUrl.replace('mock://uploads/', ''),
-                  onRemove: () => patch({ documentUrl: null }),
+                  src: docPreview?.src || undefined,
+                  label: docPreview?.src ? undefined : docPreview?.name,
+                  alt: docPreview?.name,
+                  onRemove: handleRemoveDocument,
               },
           ]
         : [];
@@ -124,6 +158,8 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
                 ownerName: form.ownerName,
                 businessAddress: form.businessAddress,
                 email: form.email,
+                // 재첨부한 S3 documentUrl(BE 가 objectExists 검증·저장). null 이면 미변경/제거.
+                documentUrl: form.documentUrl,
             });
             push({ message: '사업자 정보가 수정되어 재심사를 요청했어요.' });
             router.push(`/partner/stores/${storeId}`);
@@ -140,13 +176,11 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
                 <ImageUploadField
                     label="사업자 등록증"
                     items={documentItems}
-                    onAdd={(files) => {
-                        const file = files[0];
-                        if (file) patch({ documentUrl: `mock://uploads/${file.name}` });
-                    }}
+                    onAdd={handleAddDocument}
                     max={1}
                     multiple={false}
                     accept="image/jpeg,image/png,application/pdf"
+                    addDisabled={uploadDoc.isPending}
                 />
 
                 <TextInput

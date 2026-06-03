@@ -3,7 +3,23 @@
 import type { BusinessDocumentUpdateRequest } from '@todam/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { createBusinessDocumentImage, uploadToPresignedUrl } from '../registration/api';
 import { getBusinessEditStoreDetail, updateBusinessDocument } from './api';
+
+// 사업자등록증 실 업로드(등록 BusinessStep 과 동일 패턴): presigned 발급 → S3 직접 PUT → documentUrl 반환.
+// 업로드 함수는 store-비종속이라 registration/api 의 것을 그대로 재사용(중복 정의 회피).
+export function useUploadBusinessDocument() {
+    return useMutation({
+        mutationFn: async (file: File): Promise<{ documentUrl: string }> => {
+            const { uploadUrl, documentUrl } = await createBusinessDocumentImage({
+                fileName: file.name,
+                fileType: file.type,
+            });
+            await uploadToPresignedUrl(uploadUrl, file, file.type);
+            return { documentUrl };
+        },
+    });
+}
 
 // business-edit 전용 queryKey 격리 (partner-store-detail mock 캐시와 분리).
 const KEY = ['business-edit', 'store'] as const;
