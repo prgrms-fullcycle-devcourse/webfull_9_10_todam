@@ -51,22 +51,22 @@ function errorMessage(error: unknown): string {
     return '공방 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.';
 }
 
-// 평점 행 우측 액션(문의하기/공유하기). 아이콘 + 라벨만 배치. 동작은 API 연동 시 구현.
+// 평점 행 우측 액션(문의하기/공유하기). 아이콘 + 라벨만 배치.
 // 디자인: 평점 행 gap 4px 안에서 "・" 구분자 2개(문의 앞 / 문의·공유 사이)와 함께 정렬.
-function StoreInfoActions() {
+// 문의하기 = 공방 전화번호로 tel: 다이얼. (공유하기 동작은 follow-up)
+function StoreInfoActions({ phone }: { phone: string }) {
+    // tel: 스킴은 하이픈 허용하나 일부 다이얼러 호환 위해 숫자·+ 만 남김.
+    const telHref = `tel:${phone.replace(/[^0-9+]/g, '')}`;
     return (
         <>
             <span className="text-foreground-tertiary">・</span>
-            <button
-                type="button"
+            <a
+                href={telHref}
                 className="inline-flex items-center gap-1 text-xs font-medium text-foreground-tertiary hover:text-foreground"
-                onClick={() => {
-                    // TODO: API 연동 시 구현 (문의하기)
-                }}
             >
                 <PhoneIcon size={16} />
                 <span>문의하기</span>
-            </button>
+            </a>
             <span className="text-foreground-tertiary">・</span>
             <button
                 type="button"
@@ -164,7 +164,7 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                             reviewCount={store.reviewCount}
                             description={store.description ?? ''}
                             tags={<ConvenienceChips convenienceInfo={store.convenienceInfo} />}
-                            actions={<StoreInfoActions />}
+                            actions={<StoreInfoActions phone={store.phone} />}
                         />
                     </div>
 
