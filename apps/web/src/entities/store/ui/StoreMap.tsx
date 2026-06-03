@@ -64,7 +64,7 @@ export function StoreMap({ latitude, longitude, name, address }: StoreMapProps) 
             type="button"
             onClick={failed ? copyAddress : openExternal}
             aria-label={failed ? `${name} 주소 복사` : `${name} 위치 지도에서 보기`}
-            className="relative block h-32 w-full cursor-pointer overflow-hidden rounded-2xl bg-muted"
+            className="relative z-0 block h-32 w-full cursor-pointer overflow-hidden rounded-2xl bg-muted"
         >
             {failed ? (
                 <span className="grid h-full w-full place-items-center text-xs font-medium text-foreground-tertiary">
