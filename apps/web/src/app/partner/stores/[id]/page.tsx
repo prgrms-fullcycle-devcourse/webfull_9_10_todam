@@ -3,7 +3,6 @@
 import { use } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { ProgramStatus } from '@todam/shared';
 import {
     BottomBar,
     Button,
@@ -16,8 +15,11 @@ import {
     SpaceBlock,
 } from '@todam/ui';
 
+import { StoreStatus } from '@todam/shared';
+
 import {
     StoreEditSheet,
+    StoreReviewResult,
     usePartnerStoreDetail,
     usePartnerStorePrograms,
 } from '../../../../features/store/detail';
@@ -26,9 +28,8 @@ import {
     StoreImageCarousel,
     StoreInfoSummary,
     StoreLocation,
-    formatOperatingDays,
 } from '../../../../entities/store';
-import { ClassItem } from '../../../../entities/program';
+import { PartnerClassListItem } from '../../../../features/program/list';
 import { ApiError } from '../../../../shared/api';
 import { useSheet } from '../../../../shared/model';
 import { EmptyState } from '../../../../shared/ui';
@@ -129,10 +130,27 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
     }
 
     const store = detail.data.store;
+
+    // 심사중·반려 공방은 일반 상세 대신 검수 결과 화면. (심사 결과 = 스토어 단위 store.status)
+    if (store.status === StoreStatus.PENDING || store.status === StoreStatus.REJECTED) {
+        return (
+            <StoreReviewResult
+                storeName={store.name}
+                status={store.status}
+                rejectedReason={store.rejectedReason}
+                address={store.address}
+                businessNumber={store.businessDocument?.businessNumber}
+                email={store.businessDocument?.email}
+                createdAt={store.createdAt}
+                onEditInfo={() => router.push(`/partner/stores/${id}/business`)}
+                onBack={() => router.push('/partner/stores')}
+            />
+        );
+    }
+
     const programList = programs.data?.programs ?? [];
     const hasPrograms = programList.length > 0;
     // day는 program 필드가 아니라 store.operatingHours에서 도출(한글 요일 "·" join). 모든 클래스 공통.
-    const operatingDays = formatOperatingDays(store.operatingHours.map((hour) => hour.dayOfWeek));
 
     return (
         <div className="flex h-full flex-col bg-background">
@@ -185,16 +203,7 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                         {!programs.isLoading && !programs.isError && hasPrograms && (
                             <div className="flex flex-col gap-2">
                                 {programList.map((program) => (
-                                    <ClassItem
-                                        key={program.id}
-                                        programName={program.title}
-                                        metaItems={[
-                                            `${program.durationMinutes}분`,
-                                            operatingDays,
-                                        ].filter(Boolean)}
-                                        price={`${program.price.toLocaleString('ko-KR')}원`}
-                                        isClosed={program.status === ProgramStatus.INACTIVE}
-                                    />
+                                    <PartnerClassListItem key={program.id} program={program} />
                                 ))}
                             </div>
                         )}

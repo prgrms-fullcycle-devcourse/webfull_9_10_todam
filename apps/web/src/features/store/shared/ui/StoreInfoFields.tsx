@@ -3,22 +3,17 @@
 import { formatPhone } from '@todam/shared';
 import { TextArea, TextInput } from '@todam/ui';
 
-import { ImageUploadField } from '../../../../shared/ui';
+import type { ExistingImage, PendingImage } from '../../../../shared/model';
+import { PendingImageField } from '../../../../shared/ui';
 import { MAX_STORE_IMAGES } from '../model';
 
-// 이미지 그리드 항목 — 등록(string url)·수정(EditImage)에서 공통 표현으로 정규화해 전달.
-export interface StoreImageItem {
-    key: string; // React key
-    src?: string; // <img> 렌더 시 사용
-    label?: string; // src 없을 때 텍스트로 표기 (등록 mock)
-    onRemove: () => void;
-}
-
 interface StoreInfoFieldsProps {
-    // 이미지
-    images: StoreImageItem[];
+    // 이미지 (전역 펜딩 필드 직접 소비) — 등록은 existing 없음, 수정은 서버 이미지 existing.
+    existingImages: ExistingImage[];
+    pendingImages: PendingImage[];
     onAddImages: (files: File[]) => void;
-    addImageDisabled?: boolean;
+    onRemoveExisting: (id: string) => void;
+    onRemovePending: (index: number) => void;
 
     // 공방명
     name: string;
@@ -45,9 +40,11 @@ interface StoreInfoFieldsProps {
 // 공방 정보 입력 (등록·수정 공유, store 비종속). 표현 레이어만 공유하고
 // 이미지 업로드/slug 중복확인 등 로직 차이는 props(값·핸들러·헬퍼)로 주입받는다.
 export function StoreInfoFields({
-    images,
+    existingImages,
+    pendingImages,
     onAddImages,
-    addImageDisabled,
+    onRemoveExisting,
+    onRemovePending,
     name,
     onChangeName,
     nameError,
@@ -64,16 +61,19 @@ export function StoreInfoFields({
 }: StoreInfoFieldsProps) {
     return (
         <div className="flex flex-col gap-4">
-            {/* 대표 이미지 */}
-            <ImageUploadField
+            {/* 대표 이미지 — 전역 펜딩 필드 */}
+            <PendingImageField
                 label="대표 이미지"
                 hint={`(최대 ${MAX_STORE_IMAGES}장)`}
-                items={images}
+                existingImages={existingImages}
+                pendingImages={pendingImages}
                 onAdd={onAddImages}
+                onRemoveExisting={onRemoveExisting}
+                onRemovePending={onRemovePending}
                 max={MAX_STORE_IMAGES}
                 multiple
                 accept="image/jpeg,image/png"
-                addDisabled={addImageDisabled}
+                alt="대표 이미지"
             />
 
             <TextInput

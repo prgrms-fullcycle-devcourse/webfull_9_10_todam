@@ -26,7 +26,10 @@ const meta: Meta<typeof Modal> = {
   decorators: [
     (Story) => (
       <div className="relative overflow-hidden bg-surface" style={{ width: 430, height: 400 }}>
-        <Story />
+        {/* 백드롭은 마운트 측(AppModal) 책임 → 스토리에서 동일 dim 컨테이너로 재현 */}
+        <div className="absolute inset-0 flex items-center justify-center bg-inverse/80 px-5">
+          <Story />
+        </div>
       </div>
     ),
   ],
@@ -63,11 +66,12 @@ function ModalAnimationDemo() {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="absolute inset-0"
+            className="absolute inset-0 flex items-center justify-center bg-inverse/80 px-5"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
+            onClick={() => setOpen(false)}
           >
             <Modal
               type="shortText"
@@ -78,7 +82,6 @@ function ModalAnimationDemo() {
               danger
               onConfirm={() => setOpen(false)}
               onCancel={() => setOpen(false)}
-              onBackdropClick={() => setOpen(false)}
             />
           </motion.div>
         )}

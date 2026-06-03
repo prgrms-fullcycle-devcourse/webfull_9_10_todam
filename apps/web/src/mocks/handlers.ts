@@ -8,6 +8,7 @@ import {
     StoreRegistrationErrorCode,
     storeRegistrationSubmitRequestSchema,
     storeUpdateRequestSchema,
+    businessDocumentUpdateRequestSchema,
     reviewWriteRequestSchema,
     PartnerStatus,
     StoreStatus,
@@ -31,6 +32,7 @@ import {
     type StoreRegistrationSubmitResult,
     type SlugAvailabilityResult,
     type StoreUpdateResult,
+    type BusinessDocumentUpdateResult,
     type ToggleFavoriteResult,
     type FavoriteStoreListResult,
     type PartnerStoreListResult,
@@ -71,6 +73,7 @@ import {
     nowIso,
     toggleFavorite,
     updateStoreDetail,
+    updateStoreBusinessDocument,
     upsertDeliveryEdit,
 } from './db';
 
@@ -200,6 +203,30 @@ export const handlers = [
         return ok(path, result, '공방 정보가 성공적으로 수정되었습니다.');
     }),
 
+    // 사업자 정보 수정 (반려 재수정 → 재심사 PENDING 전이)
+    http.patch(`${API}/partner/stores/:storeId/business-document`, async ({ request, params }) => {
+        const storeId = String(params.storeId);
+        const path = `/api/v1/partner/stores/${storeId}/business-document`;
+        const raw = await request.json();
+        const parsed = businessDocumentUpdateRequestSchema.safeParse(raw);
+        if (!parsed.success) {
+            return fail(
+                path,
+                400,
+                StoreRegistrationErrorCode.VALIDATION_ERROR,
+                parsed.error.issues[0]?.message ?? '잘못된 입력값입니다.',
+            );
+        }
+        const updated = updateStoreBusinessDocument(storeId, parsed.data);
+        if (!updated) {
+            return fail(path, 404, StoreEditErrorCode.STORE_NOT_FOUND, '공방을 찾을 수 없습니다.');
+        }
+        const result: BusinessDocumentUpdateResult = {
+            store: { id: updated.id, status: updated.status, updatedAt: nowIso() },
+        };
+        return ok(path, result, '사업자 정보가 수정되어 재심사를 요청했습니다.');
+    }),
+
     // 내 공방 상세 (수정 화면 preload)
     http.get(`${API}/partner/stores/:storeId`, ({ params }) => {
         const storeId = String(params.storeId);
@@ -303,11 +330,12 @@ export const handlers = [
             storeId: store.id,
             storeName: store.name,
             slug: store.slug,
-            partnerStatus: rejected ? PartnerStatus.REJECTED : partner.status,
-            storeStatus: store.status,
+            // 심사 결과는 스토어 단위(store.status). partner.status 는 계정 승인용으로 불변.
+            partnerStatus: partner.status,
+            storeStatus: rejected ? StoreStatus.REJECTED : store.status,
             rejectedReason: rejected
                 ? '사업자 등록증 이미지의 글씨가 흐려서 식별이 어렵습니다. 재업로드 부탁드립니다.'
-                : (partner.rejectedReason ?? store.rejectedReason),
+                : store.rejectedReason,
             createdAt: partner.createdAt,
             address: store.address,
             businessNumber: businessDoc?.businessNumber ?? '',

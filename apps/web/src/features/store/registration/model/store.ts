@@ -1,6 +1,8 @@
 import { businessNumberSchema, emailSchema, phoneSchema, slugSchema } from '@todam/shared';
 import { create } from 'zustand';
 
+import { filterValidImageFiles } from '../../../../shared/lib/imageFile';
+import type { PendingImage } from '../../../../shared/model';
 import {
     MAX_STORE_IMAGES,
     StoreRegistrationStep,
@@ -63,7 +65,7 @@ interface StoreRegistrationStore {
     patchBusiness: (p: Patch<StoreRegistrationForm['business']>) => void;
     setAddress: (address: string, latitude: number, longitude: number) => void;
     patchStore: (p: Patch<StoreRegistrationForm['store']>) => void;
-    addImage: (url: string) => void;
+    addImageFiles: (files: File[]) => void;
     removeImage: (index: number) => void;
     toggleConvenience: (key: keyof ConvenienceState) => void;
     patchOperating: (p: Patch<OperatingState>) => void;
@@ -103,26 +105,39 @@ export const useStoreRegistrationStore = create<StoreRegistrationStore>((set) =>
             }
             return { form: { ...s.form, store } };
         }),
-    addImage: (url) =>
+    addImageFiles: (files) =>
         set((s) => {
-            if (s.form.store.images.length >= MAX_STORE_IMAGES) return s;
+            const room = MAX_STORE_IMAGES - s.form.store.images.length;
+            if (room <= 0) return s;
+            const valid = filterValidImageFiles(files).slice(0, room);
+            if (valid.length === 0) return s;
+            const empty = s.form.store.images.length === 0;
+            const added: PendingImage[] = valid.map((file, i) => ({
+                file,
+                previewUrl: URL.createObjectURL(file),
+                isThumbnail: empty && i === 0,
+            }));
             return {
                 form: {
                     ...s.form,
-                    store: { ...s.form.store, images: [...s.form.store.images, url] },
+                    store: { ...s.form.store, images: [...s.form.store.images, ...added] },
                 },
             };
         }),
     removeImage: (index) =>
-        set((s) => ({
-            form: {
-                ...s.form,
-                store: {
-                    ...s.form.store,
-                    images: s.form.store.images.filter((_, i) => i !== index),
+        set((s) => {
+            const target = s.form.store.images[index];
+            if (target) URL.revokeObjectURL(target.previewUrl);
+            return {
+                form: {
+                    ...s.form,
+                    store: {
+                        ...s.form.store,
+                        images: s.form.store.images.filter((_, i) => i !== index),
+                    },
                 },
-            },
-        })),
+            };
+        }),
     toggleConvenience: (key) =>
         set((s) => ({
             form: {
@@ -148,7 +163,11 @@ export const useStoreRegistrationStore = create<StoreRegistrationStore>((set) =>
         }),
     patchReservation: (p) =>
         set((s) => ({ form: { ...s.form, reservation: { ...s.form.reservation, ...p } } })),
-    reset: () => set({ step: StoreRegistrationStep.Business, form: initialForm() }),
+    reset: () =>
+        set((s) => {
+            s.form.store.images.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+            return { step: StoreRegistrationStep.Business, form: initialForm() };
+        }),
 }));
 
 // ─── 단계별 유효성 (필수값 충족 시 다음/신청 활성) ───────────────
@@ -200,6 +219,11 @@ export function isStepValid(form: StoreRegistrationForm, step: StoreRegistration
         default:
             return false;
     }
+}
+
+// 이탈 가드용 dirty: 초기 폼(기본값)과 1바이트라도 다르면 작성 중으로 간주.
+export function isDirty(form: StoreRegistrationForm): boolean {
+    return JSON.stringify(form) !== JSON.stringify(initialForm());
 }
 
 export function isAllValid(form: StoreRegistrationForm): boolean {

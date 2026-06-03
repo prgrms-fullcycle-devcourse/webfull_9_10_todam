@@ -8,8 +8,14 @@ import { useEffect } from 'react';
 import { ApiError } from '../../../../shared/api';
 import { useModal, useToast } from '../../../../shared/model';
 import { detailToForm, type EditSection } from '../model/types';
-import { buildPatchBody, isDirty, isSectionValid, useStoreEditStore } from '../model/store';
-import { useStoreDetail, useUpdateStore } from '../queries';
+import {
+    buildImageIds,
+    buildPatchBody,
+    isDirty,
+    isSectionValid,
+    useStoreEditStore,
+} from '../model/store';
+import { useAddStoreImage, useDeleteStoreImage, useStoreDetail, useUpdateStore } from '../queries';
 
 import { InfoEditSection } from './InfoEditSection';
 import { OperatingEditSection } from './OperatingEditSection';
@@ -32,9 +38,13 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
     const router = useRouter();
     const detailQuery = useStoreDetail(storeId);
     const updateMutation = useUpdateStore(storeId);
+    const addImageMutation = useAddStoreImage(storeId);
+    const deleteImageMutation = useDeleteStoreImage(storeId);
 
     const form = useStoreEditStore((s) => s.form);
     const initial = useStoreEditStore((s) => s.initial);
+    const pendingImages = useStoreEditStore((s) => s.pendingImages);
+    const deletedImageIds = useStoreEditStore((s) => s.deletedImageIds);
     const load = useStoreEditStore((s) => s.load);
     const reset = useStoreEditStore((s) => s.reset);
     const setSlugDuplicated = useStoreEditStore((s) => s.setSlugDuplicated);
@@ -54,9 +64,11 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
     // 화면 이탈 시 폼 초기화.
     useEffect(() => () => reset(), [reset]);
 
-    const dirty = isDirty(form, initial);
-    const valid = isSectionValid(form, section);
-    const canSave = dirty && valid && !updateMutation.isPending;
+    const isSaving =
+        updateMutation.isPending || addImageMutation.isPending || deleteImageMutation.isPending;
+    const dirty = isDirty(form, initial, pendingImages.length);
+    const valid = isSectionValid(form, section, pendingImages.length);
+    const canSave = dirty && valid && !isSaving;
 
     const leave = () => {
         reset();
@@ -81,7 +93,6 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
                     leave();
                 }}
                 onCancel={close}
-                onBackdropClick={close}
             />,
         );
     };
@@ -90,6 +101,22 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
         if (!form || !initial || !canSave) return;
         const body = buildPatchBody(form, initial, section);
         try {
+            // 정보 섹션: 이미지 삭제 → 신규 업로드(presigned+PUT+confirm) → 최종 id 목록 PATCH.
+            if (section === 'info') {
+                for (const imageId of deletedImageIds) {
+                    await deleteImageMutation.mutateAsync(imageId);
+                }
+                const uploadedIds: string[] = [];
+                for (const pending of pendingImages) {
+                    const uploaded = await addImageMutation.mutateAsync({
+                        file: pending.file,
+                        isThumbnail: pending.isThumbnail,
+                    });
+                    uploadedIds.push(uploaded.id);
+                }
+                const imageIds = buildImageIds(form, initial, uploadedIds);
+                if (imageIds) body.images = imageIds;
+            }
             const result = await updateMutation.mutateAsync(body);
             reset();
             push({
@@ -159,7 +186,7 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
 
             <BottomBar>
                 <Button className="w-full" disabled={!canSave} onClick={handleSave}>
-                    {updateMutation.isPending ? '저장 중...' : '저장'}
+                    {isSaving ? '저장 중...' : '저장'}
                 </Button>
             </BottomBar>
         </div>

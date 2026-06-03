@@ -1,15 +1,16 @@
 'use client';
 
-import { BottomBar, Button, CloseIcon, LeftIcon } from '@todam/ui';
+import { BottomBar, Button, CloseIcon, LeftIcon, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { StoreRegistrationErrorCode } from '@todam/shared';
 
 import { ApiError } from '../../../../shared/api';
-import { useToast } from '../../../../shared/model';
+import { useModal, useToast } from '../../../../shared/model';
 import { ProgressBarWrapper } from '../../../../shared/ui';
-import { isAllValid, isStepValid, useStoreRegistrationStore } from '../model/store';
+import { useLeaveGuard } from '../../../../shared/lib/useLeaveGuard';
+import { isAllValid, isDirty, isStepValid, useStoreRegistrationStore } from '../model/store';
 import { useSubmitStoreRegistration } from '../queries';
 import { StoreRegistrationStep, STEP_TITLES, TOTAL_STEPS } from '../model/types';
 
@@ -34,10 +35,16 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
     const patchStore = useStoreRegistrationStore((s) => s.patchStore);
     const reset = useStoreRegistrationStore((s) => s.reset);
     const { push } = useToast();
+    const { open: openModal, close: closeModal } = useModal();
 
     const submitMutation = useSubmitStoreRegistration();
     const submitting = submitMutation.isPending;
     const [submitted, setSubmitted] = useState(false);
+
+    const dirty = isDirty(form);
+
+    // 브라우저 새로고침/탭 닫기 가드 (제출 완료 전 작성 중일 때만, 앱 내 이탈은 모달로 처리)
+    useLeaveGuard(dirty && !submitted);
 
     // 진입점 2개(/apply, /partner/stores/new)가 전역 store 공유 → 플로우 이탈 시 초기화
     useEffect(() => () => reset(), [reset]);
@@ -45,6 +52,28 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
     const exit = () => {
         reset();
         router.push(returnTo);
+    };
+
+    // 작성 중이면 확인 모달, 아니면 즉시 이탈.
+    const guardedExit = () => {
+        if (!dirty) {
+            exit();
+            return;
+        }
+        openModal(
+            <Modal
+                title="작성을 취소하고 나가시겠어요?"
+                description="작성한 내용은 저장되지 않아요."
+                confirmLabel="나가기"
+                cancelLabel="계속 작성"
+                danger
+                onConfirm={() => {
+                    closeModal();
+                    exit();
+                }}
+                onCancel={closeModal}
+            />,
+        );
     };
 
     if (submitted) {
@@ -68,7 +97,7 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
     const progress = ((step + 1) / TOTAL_STEPS) * 100;
 
     const handleBack = () => {
-        if (step === StoreRegistrationStep.Business) exit();
+        if (step === StoreRegistrationStep.Business) guardedExit();
         else prev();
     };
 
@@ -116,7 +145,7 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
                     size="lg"
                     icon={<CloseIcon />}
                     aria-label="닫기"
-                    onClick={exit}
+                    onClick={guardedExit}
                     className="hover:!bg-transparent hover:!text-foreground"
                 />
             </header>

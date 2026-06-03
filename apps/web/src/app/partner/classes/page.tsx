@@ -3,14 +3,13 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { ProgramStatus, formatDuration, formatPrice } from '@todam/shared';
+import { ProgramStatus } from '@todam/shared';
 import { Button } from '@todam/ui';
 
-import { ClassItem } from '../../../entities/program';
 import {
     ClassListHeaderMenu,
+    PartnerClassListItem,
     usePartnerPrograms,
-    type PartnerProgramListItemView,
 } from '../../../features/program/list';
 import { useHeaderActionStore } from '../../../shared/model';
 import { EmptyState } from '../../../shared/ui';
@@ -19,16 +18,6 @@ import { EmptyState } from '../../../shared/ui';
 // mock 단계에서는 시드 데이터가 있는 공방 id 로 고정해 화면을 렌더한다.
 // 실 API 연동 시 선택된 공방 storeId 로 교체한다.
 const MOCK_STORE_ID = 'store-seed-0001';
-
-// 서브텍스트 항목 구성. Contract 필드(durationMinutes) + mock 확장(level·leadTimeDays).
-// 확장 필드가 없으면(실 API) 해당 항목을 생략한다.
-function buildMetaItems(program: PartnerProgramListItemView): string[] {
-    const items: string[] = [];
-    if (program.level) items.push(program.level);
-    items.push(formatDuration(program.durationMinutes));
-    if (typeof program.leadTimeDays === 'number') items.push(`평균 ${program.leadTimeDays}일`);
-    return items;
-}
 
 export default function PartnerClassesPage() {
     const router = useRouter();
@@ -77,17 +66,7 @@ export default function PartnerClassesPage() {
             {!isLoading && !isError && programs.length > 0 && (
                 <section className="flex flex-col gap-3 py-2">
                     {programs.map((program) => (
-                        <ClassItem
-                            key={program.id}
-                            programName={program.title}
-                            metaItems={buildMetaItems(program)}
-                            price={formatPrice(program.price)}
-                            isClosed={program.status === ProgramStatus.INACTIVE}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => router.push(`/partner/classes/${program.id}`)}
-                            className="cursor-pointer text-left"
-                        />
+                        <PartnerClassListItem key={program.id} program={program} />
                     ))}
                 </section>
             )}

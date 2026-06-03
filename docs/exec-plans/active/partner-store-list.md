@@ -78,6 +78,9 @@
 - base path: 명세 `/partner/stores` ↔ 코드 컨벤션 `/api/v1/partner/stores`.
 - DRAFT/REJECTED Badge 매핑 잠정(디자인 미제공).
 - 페이지네이션 부재(CONTRACT-3).
+- **심사 상태 SSOT = `store.status` (per-store), `partner.status` 아님.** 파트너는 멀티 스토어 가능 → 심사/반려를 partner에 두면 전 스토어 오염. BE는 심사 결과를 스토어 단위로 보관·반환. `partner.status`는 계정 승인(추가 등록 게이트)용으로 분리.
+- **검수 결과 화면 라우팅**: 별도 라우트 없이 공방 상세(`GET /partner/stores/{id}`)의 `status`로 FE가 분기(PENDING/REJECTED → 결과화면, PUBLISHED/SUSPENDED → 일반 상세). 따라서 상세 응답에 정확한 `status` + `rejectedReason` 필수.
+- **파트너 홈(`/partner`) 진입 리다이렉트**: 첫 등록 검수 대기 중이면 결과화면으로 보내야 함. 현 FE는 `GET /partner/onboarding`(latest 1건) `storeStatus != PUBLISHED` 기준 — mock 한계(목록이 파트너 스코프 아님) 회피용. 실 BE에선 "인증 파트너의 게시중 공방 0개 && 미게시 공방 존재" 판정이 권위. 멀티스토어 시 latest-onboarding 단독 판정은 부정확(게시중 보유 파트너 오인 리다이렉트 위험).
 
 ## Validation
 
@@ -96,6 +99,8 @@
 - 폴더/파일명: `features/store/list`(상위 store 중복 제거), 계약 `contracts/store-list.ts`(형제 `store-registration.ts`와 prefix 일치).
 - 헤더 전역 스타일: `bg-transparent` + border 제거(디자인 합의).
 - 등록 플로우 `returnTo`: 진입점별 닫기 목적지 분리(`/apply`→`/my`, `/partner/stores/new`→`/partner/stores`).
+- 2026-06-03: 심사 결과를 `store.status`(per-store)로 확정, `partner.status` 분리(멀티 스토어 대응). 검수 결과 화면(`StoreReviewResult`)은 공방 상세 라우트에서 status 분기로 렌더(별도 라우트 X). 검토중·반려 모두 헤더 없음. 하단 이동: 등록 직후 1회성(Complete)=홈(`/`), 상세/재진입(ReviewResult)=목록(`/partner/stores`).
+- 2026-06-03: 파트너 홈 진입 시 미게시 공방이면 결과화면 리다이렉트(FE는 onboarding latest 기준 임시). 정확 판정은 BE 권위 필요 — Follow-up.
 
 ## Outcome
 
@@ -105,6 +110,8 @@
   - CONTRACT-1(사업자 승인 상태 표기) 기획·BE 확정.
   - DRAFT/REJECTED Badge 디자인 확정.
   - 더보기 외 항목·페이지네이션(CONTRACT-3)·현재선택 강조(CONTRACT-2).
+  - **심사 결과 SSOT를 `store.status`로 BE 구현**(per-store), `partner.status`는 계정 승인 전용 분리. 상세 응답 `status`+`rejectedReason` 보장.
+  - **파트너 홈 리다이렉트 판정 BE화**: 인증 파트너의 "게시중 0개 && 미게시 존재" 여부로 결과화면 유도. 현 FE의 onboarding-latest 단독 판정은 멀티스토어 오인 위험 → 전용 신호(예: `GET /partner/me` 또는 stores 요약에 `hasPublishedStore`/`pendingReviewStoreId`) 제공 검토.
 
 ## API Contract (스냅샷)
 
