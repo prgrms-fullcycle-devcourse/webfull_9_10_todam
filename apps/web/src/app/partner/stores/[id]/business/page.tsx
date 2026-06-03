@@ -1,3 +1,14 @@
-export default function PartnerBusinessPage() {
-    return <div>파트너 사업자 정보</div>;
+'use client';
+
+import { use } from 'react';
+
+import { BusinessInfoEditScreen } from '@/features/store/business-edit';
+
+export default function PartnerStoreBusinessEditPage({
+    params,
+}: {
+    params: Promise<{ id: string }>;
+}) {
+    const { id } = use(params);
+    return <BusinessInfoEditScreen storeId={id} />;
 }

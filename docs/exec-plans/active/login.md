@@ -119,13 +119,29 @@
 -->
 
 - [ ] API 구현
-- [ ] UI 구현
+- [x] UI 구현
 - [ ] API 연동
 
 ## Out (단계별 완료물)
 
 - API: <!-- 구현된 엔드포인트, 파일 -->
-- UI: <!-- 구현된 화면, 컴포넌트 -->
+- UI:
+  - 화면: 로그인 페이지 — `apps/web/src/app/(auth)/login/page.tsx` (기존 placeholder 대체)
+  - 컴포넌트(신규, `apps/web/src/features/auth/login/`):
+    - `ui/LoginForm.tsx` — 로고/태그라인, 이메일·비밀번호 입력, 비밀번호 찾기 링크, 로그인 버튼(이메일·비밀번호 모두 입력 시 활성), 구분선, 카카오/구글 버튼 조합, 회원가입 링크
+    - `ui/KakaoLoginButton.tsx` — 카카오 소셜 로그인 시작 버튼(브랜드 옐로우 배경 + `KakaoIcon`)
+    - `ui/GoogleLoginButton.tsx` — 구글 소셜 로그인 시작 버튼(서피스 배경 + 보더 + `GoogleIcon`)
+    - `index.ts` — 배럴(LoginForm, KakaoLoginButton, GoogleLoginButton)
+  - 신규 아이콘(packages/ui/src/icons/): `KakaoIcon`, `GoogleIcon` — 브랜드 고정 컬러 SVG. `Design System/Icons` 스토리에 자동 노출(아이콘은 별도 스토리 파일 불필요, DESIGN.md 규칙).
+  - 재사용 공용 컴포넌트(@todam/ui): `Button`, `TextInput`, `Logo`, `Divider`, `CloseIcon`.
+  - 주요 결정:
+    - 라우팅: `(auth)/login` — Header/BottomNav 모두 path-gated로 미노출(기존 signup과 동일 패턴), 페이지가 자체 X 닫기 헤더 렌더.
+    - 신규 `packages/ui` 컴포넌트 추가 없음 → Storybook 스토리 추가 대상 아님(DESIGN.md 규칙).
+    - 카카오 `#FEE500`/구글 멀티컬러 G는 플랫폼 브랜드 가이드라인 자산으로 디자인 토큰 범위 밖 → 브랜드 색상으로 사용(코드 주석 명시). 그 외 모든 색상은 semantic 토큰, sizing/gap/padding/radius는 Tailwind 기본 스케일만 사용(arbitrary value 없음).
+    - FSD 배치: 로그인은 사용자 액션으로 서버와 데이터가 오가는 유즈케이스 → `features/auth/login`. 카카오/구글 버튼도 각각 소셜 로그인 유즈케이스 컴포넌트로 분리. 도메인 표시용(entities) 컴포넌트 해당 없음. 브랜드 심볼은 `packages/ui/src/icons/`의 `KakaoIcon`/`GoogleIcon`으로 분리.
+    - 약관 동의 바텀시트는 범위 제외 — 이번 단계는 로그인 화면만 구현(소셜 신규 가입 분기 Open decision #1 확정 후 별도 진행).
+  - **API 연동 미수행**: 로그인/카카오/구글 버튼 핸들러는 TODO 주석(빈 핸들러). fetch/react-query/auth store/토큰 코드 없음. 비밀번호 찾기→`/reset-password`, 회원가입→`/signup` 링크 연결.
+  - 검증: `pnpm --filter @todam/web typecheck` 통과, `lint` 0 errors(신규 파일 경고 없음), prettier 통과.
 - 연동: <!-- 연결 지점, 검증 결과 -->
 
 ## Risks

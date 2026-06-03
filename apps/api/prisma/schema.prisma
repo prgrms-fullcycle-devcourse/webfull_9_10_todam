@@ -136,6 +136,7 @@ model Store {
   autoConfirm        Boolean              @default(false) @map("auto_confirm")
   cancelDeadlineDays Int?                 @map("cancel_deadline_days")
   reservationIntervalMinutes Int?         @map("reservation_interval_minutes") // 타임슬롯 생성 기준 간격(분)
+  maxCapacityPerSlot Int?                 @map("max_capacity_per_slot") // 슬롯당 최대 예약 정원(공방 단위 — 클래스 공통, 같은 슬롯 합산 한도)
   status             StoreStatus          @default(DRAFT)
   publishedAt        DateTime?            @map("published_at") @db.Timestamptz(6)
   createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -205,9 +206,10 @@ model Program {
   caution         String?
   price           Int
   durationMinutes Int                   @map("duration_minutes")
-  capacity        Int
+  difficulty      ProgramDifficulty     @default(BASIC)
+  childFriendly   Boolean               @default(false) @map("child_friendly")
   leadTimeDays    Int                   @default(30) @map("lead_time_days")
-  deliveryOption  ProgramDeliveryOption @default(CUSTOMER_SELECT) @map("delivery_option")
+  deliverable     Boolean               @default(false)
   status          ProgramStatus         @default(DRAFT)
   sortOrder       Int                   @default(0) @map("sort_order") // [S-10]
   createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -240,7 +242,6 @@ model ProgramSnapshot {
   id           String        @id @default(uuid()) @db.Uuid
   programId    String        @map("program_id") @db.Uuid
   price        Int
-  capacity     Int
   leadTimeDays Int           @map("lead_time_days")
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   program      Program       @relation(fields: [programId], references: [id])
@@ -255,7 +256,6 @@ model ProgramTimeSlot {
   storeId       String                @map("store_id") @db.Uuid
   startAt       DateTime              @map("start_at") @db.Timestamptz(6)
   endAt         DateTime              @map("end_at") @db.Timestamptz(6)
-  capacity      Int
   reservedCount Int                   @default(0) @map("reserved_count")
   status        ProgramTimeSlotStatus @default(OPEN)
   createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -530,10 +530,10 @@ enum StoreStatus {
   SUSPENDED
 }
 
-enum ProgramDeliveryOption {
-  DELIVERY
-  PICKUP
-  CUSTOMER_SELECT
+enum ProgramDifficulty {
+  BASIC
+  INTERMEDIATE
+  ADVANCED
 }
 
 enum ProgramStatus {

@@ -1,25 +1,19 @@
 'use client';
 
 import { formatPhone } from '@todam/shared';
-import { CameraIcon, CloseIcon, TextArea, TextInput } from '@todam/ui';
-import type { ReactNode, RefObject } from 'react';
+import { TextArea, TextInput } from '@todam/ui';
 
+import type { ExistingImage, PendingImage } from '@/shared/model';
+import { PendingImageField } from '@/shared/ui';
 import { MAX_STORE_IMAGES } from '../model';
 
-// 이미지 그리드 항목 — 등록(string url)·수정(EditImage)에서 공통 표현으로 정규화해 전달.
-export interface StoreImageItem {
-    key: string; // React key
-    src?: string; // <img> 렌더 시 사용
-    label?: string; // src 없을 때 텍스트로 표기 (등록 mock)
-    onRemove: () => void;
-}
-
 interface StoreInfoFieldsProps {
-    // 이미지
-    images: StoreImageItem[];
-    fileInputRef: RefObject<HTMLInputElement | null>;
-    onPickFiles: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    addImageDisabled?: boolean;
+    // 이미지 (전역 펜딩 필드 직접 소비) — 등록은 existing 없음, 수정은 서버 이미지 existing.
+    existingImages: ExistingImage[];
+    pendingImages: PendingImage[];
+    onAddImages: (files: File[]) => void;
+    onRemoveExisting: (id: string) => void;
+    onRemovePending: (index: number) => void;
 
     // 공방명
     name: string;
@@ -46,10 +40,11 @@ interface StoreInfoFieldsProps {
 // 공방 정보 입력 (등록·수정 공유, store 비종속). 표현 레이어만 공유하고
 // 이미지 업로드/slug 중복확인 등 로직 차이는 props(값·핸들러·헬퍼)로 주입받는다.
 export function StoreInfoFields({
-    images,
-    fileInputRef,
-    onPickFiles,
-    addImageDisabled,
+    existingImages,
+    pendingImages,
+    onAddImages,
+    onRemoveExisting,
+    onRemovePending,
     name,
     onChangeName,
     nameError,
@@ -66,35 +61,20 @@ export function StoreInfoFields({
 }: StoreInfoFieldsProps) {
     return (
         <div className="flex flex-col gap-4">
-            {/* 대표 이미지 (최대 5장) */}
-            <div className="flex flex-col gap-2">
-                <span className="px-[5px] text-sm font-semibold text-foreground-tertiary">
-                    대표 이미지 (최대 {MAX_STORE_IMAGES}장)
-                </span>
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png"
-                    multiple
-                    className="hidden"
-                    onChange={onPickFiles}
-                />
-                <div className="grid grid-cols-2 gap-3">
-                    {images.map((img) => (
-                        <ImageCell key={img.key} item={img} />
-                    ))}
-                    {images.length < MAX_STORE_IMAGES && (
-                        <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={addImageDisabled}
-                            className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border text-foreground-tertiary disabled:cursor-not-allowed"
-                        >
-                            <CameraIcon size={24} />
-                        </button>
-                    )}
-                </div>
-            </div>
+            {/* 대표 이미지 — 전역 펜딩 필드 */}
+            <PendingImageField
+                label="대표 이미지"
+                hint={`(최대 ${MAX_STORE_IMAGES}장)`}
+                existingImages={existingImages}
+                pendingImages={pendingImages}
+                onAdd={onAddImages}
+                onRemoveExisting={onRemoveExisting}
+                onRemovePending={onRemovePending}
+                max={MAX_STORE_IMAGES}
+                multiple
+                accept="image/jpeg,image/png"
+                alt="대표 이미지"
+            />
 
             <TextInput
                 label="공방명"
@@ -150,42 +130,14 @@ export function StoreInfoFields({
             />
 
             <TextArea
-                label="공방 소개글 (선택)"
+                label="공방 소개글"
+                optional
                 placeholder="공방의 분위기나 작가님의 철학을 소개해 주세요"
                 showCount
                 maxLength={descriptionMaxLength}
                 value={description}
                 onChange={(e) => onChangeDescription(e.target.value)}
             />
-        </div>
-    );
-}
-
-function ImageCell({ item }: { item: StoreImageItem }): ReactNode {
-    const removeButton = (
-        <button
-            type="button"
-            onClick={item.onRemove}
-            aria-label="이미지 삭제"
-            className="absolute -right-1 -top-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-emphasis text-foreground-inverse"
-        >
-            <CloseIcon size={14} />
-        </button>
-    );
-
-    if (item.src) {
-        return (
-            <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl bg-muted">
-                <img src={item.src} alt="공방 대표 이미지" className="h-full w-full object-cover" />
-                {removeButton}
-            </div>
-        );
-    }
-
-    return (
-        <div className="relative flex aspect-[4/3] items-center justify-center rounded-2xl bg-muted text-xs text-foreground-tertiary">
-            <span className="truncate px-2">{item.label}</span>
-            {removeButton}
         </div>
     );
 }

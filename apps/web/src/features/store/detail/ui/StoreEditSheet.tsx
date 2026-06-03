@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { CalendarIcon, EditIcon, InformationIcon, RightIcon, StandardBottomSheet } from '@todam/ui';
 
-import { useSheet } from '../../../../shared/model';
+import { useSheet } from '@/shared/model';
 
 // 수정 항목 선택 바텀시트. AppSheet(host)에 content로 주입되고, 셸은 디자인시스템 StandardBottomSheet 사용.
 // 항목 선택 시 각 수정 화면으로 라우팅. 수정 화면 자체는 본 기능 Scope Out — 라우팅만 담당.
@@ -58,13 +58,14 @@ export function StoreEditSheet({
             subTitle={`현재 진행 중인 예약이 총 ${inProgressReservationCount.toLocaleString('ko-KR')}건 있어요`}
             actionLabel="닫기"
             onAction={close}
+            actionVariant="ghost"
         >
             <div className="flex flex-col gap-2">
                 {EDIT_SLOTS.map((slot) => (
                     <button
                         key={slot.segment}
                         type="button"
-                        className="flex w-full items-center gap-5 rounded-2xl border border-border-subtle bg-surface p-4 text-left hover:bg-muted"
+                        className="flex cursor-pointer w-full items-center gap-5 rounded-2xl border border-border-subtle bg-surface p-4 text-left hover:bg-muted"
                         onClick={() => {
                             close();
                             router.push(`/partner/stores/${storeId}/edit/${slot.segment}`);

@@ -21,7 +21,7 @@ const typeClasses: Record<
   { box: string; title: string; desc: string }
 > = {
   default: {
-    box: "border border-border",
+    box: "border border-dashed border-border",
     title: "text-foreground",
     desc: "text-foreground-tertiary",
   },

@@ -1,6 +1,8 @@
 import {
     Body,
     Controller,
+    Delete,
+    Get,
     HttpCode,
     HttpStatus,
     Param,
@@ -10,19 +12,41 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
+import { PartnerGuard } from '../../../../common/guards/partner.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../../../common/decorators/response-message.decorator';
 import type { RequestUser } from '../../../../common/types/request-user.type';
 import { CreateStoreUseCase } from '../../application/use-cases/create-store.use-case';
 import { CreateStoreImageUseCase } from '../../application/use-cases/create-store-image.use-case';
+import { CreateBusinessDocumentImageUseCase } from '../../application/use-cases/create-business-document-image.use-case';
 import {
     ConfirmStoreImageUseCase,
     ConfirmStoreImageResponseDto,
 } from '../../application/use-cases/confirm-store-image.use-case';
 import { SubmitStoreUseCase } from '../../application/use-cases/submit-store.use-case';
+import { ListPartnerStoresUseCase } from '../../application/use-cases/list-partner-stores.use-case';
+import { GetPartnerStoreDetailUseCase } from '../../application/use-cases/get-partner-store-detail.use-case';
+import { GetPartnerOnboardingUseCase } from '../../application/use-cases/get-partner-onboarding.use-case';
+import { ListPartnerStoreProgramsUseCase } from '../../application/use-cases/list-partner-store-programs.use-case';
+import { UpdateStoreUseCase } from '../../application/use-cases/update-store.use-case';
+import { UpdateBusinessDocumentUseCase } from '../../application/use-cases/update-business-document.use-case';
+import { DeleteStoreImageUseCase } from '../../application/use-cases/delete-store-image.use-case';
 import { CreateStoreDto, CreateStoreResponseDto } from '../dto/create-store.dto';
 import { CreateStoreImageDto, CreateStoreImageResponseDto } from '../dto/store-image.dto';
+import {
+    CreateBusinessDocumentImageDto,
+    CreateBusinessDocumentImageResponseDto,
+} from '../dto/business-document-image.dto';
 import { SubmitStoreResponseDto } from '../dto/submit-store.dto';
+import { ListPartnerStoresResponseDto } from '../dto/list-partner-stores.dto';
+import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detail.dto';
+import { GetPartnerOnboardingResponseDto } from '../dto/get-partner-onboarding.dto';
+import { ListPartnerStoreProgramsResponseDto } from '../dto/list-partner-store-programs.dto';
+import { UpdateStoreDto, UpdateStoreResponseDto } from '../dto/update-store.dto';
+import {
+    UpdateBusinessDocumentDto,
+    UpdateBusinessDocumentResponseDto,
+} from '../dto/update-business-document.dto';
 
 @ApiTags('stores')
 @ApiBearerAuth()
@@ -31,9 +55,104 @@ export class StoreController {
     constructor(
         private readonly createStoreUseCase: CreateStoreUseCase,
         private readonly createStoreImageUseCase: CreateStoreImageUseCase,
+        private readonly createBusinessDocumentImageUseCase: CreateBusinessDocumentImageUseCase,
         private readonly confirmStoreImageUseCase: ConfirmStoreImageUseCase,
         private readonly submitStoreUseCase: SubmitStoreUseCase,
+        private readonly listPartnerStoresUseCase: ListPartnerStoresUseCase,
+        private readonly getPartnerStoreDetailUseCase: GetPartnerStoreDetailUseCase,
+        private readonly getPartnerOnboardingUseCase: GetPartnerOnboardingUseCase,
+        private readonly listPartnerStoreProgramsUseCase: ListPartnerStoreProgramsUseCase,
+        private readonly updateStoreUseCase: UpdateStoreUseCase,
+        private readonly updateBusinessDocumentUseCase: UpdateBusinessDocumentUseCase,
+        private readonly deleteStoreImageUseCase: DeleteStoreImageUseCase,
     ) {}
+
+    @Get('partner/stores')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('내 공방 목록이 성공적으로 조회되었습니다.')
+    @ApiOkResponse({ description: '내 공방 목록 조회 성공', type: ListPartnerStoresResponseDto })
+    async listPartnerStores(
+        @CurrentUser() user: RequestUser,
+    ): Promise<ListPartnerStoresResponseDto> {
+        return this.listPartnerStoresUseCase.execute(user.id);
+    }
+
+    @Get('partner/onboarding')
+    @HttpCode(HttpStatus.OK)
+    // 무파트너/PENDING/REJECTED 도 자기 온보딩 상태 조회 가능해야 함 → AuthGuard 만(PartnerGuard 금지).
+    @UseGuards(AuthGuard)
+    @ResponseMessage('온보딩 상태를 조회했습니다.')
+    @ApiOkResponse({
+        description: '온보딩 상태 조회 성공',
+        type: GetPartnerOnboardingResponseDto,
+    })
+    async getPartnerOnboarding(
+        @CurrentUser() user: RequestUser,
+    ): Promise<GetPartnerOnboardingResponseDto> {
+        return this.getPartnerOnboardingUseCase.execute(user.id);
+    }
+
+    @Get('partner/stores/:storeId/programs')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('운영 클래스 목록이 성공적으로 조회되었습니다.')
+    @ApiOkResponse({
+        description: '운영 클래스 목록 조회 성공',
+        type: ListPartnerStoreProgramsResponseDto,
+    })
+    async listPartnerStorePrograms(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+    ): Promise<ListPartnerStoreProgramsResponseDto> {
+        return this.listPartnerStoreProgramsUseCase.execute(user.id, storeId);
+    }
+
+    @Get('partner/stores/:storeId')
+    @HttpCode(HttpStatus.OK)
+    // 첫 공방 등록(partner=PENDING)도 검수중 화면에서 자기 공방 조회 가능해야 함. 소유권은 use-case 에서 검증.
+    @UseGuards(AuthGuard)
+    @ResponseMessage('공방 상세 정보가 성공적으로 조회되었습니다.')
+    @ApiOkResponse({
+        description: '내 공방 상세 조회 성공',
+        type: GetPartnerStoreDetailResponseDto,
+    })
+    async getPartnerStoreDetail(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+    ): Promise<GetPartnerStoreDetailResponseDto> {
+        return this.getPartnerStoreDetailUseCase.execute(user.id, storeId);
+    }
+
+    @Patch('partner/stores/:storeId')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('공방 정보가 성공적으로 수정되었습니다.')
+    @ApiOkResponse({ description: '공방 정보 수정 성공', type: UpdateStoreResponseDto })
+    async updateStore(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+        @Body() dto: UpdateStoreDto,
+    ): Promise<UpdateStoreResponseDto> {
+        return this.updateStoreUseCase.execute(user.id, storeId, dto);
+    }
+
+    @Patch('partner/stores/:storeId/business-document')
+    @HttpCode(HttpStatus.OK)
+    // 반려(REJECTED) 파트너는 PENDING/REJECTED 라 PartnerGuard(APPROVED) 통과 못함 → AuthGuard 만. 소유권은 use-case 에서 검증.
+    @UseGuards(AuthGuard)
+    @ResponseMessage('사업자 정보가 수정되어 재심사를 신청했습니다.')
+    @ApiOkResponse({
+        description: '사업자 정보 수정 및 재심사 전이 성공',
+        type: UpdateBusinessDocumentResponseDto,
+    })
+    async updateBusinessDocument(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+        @Body() dto: UpdateBusinessDocumentDto,
+    ): Promise<UpdateBusinessDocumentResponseDto> {
+        return this.updateBusinessDocumentUseCase.execute(user.id, storeId, dto);
+    }
 
     @Post('stores')
     @UseGuards(AuthGuard)
@@ -46,7 +165,25 @@ export class StoreController {
         return this.createStoreUseCase.execute(user.id, dto);
     }
 
+    @Post('partner/business-documents/images')
+    // store-비종속. 첫 등록 USER(partner=PENDING 또는 미생성)도 사용해야 하므로 AuthGuard만.
+    @UseGuards(AuthGuard)
+    @ResponseMessage(
+        'Pre-signed URL이 성공적으로 발급되었습니다. 5분 이내에 업로드를 완료해주세요.',
+    )
+    @ApiCreatedResponse({
+        description: '사업자등록증 presigned URL 발급 성공',
+        type: CreateBusinessDocumentImageResponseDto,
+    })
+    async createBusinessDocumentImage(
+        @CurrentUser() user: RequestUser,
+        @Body() dto: CreateBusinessDocumentImageDto,
+    ): Promise<CreateBusinessDocumentImageResponseDto> {
+        return this.createBusinessDocumentImageUseCase.execute(user.id, dto);
+    }
+
     @Post('partner/stores/:storeId/images')
+    // 첫 공방 등록(partner=PENDING)도 이미지 업로드 가능해야 함. 소유권은 use-case 에서 검증.
     @UseGuards(AuthGuard)
     @ResponseMessage(
         'Pre-signed URL이 성공적으로 발급되었습니다. 5분 이내에 업로드를 완료해주세요.',
@@ -65,6 +202,7 @@ export class StoreController {
 
     @Patch('partner/stores/:storeId/images/:imageId/confirm')
     @HttpCode(HttpStatus.OK)
+    // 첫 공방 등록(partner=PENDING)도 업로드 확인 가능해야 함. 소유권은 use-case 에서 검증.
     @UseGuards(AuthGuard)
     @ResponseMessage('이미지 업로드가 확인되었습니다.')
     @ApiOkResponse({ description: '공방 이미지 업로드 확인 성공' })
@@ -74,6 +212,19 @@ export class StoreController {
         @Param('imageId') imageId: string,
     ): Promise<ConfirmStoreImageResponseDto> {
         return this.confirmStoreImageUseCase.execute(user.id, storeId, imageId);
+    }
+
+    @Delete('partner/stores/:storeId/images/:imageId')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('이미지가 성공적으로 삭제되었습니다.')
+    @ApiOkResponse({ description: '공방 이미지 삭제 성공' })
+    async deleteStoreImage(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+        @Param('imageId') imageId: string,
+    ): Promise<void> {
+        await this.deleteStoreImageUseCase.execute(user.id, storeId, imageId);
     }
 
     @Post('partner/stores/:storeId/submit')

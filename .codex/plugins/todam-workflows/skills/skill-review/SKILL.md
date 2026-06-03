@@ -1,0 +1,32 @@
+---
+name: skill-review
+description: Run when the user asks for skill-review, /review, or to check Todam implementation drift against an active execution plan.
+---
+
+# Skill Review
+
+Review implementation against the active plan and API Contract.
+
+## Workflow
+
+1. Parse arguments as `<feature>`.
+2. Confirm `docs/exec-plans/active/<feature>.md` exists.
+3. Read `.codex/agents/reviewer.md`.
+4. Use a Codex subagent when available for the review pass.
+5. If subagents are unavailable, review inline.
+6. Compare `git diff` and relevant files against `API Contract (스냅샷)`.
+7. Report drift and phase verdicts. Only check plan Status when API 구현, UI 구현, API 연동 are all ✅ and drift is zero.
+8. (권고·비차단) Also flag local reimplementations replaceable by shared components (`packages/ui`, `apps/web/src/shared/ui`) and constants/formatters/utils that duplicate or should be promoted to `packages/shared`.
+
+## Output
+
+Findings first, then phase verdicts, then `skill-complete` eligibility.
+
+## Completion Response
+
+Respond briefly after execution:
+
+- `성공: <review 판정 요약>`
+- `실패: <실패한 workflow 단계와 이유>`
+
+Success/failure is based on review workflow completion, not Supabase insert success.

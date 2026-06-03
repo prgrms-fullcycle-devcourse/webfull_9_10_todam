@@ -18,25 +18,11 @@ export function OperatingStep() {
         <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3">
                 <TextInput
-                    label="가격(원)"
-                    inputMode="numeric"
-                    placeholder="예) 30,000"
-                    value={form.price === null ? '' : form.price.toLocaleString()}
-                    onChange={(e) => patch({ price: toNum(e.target.value) })}
-                />
-                <TextInput
                     label="소요 시간 (분)"
                     inputMode="numeric"
                     placeholder="예) 120"
                     value={form.durationMinutes === null ? '' : String(form.durationMinutes)}
                     onChange={(e) => patch({ durationMinutes: toNum(e.target.value) })}
-                />
-                <TextInput
-                    label="정원 (명)"
-                    inputMode="numeric"
-                    placeholder="최대 인원"
-                    value={form.capacity === null ? '' : String(form.capacity)}
-                    onChange={(e) => patch({ capacity: toNum(e.target.value) })}
                 />
                 <TextInput
                     label="리드타임 (일)"
@@ -46,6 +32,13 @@ export function OperatingStep() {
                     onChange={(e) => patch({ leadTimeDays: toNum(e.target.value) })}
                 />
             </div>
+            <TextInput
+                label="가격(원)"
+                inputMode="numeric"
+                placeholder="예) 30,000"
+                value={form.price === null ? '' : form.price.toLocaleString()}
+                onChange={(e) => patch({ price: toNum(e.target.value) })}
+            />
 
             <div className="flex flex-col gap-3">
                 <CheckboxInput

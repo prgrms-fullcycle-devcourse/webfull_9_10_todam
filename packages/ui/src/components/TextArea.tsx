@@ -5,7 +5,8 @@ import { useState } from "react";
 
 export type TextAreaProps = {
   label?: string;
-  required?: boolean;
+  // 기본은 필수. 선택 필드만 표시(라벨에 " (선택)").
+  optional?: boolean;
   actionLabel?: string;
   onActionClick?: () => void;
   helperText?: ReactNode;
@@ -15,7 +16,7 @@ export type TextAreaProps = {
 
 export function TextArea({
   label,
-  required,
+  optional,
   actionLabel,
   onActionClick,
   helperText,
@@ -46,7 +47,7 @@ export function TextArea({
               className="text-sm font-semibold text-foreground-tertiary"
             >
               {label}
-              {required && <span className="text-danger"> *</span>}
+              {optional && <span className="font-normal"> (선택)</span>}
             </label>
           ) : (
             <span />

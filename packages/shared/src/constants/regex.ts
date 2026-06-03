@@ -11,8 +11,8 @@ export const BUSINESS_NUMBER_REGEX = /^\d{3}-\d{2}-\d{5}$/;
 // "HH:mm"
 export const TIME_REGEX = /^\d{2}:\d{2}$/;
 
-// URL slug: 영문 소문자·숫자·-·_ 3~30자
-export const SLUG_REGEX = /^[a-z0-9_-]{3,30}$/;
+// URL slug: 영문 소문자·숫자·- 4~40자 (요구사항 정본. 언더스코어 불가)
+export const SLUG_REGEX = /^[a-z0-9-]{4,40}$/;
 
 // 비밀번호: 영문·숫자·특수문자 각 1+ 포함, 8~32자
 export const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,32}$/;

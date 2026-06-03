@@ -6,7 +6,6 @@
 //     date: "YYYY-MM-DD",
 //     summary: "초압축 한 줄",          // Summary 컬럼
 //     features: ["reservation",...],     // Features multi-select
-//     contributors: ["nogglee",...],     // Contributors multi-select
 //     body_markdown: "## 요약\n- ..."    // 페이지 본문 (상세 요약/결정/이슈)
 //   }
 
@@ -88,7 +87,6 @@ try { data = JSON.parse(input); } catch { console.error("stdin JSON 파싱 실�
 if (!data.date) { console.error("date 필수"); process.exit(1); }
 
 const features = Array.isArray(data.features) ? data.features : [];
-const contributors = Array.isArray(data.contributors) ? data.contributors : [];
 const payload = {
   parent: { database_id: DBID },
   properties: {
@@ -96,7 +94,6 @@ const payload = {
     Date: { date: { start: data.date } },
     Summary: { rich_text: parseInline(data.summary) },
     Features: { multi_select: features.map((f) => ({ name: String(f) })) },
-    Contributors: { multi_select: contributors.map((n) => ({ name: String(n) })) },
   },
   children: mdToBlocks(data.body_markdown),
 };

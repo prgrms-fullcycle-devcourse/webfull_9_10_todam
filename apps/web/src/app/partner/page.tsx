@@ -5,6 +5,8 @@ const sections = [
 ];
 
 export default function PartnerHomePage() {
+    // 검수중/반려 영속 분기 + 무파트너 /apply 리다이렉트는 루트 AppShell(온보딩 게이트)이 처리.
+    // 이 페이지가 렌더되면 partner 는 APPROVED 상태.
     return (
         <>
             <main className="flex-1 overflow-y-auto">

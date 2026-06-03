@@ -1,10 +1,11 @@
 import { DAY_OF_WEEK, phoneSchema, slugSchema, type StoreUpdateRequest } from '@todam/shared';
 import { create } from 'zustand';
 
+import { filterValidImageFiles } from '@/shared/lib/imageFile';
+import type { PendingImage } from '@/shared/model';
 import {
     MAX_STORE_IMAGES,
     type ConvenienceState,
-    type EditImage,
     type EditSection,
     type OperatingState,
     type StoreEditForm,
@@ -19,13 +20,20 @@ interface StoreEditStore {
     // null = 미로딩. GET preload 후 form/initial 동시 세팅.
     form: StoreEditForm | null;
     initial: StoreEditForm | null;
+    // 신규 업로드 대기 이미지 (저장 시 일괄 업로드). form 과 별개로 관리.
+    pendingImages: PendingImage[];
+    // 삭제 예정 기존 이미지 id (저장 시 일괄 DELETE).
+    deletedImageIds: string[];
     // slug 중복 검사 결과 (PATCH 409 또는 실시간 검사)
     slugDuplicated: boolean;
     load: (form: StoreEditForm) => void;
     patchStore: (p: Patch<StoreEditForm['store']>) => void;
-    setImages: (images: EditImage[]) => void;
-    addImage: (image: EditImage) => void;
-    removeImage: (id: string) => void;
+    // 파일 선택 → 대기 이미지 추가 (검증·정원 제한 포함). 즉시 업로드하지 않음.
+    addImageFiles: (files: File[]) => void;
+    // 기존 이미지 삭제 예정 처리 (form 에서 제거 + deletedImageIds 적재).
+    removeExistingImage: (id: string) => void;
+    // 대기 이미지 취소 (objectURL 정리).
+    removePendingImage: (index: number) => void;
     toggleConvenience: (key: keyof ConvenienceState) => void;
     patchOperating: (p: Patch<OperatingState>) => void;
     toggleBusinessDay: (day: number) => void;
@@ -37,8 +45,17 @@ interface StoreEditStore {
 export const useStoreEditStore = create<StoreEditStore>((set) => ({
     form: null,
     initial: null,
+    pendingImages: [],
+    deletedImageIds: [],
     slugDuplicated: false,
-    load: (form) => set({ form, initial: structuredClone(form), slugDuplicated: false }),
+    load: (form) =>
+        set({
+            form,
+            initial: structuredClone(form),
+            pendingImages: [],
+            deletedImageIds: [],
+            slugDuplicated: false,
+        }),
     patchStore: (p) =>
         set((s) => {
             if (!s.form) return s;
@@ -46,19 +63,23 @@ export const useStoreEditStore = create<StoreEditStore>((set) => ({
             const slugDuplicated = p.slug !== undefined ? false : s.slugDuplicated;
             return { form: { ...s.form, store }, slugDuplicated };
         }),
-    setImages: (images) =>
-        set((s) => (s.form ? { form: { ...s.form, store: { ...s.form.store, images } } } : s)),
-    addImage: (image) =>
+    addImageFiles: (files) =>
         set((s) => {
-            if (!s.form || s.form.store.images.length >= MAX_STORE_IMAGES) return s;
-            return {
-                form: {
-                    ...s.form,
-                    store: { ...s.form.store, images: [...s.form.store.images, image] },
-                },
-            };
+            if (!s.form) return s;
+            const used = s.form.store.images.length + s.pendingImages.length;
+            const room = MAX_STORE_IMAGES - used;
+            if (room <= 0) return s;
+            const valid = filterValidImageFiles(files).slice(0, room);
+            if (valid.length === 0) return s;
+            const empty = used === 0;
+            const added: PendingImage[] = valid.map((file, i) => ({
+                file,
+                previewUrl: URL.createObjectURL(file),
+                isThumbnail: empty && i === 0,
+            }));
+            return { pendingImages: [...s.pendingImages, ...added] };
         }),
-    removeImage: (id) =>
+    removeExistingImage: (id) =>
         set((s) =>
             s.form
                 ? {
@@ -69,9 +90,17 @@ export const useStoreEditStore = create<StoreEditStore>((set) => ({
                               images: s.form.store.images.filter((img) => img.id !== id),
                           },
                       },
+                      deletedImageIds: [...s.deletedImageIds, id],
                   }
                 : s,
         ),
+    removePendingImage: (index) =>
+        set((s) => {
+            const updated = [...s.pendingImages];
+            const [removed] = updated.splice(index, 1);
+            if (removed) URL.revokeObjectURL(removed.previewUrl);
+            return { pendingImages: updated };
+        }),
     toggleConvenience: (key) =>
         set((s) =>
             s.form
@@ -107,16 +136,31 @@ export const useStoreEditStore = create<StoreEditStore>((set) => ({
             s.form ? { form: { ...s.form, reservation: { ...s.form.reservation, ...p } } } : s,
         ),
     setSlugDuplicated: (v) => set({ slugDuplicated: v }),
-    reset: () => set({ form: null, initial: null, slugDuplicated: false }),
+    reset: () =>
+        set((s) => {
+            s.pendingImages.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+            return {
+                form: null,
+                initial: null,
+                pendingImages: [],
+                deletedImageIds: [],
+                slugDuplicated: false,
+            };
+        }),
 }));
 
 // ─── dirty 비교 ─────────────────────────────────────────────────
 const eq = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-// 전체 dirty 여부 (저장 버튼 활성/이탈 가드용)
-export function isDirty(form: StoreEditForm | null, initial: StoreEditForm | null): boolean {
+// 전체 dirty 여부 (저장 버튼 활성/이탈 가드용).
+// 대기 이미지는 form 밖에 있으므로 별도로 OR. 기존 이미지 삭제는 form 변경으로 이미 잡힘.
+export function isDirty(
+    form: StoreEditForm | null,
+    initial: StoreEditForm | null,
+    pendingCount = 0,
+): boolean {
     if (!form || !initial) return false;
-    return !eq(form, initial);
+    return pendingCount > 0 || !eq(form, initial);
 }
 
 // businessDays + 단일 시간 → operatingHours[] 확장 (등록 제출 스키마 동일)
@@ -133,14 +177,19 @@ function toOperatingHours(o: OperatingState) {
 }
 
 // ─── 섹션별 유효성 (저장 가능 여부) ──────────────────────────────
-export function isSectionValid(form: StoreEditForm | null, section: EditSection): boolean {
+export function isSectionValid(
+    form: StoreEditForm | null,
+    section: EditSection,
+    pendingCount = 0,
+): boolean {
     if (!form) return false;
     switch (section) {
         case 'info': {
             const s = form.store;
+            const imageCount = s.images.length + pendingCount;
             return (
-                s.images.length > 0 &&
-                s.images.length <= MAX_STORE_IMAGES &&
+                imageCount > 0 &&
+                imageCount <= MAX_STORE_IMAGES &&
                 s.name.trim().length >= 2 &&
                 s.name.trim().length <= 40 &&
                 ok(slugSchema, s.slug) &&
@@ -185,9 +234,7 @@ export function buildPatchBody(
         if (!eq(s.convenienceInfo, i.convenienceInfo)) {
             body.convenienceInfo = { ...s.convenienceInfo };
         }
-        const imageIds = s.images.map((img) => img.id);
-        const initialImageIds = i.images.map((img) => img.id);
-        if (!eq(imageIds, initialImageIds)) body.images = imageIds;
+        // images[] 는 업로드 완료 후 id 가 확정되므로 저장 핸들러에서 buildImageIds 로 채운다.
     } else if (section === 'operating') {
         const o = form.operating;
         const i = initial.operating;
@@ -209,4 +256,16 @@ export function buildPatchBody(
         if (r.autoConfirm !== i.autoConfirm) body.autoConfirm = r.autoConfirm;
     }
     return body;
+}
+
+// 저장 시 최종 images[] id 목록 계산 (남은 기존 + 업로드 완료 신규 순서 유지).
+// initial 대비 변경 없으면 undefined → PATCH 에서 생략.
+export function buildImageIds(
+    form: StoreEditForm,
+    initial: StoreEditForm,
+    uploadedIds: string[],
+): string[] | undefined {
+    const next = [...form.store.images.map((img) => img.id), ...uploadedIds];
+    const prev = initial.store.images.map((img) => img.id);
+    return eq(next, prev) ? undefined : next;
 }

@@ -80,6 +80,16 @@ export class BusinessDocumentDto {
     @IsEmail({}, { message: '올바른 이메일 형식이 아닙니다.' })
     @MaxLength(255)
     email?: string;
+
+    @ApiPropertyOptional({
+        example:
+            'https://todam-prod-assets.s3.ap-northeast-2.amazonaws.com/business-documents/uuid.pdf',
+        description:
+            '사업자등록증 파일 S3 URL. POST /partner/business-documents/images 발급 URL. 미첨부 시 null.',
+    })
+    @IsOptional()
+    @IsString()
+    documentUrl?: string | null;
 }
 
 export class CreateStoreDto {
@@ -141,6 +151,10 @@ export class CreateStoreDto {
         message: '예약 시간 간격은 60, 90, 120, 180분 중 하나여야 합니다.',
     })
     reservationIntervalMinutes!: number;
+
+    @ApiProperty({ example: 6, description: '슬롯당 최대 예약 정원(공방 단위, 클래스 공통)' })
+    @IsNumber()
+    maxCapacityPerSlot!: number;
 
     @ApiProperty({ type: [OperatingHourDto] })
     @IsArray()

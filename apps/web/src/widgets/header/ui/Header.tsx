@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { Logo, Button } from '@todam/ui';
 import { CloseIcon, LeftIcon, NotiIcon } from '@todam/ui';
 
-import { useHeaderActionStore } from '../../../shared/model';
+import { useHeaderActionStore } from '@/shared/model';
 import { useHeader } from '../model/useHeader';
 
 type HeaderType = 'home' | 'main' | 'mainText' | 'sub' | 'subText' | 'popup' | 'search';
@@ -112,17 +112,28 @@ function HeaderView({
                         <span className="flex-1 truncate text-lg font-medium leading-6 text-foreground">
                             {title}
                         </span>
-                        {rightAction ?? (
-                            <Button
-                                variant="ghost"
-                                layout="onlyIcon"
-                                size="lg"
-                                icon={<NotiIcon />}
-                                aria-label="알림"
-                                onClick={onNoti}
-                                className="hover:!bg-transparent hover:!text-foreground"
-                            />
-                        )}
+                        {rightAction ??
+                            (onClose ? (
+                                <Button
+                                    variant="ghost"
+                                    layout="onlyIcon"
+                                    size="lg"
+                                    icon={<CloseIcon />}
+                                    aria-label="닫기"
+                                    onClick={onClose}
+                                    className="hover:!bg-transparent hover:!text-foreground"
+                                />
+                            ) : (
+                                <Button
+                                    variant="ghost"
+                                    layout="onlyIcon"
+                                    size="lg"
+                                    icon={<NotiIcon />}
+                                    aria-label="알림"
+                                    onClick={onNoti}
+                                    className="hover:!bg-transparent hover:!text-foreground"
+                                />
+                            ))}
                     </>
                 )}
 
@@ -213,6 +224,7 @@ export function Header(props: WidgetHeaderProps) {
             type={header.type}
             title={header.title}
             onBack={header.onBack}
+            onClose={header.onClose}
             rightAction={rightAction}
             {...props}
         />

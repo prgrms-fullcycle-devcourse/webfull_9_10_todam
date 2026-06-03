@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Button, TextInput, BottomBar, LeftIcon, InformationIcon } from '@todam/ui';
+import { Button, TextInput, BottomBar, InformationIcon } from '@todam/ui';
 import { CODE_LENGTH, emailSchema, passwordSchema, verifyCodeSchema } from '@todam/shared';
-import { useToast } from '../../../shared/model';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { useToast } from '@/shared/model';
 
 type Step = 'email' | 'code' | 'password';
 
@@ -124,20 +125,11 @@ export default function SignupPage() {
         (step === 'code' && !codeValid) ||
         (step === 'password' && !passwordValid);
 
+    // 전역 Header override: 뒤로가기(단계 역행/이탈) + 타이틀. 우측 액션 없음.
+    useHeaderOverride({ title: '회원가입', onBack: handleBack, hideRightAction: true });
+
     return (
         <div className="flex h-full flex-col bg-background">
-            <header className="flex h-15 items-center pt-safe">
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<LeftIcon />}
-                    aria-label="뒤로"
-                    onClick={handleBack}
-                />
-                <h1 className="text-lg font-medium text-foreground">회원가입</h1>
-            </header>
-
             <main className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-2">
                 {step === 'email' && (
                     <TextInput

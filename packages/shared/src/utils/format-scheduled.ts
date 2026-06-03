@@ -2,7 +2,7 @@
 // Asia/Seoul 기준 표시 가정 (서버가 ISO Z 로 내려주므로 로컬 변환 = 한국 환경 기본 정합).
 // 다른 엔드포인트의 예약 카드/리스트에서 재사용.
 
-const DAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+import { DAYS } from './date';
 
 export type ScheduledParts = {
     /** 월.일 (예: "6.18") */

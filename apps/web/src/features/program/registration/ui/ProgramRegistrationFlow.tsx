@@ -1,12 +1,13 @@
 'use client';
 
-import { BottomBar, Button, CloseIcon, LeftIcon } from '@todam/ui';
+import { BottomBar, Button, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { useToast } from '../../../../shared/model';
-import { ProgressBarWrapper } from '../../../../shared/ui';
-import { isStepValid, useProgramRegistrationStore } from '../model/store';
+import { useModal, useToast } from '@/shared/model';
+import { ProgressBarWrapper } from '@/shared/ui';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { isDirty, isStepValid, useProgramRegistrationStore } from '../model/store';
 import { ProgramRegistrationStep, STEP_TITLES, TOTAL_STEPS } from '../model/types';
 
 import { BasicInfoStep } from './BasicInfoStep';
@@ -27,6 +28,9 @@ export function ProgramRegistrationFlow({
     const prev = useProgramRegistrationStore((s) => s.prev);
     const reset = useProgramRegistrationStore((s) => s.reset);
     const { push } = useToast();
+    const { open: openModal, close: closeModal } = useModal();
+
+    const dirty = isDirty(form);
 
     // 플로우 이탈 시 전역 store 초기화
     useEffect(() => () => reset(), [reset]);
@@ -34,6 +38,28 @@ export function ProgramRegistrationFlow({
     const exit = () => {
         reset();
         router.push(returnTo);
+    };
+
+    // 작성 중이면 확인 모달, 아니면 즉시 이탈.
+    const guardedExit = () => {
+        if (!dirty) {
+            exit();
+            return;
+        }
+        openModal(
+            <Modal
+                title="작성을 취소하고 나가시겠어요?"
+                description="작성한 내용은 저장되지 않아요."
+                confirmLabel="나가기"
+                cancelLabel="계속 작성"
+                danger
+                onConfirm={() => {
+                    closeModal();
+                    exit();
+                }}
+                onCancel={closeModal}
+            />,
+        );
     };
 
     // TODO(연동 후행): POST /partner/stores/{storeId}/programs 호출 (ACTIVE 직접 생성).
@@ -50,37 +76,20 @@ export function ProgramRegistrationFlow({
     const progress = ((step + 1) / TOTAL_STEPS) * 100;
 
     const handleBack = () => {
-        if (step === ProgramRegistrationStep.BasicInfo) exit();
+        if (step === ProgramRegistrationStep.BasicInfo) guardedExit();
         else prev();
     };
 
+    // 전역 Header override: 뒤로가기(첫 단계는 이탈 가드) + 닫기(X, 이탈 가드).
+    useHeaderOverride({
+        title: '클래스 등록',
+        onBack: handleBack,
+        onClose: guardedExit,
+        guardDirty: dirty,
+    });
+
     return (
         <div className="flex flex-1 flex-col overflow-hidden">
-            {/* Header (back + title + close) */}
-            <header className="flex h-15 shrink-0 items-center bg-transparent pt-safe">
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<LeftIcon />}
-                    aria-label="뒤로가기"
-                    onClick={handleBack}
-                    className="hover:!bg-transparent hover:!text-foreground"
-                />
-                <span className="flex-1 truncate text-lg font-medium leading-6 text-foreground">
-                    클래스 등록
-                </span>
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<CloseIcon />}
-                    aria-label="닫기"
-                    onClick={exit}
-                    className="hover:!bg-transparent hover:!text-foreground"
-                />
-            </header>
-
             {/* Container */}
             <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-16">
                 <div className="py-2">

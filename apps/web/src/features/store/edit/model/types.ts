@@ -1,6 +1,10 @@
 import type { PartnerStoreDetail } from '@todam/shared';
 
-import { MAX_STORE_IMAGES, type OperatingState, type ConvenienceState } from '../../shared/model';
+import {
+    MAX_STORE_IMAGES,
+    type OperatingState,
+    type ConvenienceState,
+} from '@/features/store/shared/model';
 
 // 공유 상수/타입은 store/shared/model 단일 소스에서 re-export (외부 import 경로 호환).
 export { MAX_STORE_IMAGES, type OperatingState, type ConvenienceState };

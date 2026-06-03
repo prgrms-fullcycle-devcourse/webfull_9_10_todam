@@ -8,29 +8,31 @@ import {
     Button,
     DescriptionBlock,
     Divider,
-    LeftIcon,
     PhoneIcon,
     SectionTitle,
     ShareIcon,
     SpaceBlock,
 } from '@todam/ui';
 
+import { StoreStatus } from '@todam/shared';
+
 import {
     StoreEditSheet,
+    StoreReviewResult,
     usePartnerStoreDetail,
     usePartnerStorePrograms,
-} from '../../../../features/store/detail';
+} from '@/features/store/detail';
 import {
     ConvenienceChips,
-    ProgramListItem,
     StoreImageCarousel,
     StoreInfoSummary,
     StoreLocation,
-    formatOperatingDays,
-} from '../../../../entities/store';
-import { ApiError } from '../../../../shared/api';
-import { useSheet } from '../../../../shared/model';
-import { EmptyState } from '../../../../shared/ui';
+} from '@/entities/store';
+import { PartnerClassListItem } from '@/features/program/list';
+import { ApiError } from '@/shared/api';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { useSheet, useToast } from '@/shared/model';
+import { EmptyState } from '@/shared/ui';
 
 // 에러 코드 → 안내 문구. 401/403/404/500 분기.
 function errorMessage(error: unknown): string {
@@ -49,29 +51,57 @@ function errorMessage(error: unknown): string {
     return '공방 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.';
 }
 
-// 평점 행 우측 액션(문의하기/공유하기). 아이콘 + 라벨만 배치. 동작은 API 연동 시 구현.
+// 평점 행 우측 액션(문의하기/공유하기). 아이콘 + 라벨만 배치.
 // 디자인: 평점 행 gap 4px 안에서 "・" 구분자 2개(문의 앞 / 문의·공유 사이)와 함께 정렬.
-function StoreInfoActions() {
+// 문의하기 = 공방 전화번호로 tel: 다이얼. 공유하기 = 고객용 공개 페이지(/stores/{slug}) 링크 공유.
+function StoreInfoActions({
+    phone,
+    slug,
+    storeName,
+}: {
+    phone: string;
+    slug: string;
+    storeName: string;
+}) {
+    const { push } = useToast();
+    // tel: 스킴은 하이픈 허용하나 일부 다이얼러 호환 위해 숫자·+ 만 남김.
+    const telHref = `tel:${phone.replace(/[^0-9+]/g, '')}`;
+
+    // PWA·모바일: Web Share API(OS 공유 시트). 미지원(데스크탑 일부)·실패: 링크 클립보드 복사 fallback.
+    async function handleShare() {
+        const url = `${window.location.origin}/stores/${slug}`;
+        if (typeof navigator.share === 'function') {
+            try {
+                await navigator.share({ title: storeName, url });
+                return;
+            } catch (e) {
+                // 사용자 취소(AbortError)는 조용히 종료. 그 외 오류는 복사 fallback 으로.
+                if (e instanceof Error && e.name === 'AbortError') return;
+            }
+        }
+        try {
+            await navigator.clipboard.writeText(url);
+            push({ message: '공방 링크를 복사했어요.' });
+        } catch {
+            push({ message: '링크 복사에 실패했어요.' });
+        }
+    }
+
     return (
         <>
             <span className="text-foreground-tertiary">・</span>
-            <button
-                type="button"
+            <a
+                href={telHref}
                 className="inline-flex items-center gap-1 text-xs font-medium text-foreground-tertiary hover:text-foreground"
-                onClick={() => {
-                    // TODO: API 연동 시 구현 (문의하기)
-                }}
             >
                 <PhoneIcon size={16} />
                 <span>문의하기</span>
-            </button>
+            </a>
             <span className="text-foreground-tertiary">・</span>
             <button
                 type="button"
-                className="inline-flex items-center gap-1 text-xs font-medium text-foreground-tertiary hover:text-foreground"
-                onClick={() => {
-                    // TODO: API 연동 시 구현 (공유하기)
-                }}
+                className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-foreground-tertiary hover:text-foreground"
+                onClick={handleShare}
             >
                 <ShareIcon size={16} />
                 <span>공유하기</span>
@@ -88,25 +118,21 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
     const detail = usePartnerStoreDetail(id);
     const programs = usePartnerStorePrograms(id);
 
-    // 서브 헤더(뒤로가기 + 타이틀). 로딩/에러/정상 공통.
-    const header = (
-        <header className="flex h-15 items-center pt-safe">
-            <Button
-                variant="ghost"
-                layout="onlyIcon"
-                size="lg"
-                icon={<LeftIcon />}
-                aria-label="뒤로"
-                onClick={() => router.push('/partner/stores')}
-            />
-            <h1 className="text-lg font-medium text-foreground">공방 미리보기</h1>
-        </header>
-    );
+    // 전역 Header override: 뒤로가기(→공방 관리) + 타이틀. 우측 액션 없음.
+    // 심사중·반려는 검수 결과 화면(헤더 없음)이므로 override 비활성.
+    const detailStatus = detail.data?.store.status;
+    const isReviewScreen =
+        detailStatus === StoreStatus.PENDING || detailStatus === StoreStatus.REJECTED;
+    useHeaderOverride({
+        title: '공방 미리보기',
+        onBack: () => router.push('/partner/stores'),
+        hideRightAction: true,
+        enabled: !isReviewScreen,
+    });
 
     if (detail.isLoading) {
         return (
             <div className="flex h-full flex-col bg-background">
-                {header}
                 <main className="flex-1 overflow-y-auto">
                     <p className="py-10 text-center text-sm text-foreground-tertiary">
                         공방 정보를 불러오는 중입니다.
@@ -119,7 +145,6 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
     if (detail.isError || !detail.data) {
         return (
             <div className="flex h-full flex-col bg-background">
-                {header}
                 <main className="flex-1 overflow-y-auto px-4">
                     <EmptyState message={errorMessage(detail.error)} />
                 </main>
@@ -128,15 +153,30 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
     }
 
     const store = detail.data.store;
+
+    // 심사중·반려 공방은 일반 상세 대신 검수 결과 화면. (심사 결과 = 스토어 단위 store.status)
+    if (store.status === StoreStatus.PENDING || store.status === StoreStatus.REJECTED) {
+        return (
+            <StoreReviewResult
+                storeName={store.name}
+                status={store.status}
+                rejectedReason={store.rejectedReason}
+                address={store.address}
+                businessNumber={store.businessDocument?.businessNumber}
+                email={store.businessDocument?.email}
+                createdAt={store.createdAt}
+                onEditInfo={() => router.push(`/partner/stores/${id}/business`)}
+                onBack={() => router.push('/partner/stores')}
+            />
+        );
+    }
+
     const programList = programs.data?.programs ?? [];
     const hasPrograms = programList.length > 0;
     // day는 program 필드가 아니라 store.operatingHours에서 도출(한글 요일 "·" join). 모든 클래스 공통.
-    const operatingDays = formatOperatingDays(store.operatingHours.map((hour) => hour.dayOfWeek));
 
     return (
         <div className="flex h-full flex-col bg-background">
-            {header}
-
             <main className="flex-1 overflow-y-auto pb-28">
                 {/* 대표 이미지 carousel */}
                 <StoreImageCarousel images={store.images} />
@@ -152,7 +192,13 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                             reviewCount={store.reviewCount}
                             description={store.description ?? ''}
                             tags={<ConvenienceChips convenienceInfo={store.convenienceInfo} />}
-                            actions={<StoreInfoActions />}
+                            actions={
+                                <StoreInfoActions
+                                    phone={store.phone}
+                                    slug={store.slug}
+                                    storeName={store.name}
+                                />
+                            }
                         />
                     </div>
 
@@ -175,21 +221,36 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                                 클래스 목록을 불러오지 못했습니다.
                             </p>
                         )}
-                        {/* 등록된 클래스 없음 → 준비 중 안내 카드 */}
+                        {/* 등록된 클래스 없음 → 안내 + 클래스 관리 진입 (관리 페이지서 등록·순서변경) */}
                         {!programs.isLoading && !programs.isError && !hasPrograms && (
-                            <DescriptionBlock title="공방 안내">
-                                새로운 클래스를 정성껏 준비 중이에요.
-                            </DescriptionBlock>
+                            <div className="flex flex-col gap-3">
+                                <DescriptionBlock title="공방 안내">
+                                    아직 등록된 클래스가 없어요. 첫 클래스를 등록해보세요.
+                                </DescriptionBlock>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full"
+                                    onClick={() => router.push(`/partner/classes?storeId=${id}`)}
+                                >
+                                    클래스 관리
+                                </Button>
+                            </div>
                         )}
+                        {/* 클래스 있음 → 목록 + 하단 클래스 관리 진입 (현재 공방 스코프) */}
                         {!programs.isLoading && !programs.isError && hasPrograms && (
                             <div className="flex flex-col gap-2">
                                 {programList.map((program) => (
-                                    <ProgramListItem
-                                        key={program.id}
-                                        program={program}
-                                        operatingDays={operatingDays}
-                                    />
+                                    <PartnerClassListItem key={program.id} program={program} />
                                 ))}
+                                <Button
+                                    variant="outline"
+                                    size="lg"
+                                    className="mt-1 w-full"
+                                    onClick={() => router.push(`/partner/classes?storeId=${id}`)}
+                                >
+                                    클래스 관리
+                                </Button>
                             </div>
                         )}
                     </section>
@@ -199,7 +260,12 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                     {/* 위치 — 지도 placeholder + 주소 (실 지도 SDK 연동은 follow-up) */}
                     <SectionTitle title="위치" size="lg" />
                     <section className="py-2">
-                        <StoreLocation address={store.address} />
+                        <StoreLocation
+                            address={store.address}
+                            latitude={store.latitude}
+                            longitude={store.longitude}
+                            name={store.name}
+                        />
                     </section>
                 </div>
             </main>

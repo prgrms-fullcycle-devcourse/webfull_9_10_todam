@@ -3,9 +3,9 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { useMyReservations } from '../../../../../features/reservation/list';
-import { ApiError } from '../../../../../shared/api';
-import { EmptyState } from '../../../../../shared/ui';
+import { useMyReservations } from '@/features/reservation/list';
+import { ApiError } from '@/shared/api';
+import { EmptyState } from '@/shared/ui';
 
 import { ReservationCard } from './ReservationCard';
 
