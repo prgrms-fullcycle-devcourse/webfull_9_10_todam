@@ -1,9 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-
-import { Button, MoreIcon } from '@todam/ui';
 
 import { ReviewDetailContent } from '@/entities/review';
 import { useReservationDetail, useReservationReview } from '@/features/reservation/detail';
@@ -33,8 +31,6 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
     const { push: pushToast } = useToast();
     const { mutate: deleteReviewMutate } = useDeleteReviewMutation(reservationId);
 
-    const [menuOpen, setMenuOpen] = useState(false);
-
     // 401 → /login 리다이렉트.
     useEffect(() => {
         if (isError && error instanceof ApiError && error.statusCode === 401) {
@@ -59,17 +55,13 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
         );
     };
 
-    // 라우트 헤더 우측 more 버튼 — 리뷰 데이터 있을 때만(없으면 기본값 유지).
+    // 라우트 헤더 우측 more 메뉴 — 리뷰 데이터 있을 때만(없으면 기본값 유지).
     useHeaderOverride({
         rightAction: review ? (
-            <Button
-                variant="ghost"
-                layout="onlyIcon"
-                size="lg"
-                icon={<MoreIcon />}
-                aria-label="더보기"
-                onClick={() => setMenuOpen((prev) => !prev)}
-                className="hover:!bg-transparent hover:!text-foreground"
+            <ReviewMoreMenu
+                createdAt={review.createdAt}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
             />
         ) : undefined,
     });
@@ -111,30 +103,10 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
     }
 
     return (
-        <main className="relative flex-1 overflow-y-auto px-4 pb-16">
+        <main className="flex-1 overflow-y-auto px-4 pb-16">
             <div className="py-2">
                 <ReviewDetailContent review={review} reservation={reservation} />
             </div>
-
-            {/* 더보기 floating menu — header more 버튼 클릭 시 토글. */}
-            {menuOpen && (
-                <>
-                    <button
-                        type="button"
-                        aria-label="메뉴 닫기"
-                        className="absolute inset-0"
-                        onClick={() => setMenuOpen(false)}
-                    />
-                    <div className="absolute right-4 top-2 z-10">
-                        <ReviewMoreMenu
-                            createdAt={review.createdAt}
-                            onEdit={handleEdit}
-                            onDelete={handleDelete}
-                            onClose={() => setMenuOpen(false)}
-                        />
-                    </div>
-                </>
-            )}
         </main>
     );
 }

@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Button, MoreIcon } from '@todam/ui';
 import { ReservationDeliveryMethod, ReservationStatus } from '@todam/shared';
 
 import { useReservationDetail } from '@/features/reservation/detail';
@@ -55,8 +54,6 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
     const { open: openModal, close: closeModal } = useModal();
     const { push: pushToast } = useToast();
 
-    const [menuOpen, setMenuOpen] = useState(false);
-
     // 401 → /login 리다이렉트 (목록 화면과 동일 패턴).
     useEffect(() => {
         if (isError && error instanceof ApiError && error.statusCode === 401) {
@@ -92,19 +89,16 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
         pushToast({ message: '예약 수정은 곧 지원돼요.' });
     };
 
-    // 라우트 헤더(예약 자세히보기) 우측 more 버튼. 메뉴 항목 없으면 미노출(기본값 유지).
+    // 라우트 헤더(예약 자세히보기) 우측 more 메뉴. 메뉴 항목 없으면 미노출(기본값 유지).
     useHeaderOverride({
-        rightAction: showMoreMenu ? (
-            <Button
-                variant="ghost"
-                layout="onlyIcon"
-                size="lg"
-                icon={<MoreIcon />}
-                aria-label="더보기"
-                onClick={() => setMenuOpen((prev) => !prev)}
-                className="hover:!bg-transparent hover:!text-foreground"
-            />
-        ) : undefined,
+        rightAction:
+            showMoreMenu && reservation ? (
+                <MoreMenu
+                    reservation={reservation}
+                    onEdit={handleEditClick}
+                    onCancel={handleCancelClick}
+                />
+            ) : undefined,
     });
 
     if (isLoading) {
@@ -146,7 +140,7 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
     const isDelivery = reservation.deliveryMethod === ReservationDeliveryMethod.DELIVERY;
 
     return (
-        <main className="relative flex-1 overflow-y-auto px-4 pb-16">
+        <main className="flex-1 overflow-y-auto px-4 pb-16">
             <div className="flex flex-col gap-2 py-2">
                 <ReservationInfoCard reservation={reservation} />
                 <ReservationNumberButton reservationId={reservation.id} />
@@ -165,26 +159,6 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
                     <ReviewSection reservation={reservation} />
                 )}
             </div>
-
-            {/* 더보기 floating menu — header 의 more 버튼 클릭 시 토글. 헤더 아래 우측에 absolute 배치. */}
-            {menuOpen && showMoreMenu && (
-                <>
-                    <button
-                        type="button"
-                        aria-label="메뉴 닫기"
-                        className="absolute inset-0"
-                        onClick={() => setMenuOpen(false)}
-                    />
-                    <div className="absolute right-4 top-2 z-10">
-                        <MoreMenu
-                            reservation={reservation}
-                            onCancel={handleCancelClick}
-                            onEdit={handleEditClick}
-                            onClose={() => setMenuOpen(false)}
-                        />
-                    </div>
-                </>
-            )}
         </main>
     );
 }
