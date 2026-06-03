@@ -17,7 +17,10 @@ export type MoreMenuProps = {
 
 export function MoreMenu({ reservation, onCancel, onEdit, onClose }: MoreMenuProps) {
     const actions: Array<{ item: MenuItem; run: () => void }> = [
-        { item: { label: '수정하기', icon: <EditIcon /> }, run: onEdit },
+        {
+            item: { label: '수정하기', icon: <EditIcon className="text-foreground-tertiary" /> },
+            run: onEdit,
+        },
     ];
     if (reservation.canCancel) {
         actions.push({
