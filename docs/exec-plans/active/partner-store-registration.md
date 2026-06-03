@@ -11,6 +11,9 @@
 - [x] API 구현
 - [x] UI 구현
 - [x] API 연동
+- [x] (2026-06-03 reopen) 사업자등록증 파일 저장 — BE `POST /partner/business-documents/images` 신규
+- [x] (2026-06-03 reopen) 사업자등록증 파일 저장 — `BusinessDocumentDto.documentUrl` + `create-store.use-case` `document_url` 저장 복원
+- [x] (2026-06-03 reopen) 사업자등록증 파일 저장 — FE BusinessStep 실 업로드 연동(가짜 `mock://uploads` 제거) + 미리보기 + contract 반영
 
 ## Context
 
@@ -37,8 +40,9 @@
   - BE: `POST /stores` (공방 초안 생성 + 첫 공방 시 Partner 엔티티 자동 생성), `POST /partner/stores/{storeId}/images` (presigned PUT URL 발급), `POST /partner/stores/{storeId}/submit` (PENDING 전이) 3개 엔드포인트 구현. slug 중복 검증, 카카오맵 geocode 연동.
   - UI: 4단계 폼(공방 정보 / 영업 정보 / 이미지 업로드 / 예약 정보) + 제출 완료(검토중 / 반려) 화면. (`apps/web/src/features/store-registration` 기존 UI가 존재하므로 실 API 연동 집중.)
   - 연동: 실 API로 mock 전환 (`.env.local` `NEXT_PUBLIC_API_MOCKING=disabled`), 인증 헤더 연결, presigned 업로드(공방 이미지), geocode 연동.
+  - **(2026-06-03 추가) 사업자등록증 파일 저장**: BE `POST /partner/business-documents/images`(store-비종속 presigned 신규), `BusinessDocumentDto.documentUrl` 추가 + `create-store.use-case`의 `document_url` 저장 복원, FE BusinessStep 실 업로드 연동 + 파일 미리보기.
 - Out:
-  - 사업자등록증 **파일 업로드**(`documentUrl`) 및 **OCR 국세청 진위 확인** — 백로그. (피그마 1단계에 파일 업로드 필드 없음. 사업자 정보 텍스트 필드는 In 스코프)
+  - 사업자등록증 **OCR 국세청 진위 확인**(`ocrStatus`/`verifiedAt`) — 백로그. (파일 저장 자체는 In scope로 정정, 2026-06-03 Decision Log 참조.)
   - Admin 검수 승인/반려 처리 — 별도 admin 기능.
   - 공방 수정 (REJECTED 후 재제출) — 별도 기능.
   - 공방 목록 조회 (`GET /partner/stores`) — `partner-store-list` plan 소관.
@@ -48,26 +52,33 @@
 
 1. **(BE) 공방 초안 생성 `POST /stores`**: `store` 모듈 컨트롤러/서비스/리포지터리 구현. AuthGuard 적용. slug 중복 검증, 카카오맵 geocode 변환, `stores` + `store_operating_hours` row 생성(`status = DRAFT`). 첫 공방 여부(Partner 레코드 존재 확인) → `partners` row 자동 생성(`status = PENDING`).
 2. **(BE) 이미지 presigned URL `POST /partner/stores/{storeId}/images`**: S3 presigned PUT URL 생성(5분 유효). `store_images` row 선생성. 응답에 `uploadUrl`, `imageId`, `imageUrl` 반환.
+2-1. **(BE, 신규) 사업자등록증 presigned `POST /partner/business-documents/images`**: store-비종속. 토큰 `userId`로 key `business-documents/{userId}/{uuid}.{ext}` 생성 → presigned PUT URL(5분) 발급 → `{ uploadUrl, documentUrl }` 반환. DB row 선생성·confirm 없음. **닭-달걀 해결**: store 생성 전에 이 엔드포인트로 파일 업로드 → 발급된 `documentUrl`을 `POST /stores` body의 `businessDocument.documentUrl`에 실어 전송. `POST /stores` use-case가 `s3.objectExists(documentUrl)` 검증 후 `business_documents.document_url` 저장.
+2-2. **(BE) `BusinessDocumentDto`/use-case 보정**: `create-store.dto.ts`의 `BusinessDocumentDto`에 `documentUrl?: string` 추가, `create-store.use-case`가 `business_documents.document_url`에 저장하도록 복원(현재 항상 null).
 3. **(BE) 공방 심사 제출 `POST /partner/stores/{storeId}/submit`**: 상태 검증(`DRAFT` 또는 `REJECTED`) → 필수 항목 완비 검증(이름·주소·대표이미지 1장) → `stores.status = PENDING` 전이. notification 큐 등록(파트너 신청 알림).
 4. **(UI) 실 API 연동 전환**: 기존 MSW mock을 실 API로 교체. `NEXT_PUBLIC_API_MOCKING=disabled` + `NEXT_PUBLIC_API_URL` 설정. `shared/api/auth-token.ts`에 accessToken 주입. 엔드포인트 경로 확정 반영.
 5. **(UI) presigned 업로드 연동**: `POST /partner/stores/{storeId}/images` 호출 → 발급받은 `uploadUrl`로 S3 직접 PUT 업로드.
+5-1. **(UI, 신규) 사업자등록증 실 업로드**: BusinessStep의 `mock://uploads/{name}` 가짜 documentUrl 제거 → `POST /partner/business-documents/images` 호출 → `uploadUrl`로 S3 직접 PUT → 발급된 `documentUrl`을 폼 상태에 보관 → `POST /stores` body `businessDocument.documentUrl`로 전송. 업로드된 파일 미리보기(파일명/썸네일) 노출.
 6. **(UI) geocode 연동**: 다음 주소 검색 → 카카오 로컬 API 또는 BE geocode 엔드포인트로 위경도 변환.
 7. **(연동) 제출 완료 → 검수 대기 화면**: `POST /partner/stores/{storeId}/submit` 성공 시 검토중 화면 렌더. 반려(`REJECTED`) 상태 조회 시 반려 사유 표시.
 
 ## Out (단계별 완료물)
 
 - API:
-  - `POST /stores` — 공방 초안 생성 (slug 자동생성/중복검증, businessDocument 저장, 첫 공방 시 partner 자동생성)
+  - `POST /stores` — 공방 초안 생성 (slug 자동생성/중복검증, businessDocument 텍스트 필드 저장, 첫 공방 시 partner 자동생성). **[2026-06-03 완료] `businessDocument.documentUrl` 저장** — `BusinessDocumentDto.documentUrl`(IsOptional/IsString) 추가, `create-store.use-case`가 `S3Service.objectExists(keyFromImageUrl(documentUrl))` 검증(미존재 시 400 BAD_REQUEST) 후 `business_documents.document_url` 저장. 미첨부 시 null.
+  - **[2026-06-03 완료] `POST /partner/business-documents/images` — 사업자등록증 store-비종속 presigned 업로드** — AuthGuard(PartnerGuard 없음), body `{fileName,fileType}`, key=`business-documents/{userId}/{uuid}.{ext}`(buildObjectKey), presigned PUT(300s), 응답 `{uploadUrl, documentUrl}`. DB row·confirm 없음.
   - `POST /partner/stores/:storeId/images` — 공방 이미지 presigned PUT URL 발급
   - `PATCH /partner/stores/:storeId/images/:imageId/confirm` — S3 객체 존재 검증 후 PENDING→UPLOADED
   - `POST /partner/stores/:storeId/submit` — 공방 심사 제출 (DRAFT/REJECTED → PENDING)
   - 주요 파일:
     - `apps/api/src/modules/store/store.module.ts`
     - `apps/api/src/modules/store/presentation/controllers/store.controller.ts`
-    - `apps/api/src/modules/store/presentation/dto/create-store.dto.ts`
+    - `apps/api/src/modules/store/presentation/dto/create-store.dto.ts` (**2026-06-03 완료: `BusinessDocumentDto.documentUrl` 추가**)
+    - 사업자등록증 presigned 발급은 별도 컨트롤러 대신 기존 `store.controller.ts`에 라우트 `POST partner/business-documents/images` 추가(store 도메인 일부, 기존 패턴 일관).
+    - `apps/api/src/modules/store/presentation/dto/business-document-image.dto.ts` (**2026-06-03 신규: req/res DTO**)
+    - `apps/api/src/modules/store/application/use-cases/create-business-document-image.use-case.ts` (**2026-06-03 신규**)
     - `apps/api/src/modules/store/presentation/dto/store-image.dto.ts`
     - `apps/api/src/modules/store/presentation/dto/submit-store.dto.ts`
-    - `apps/api/src/modules/store/application/use-cases/create-store.use-case.ts`
+    - `apps/api/src/modules/store/application/use-cases/create-store.use-case.ts` (**2026-06-03 완료: `document_url` 저장 복원 + `s3.objectExists(keyFromImageUrl(documentUrl))` 검증, S3Service 주입**)
     - `apps/api/src/modules/store/application/use-cases/create-store-image.use-case.ts`
     - `apps/api/src/modules/store/application/use-cases/confirm-store-image.use-case.ts`
     - `apps/api/src/modules/store/application/use-cases/submit-store.use-case.ts`
@@ -76,8 +87,12 @@
   - `apps/web/src/features/store/registration/ui/StoreRegistrationFlow.tsx` — 제출 결과를 `storeId` 상태로 보관, 완료 화면에 전달. 에러 분기를 실 API 코드(`SLUG_CONFLICT`/`PARTNER_NOT_APPROVED`/`BAD_REQUEST`)로 교체.
   - `apps/web/src/features/store/registration/ui/StoreRegistrationComplete.tsx` — `storeId` prop 수신 → `GET /partner/stores/{storeId}`(PartnerStoreDetailResult) 기반으로 검수 상태/반려 사유/요약 표시. REJECTED 시 반려 사유 노출.
 - 연동:
-  - `packages/shared/src/contracts/store-registration.ts` — 실 API 4종 계약 타입 신설(`CreateStoreRequest/Result`, `CreateStoreImageRequest/Result`, `ConfirmStoreImageResult`, `SubmitStoreResult`) + `StoreRegistrationApiErrorCode` enum. (기존 onboarding mock 계약은 유지.)
-  - `apps/web/src/features/store/registration/api.ts` — 루트 경로 실 엔드포인트로 재작성: `POST /stores`, `POST /partner/stores/{id}/images`, `uploadToPresignedUrl`(S3 직접 PUT), `PATCH .../confirm`, `POST .../submit`, `getStoreReviewStatus(GET /partner/stores/{id})`. 폼→body 매핑 `toCreateStoreBody`.
+  - `packages/shared/src/contracts/store-registration.ts` — 실 API 4종 계약 타입 신설(`CreateStoreRequest/Result`, `CreateStoreImageRequest/Result`, `ConfirmStoreImageResult`, `SubmitStoreResult`) + `StoreRegistrationApiErrorCode` enum. (기존 onboarding mock 계약은 유지.) (**2026-06-03: `BusinessDocumentImageRequest`(`{ fileName, fileType }`)/`BusinessDocumentImageResult`(`{ uploadUrl, documentUrl }`) 추가 + `CreateStoreRequest.businessDocument.documentUrl?: string` 추가 필요**.)
+  - `apps/web/src/features/store/registration/api.ts` — 루트 경로 실 엔드포인트로 재작성: `POST /stores`, `POST /partner/stores/{id}/images`, `uploadToPresignedUrl`(S3 직접 PUT), `PATCH .../confirm`, `POST .../submit`, `getStoreReviewStatus(GET /partner/stores/{id})`. 폼→body 매핑 `toCreateStoreBody`. (**2026-06-03: `POST /partner/business-documents/images` 호출 + `toCreateStoreBody`에 `businessDocument.documentUrl` 매핑 추가 필요**.)
+  - **`apps/web/src/features/store/registration/ui/BusinessStep.tsx` (2026-06-03 완료)** — 가짜 `mock://uploads/{name}` documentUrl 생성 제거 → `useUploadBusinessDocument`(presigned 발급 → S3 PUT) 호출 후 발급 `documentUrl` 폼 상태(`patchBusiness`) 보관. 업로드 중 추가셀 비활성(`addDisabled`), 실패 시 toast. 미리보기: 이미지 파일은 로컬 `URL.createObjectURL` 썸네일(`src`), PDF 등은 파일명 라벨(`label`). 제거 시 objectURL revoke + documentUrl null.
+  - **`apps/web/src/features/store/registration/api.ts` (2026-06-03 완료)** — `createBusinessDocumentImage(body {fileName,fileType})` → `POST /partner/business-documents/images`(루트 경로, MSW `/api/v1` 미가로챔 → 실 BE) → `{uploadUrl, documentUrl}`. `toCreateStoreBody`의 `businessDocument`에 `documentUrl: form.business.documentUrl` 매핑 추가.
+  - **`apps/web/src/features/store/registration/queries.ts` (2026-06-03 완료)** — `useUploadBusinessDocument` mutation 신설(`useGeocode` 패턴): presigned 발급 → `uploadToPresignedUrl` S3 PUT → `{documentUrl}` 반환.
+  - `apps/web/src/features/store/registration/model/store.ts` — `business.documentUrl` 초기 null / 필수조건 `!!b.documentUrl` 유지. mock 문자열 가정 코드 없음(변경 불필요).
   - `apps/web/src/features/store/registration/queries.ts` — `useSubmitStoreRegistration` 을 초안생성→이미지 presigned 업로드/확인(순차)→제출 오케스트레이션으로 재작성, `storeId` 반환. `useStoreReviewStatus` 신설.
   - `apps/web/.env.local` — `NEXT_PUBLIC_API_MOCKING=disabled`, `NEXT_PUBLIC_API_URL=http://localhost:4000`.
   - 인증: `apps/web/src/shared/api/client.ts` 가 `getAuthToken()` → `Authorization: Bearer` 자동 주입(기존 패턴 재사용, 변경 없음).
@@ -113,13 +128,18 @@
 - 2026-06-01: 피그마 1단계 재확인 → 사업자 정보 텍스트 필드(사업자번호/상호명/대표자명/사업장주소/이메일)는 폼에 존재. `businessDocument`를 텍스트 입력 필드로 복원(파일 업로드·OCR만 백로그 유지). `business_documents.document_url`을 nullable로 변경(migration `20260601090000_business_document_url_nullable`).
 - 2026-06-01: 파트너 분기 명세 충실화 → 추가 공방 등록은 `APPROVED` 파트너만 허용. 그 외 status(PENDING/REJECTED/SUSPENDED/TERMINATED)는 `403 PARTNER_NOT_APPROVED`로 차단. (CONTRACT-2의 "partner 존재로만 분기"에서 status 검증 추가.)
 - 2026-06-01: 피그마 3단계(영업 정보)에 "예약 시간 간격"(1/1.5/2/3시간) 필드 존재 확인 → `reservationIntervalMinutes`(분 단위, 60/90/120/180) Store에 추가. 추후 프로그램 타임슬롯 생성 기준값으로 사용. `stores.reservation_interval_minutes` 컬럼 추가(migration `20260601100000_add_store_reservation_interval`).
+- **2026-06-03 (정정): 사업자등록증 파일 저장 = IN scope.** 2026-06-01 "사업자등록증 업로드 전체 백로그 제외" 결정을 **정정한다**. BOSS 결정: 사업자등록증 **파일 자체는 저장**해야 한다(`document_url` 저장 복원). 백로그로 남기는 것은 **OCR/국세청 진위 확인**(`ocrStatus`/`verifiedAt`)뿐이다.
+  - store-비종속 presigned 업로드 엔드포인트 **신규**(`POST /partner/business-documents/images`) 필요 — 사업자등록증은 `POST /stores` body의 `businessDocument`에 포함돼 **store 생성 전**에 업로드돼야 하므로(닭-달걀), store-scoped 이미지 패턴(`POST /partner/stores/:storeId/images`) 재사용 불가.
+  - `BusinessDocumentDto`에 `documentUrl` 필드 추가, `create-store.use-case`가 `business_documents.document_url` 저장하도록 복원(현재 미사용 → null). `business_documents.document_url` nullable 컬럼은 이미 존재(migration `20260601090000_business_document_url_nullable`).
+  - **confirm 단계 생략**(단순화): 업로드 후 confirm 핸드셰이크 없이 `POST /stores` 시점에 `businessDocument.documentUrl`만 받는다. 객체 존재 검증은 `POST /stores` use-case에서 `s3.objectExists(documentUrl)`로 수행.
 
 ## Outcome
 
 - Status:
-- Follow-up: Admin 검수(승인/반려) — 별도 admin plan. 반려 후 재제출(공방 수정) — 별도 기능. 사업자등록증 OCR — 백로그.
+- Follow-up: Admin 검수(승인/반려) — 별도 admin plan. 반려 후 재제출(공방 수정) — 별도 기능. 사업자등록증 **OCR/국세청 진위 확인(`ocrStatus`/`verifiedAt`)** — 백로그. (파일 저장 자체는 2026-06-03 IN scope로 정정.)
 - Follow-up: **추가 공방 등록 APPROVED 가드 구현** — contract `PARTNER_NOT_APPROVED`(403) 추가 + MSW `/partner/onboarding` status 게이트 + FE 403 토스트. (규칙=Decision Log 2026-06-01, 현재 미구현 — Risks 참조.)
 - Follow-up: **BE slug-availability 엔드포인트 추가** (별도 be) — 현재 slug 중복확인은 MSW mock 의존(`/api/v1/partner/stores/slug-availability`). 실 BE 엔드포인트 신설 후 FE `checkSlug` 경로를 루트 실 API 로 전환. 제출 시점 `409 SLUG_CONFLICT` 는 이미 실 연동됨.
+- Follow-up: **검수중/반려 화면 영속화(새로고침/전 진입 시 유지)** = 전용 `GET /partner/onboarding`(AuthGuard, `{ partnerStatus, store{id,status,rejectedReason} }` 반환 — 기존 mock `storeRegistrationStatusResultSchema`를 실 BE로 승격)으로 구현 예정. 게이트 키=partnerStatus. **별도 작업(미착수)** — 상세 contract는 구현 착수 시 스냅샷. (2026-06-03 BOSS 결정: bundle 방식(GET /partner/stores 확장) 폐기, 책임분리 위해 전용 200 엔드포인트 채택.)
 
 ## API Contract (스냅샷)
 
@@ -164,8 +184,9 @@
 | `ownerName` | string | 대표자명 (최대 100자) |
 | `businessAddress` | string | 사업장 주소 (최대 500자) |
 | `email` | string \| null | 사업자 이메일 (선택) |
+| `documentUrl` | string \| null | 사업자등록증 파일 S3 URL. `POST /partner/business-documents/images`로 presigned 업로드 후 발급된 URL. 미첨부 시 null |
 
-> `documentUrl`(사업자등록증 파일), `ocrStatus`/`verifiedAt`(국세청 진위 확인)는 **백로그**. 스키마상 `document_url`은 nullable로 변경됨.
+> **IN scope**: `documentUrl`(사업자등록증 파일 저장). **백로그**: `ocrStatus`/`verifiedAt`(국세청 진위 확인). 스키마상 `document_url`은 nullable(migration `20260601090000_business_document_url_nullable`).
 
 ---
 
@@ -204,11 +225,12 @@
       "businessName": "흙담",
       "ownerName": "김리듬",
       "businessAddress": "서울특별시 성동구 둑섬로 273(성수동)",
-      "email": "leadem@studio.com"
+      "email": "leadem@studio.com",
+      "documentUrl": "https://cdn.todam.app/business-documents/{userId}/uuid.pdf"
     }
   }
   ```
-- 시스템 처리: slug 중복 검증 → 사업자등록번호 형식 검증(숫자 10자리) → **파트너 분기**(레코드 없음 → 첫 공방, `partners` 자동 생성 `status = PENDING` / 레코드 있고 `APPROVED` → 추가 공방 허용 / 그 외 status → 403 차단) → 카카오맵으로 위경도 변환 → `stores` row 생성(`status = DRAFT`) → `store_operating_hours` + `business_documents` 저장
+- 시스템 처리: slug 중복 검증 → 사업자등록번호 형식 검증(숫자 10자리) → `documentUrl` 존재 시 `s3.objectExists(documentUrl)` 검증 → **파트너 분기**(레코드 없음 → 첫 공방, `partners` 자동 생성 `status = PENDING` / 레코드 있고 `APPROVED` → 추가 공방 허용 / 그 외 status → 403 차단) → 카카오맵으로 위경도 변환 → `stores` row 생성(`status = DRAFT`) → `store_operating_hours` + `business_documents`(`document_url` 포함) 저장
 - Response `201 Created`:
   ```json
   {
@@ -234,6 +256,38 @@
   - `401 UNAUTHORIZED` — 인증 필요
   - `403 PARTNER_NOT_APPROVED` — 승인되지 않은 파트너의 추가 공방 등록 시도
   - `409 SLUG_CONFLICT` — slug 중복
+
+---
+
+#### 1-1. `POST /partner/business-documents/images` — 사업자등록증 presigned 업로드 (store-비종속)
+
+- 가드: `AuthGuard` (User 이상). **storeId 불필요** — 사업자등록증은 `POST /stores` 호출 전에 업로드되므로 store-scoped 패턴 사용 불가(닭-달걀).
+- Request Headers: `Content-Type: application/json`, `Authorization: Bearer {accessToken}`
+- Request Body:
+  ```json
+  {
+    "fileName": "business_license.pdf",
+    "fileType": "application/pdf"
+  }
+  ```
+- 시스템 처리: 토큰의 `userId`로 key 생성 `business-documents/{userId}/{uuid}.{ext}` → presigned PUT URL 생성(5분 유효) → uploadUrl + documentUrl 반환. **DB row 선생성·confirm 핸드셰이크 없음** — 객체 존재 검증은 `POST /stores`에서 `s3.objectExists(documentUrl)`로 수행.
+- Response `201 Created`:
+  ```json
+  {
+    "statusCode": 201,
+    "timestamp": "2026-06-03T00:00:00.000Z",
+    "path": "/partner/business-documents/images",
+    "message": "Pre-signed URL이 성공적으로 발급되었습니다. 5분 이내에 업로드를 완료해주세요.",
+    "data": {
+      "uploadUrl": "https://todam-bucket.s3.ap-northeast-2.amazonaws.com/business-documents/{userId}/uuid.pdf?...",
+      "documentUrl": "https://cdn.todam.app/business-documents/{userId}/uuid.pdf"
+    },
+    "error": null
+  }
+  ```
+- 에러:
+  - `400 FILE_SIZE_EXCEEDED` — 5MB 초과 / `400 BAD_REQUEST` — fileType 허용 범위 외(image/*, application/pdf)
+  - `401 UNAUTHORIZED` / `500 INTERNAL_SERVER_ERROR`
 
 ---
 
