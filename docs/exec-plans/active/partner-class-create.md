@@ -111,7 +111,7 @@
 
 7. **FE: 클래스 등록 UI 구현**
    - 1단계: 대표 이미지, 클래스명, 난이도(`BASIC|INTERMEDIATE|ADVANCED`), 상세 설명 (최대 1000자)
-   - 2단계: 가격, 소요시간, 정원, 리드타임 (0일 이상), 어린이 동반(`childFriendly`), 택배 가능 여부(`deliverable`)
+   - 2단계: 가격, 소요시간, 리드타임 (0일 이상), 어린이 동반(`childFriendly`), 택배 가능 여부(`deliverable`) — 정원(수용 인원)은 공방 단위 `maxCapacityPerSlot`로 관리(2026-06-02 결정)되어 클래스 등록에서 제외
    - 단계별 필수값 완료 시 다음/저장 버튼 활성화
    - 이탈 확인 다이얼로그 (변경사항 있을 때)
    - UI: DESIGN.md 준수 (variant enum, 상태별 토큰, size별 height/padding/gap/radius 적용)
@@ -224,7 +224,6 @@
 | caution | string? | 유의사항 |
 | price | number | 양의 정수 (원 단위) |
 | durationMinutes | number | 30~480분 (30분 단위 제약 제거 — 2026-06-02) |
-| capacity | number | 1~30 |
 | difficulty | enum | BASIC \| INTERMEDIATE \| ADVANCED |
 | childFriendly | boolean | 어린이 동반 가능 여부 |
 | leadTimeDays | number | 0일 이상 |
@@ -233,16 +232,17 @@
 | createdAt | datetime | |
 | updatedAt | datetime | |
 
-#### program_snapshots (가격·정원·리드타임 변경 이력)
+#### program_snapshots (가격·리드타임 변경 이력)
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | id | UUID | PK |
 | programId | UUID | FK → programs.id |
 | price | number | |
-| capacity | number | |
 | leadTimeDays | number | |
 | createdAt | datetime | |
+
+> 2026-06-02: `capacity` 제거. 수용 인원은 공방 단위 `stores.max_capacity_per_slot`로 일원화. 슬롯별 예약 인원 합산이 `maxCapacityPerSlot`를 넘지 않도록 예약 단계에서 제어할 계획.
 
 #### program_images
 
@@ -312,7 +312,6 @@ Request Body:
   "caution": "체험 당일 취소는 불가합니다.",
   "price": 45000,
   "durationMinutes": 120,
-  "capacity": 6,
   "difficulty": "BASIC",
   "childFriendly": false,
   "leadTimeDays": 30,

@@ -51,12 +51,6 @@ export class CreateProgramDto {
     @Max(480, { message: '소요시간은 480분 이하여야 합니다.' })
     durationMinutes!: number;
 
-    @ApiProperty({ example: 6, description: '1~30' })
-    @IsInt({ message: '정원은 정수여야 합니다.' })
-    @Min(1, { message: '정원은 1명 이상이어야 합니다.' })
-    @Max(30, { message: '정원은 30명 이하여야 합니다.' })
-    capacity!: number;
-
     @ApiProperty({ enum: DIFFICULTY_VALUES, example: 'BASIC' })
     @IsIn(DIFFICULTY_VALUES, {
         message: '난이도는 BASIC, INTERMEDIATE, ADVANCED 중 하나여야 합니다.',

@@ -63,7 +63,6 @@ export class CreateProgramUseCase {
                     caution: dto.caution ?? null,
                     price: dto.price,
                     durationMinutes: dto.durationMinutes,
-                    capacity: dto.capacity,
                     difficulty: dto.difficulty as ProgramDifficulty,
                     childFriendly: dto.childFriendly,
                     leadTimeDays: dto.leadTimeDays,
@@ -83,7 +82,6 @@ export class CreateProgramUseCase {
                 data: {
                     programId: created.id,
                     price: dto.price,
-                    capacity: dto.capacity,
                     leadTimeDays: dto.leadTimeDays,
                 },
             });

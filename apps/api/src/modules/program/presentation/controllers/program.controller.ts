@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Get,
     Param,
     Patch,
     Post,
@@ -15,6 +16,7 @@ import { CurrentUser } from '../../../../common/decorators/current-user.decorato
 import { ResponseMessage } from '../../../../common/decorators/response-message.decorator';
 import type { RequestUser } from '../../../../common/types/request-user.type';
 import { CreateProgramUseCase } from '../../application/use-cases/create-program.use-case';
+import { GetProgramDetailUseCase } from '../../application/use-cases/get-program-detail.use-case';
 import { CreateProgramImageUseCase } from '../../application/use-cases/create-program-image.use-case';
 import { UpdateProgramStatusUseCase } from '../../application/use-cases/update-program-status.use-case';
 import {
@@ -27,6 +29,7 @@ import {
     UpdateProgramStatusDto,
     UpdateProgramStatusResponseDto,
 } from '../dto/update-program-status.dto';
+import { GetProgramDetailResponseDto } from '../dto/get-program-detail.dto';
 
 @ApiTags('programs')
 @ApiBearerAuth()
@@ -34,6 +37,7 @@ import {
 export class ProgramController {
     constructor(
         private readonly createProgramUseCase: CreateProgramUseCase,
+        private readonly getProgramDetailUseCase: GetProgramDetailUseCase,
         private readonly createProgramImageUseCase: CreateProgramImageUseCase,
         private readonly updateProgramStatusUseCase: UpdateProgramStatusUseCase,
         private readonly confirmProgramImageUseCase: ConfirmProgramImageUseCase,
@@ -49,6 +53,21 @@ export class ProgramController {
         @Body() dto: CreateProgramDto,
     ): Promise<CreateProgramResponseDto> {
         return this.createProgramUseCase.execute(user.id, storeId, dto);
+    }
+
+    @Get('partner/stores/:storeId/programs/:programId')
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('프로그램 상세 정보가 성공적으로 조회되었습니다.')
+    @ApiOkResponse({
+        description: '파트너 클래스 상세 조회 성공',
+        type: GetProgramDetailResponseDto,
+    })
+    async getProgramDetail(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+        @Param('programId') programId: string,
+    ): Promise<GetProgramDetailResponseDto> {
+        return this.getProgramDetailUseCase.execute(user.id, storeId, programId);
     }
 
     @Post('partner/stores/:storeId/programs/:programId/images')
