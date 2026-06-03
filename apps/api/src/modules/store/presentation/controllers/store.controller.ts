@@ -29,6 +29,7 @@ import { GetPartnerStoreDetailUseCase } from '../../application/use-cases/get-pa
 import { GetPartnerOnboardingUseCase } from '../../application/use-cases/get-partner-onboarding.use-case';
 import { ListPartnerStoreProgramsUseCase } from '../../application/use-cases/list-partner-store-programs.use-case';
 import { UpdateStoreUseCase } from '../../application/use-cases/update-store.use-case';
+import { UpdateBusinessDocumentUseCase } from '../../application/use-cases/update-business-document.use-case';
 import { DeleteStoreImageUseCase } from '../../application/use-cases/delete-store-image.use-case';
 import { CreateStoreDto, CreateStoreResponseDto } from '../dto/create-store.dto';
 import { CreateStoreImageDto, CreateStoreImageResponseDto } from '../dto/store-image.dto';
@@ -42,6 +43,10 @@ import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detai
 import { GetPartnerOnboardingResponseDto } from '../dto/get-partner-onboarding.dto';
 import { ListPartnerStoreProgramsResponseDto } from '../dto/list-partner-store-programs.dto';
 import { UpdateStoreDto, UpdateStoreResponseDto } from '../dto/update-store.dto';
+import {
+    UpdateBusinessDocumentDto,
+    UpdateBusinessDocumentResponseDto,
+} from '../dto/update-business-document.dto';
 
 @ApiTags('stores')
 @ApiBearerAuth()
@@ -58,6 +63,7 @@ export class StoreController {
         private readonly getPartnerOnboardingUseCase: GetPartnerOnboardingUseCase,
         private readonly listPartnerStoreProgramsUseCase: ListPartnerStoreProgramsUseCase,
         private readonly updateStoreUseCase: UpdateStoreUseCase,
+        private readonly updateBusinessDocumentUseCase: UpdateBusinessDocumentUseCase,
         private readonly deleteStoreImageUseCase: DeleteStoreImageUseCase,
     ) {}
 
@@ -129,6 +135,23 @@ export class StoreController {
         @Body() dto: UpdateStoreDto,
     ): Promise<UpdateStoreResponseDto> {
         return this.updateStoreUseCase.execute(user.id, storeId, dto);
+    }
+
+    @Patch('partner/stores/:storeId/business-document')
+    @HttpCode(HttpStatus.OK)
+    // 반려(REJECTED) 파트너는 PENDING/REJECTED 라 PartnerGuard(APPROVED) 통과 못함 → AuthGuard 만. 소유권은 use-case 에서 검증.
+    @UseGuards(AuthGuard)
+    @ResponseMessage('사업자 정보가 수정되어 재심사를 신청했습니다.')
+    @ApiOkResponse({
+        description: '사업자 정보 수정 및 재심사 전이 성공',
+        type: UpdateBusinessDocumentResponseDto,
+    })
+    async updateBusinessDocument(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+        @Body() dto: UpdateBusinessDocumentDto,
+    ): Promise<UpdateBusinessDocumentResponseDto> {
+        return this.updateBusinessDocumentUseCase.execute(user.id, storeId, dto);
     }
 
     @Post('stores')

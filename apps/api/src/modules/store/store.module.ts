@@ -10,6 +10,7 @@ import { GetPartnerStoreDetailUseCase } from './application/use-cases/get-partne
 import { GetPartnerOnboardingUseCase } from './application/use-cases/get-partner-onboarding.use-case';
 import { ListPartnerStoreProgramsUseCase } from './application/use-cases/list-partner-store-programs.use-case';
 import { UpdateStoreUseCase } from './application/use-cases/update-store.use-case';
+import { UpdateBusinessDocumentUseCase } from './application/use-cases/update-business-document.use-case';
 import { DeleteStoreImageUseCase } from './application/use-cases/delete-store-image.use-case';
 import { PartnerGuard } from '../../common/guards/partner.guard';
 import { StoreController } from './presentation/controllers/store.controller';
@@ -28,6 +29,7 @@ import { StoreController } from './presentation/controllers/store.controller';
         GetPartnerOnboardingUseCase,
         ListPartnerStoreProgramsUseCase,
         UpdateStoreUseCase,
+        UpdateBusinessDocumentUseCase,
         DeleteStoreImageUseCase,
         PartnerGuard,
     ],
