@@ -15,8 +15,7 @@ import { useEditableForm } from '@/shared/lib/useEditableForm';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useToast } from '@/shared/model';
 import { ImageUploadField, type ImageUploadGridItem } from '@/shared/ui';
-import { usePartnerStoreDetail } from '@/features/store/detail';
-import { useUpdateBusinessDocument } from '../queries';
+import { useBusinessEditStoreDetail, useUpdateBusinessDocument } from '../queries';
 
 const isBizNumber = (v: string) => businessNumberSchema.safeParse(v).success;
 const isEmail = (v: string) => emailSchema.safeParse(v).success;
@@ -32,7 +31,7 @@ type BusinessForm = {
 
 // 사업자 정보 수정(반려 재수정). 저장 시 재심사(REJECTED→PENDING) 후 공방 상세로 복귀.
 export function BusinessInfoEditScreen({ storeId }: { storeId: string }) {
-    const detailQuery = usePartnerStoreDetail(storeId);
+    const detailQuery = useBusinessEditStoreDetail(storeId);
     const store = detailQuery.data?.store;
 
     if (detailQuery.isLoading || !store) {
