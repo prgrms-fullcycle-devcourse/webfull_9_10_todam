@@ -18,7 +18,7 @@ export const phoneSchema = z
     .string()
     .regex(STORE_PHONE_REGEX, '전화번호 형식(02-1234-5678)이 아닙니다.');
 export const timeSchema = z.string().regex(TIME_REGEX, 'HH:mm 형식이어야 합니다.');
-export const slugSchema = z.string().regex(SLUG_REGEX, '영문 소문자·숫자·-·_ 3~30자');
+export const slugSchema = z.string().regex(SLUG_REGEX, '영문 소문자·숫자·- 4~40자');
 export const businessNumberSchema = z
     .string()
     .regex(BUSINESS_NUMBER_REGEX, '사업자등록번호 형식(000-00-00000)이 아닙니다.');
