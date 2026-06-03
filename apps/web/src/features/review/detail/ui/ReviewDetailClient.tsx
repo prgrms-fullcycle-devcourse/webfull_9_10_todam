@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Button, MoreIcon } from '@todam/ui';
+import { Modal } from '@todam/ui';
 
 import { ReviewDetailContent } from '@/entities/review';
 import { useReservationDetail, useReservationReview } from '@/features/reservation/detail';
@@ -12,7 +12,6 @@ import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useModal, useToast } from '@/shared/model';
 
-import { DeleteReviewDialog } from './DeleteReviewDialog';
 import { ReviewMoreMenu } from './ReviewMoreMenu';
 
 // 리뷰 상세 클라이언트.
@@ -20,7 +19,7 @@ import { ReviewMoreMenu } from './ReviewMoreMenu';
 // - 작품 정보 헤더용 useReservationDetail 병행 호출
 // - 401 → /login 리다이렉트 / 403·404 → 안내 메시지
 // - 헤더 우측 more 액션 슬롯에 토글 버튼 등록 (useHeaderActionStore)
-// - more 클릭 → ReviewMoreMenu 노출, "삭제하기" → DeleteReviewDialog
+// - more 클릭 → ReviewMoreMenu 노출, "삭제하기" → 전역 Modal confirm
 export type ReviewDetailClientProps = {
     reservationId: string;
 };
@@ -32,8 +31,6 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
     const { open: openModal, close: closeModal } = useModal();
     const { push: pushToast } = useToast();
     const { mutate: deleteReviewMutate } = useDeleteReviewMutation(reservationId);
-
-    const [menuOpen, setMenuOpen] = useState(false);
 
     // 401 → /login 리다이렉트.
     useEffect(() => {
@@ -51,25 +48,32 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
 
     const handleDelete = () => {
         if (!review) return;
+        const reviewId = review.id;
+        // 리뷰 삭제 confirm — 정적 텍스트라 전역 Modal 직접 사용(Figma `8507:23893`).
         openModal(
-            <DeleteReviewDialog
-                onConfirm={() => deleteReviewMutate(review.id)}
-                onClose={closeModal}
+            <Modal
+                type="shortText"
+                title="리뷰를 삭제할까요?"
+                description="삭제한 리뷰는 되돌릴 수 없어요."
+                cancelLabel="취소"
+                confirmLabel="삭제하기"
+                danger
+                onCancel={closeModal}
+                onConfirm={() => {
+                    deleteReviewMutate(reviewId);
+                    closeModal();
+                }}
             />,
         );
     };
 
-    // 라우트 헤더 우측 more 버튼 — 리뷰 데이터 있을 때만(없으면 기본값 유지).
+    // 라우트 헤더 우측 more 메뉴 — 리뷰 데이터 있을 때만(없으면 기본값 유지).
     useHeaderOverride({
         rightAction: review ? (
-            <Button
-                variant="ghost"
-                layout="onlyIcon"
-                size="lg"
-                icon={<MoreIcon />}
-                aria-label="더보기"
-                onClick={() => setMenuOpen((prev) => !prev)}
-                className="hover:!bg-transparent hover:!text-foreground"
+            <ReviewMoreMenu
+                createdAt={review.createdAt}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
             />
         ) : undefined,
     });
@@ -111,30 +115,10 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
     }
 
     return (
-        <main className="relative flex-1 overflow-y-auto px-4 pb-16">
+        <main className="flex-1 overflow-y-auto px-4 pb-16">
             <div className="py-2">
                 <ReviewDetailContent review={review} reservation={reservation} />
             </div>
-
-            {/* 더보기 floating menu — header more 버튼 클릭 시 토글. */}
-            {menuOpen && (
-                <>
-                    <button
-                        type="button"
-                        aria-label="메뉴 닫기"
-                        className="absolute inset-0"
-                        onClick={() => setMenuOpen(false)}
-                    />
-                    <div className="absolute right-4 top-2 z-10">
-                        <ReviewMoreMenu
-                            createdAt={review.createdAt}
-                            onEdit={handleEdit}
-                            onDelete={handleDelete}
-                            onClose={() => setMenuOpen(false)}
-                        />
-                    </div>
-                </>
-            )}
         </main>
     );
 }
