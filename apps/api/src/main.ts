@@ -10,10 +10,27 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 
 async function bootstrap(): Promise<void> {
     const env = createApiEnv();
-    const corsOrigins = env.CORS_ORIGINS.split(',').map((origin) => origin.trim());
+    const corsOrigins = env.CORS_ORIGINS.split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+    const isDev = env.NODE_ENV !== 'production';
+    // dev 한정: 폰 실기 테스트용 cloudflare quick tunnel(*.trycloudflare.com) 동적 origin 허용.
+    const devTunnelOrigin = /^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/;
     const app = await NestFactory.create(AppModule);
 
-    app.enableCors({ origin: corsOrigins, credentials: true });
+    app.enableCors({
+        origin: (
+            origin: string | undefined,
+            callback: (err: Error | null, allow?: boolean) => void,
+        ) => {
+            // origin 없는 요청(서버간·curl·동일출처)은 통과.
+            if (!origin) return callback(null, true);
+            if (corsOrigins.includes(origin)) return callback(null, true);
+            if (isDev && devTunnelOrigin.test(origin)) return callback(null, true);
+            return callback(null, false);
+        },
+        credentials: true,
+    });
     app.use(cookieParser());
 
     // 검증: DTO에 정의되지 않은 값 제거, 타입 변환, 미허용 필드 거부
