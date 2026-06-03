@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { Modal } from '@todam/ui';
+
 import { ReviewDetailContent } from '@/entities/review';
 import { useReservationDetail, useReservationReview } from '@/features/reservation/detail';
 import { useDeleteReviewMutation } from '@/features/review/actions';
@@ -10,7 +12,6 @@ import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useModal, useToast } from '@/shared/model';
 
-import { DeleteReviewDialog } from './DeleteReviewDialog';
 import { ReviewMoreMenu } from './ReviewMoreMenu';
 
 // 리뷰 상세 클라이언트.
@@ -18,7 +19,7 @@ import { ReviewMoreMenu } from './ReviewMoreMenu';
 // - 작품 정보 헤더용 useReservationDetail 병행 호출
 // - 401 → /login 리다이렉트 / 403·404 → 안내 메시지
 // - 헤더 우측 more 액션 슬롯에 토글 버튼 등록 (useHeaderActionStore)
-// - more 클릭 → ReviewMoreMenu 노출, "삭제하기" → DeleteReviewDialog
+// - more 클릭 → ReviewMoreMenu 노출, "삭제하기" → 전역 Modal confirm
 export type ReviewDetailClientProps = {
     reservationId: string;
 };
@@ -47,10 +48,21 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
 
     const handleDelete = () => {
         if (!review) return;
+        const reviewId = review.id;
+        // 리뷰 삭제 confirm — 정적 텍스트라 전역 Modal 직접 사용(Figma `8507:23893`).
         openModal(
-            <DeleteReviewDialog
-                onConfirm={() => deleteReviewMutate(review.id)}
-                onClose={closeModal}
+            <Modal
+                type="shortText"
+                title="리뷰를 삭제할까요?"
+                description="삭제한 리뷰는 되돌릴 수 없어요."
+                cancelLabel="취소"
+                confirmLabel="삭제하기"
+                danger
+                onCancel={closeModal}
+                onConfirm={() => {
+                    deleteReviewMutate(reviewId);
+                    closeModal();
+                }}
             />,
         );
     };
