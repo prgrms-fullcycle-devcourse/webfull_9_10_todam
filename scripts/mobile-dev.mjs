@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // 폰 실기 테스트 헬퍼.
 //  1) cloudflare quick tunnel 2개(web/api) 실행 → https URL 발급
-//  2) .env.mobile 의 계정으로 로컬 API 로그인 → accessToken 발급
-//  3) /dev-login URL(hash 에 token+apiBase) 생성 → 터미널에 QR 출력
-// 폰으로 QR 스캔하면 토큰이 주입된 채 앱이 열린다.
+//  2) .env.test 의 계정으로 로컬 API 로그인 → accessToken 발급
+//  3) 토큰을 로컬 파일(.dev-login.json)에 기록, /dev-login?n=<nonce> QR 출력
+//     → 폰 스캔 시 web 라우트(/dev-login/token)가 nonce 로 토큰 조회·주입
 //
-// 사전조건: cloudflared 설치, `pnpm web`/`pnpm api` 가 이미 실행 중.
+// 사전조건: cloudflared 설치, `pnpm web`/`pnpm api` 실행(또는 `pnpm all` 동시).
 // 설정: repo 루트 .env.test (gitignore) 에
 //   TODAM_DEV_EMAIL=partner@example.com
 //   TODAM_DEV_PASSWORD=...
@@ -40,7 +40,7 @@ const EMAIL = process.env.TODAM_DEV_EMAIL;
 const PASSWORD = process.env.TODAM_DEV_PASSWORD;
 const WEB_PORT = process.env.TODAM_WEB_PORT || '3000';
 const API_PORT = process.env.TODAM_API_PORT || '4000';
-const NEXT_PATH = process.env.TODAM_NEXT || '/partner/stores';
+const NEXT_PATH = process.env.TODAM_NEXT || '/';
 
 if (!EMAIL || !PASSWORD) {
     console.error(
@@ -64,11 +64,15 @@ function cleanup() {
         /* noop */
     }
 }
-process.on('SIGINT', () => {
-    console.log('\n종료합니다…');
-    cleanup();
-    process.exit(0);
-});
+// SIGINT(Ctrl+C 단독) + SIGTERM(concurrently/`pnpm all` 종료) 모두 정리.
+// SIGTERM 미처리 시 cleanup 안 돌아 cloudflared 가 orphan 으로 남는다.
+for (const sig of ['SIGINT', 'SIGTERM']) {
+    process.on(sig, () => {
+        console.log(`\n종료합니다… (${sig})`);
+        cleanup();
+        process.exit(0);
+    });
+}
 process.on('exit', cleanup);
 
 // ── cloudflared quick tunnel 시작 → 첫 https URL 반환 ──────────────

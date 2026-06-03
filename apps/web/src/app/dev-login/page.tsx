@@ -39,7 +39,8 @@ export default function DevLoginPage() {
             }
             window.localStorage.setItem('accessToken', data.token);
             if (data.api) window.localStorage.setItem('todam_dev_api_base', data.api);
-            window.location.replace(data.next || '/partner/stores');
+            // next 미지정/빈값 → 루트로.
+            window.location.replace(data.next && data.next.length > 0 ? data.next : '/');
         })();
         return () => {
             cancelled = true;

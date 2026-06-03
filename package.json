@@ -16,7 +16,7 @@
     "admin": "turbo dev --filter=@todam/admin",
     "storybook": "turbo dev --filter=@todam/storybook",
     "mobile": "node scripts/mobile-dev.mjs",
-    "all": "concurrently -n api,web,mobile -c green,cyan,magenta \"pnpm api\" \"pnpm web\" \"pnpm mobile\""
+    "all": "concurrently -n api,web,mobile -c green,cyan,magenta \"pnpm --filter @todam/api dev\" \"pnpm --filter @todam/web dev\" \"pnpm mobile\""
   },
   "lint-staged": {
     "apps/api/**/*.ts": [
