@@ -9,7 +9,8 @@ import { ReviewDetailContent } from '../../../../entities/review';
 import { useReservationDetail, useReservationReview } from '../../../reservation/detail';
 import { useDeleteReviewMutation } from '../../actions';
 import { ApiError } from '../../../../shared/api';
-import { useHeaderActionStore, useModal, useToast } from '../../../../shared/model';
+import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
+import { useModal, useToast } from '../../../../shared/model';
 
 import { DeleteReviewDialog } from './DeleteReviewDialog';
 import { ReviewMoreMenu } from './ReviewMoreMenu';
@@ -30,8 +31,6 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
     const { data: reservationData } = useReservationDetail(reservationId);
     const { open: openModal, close: closeModal } = useModal();
     const { push: pushToast } = useToast();
-    const setHeaderAction = useHeaderActionStore((s) => s.setAction);
-    const clearHeaderAction = useHeaderActionStore((s) => s.clearAction);
     const { mutate: deleteReviewMutate } = useDeleteReviewMutation(reservationId);
 
     const [menuOpen, setMenuOpen] = useState(false);
@@ -60,13 +59,9 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
         );
     };
 
-    // 헤더 우측 more 버튼 등록 / 해제 — 리뷰 데이터 있을 때만.
-    useEffect(() => {
-        if (!review) {
-            clearHeaderAction();
-            return () => clearHeaderAction();
-        }
-        setHeaderAction(
+    // 라우트 헤더 우측 more 버튼 — 리뷰 데이터 있을 때만(없으면 기본값 유지).
+    useHeaderOverride({
+        rightAction: review ? (
             <Button
                 variant="ghost"
                 layout="onlyIcon"
@@ -75,10 +70,9 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
                 aria-label="더보기"
                 onClick={() => setMenuOpen((prev) => !prev)}
                 className="hover:!bg-transparent hover:!text-foreground"
-            />,
-        );
-        return () => clearHeaderAction();
-    }, [review, setHeaderAction, clearHeaderAction]);
+            />
+        ) : undefined,
+    });
 
     if (isLoading) {
         return (

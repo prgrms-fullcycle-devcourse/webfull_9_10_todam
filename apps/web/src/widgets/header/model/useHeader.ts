@@ -2,7 +2,16 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 
-export type LayoutHeaderType = 'home' | 'main' | 'sub';
+import { useHeaderActionStore } from '../../../shared/model';
+
+export type LayoutHeaderType =
+    | 'home'
+    | 'main'
+    | 'mainText'
+    | 'sub'
+    | 'subText'
+    | 'popup'
+    | 'search';
 
 type HeaderConfig = {
     type: LayoutHeaderType;
@@ -23,7 +32,7 @@ const routeConfig: Record<string, HeaderConfig> = {
 
 // 동적 경로(파라미터 포함)는 정확 일치로 못 잡으므로 패턴으로 매칭.
 const patternConfig: Array<{ test: RegExp; config: HeaderConfig }> = [
-    // `new`(등록 플로우)는 자체 헤더 보유 → 전역 헤더 제외. 상세(program id)만 매칭.
+    // `new`(등록 플로우)는 override 로 헤더를 직접 주입 → 전역 헤더 제외. 상세(program id)만 매칭.
     {
         test: /^\/partner\/classes\/(?!new$)[^/]+$/,
         config: { type: 'sub', title: '클래스 미리보기' },
@@ -45,19 +54,31 @@ const patternConfig: Array<{ test: RegExp; config: HeaderConfig }> = [
 
 export type UseHeaderResult =
     | { visible: false }
-    | { visible: true; type: LayoutHeaderType; title?: string; onBack: () => void };
+    | {
+          visible: true;
+          type: LayoutHeaderType;
+          title?: string;
+          onBack: () => void;
+          onClose?: () => void;
+      };
 
 export function useHeader(): UseHeaderResult {
     const pathname = usePathname();
     const router = useRouter();
+    const override = useHeaderActionStore((s) => s.override);
 
     const config =
         routeConfig[pathname] ?? patternConfig.find((p) => p.test.test(pathname))?.config;
-    if (!config) return { visible: false };
 
+    // route config 도 override 도 없으면 헤더 숨김.
+    if (!config && !override) return { visible: false };
+
+    // override 가 route config 보다 우선. onBack 미지정 시 router.back().
     return {
         visible: true,
-        ...config,
-        onBack: () => router.back(),
+        type: override?.type ?? config?.type ?? 'sub',
+        title: override?.title ?? config?.title,
+        onBack: override?.onBack ?? (() => router.back()),
+        onClose: override?.onClose,
     };
 }

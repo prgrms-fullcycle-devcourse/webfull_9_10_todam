@@ -8,7 +8,6 @@ import {
     Button,
     DescriptionBlock,
     Divider,
-    LeftIcon,
     PhoneIcon,
     SectionTitle,
     ShareIcon,
@@ -31,6 +30,7 @@ import {
 } from '../../../../entities/store';
 import { PartnerClassListItem } from '../../../../features/program/list';
 import { ApiError } from '../../../../shared/api';
+import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
 import { useSheet } from '../../../../shared/model';
 import { EmptyState } from '../../../../shared/ui';
 
@@ -90,25 +90,21 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
     const detail = usePartnerStoreDetail(id);
     const programs = usePartnerStorePrograms(id);
 
-    // 서브 헤더(뒤로가기 + 타이틀). 로딩/에러/정상 공통.
-    const header = (
-        <header className="flex h-15 items-center pt-safe">
-            <Button
-                variant="ghost"
-                layout="onlyIcon"
-                size="lg"
-                icon={<LeftIcon />}
-                aria-label="뒤로"
-                onClick={() => router.push('/partner/stores')}
-            />
-            <h1 className="text-lg font-medium text-foreground">공방 미리보기</h1>
-        </header>
-    );
+    // 전역 Header override: 뒤로가기(→공방 관리) + 타이틀. 우측 액션 없음.
+    // 심사중·반려는 검수 결과 화면(헤더 없음)이므로 override 비활성.
+    const detailStatus = detail.data?.store.status;
+    const isReviewScreen =
+        detailStatus === StoreStatus.PENDING || detailStatus === StoreStatus.REJECTED;
+    useHeaderOverride({
+        title: '공방 미리보기',
+        onBack: () => router.push('/partner/stores'),
+        hideRightAction: true,
+        enabled: !isReviewScreen,
+    });
 
     if (detail.isLoading) {
         return (
             <div className="flex h-full flex-col bg-background">
-                {header}
                 <main className="flex-1 overflow-y-auto">
                     <p className="py-10 text-center text-sm text-foreground-tertiary">
                         공방 정보를 불러오는 중입니다.
@@ -121,7 +117,6 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
     if (detail.isError || !detail.data) {
         return (
             <div className="flex h-full flex-col bg-background">
-                {header}
                 <main className="flex-1 overflow-y-auto px-4">
                     <EmptyState message={errorMessage(detail.error)} />
                 </main>
@@ -154,8 +149,6 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
 
     return (
         <div className="flex h-full flex-col bg-background">
-            {header}
-
             <main className="flex-1 overflow-y-auto pb-28">
                 {/* 대표 이미지 carousel */}
                 <StoreImageCarousel images={store.images} />

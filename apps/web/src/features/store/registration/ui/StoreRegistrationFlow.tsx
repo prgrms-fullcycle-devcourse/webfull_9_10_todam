@@ -1,6 +1,6 @@
 'use client';
 
-import { BottomBar, Button, CloseIcon, LeftIcon, Modal } from '@todam/ui';
+import { BottomBar, Button, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -9,7 +9,7 @@ import { StoreRegistrationErrorCode } from '@todam/shared';
 import { ApiError } from '../../../../shared/api';
 import { useModal, useToast } from '../../../../shared/model';
 import { ProgressBarWrapper } from '../../../../shared/ui';
-import { useLeaveGuard } from '../../../../shared/lib/useLeaveGuard';
+import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
 import { isAllValid, isDirty, isStepValid, useStoreRegistrationStore } from '../model/store';
 import { useSubmitStoreRegistration } from '../queries';
 import { StoreRegistrationStep, STEP_TITLES, TOTAL_STEPS } from '../model/types';
@@ -43,9 +43,6 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
 
     const dirty = isDirty(form);
 
-    // 브라우저 새로고침/탭 닫기 가드 (제출 완료 전 작성 중일 때만, 앱 내 이탈은 모달로 처리)
-    useLeaveGuard(dirty && !submitted);
-
     // 진입점 2개(/apply, /partner/stores/new)가 전역 store 공유 → 플로우 이탈 시 초기화
     useEffect(() => () => reset(), [reset]);
 
@@ -76,6 +73,20 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
         );
     };
 
+    const handleBack = () => {
+        if (step === StoreRegistrationStep.Business) guardedExit();
+        else prev();
+    };
+
+    // 전역 Header override: 뒤로가기(첫 단계는 이탈 가드) + 닫기(X). 완료 화면(submitted)은 헤더 없음.
+    useHeaderOverride({
+        title: '공방 등록하기',
+        onBack: handleBack,
+        onClose: guardedExit,
+        guardDirty: dirty,
+        enabled: !submitted,
+    });
+
     if (submitted) {
         return (
             <StoreRegistrationComplete
@@ -95,11 +106,6 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
     const isLast = step === StoreRegistrationStep.Reservation;
     const stepValid = isStepValid(form, step);
     const progress = ((step + 1) / TOTAL_STEPS) * 100;
-
-    const handleBack = () => {
-        if (step === StoreRegistrationStep.Business) guardedExit();
-        else prev();
-    };
 
     const handleSubmit = async () => {
         if (!isAllValid(form) || submitting) return;
@@ -125,31 +131,6 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
 
     return (
         <div className="flex flex-1 flex-col overflow-hidden">
-            {/* Header (back + title + close) */}
-            <header className="flex h-15 shrink-0 items-center bg-transparent pt-safe">
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<LeftIcon />}
-                    aria-label="뒤로가기"
-                    onClick={handleBack}
-                    className="hover:!bg-transparent hover:!text-foreground"
-                />
-                <span className="flex-1 truncate text-lg font-medium leading-6 text-foreground">
-                    공방 등록하기
-                </span>
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<CloseIcon />}
-                    aria-label="닫기"
-                    onClick={guardedExit}
-                    className="hover:!bg-transparent hover:!text-foreground"
-                />
-            </header>
-
             {/* Container */}
             <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-16">
                 <div className="py-2">

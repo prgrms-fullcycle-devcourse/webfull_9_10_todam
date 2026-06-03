@@ -1,12 +1,13 @@
 'use client';
 
 import { StoreEditErrorCode } from '@todam/shared';
-import { BottomBar, Button, ConfirmIcon, LeftIcon, Modal } from '@todam/ui';
+import { BottomBar, Button, ConfirmIcon, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 import { ApiError } from '../../../../shared/api';
 import { useModal, useToast } from '../../../../shared/model';
+import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
 import { detailToForm, type EditSection } from '../model/types';
 import {
     buildImageIds,
@@ -97,6 +98,14 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
         );
     };
 
+    // 전역 Header override: 섹션별 동적 타이틀 + 뒤로가기(이탈 가드). 우측 액션 없음.
+    useHeaderOverride({
+        title: SECTION_TITLE[section],
+        onBack: handleBack,
+        hideRightAction: true,
+        guardDirty: dirty,
+    });
+
     const handleSave = async () => {
         if (!form || !initial || !canSave) return;
         const body = buildPatchBody(form, initial, section);
@@ -146,21 +155,6 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
 
     return (
         <div className="flex flex-1 flex-col overflow-hidden">
-            <header className="flex h-15 shrink-0 items-center bg-transparent pt-safe">
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<LeftIcon />}
-                    aria-label="뒤로가기"
-                    onClick={handleBack}
-                    className="hover:!bg-transparent hover:!text-foreground"
-                />
-                <span className="flex-1 truncate text-lg font-medium leading-6 text-foreground">
-                    {SECTION_TITLE[section]}
-                </span>
-            </header>
-
             <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-16">
                 {detailQuery.isLoading || !form ? (
                     <div className="flex flex-1 items-center justify-center py-20 text-sm text-foreground-tertiary">
