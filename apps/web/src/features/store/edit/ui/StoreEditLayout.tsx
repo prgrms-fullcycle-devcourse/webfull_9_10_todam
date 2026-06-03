@@ -126,15 +126,15 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
                 const imageIds = buildImageIds(form, initial, uploadedIds);
                 if (imageIds) body.images = imageIds;
             }
-            const result = await updateMutation.mutateAsync(body);
+            await updateMutation.mutateAsync(body);
             reset();
             push({
                 message: '수정된 공방 정보가 반영되었어요',
                 type: 'icon',
                 icon: <ConfirmIcon size={16} />,
             });
-            // 미리보기(공개 상세) 이동. slug 즉시 교체(DEC-1).
-            router.push(`/stores/${result.store.slug}`);
+            // 파트너 전용 공방 상세로 이동(slug 공개 URL 아님). storeId 기반.
+            router.push(backPath);
         } catch (err) {
             if (err instanceof ApiError) {
                 if (err.code === StoreEditErrorCode.STORE_SLUG_DUPLICATED) {
