@@ -31,7 +31,7 @@ import {
 import { PartnerClassListItem } from '@/features/program/list';
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
-import { useSheet } from '@/shared/model';
+import { useSheet, useToast } from '@/shared/model';
 import { EmptyState } from '@/shared/ui';
 
 // 에러 코드 → 안내 문구. 401/403/404/500 분기.
@@ -53,10 +53,40 @@ function errorMessage(error: unknown): string {
 
 // 평점 행 우측 액션(문의하기/공유하기). 아이콘 + 라벨만 배치.
 // 디자인: 평점 행 gap 4px 안에서 "・" 구분자 2개(문의 앞 / 문의·공유 사이)와 함께 정렬.
-// 문의하기 = 공방 전화번호로 tel: 다이얼. (공유하기 동작은 follow-up)
-function StoreInfoActions({ phone }: { phone: string }) {
+// 문의하기 = 공방 전화번호로 tel: 다이얼. 공유하기 = 고객용 공개 페이지(/stores/{slug}) 링크 공유.
+function StoreInfoActions({
+    phone,
+    slug,
+    storeName,
+}: {
+    phone: string;
+    slug: string;
+    storeName: string;
+}) {
+    const { push } = useToast();
     // tel: 스킴은 하이픈 허용하나 일부 다이얼러 호환 위해 숫자·+ 만 남김.
     const telHref = `tel:${phone.replace(/[^0-9+]/g, '')}`;
+
+    // PWA·모바일: Web Share API(OS 공유 시트). 미지원(데스크탑 일부)·실패: 링크 클립보드 복사 fallback.
+    async function handleShare() {
+        const url = `${window.location.origin}/stores/${slug}`;
+        if (typeof navigator.share === 'function') {
+            try {
+                await navigator.share({ title: storeName, url });
+                return;
+            } catch (e) {
+                // 사용자 취소(AbortError)는 조용히 종료. 그 외 오류는 복사 fallback 으로.
+                if (e instanceof Error && e.name === 'AbortError') return;
+            }
+        }
+        try {
+            await navigator.clipboard.writeText(url);
+            push({ message: '공방 링크를 복사했어요.' });
+        } catch {
+            push({ message: '링크 복사에 실패했어요.' });
+        }
+    }
+
     return (
         <>
             <span className="text-foreground-tertiary">・</span>
@@ -70,10 +100,8 @@ function StoreInfoActions({ phone }: { phone: string }) {
             <span className="text-foreground-tertiary">・</span>
             <button
                 type="button"
-                className="inline-flex items-center gap-1 text-xs font-medium text-foreground-tertiary hover:text-foreground"
-                onClick={() => {
-                    // TODO: API 연동 시 구현 (공유하기)
-                }}
+                className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-foreground-tertiary hover:text-foreground"
+                onClick={handleShare}
             >
                 <ShareIcon size={16} />
                 <span>공유하기</span>
@@ -164,7 +192,13 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                             reviewCount={store.reviewCount}
                             description={store.description ?? ''}
                             tags={<ConvenienceChips convenienceInfo={store.convenienceInfo} />}
-                            actions={<StoreInfoActions phone={store.phone} />}
+                            actions={
+                                <StoreInfoActions
+                                    phone={store.phone}
+                                    slug={store.slug}
+                                    storeName={store.name}
+                                />
+                            }
                         />
                     </div>
 
