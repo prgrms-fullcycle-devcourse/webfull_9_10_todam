@@ -1,12 +1,12 @@
 'use client';
 
-import { CloseIcon, EditIcon } from '@todam/ui';
+import { CloseIcon, EditIcon, Menu, type MenuItem } from '@todam/ui';
 import type { ReservationDetail } from '@todam/shared';
 
-// 디자인 정본 — Figma `a6a2d988...` Menu(more 클릭 시 floating).
+// 디자인 정본 — Figma `a6a2d988...` Menu(more 클릭 시 floating). 전역 `Menu` 사용.
 // 항목:
 //   - "수정하기" (체험 전 / canCancel 시) — placeholder
-//   - "예약 취소하기" (canCancel === true 시, text color danger)
+//   - "예약 취소하기" (canCancel === true 시, danger)
 // 체험 완료 후엔 메뉴 항목 없음 — 호출 측에서 hidden 처리.
 export type MoreMenuProps = {
     reservation: ReservationDetail;
@@ -16,40 +16,25 @@ export type MoreMenuProps = {
 };
 
 export function MoreMenu({ reservation, onCancel, onEdit, onClose }: MoreMenuProps) {
+    const actions: Array<{ item: MenuItem; run: () => void }> = [
+        { item: { label: '수정하기', icon: <EditIcon /> }, run: onEdit },
+    ];
+    if (reservation.canCancel) {
+        actions.push({
+            item: { label: '예약 취소하기', icon: <CloseIcon />, danger: true },
+            run: onCancel,
+        });
+    }
+
     return (
-        <div
-            role="menu"
-            className="flex w-50 flex-col rounded-xl bg-surface p-1 shadow-[0_0_10px_rgba(0,0,0,0.1)]"
-        >
-            <p className="p-1 text-center text-xs text-foreground-tertiary">메뉴보기</p>
-
-            <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                    onEdit();
-                    onClose();
-                }}
-                className="flex h-8 items-center justify-between gap-2 rounded-lg px-2 text-left text-sm text-foreground hover:bg-muted"
-            >
-                <span>수정하기</span>
-                <EditIcon size={20} className="text-foreground-tertiary" />
-            </button>
-
-            {reservation.canCancel && (
-                <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                        onCancel();
-                        onClose();
-                    }}
-                    className="flex h-8 items-center justify-between gap-2 rounded-lg px-2 text-left text-sm text-danger hover:bg-muted"
-                >
-                    <span>예약 취소하기</span>
-                    <CloseIcon size={20} className="text-danger" />
-                </button>
-            )}
-        </div>
+        <Menu
+            className="w-50"
+            title="메뉴보기"
+            items={actions.map((a) => a.item)}
+            onItemSelect={(index) => {
+                actions[index]?.run();
+                onClose();
+            }}
+        />
     );
 }
