@@ -42,7 +42,7 @@ export function AppToast() {
     const toasts = useToastStore((s) => s.toasts);
 
     return (
-        <div className="pointer-events-none absolute inset-x-4 bottom-20 z-50 flex flex-col gap-2">
+        <div className="pointer-events-none absolute inset-x-4 bottom-28 z-50 flex flex-col gap-2">
             <AnimatePresence initial={false}>
                 {toasts.map((item) => (
                     <ToastView key={item.id} item={item} />

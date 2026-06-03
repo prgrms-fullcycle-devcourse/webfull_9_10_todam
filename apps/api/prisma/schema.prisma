@@ -210,8 +210,10 @@ model Program {
   price           Int
   durationMinutes Int                   @map("duration_minutes")
   capacity        Int
+  difficulty      ProgramDifficulty     @default(BASIC)
+  childFriendly   Boolean               @default(false) @map("child_friendly")
   leadTimeDays    Int                   @default(30) @map("lead_time_days")
-  deliveryOption  ProgramDeliveryOption @default(CUSTOMER_SELECT) @map("delivery_option")
+  deliverable     Boolean               @default(false)
   status          ProgramStatus         @default(DRAFT)
   sortOrder       Int                   @default(0) @map("sort_order") // [S-10]
   createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -534,10 +536,10 @@ enum StoreStatus {
   SUSPENDED
 }
 
-enum ProgramDeliveryOption {
-  DELIVERY
-  PICKUP
-  CUSTOMER_SELECT
+enum ProgramDifficulty {
+  BASIC
+  INTERMEDIATE
+  ADVANCED
 }
 
 enum ProgramStatus {

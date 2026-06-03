@@ -16,7 +16,6 @@ function initialForm(): ProgramRegistrationForm {
         description: '',
         price: null,
         durationMinutes: null,
-        capacity: null,
         leadTimeDays: null,
         childFriendly: false,
         deliverable: false,
@@ -54,15 +53,12 @@ export function isStepValid(form: ProgramRegistrationForm, step: ProgramRegistra
             return len >= TITLE_MIN && len <= TITLE_MAX && !!form.difficulty;
         }
         case ProgramRegistrationStep.Operating: {
-            // 필수: 가격·소요시간·정원·리드타임. 어린이동반/택배는 선택(기본 false).
+            // 필수: 가격·소요시간·리드타임. 어린이동반/택배는 선택(기본 false).
             return (
                 form.price !== null &&
                 form.price > 0 &&
                 form.durationMinutes !== null &&
-                form.durationMinutes >= 30 &&
-                form.durationMinutes % 30 === 0 &&
-                form.capacity !== null &&
-                form.capacity >= 1 &&
+                form.durationMinutes > 0 &&
                 form.leadTimeDays !== null &&
                 form.leadTimeDays >= 0
             );
@@ -88,7 +84,6 @@ export function isDirty(form: ProgramRegistrationForm): boolean {
         form.difficulty !== ProgramDifficulty.BASIC ||
         form.price !== null ||
         form.durationMinutes !== null ||
-        form.capacity !== null ||
         form.leadTimeDays !== null ||
         form.childFriendly ||
         form.deliverable

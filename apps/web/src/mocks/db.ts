@@ -6,11 +6,11 @@ import {
     ReservationDeliveryMethod,
     ReservationStatus,
     StoreStatus,
-    ProgramDeliveryOption,
     ProgramDifficulty,
     type ArtworkDetail,
     type ConvenienceInfo,
     type DayOfWeek,
+    type FavoriteStoreItem,
     type OperatingHourInput,
     type PartnerProgramListItem,
     type PartnerStoreDetail,
@@ -93,13 +93,158 @@ export const db: MockDb = {
     operatingHours: [],
 };
 
-// 찜한 공방 storeId 집합 (mock). 시드 2개.
-export const likedStores = new Set<string>(['1', '2']);
+// ─── 찜한 공방 mock ──────────────────────────────────────────────
+// 찜한 공방 목록 seed (최신 찜순 = createdAt 내림차순). 무한스크롤/빈상태 검증용 ≥ 12개.
+// 모두 PUBLISHED 공방 가정(목록은 PUBLISHED 만 노출 — 요구사항 store §1·§4).
+const SEEDED_FAVORITE_STORES: FavoriteStoreItem[] = [
+    {
+        favoriteId: 'fav-seed-0012',
+        storeId: 'store-fav-0012',
+        name: '토담 공방 성수점',
+        category: '도자기',
+        imageUrl: 'https://placehold.co/80x80?text=ceramic',
+        address: '서울특별시 성동구 성수이로 12길',
+        createdAt: '2026-05-30T18:00:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0011',
+        storeId: 'store-fav-0011',
+        name: '흙과 사람',
+        category: '도자기',
+        imageUrl: 'https://placehold.co/80x80?text=clay',
+        address: '서울특별시 성동구 뚝섬로 273',
+        createdAt: '2026-05-29T17:30:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0010',
+        storeId: 'store-fav-0010',
+        name: '플러스 도자기',
+        category: '도자기',
+        imageUrl: 'https://placehold.co/80x80?text=pottery',
+        address: '서울특별시 마포구 와우산로 100',
+        createdAt: '2026-05-28T16:00:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0009',
+        storeId: 'store-fav-0009',
+        name: '클레이 서울',
+        category: '공예',
+        imageUrl: 'https://placehold.co/80x80?text=craft',
+        address: '서울특별시 종로구 자하문로 50',
+        createdAt: '2026-05-27T15:20:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0008',
+        storeId: 'store-fav-0008',
+        name: '온도 스튜디오',
+        category: '캔들',
+        imageUrl: 'https://placehold.co/80x80?text=candle',
+        address: '서울특별시 용산구 이태원로 200',
+        createdAt: '2026-05-26T14:10:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0007',
+        storeId: 'store-fav-0007',
+        name: '백자방',
+        category: '도자기',
+        imageUrl: 'https://placehold.co/80x80?text=white',
+        address: '서울특별시 강남구 도산대로 33',
+        createdAt: '2026-05-25T13:00:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0006',
+        storeId: 'store-fav-0006',
+        name: '나무공방 손길',
+        category: '목공',
+        imageUrl: 'https://placehold.co/80x80?text=wood',
+        address: '서울특별시 마포구 성미산로 80',
+        createdAt: '2026-05-24T12:00:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0005',
+        storeId: 'store-fav-0005',
+        name: '가죽공방 무드',
+        category: '가죽',
+        imageUrl: 'https://placehold.co/80x80?text=leather',
+        address: '서울특별시 서대문구 연희로 11',
+        createdAt: '2026-05-23T11:30:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0004',
+        storeId: 'store-fav-0004',
+        name: '유리공방 빛',
+        category: '유리',
+        imageUrl: 'https://placehold.co/80x80?text=glass',
+        address: '서울특별시 성북구 동소문로 5',
+        createdAt: '2026-05-22T10:40:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0003',
+        storeId: 'store-fav-0003',
+        name: '향기연구소',
+        category: '향수',
+        imageUrl: 'https://placehold.co/80x80?text=perfume',
+        address: '서울특별시 강동구 천호대로 900',
+        createdAt: '2026-05-21T09:50:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0002',
+        storeId: 'store-fav-0002',
+        name: '플라워 아틀리에',
+        category: '플라워',
+        imageUrl: 'https://placehold.co/80x80?text=flower',
+        address: '서울특별시 송파구 올림픽로 240',
+        createdAt: '2026-05-20T09:00:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0001',
+        storeId: 'store-fav-0001',
+        name: '실과 바늘',
+        category: '자수',
+        imageUrl: 'https://placehold.co/80x80?text=embroidery',
+        address: '서울특별시 영등포구 여의대로 24',
+        createdAt: '2026-05-19T08:30:00.000Z',
+    },
+];
 
-export function setLike(storeId: string, liked: boolean): boolean {
-    if (liked) likedStores.add(storeId);
-    else likedStores.delete(storeId);
-    return likedStores.has(storeId);
+// 찜한 공방 storeId 집합 (mock). seed 의 storeId 로 초기화.
+export const likedStores = new Set<string>(SEEDED_FAVORITE_STORES.map((s) => s.storeId));
+
+// 찜 토글: 이력 없으면 add → true(등록됨), 있으면 delete → false(해제됨).
+export function toggleFavorite(storeId: string): boolean {
+    if (likedStores.has(storeId)) {
+        likedStores.delete(storeId);
+        return false;
+    }
+    likedStores.add(storeId);
+    return true;
+}
+
+// 찜한 공방 목록(커서 페이지네이션). createdAt 내림차순 + favoriteId 커서 슬라이스.
+// likedStores 와 동기화: 토글로 해제된 공방은 목록에서 제외.
+export function listFavoriteStores(
+    cursor: string | null,
+    limit: number,
+): { favoriteStores: FavoriteStoreItem[]; nextCursor: string | null } {
+    const all = SEEDED_FAVORITE_STORES.filter((s) => likedStores.has(s.storeId)).sort((a, b) =>
+        b.createdAt.localeCompare(a.createdAt),
+    );
+
+    let startIdx = 0;
+    if (cursor) {
+        const idx = all.findIndex((s) => s.favoriteId === cursor);
+        startIdx = idx >= 0 ? idx + 1 : all.length; // cursor 미존재 시 빈 결과.
+    }
+
+    // limit+1 방식으로 다음 페이지 존재 여부 판정.
+    const window = all.slice(startIdx, startIdx + limit + 1);
+    const hasMore = window.length > limit;
+    const favoriteStores = window.slice(0, limit);
+    const nextCursor = hasMore
+        ? (favoriteStores[favoriteStores.length - 1]?.favoriteId ?? null)
+        : null;
+
+    return { favoriteStores, nextCursor };
 }
 
 // ─── 내 공방 목록 시드 ──────────────────────────────────────────
@@ -252,12 +397,10 @@ export interface ProgramRow {
     materials: string | null;
     price: number;
     durationMinutes: number;
-    capacity: number;
     leadTimeDays: number;
     difficulty: ProgramDifficulty;
-    deliveryOption: ProgramDeliveryOption;
-    childrenAllowed: boolean;
-    deliveryAvailable: boolean;
+    childFriendly: boolean;
+    deliverable: boolean;
     status: ProgramStatus;
     updatedAt: string;
 }
@@ -283,14 +426,58 @@ export const seededPrograms: ProgramRow[] = [
         materials: '앞치마 (공방 제공), 편한 복장',
         price: 45000,
         durationMinutes: 120,
-        capacity: 6,
         leadTimeDays: 30,
         difficulty: ProgramDifficulty.BASIC,
-        deliveryOption: ProgramDeliveryOption.CUSTOMER_SELECT,
-        childrenAllowed: true,
-        deliveryAvailable: false,
+        childFriendly: true,
+        deliverable: false,
         status: ProgramStatus.ACTIVE,
         updatedAt: '2026-05-25T19:05:00.000Z',
+    },
+    // 클래스 목록(storePrograms) 항목들의 상세 데이터 — 목록→상세 진입 시 조회됨.
+    {
+        id: 'prog-seed-0001',
+        storeId: MOCK_STORE_ID,
+        title: '도자기 물레 원데이 클래스',
+        description: '물레로 그릇을 빚어보는 원데이 클래스입니다.',
+        materials: '앞치마 (공방 제공)',
+        price: 45000,
+        durationMinutes: 120,
+        leadTimeDays: 28,
+        difficulty: ProgramDifficulty.BASIC,
+        childFriendly: true,
+        deliverable: true,
+        status: ProgramStatus.ACTIVE,
+        updatedAt: '2026-05-21T09:00:00.000Z',
+    },
+    {
+        id: 'prog-seed-0002',
+        storeId: MOCK_STORE_ID,
+        title: '핸드빌딩 머그컵 만들기',
+        description: '손으로 빚어 나만의 머그컵을 만듭니다.',
+        materials: null,
+        price: 38000,
+        durationMinutes: 90,
+        leadTimeDays: 30,
+        difficulty: ProgramDifficulty.INTERMEDIATE,
+        childFriendly: false,
+        deliverable: false,
+        status: ProgramStatus.DRAFT,
+        updatedAt: '2026-05-22T09:00:00.000Z',
+    },
+    {
+        id: 'prog-seed-0003',
+        storeId: MOCK_STORE_ID,
+        title: '커플 도자기 클래스',
+        description: '둘이 함께 만드는 도자기 클래스입니다.',
+        materials: null,
+        price: 88000,
+        durationMinutes: 150,
+        leadTimeDays: 35,
+        difficulty: ProgramDifficulty.ADVANCED,
+        childFriendly: false,
+        deliverable: true,
+        status: ProgramStatus.INACTIVE,
+        updatedAt: '2026-05-23T09:00:00.000Z',
     },
 ];
 
@@ -362,12 +549,10 @@ export function programToApiShape(program: ProgramRow): object {
         materials: program.materials,
         price: program.price,
         durationMinutes: program.durationMinutes,
-        capacity: program.capacity,
         leadTimeDays: program.leadTimeDays,
         difficulty: program.difficulty,
-        deliveryOption: program.deliveryOption,
-        childrenAllowed: program.childrenAllowed,
-        deliveryAvailable: program.deliveryAvailable,
+        childFriendly: program.childFriendly,
+        deliverable: program.deliverable,
         status: program.status,
         images,
     };
@@ -612,7 +797,10 @@ export function getStoreDetail(id: string): PartnerStoreDetail | undefined {
 
 // ─── 운영 클래스 목록 시드 (GET /partner/stores/{storeId}/programs) ──
 // store-seed-0001 만 보유, store-seed-0002 는 empty([]) — empty UI 확인용.
-const storePrograms: Record<string, PartnerProgramListItem[]> = {
+// level·leadTimeDays 는 Contract 외 mock 표시 확장 필드(서브텍스트 "난이도・소요시간・평균제작일"용).
+type PartnerProgramListSeed = PartnerProgramListItem & { level?: string; leadTimeDays?: number };
+
+const storePrograms: Record<string, PartnerProgramListSeed[]> = {
     'store-seed-0001': [
         {
             id: 'prog-seed-0001',
@@ -621,9 +809,10 @@ const storePrograms: Record<string, PartnerProgramListItem[]> = {
             thumbnailUrl: 'https://placehold.co/200x150?text=wheel',
             price: 45000,
             durationMinutes: 120,
-            capacity: 6,
             sortOrder: 1,
             createdAt: '2026-05-21T09:00:00.000Z',
+            level: '기본',
+            leadTimeDays: 28,
         },
         {
             id: 'prog-seed-0002',
@@ -632,26 +821,28 @@ const storePrograms: Record<string, PartnerProgramListItem[]> = {
             thumbnailUrl: 'https://placehold.co/200x150?text=mug',
             price: 38000,
             durationMinutes: 90,
-            capacity: 8,
             sortOrder: 2,
             createdAt: '2026-05-22T09:00:00.000Z',
+            level: '중급',
+            leadTimeDays: 30,
         },
         {
             id: 'prog-seed-0003',
-            title: '커플 도자기 클래스 (일시 중단)',
+            title: '커플 도자기 클래스',
             status: ProgramStatus.INACTIVE,
             thumbnailUrl: 'https://placehold.co/200x150?text=couple',
             price: 88000,
             durationMinutes: 150,
-            capacity: 2,
             sortOrder: 3,
             createdAt: '2026-05-23T09:00:00.000Z',
+            level: '심화',
+            leadTimeDays: 35,
         },
     ],
 };
 
 // 운영 클래스 목록 조회. 공방 미존재 시 null(→404), 존재하나 클래스 없으면 [].
-export function findPartnerStorePrograms(id: string): PartnerProgramListItem[] | null {
+export function findPartnerStorePrograms(id: string): PartnerProgramListSeed[] | null {
     if (!getStoreDetail(id)) return null;
     return storePrograms[id] ?? [];
 }
@@ -948,7 +1139,8 @@ export function listMyReservations(): ReservationListItem[] {
 //
 // 디자인 정본: 머그컵 만들기 · 흙과 사람 (성수동) · 2026.04.18 (토) 15:00 · 2명 · 90,000원 · 택배.
 const SEEDED_RESERVATION_DETAILS: Record<string, ReservationDetail> = {
-    // 변형 A — 체험 전 (CONFIRMED + 배송 미입력 + 다음 단계 안내). cancelable.
+    // 변형 A — 체험 전 (CONFIRMED + 배송 입력됨 + 다음 단계 안내). cancelable.
+    // 본 시드는 "배송 정보 수정 — 입력됨 케이스" 흐름의 prefill 검증용으로 delivery 5필드를 채움.
     'res-seed-0002': {
         id: 'res-seed-0002',
         storeId: 'store-seed-0050',
@@ -960,7 +1152,7 @@ const SEEDED_RESERVATION_DETAILS: Record<string, ReservationDetail> = {
         reserverPhone: '010-0000-0000',
         participantCount: 2,
         deliveryMethod: ReservationDeliveryMethod.DELIVERY,
-        shippingAddress: null,
+        shippingAddress: '서울특별시 마포구 월드컵북로 12',
         requestMemo: null,
         status: ReservationStatus.CONFIRMED,
         displayState: {
@@ -971,7 +1163,13 @@ const SEEDED_RESERVATION_DETAILS: Record<string, ReservationDetail> = {
         artworkId: null,
         createdAt: '2026-05-31T18:00:00.000Z',
         totalPrice: 90000,
-        delivery: null, // 배송 정보 미입력 → 빈 상태 카드.
+        delivery: {
+            recipientName: '김리듬',
+            recipientPhone: '010-9876-5432',
+            address: '서울특별시 마포구 월드컵북로 12',
+            carrier: null,
+            trackingNumber: null,
+        },
         canCancel: true,
         cancelDeadlineDays: 3,
         artwork: null,
@@ -1105,8 +1303,110 @@ export function findReservationDetail(id: string): ReservationDetail | undefined
     return SEEDED_RESERVATION_DETAILS[id];
 }
 
+// ─── 배송 정보 in-memory 저장소 (PATCH /reservations/:id/delivery) ──────
+// 본 endpoint 응답은 5필드(recipientName/recipientPhone/postalCode/address/addressDetail)지만
+// 예약 상세 응답의 delivery 는 5필드 중 postalCode/addressDetail 없는 다른 shape(+carrier/trackingNumber).
+// 두 shape 합치지 않고 별도 저장 — 본 store 는 PATCH 응답 echo + 예약 상세 5필드 부분 머지.
+type DeliveryEditRecord = {
+    recipientName: string;
+    recipientPhone: string;
+    postalCode: string;
+    address: string;
+    addressDetail?: string;
+};
+const deliveryEdits: Record<string, DeliveryEditRecord> = {};
+
+export function getDeliveryEdit(reservationId: string): DeliveryEditRecord | undefined {
+    return deliveryEdits[reservationId];
+}
+
+export function upsertDeliveryEdit(
+    reservationId: string,
+    record: DeliveryEditRecord,
+): DeliveryEditRecord {
+    deliveryEdits[reservationId] = record;
+    // 예약 상세 시드의 delivery 객체에 5필드 중 reservation-detail contract 가 갖는 부분만 미러링.
+    // (carrier/trackingNumber 는 본 endpoint 비책임 — 기존 값 보존)
+    const reservation = SEEDED_RESERVATION_DETAILS[reservationId];
+    if (reservation) {
+        const prev = reservation.delivery;
+        reservation.delivery = {
+            recipientName: record.recipientName,
+            recipientPhone: record.recipientPhone,
+            address: record.address,
+            carrier: prev?.carrier ?? null,
+            trackingNumber: prev?.trackingNumber ?? null,
+        };
+        reservation.shippingAddress = record.address;
+    }
+    return record;
+}
+
 export function findReviewByReservation(reservationId: string): ReviewDetail | undefined {
     return SEEDED_REVIEW_DETAILS[reservationId];
+}
+
+export function findReviewById(reviewId: string): ReviewDetail | undefined {
+    return Object.values(SEEDED_REVIEW_DETAILS).find((r) => r.id === reviewId);
+}
+
+// S3 Key → 노출 URL (mock). presigned 업로드된 사진의 표시용 URL 구성.
+function reviewPhotoKeyToUrl(key: string): string {
+    return `https://todam-bucket.s3.ap-northeast-2.amazonaws.com/${key}`;
+}
+
+interface ReviewWriteInput {
+    rating: number;
+    content?: string;
+    photos?: string[];
+}
+
+// 리뷰 작성 — SEEDED_REVIEW_DETAILS 갱신 + 예약 detail hasReview 전이.
+export function createReview(reservationId: string, input: ReviewWriteInput): ReviewDetail {
+    const id = genId('review');
+    const review: ReviewDetail = {
+        id,
+        reservationId,
+        rating: input.rating,
+        content: input.content ?? '',
+        photos: (input.photos ?? []).map((key, i) => ({
+            id: `${id}-p${i + 1}`,
+            imageUrl: reviewPhotoKeyToUrl(key),
+        })),
+        createdAt: nowIso(),
+    };
+    SEEDED_REVIEW_DETAILS[reservationId] = review;
+    const detail = SEEDED_RESERVATION_DETAILS[reservationId];
+    if (detail) {
+        detail.hasReview = true;
+        detail.reviewId = id;
+    }
+    return review;
+}
+
+// 리뷰 수정 — 기존 photos 통째 교체. 미존재 시 undefined.
+export function updateReview(reviewId: string, input: ReviewWriteInput): ReviewDetail | undefined {
+    const review = findReviewById(reviewId);
+    if (!review) return undefined;
+    review.rating = input.rating;
+    review.content = input.content ?? '';
+    if (input.photos) {
+        review.photos = input.photos.map((key, i) => ({
+            id: `${review.id}-p${i + 1}`,
+            imageUrl: reviewPhotoKeyToUrl(key),
+        }));
+    }
+    return review;
+}
+
+// 리뷰 사진 presigned (D14 — 추론 mock). 응답에 S3 key 포함.
+export function createReviewImageUpload(fileName: string): { uploadUrl: string; key: string } {
+    const id = genId('rphoto');
+    const key = `reviews/photos/${id}_${fileName}`;
+    return {
+        uploadUrl: `https://todam-bucket.s3.ap-northeast-2.amazonaws.com/${key}?mock=1`,
+        key,
+    };
 }
 
 // ─── 작품 상세 seed (GET /artworks/{artworkId}) ───────────────────────

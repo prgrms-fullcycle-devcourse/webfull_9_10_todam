@@ -1,7 +1,6 @@
 'use client';
 
 import { phoneSchema, slugSchema } from '@todam/shared';
-import { useRef } from 'react';
 
 import { useToast } from '../../../../shared/model';
 import { StoreInfoFields, type StoreImageItem } from '../../shared/ui';
@@ -23,14 +22,11 @@ export function InfoEditSection() {
     const storeId = form?.storeId ?? '';
     const addImageMutation = useAddStoreImage(storeId);
     const deleteImageMutation = useDeleteStoreImage(storeId);
-    const imgRef = useRef<HTMLInputElement>(null);
 
     if (!form) return null;
     const store = form.store;
 
-    const handleImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files ?? []);
-        e.target.value = '';
+    const handleAddImages = async (files: File[]) => {
         for (const file of files) {
             if (store.images.length >= MAX_STORE_IMAGES) {
                 push({ message: `대표 이미지는 최대 ${MAX_STORE_IMAGES}장까지 등록할 수 있어요.` });
@@ -76,8 +72,7 @@ export function InfoEditSection() {
     return (
         <StoreInfoFields
             images={images}
-            fileInputRef={imgRef}
-            onPickFiles={handleImages}
+            onAddImages={handleAddImages}
             addImageDisabled={addImageMutation.isPending}
             name={store.name}
             onChangeName={(v) => patchStore({ name: v })}

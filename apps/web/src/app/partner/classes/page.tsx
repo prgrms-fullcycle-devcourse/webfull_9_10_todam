@@ -3,10 +3,10 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { ProgramStatus } from '@todam/shared';
+import { ProgramStatus, formatDuration, formatPrice } from '@todam/shared';
 import { Button } from '@todam/ui';
 
-import { ProgramManagementItem } from '../../../entities/program';
+import { ClassItem } from '../../../entities/program';
 import {
     ClassListHeaderMenu,
     usePartnerPrograms,
@@ -19,20 +19,6 @@ import { EmptyState } from '../../../shared/ui';
 // mock 단계에서는 시드 데이터가 있는 공방 id 로 고정해 화면을 렌더한다.
 // 실 API 연동 시 선택된 공방 storeId 로 교체한다.
 const MOCK_STORE_ID = 'store-seed-0001';
-
-// 소요시간(분) → "N시간", "N시간 M분", "M분".
-function formatDuration(minutes: number): string {
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    if (h > 0 && m > 0) return `${h}시간 ${m}분`;
-    if (h > 0) return `${h}시간`;
-    return `${m}분`;
-}
-
-// 가격(원) → "45,000원".
-function formatPrice(price: number): string {
-    return `${price.toLocaleString('ko-KR')}원`;
-}
 
 // 서브텍스트 항목 구성. Contract 필드(durationMinutes) + mock 확장(level·leadTimeDays).
 // 확장 필드가 없으면(실 API) 해당 항목을 생략한다.
@@ -75,21 +61,23 @@ export default function PartnerClassesPage() {
             )}
 
             {!isLoading && !isError && programs.length === 0 && (
-                <EmptyState message="아직 등록된 클래스가 없습니다.">
-                    <Button
-                        variant="filled"
-                        size="sm"
-                        onClick={() => router.push('/partner/classes/new')}
-                    >
-                        클래스 등록하기
-                    </Button>
-                </EmptyState>
+                <div className="flex h-full items-center justify-center">
+                    <EmptyState message="아직 등록된 클래스가 없습니다.">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push('/partner/classes/new')}
+                        >
+                            클래스 등록하기
+                        </Button>
+                    </EmptyState>
+                </div>
             )}
 
             {!isLoading && !isError && programs.length > 0 && (
                 <section className="flex flex-col gap-3 py-2">
                     {programs.map((program) => (
-                        <ProgramManagementItem
+                        <ClassItem
                             key={program.id}
                             programName={program.title}
                             metaItems={buildMetaItems(program)}

@@ -1,7 +1,12 @@
 'use client';
 
 import { CalendarIcon, ClockIcon, Divider, FlagIcon, NametagIcon, UserIcon } from '@todam/ui';
-import { formatScheduled, ReservationDeliveryMethod, type ReservationDetail } from '@todam/shared';
+import {
+    formatPrice,
+    formatScheduled,
+    ReservationDeliveryMethod,
+    type ReservationDetail,
+} from '@todam/shared';
 
 const DELIVERY_LABEL: Record<ReservationDeliveryMethod, string> = {
     [ReservationDeliveryMethod.DELIVERY]: '택배로 받기',
@@ -16,10 +21,6 @@ function formatScheduledDate(iso: string): string {
     const dd = String(d.getDate()).padStart(2, '0');
     const day = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()] ?? '';
     return `${yyyy}. ${mm}. ${dd} (${day})`;
-}
-
-function formatPrice(value: number): string {
-    return `${value.toLocaleString('ko-KR')}원`;
 }
 
 // 디자인 정본 — Figma `8113:1361` 클래스 정보 ResultTable.

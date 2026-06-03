@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+
 import { Divider, EditIcon, PinIcon, SectionTitle } from '@todam/ui';
 import type { ReservationDetail } from '@todam/shared';
 
@@ -14,18 +16,14 @@ export type DeliveryInfoSectionProps = {
 };
 
 export function DeliveryInfoSection({ reservation }: DeliveryInfoSectionProps) {
+    const router = useRouter();
     const { push } = useToast();
     const delivery = reservation.delivery;
     const hasDelivery = Boolean(delivery && delivery.address);
     const hasTracking = Boolean(delivery?.trackingNumber && delivery?.carrier);
 
-    const handleEnterAddress = () => {
-        // 본 작업 범위 외 — 추후 별도 plan/endpoint. placeholder.
-        push({ message: '배송지 입력은 곧 지원돼요.' });
-    };
-
-    const handleEdit = () => {
-        push({ message: '배송지 수정은 곧 지원돼요.' });
+    const goToDeliveryEdit = () => {
+        router.push(`/my/reservations/${reservation.id}/delivery/edit`);
     };
 
     const handleCopyTracking = async () => {
@@ -45,7 +43,7 @@ export function DeliveryInfoSection({ reservation }: DeliveryInfoSectionProps) {
                     <span className="text-lg font-semibold text-foreground">배송 정보</span>
                     <button
                         type="button"
-                        onClick={handleEdit}
+                        onClick={goToDeliveryEdit}
                         className="flex items-center gap-1 text-xs text-foreground-tertiary"
                     >
                         <EditIcon size={16} />
@@ -64,7 +62,7 @@ export function DeliveryInfoSection({ reservation }: DeliveryInfoSectionProps) {
                     </p>
                     <button
                         type="button"
-                        onClick={handleEnterAddress}
+                        onClick={goToDeliveryEdit}
                         className="text-xs font-semibold text-foreground-tertiary"
                     >
                         배송지 입력하기

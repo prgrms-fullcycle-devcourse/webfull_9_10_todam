@@ -27,4 +27,6 @@ Thumbs.db
 .claude/settings.local.json
 .claude/logs/
 .claude/.env
+.codex/logs/
+.codex/.env
 .vscode

@@ -1,7 +1,7 @@
 'use client';
 
 import { phoneSchema, slugSchema } from '@todam/shared';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { StoreInfoFields, type StoreImageItem } from '../../shared/ui';
 import { useStoreRegistrationStore } from '../model/store';
@@ -15,8 +15,6 @@ export function StoreInfoStep() {
     const patchStore = useStoreRegistrationStore((s) => s.patchStore);
     const addImage = useStoreRegistrationStore((s) => s.addImage);
     const removeImage = useStoreRegistrationStore((s) => s.removeImage);
-
-    const imgRef = useRef<HTMLInputElement>(null);
 
     // 공방 URL 실시간(debounce) 중복확인 → TanStack Query
     const [debouncedSlug, setDebouncedSlug] = useState(store.slug);
@@ -35,11 +33,9 @@ export function StoreInfoStep() {
         }
     }, [slugQuery.data, store.slug, patchStore]);
 
-    const handleImages = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files ?? []);
+    const handleAddImages = (files: File[]) => {
         // TODO(presigned 후행): 실제 업로드 후 key 저장. 현재 mock url.
         files.forEach((f) => addImage(`mock://store/${f.name}`));
-        e.target.value = '';
     };
 
     const slugFormatError =
@@ -66,8 +62,7 @@ export function StoreInfoStep() {
     return (
         <StoreInfoFields
             images={images}
-            fileInputRef={imgRef}
-            onPickFiles={handleImages}
+            onAddImages={handleAddImages}
             name={store.name}
             onChangeName={(v) => patchStore({ name: v })}
             slug={store.slug}
