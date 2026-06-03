@@ -26,6 +26,7 @@ import {
 import { SubmitStoreUseCase } from '../../application/use-cases/submit-store.use-case';
 import { ListPartnerStoresUseCase } from '../../application/use-cases/list-partner-stores.use-case';
 import { GetPartnerStoreDetailUseCase } from '../../application/use-cases/get-partner-store-detail.use-case';
+import { GetPartnerOnboardingUseCase } from '../../application/use-cases/get-partner-onboarding.use-case';
 import { ListPartnerStoreProgramsUseCase } from '../../application/use-cases/list-partner-store-programs.use-case';
 import { UpdateStoreUseCase } from '../../application/use-cases/update-store.use-case';
 import { DeleteStoreImageUseCase } from '../../application/use-cases/delete-store-image.use-case';
@@ -38,6 +39,7 @@ import {
 import { SubmitStoreResponseDto } from '../dto/submit-store.dto';
 import { ListPartnerStoresResponseDto } from '../dto/list-partner-stores.dto';
 import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detail.dto';
+import { GetPartnerOnboardingResponseDto } from '../dto/get-partner-onboarding.dto';
 import { ListPartnerStoreProgramsResponseDto } from '../dto/list-partner-store-programs.dto';
 import { UpdateStoreDto, UpdateStoreResponseDto } from '../dto/update-store.dto';
 
@@ -53,6 +55,7 @@ export class StoreController {
         private readonly submitStoreUseCase: SubmitStoreUseCase,
         private readonly listPartnerStoresUseCase: ListPartnerStoresUseCase,
         private readonly getPartnerStoreDetailUseCase: GetPartnerStoreDetailUseCase,
+        private readonly getPartnerOnboardingUseCase: GetPartnerOnboardingUseCase,
         private readonly listPartnerStoreProgramsUseCase: ListPartnerStoreProgramsUseCase,
         private readonly updateStoreUseCase: UpdateStoreUseCase,
         private readonly deleteStoreImageUseCase: DeleteStoreImageUseCase,
@@ -67,6 +70,21 @@ export class StoreController {
         @CurrentUser() user: RequestUser,
     ): Promise<ListPartnerStoresResponseDto> {
         return this.listPartnerStoresUseCase.execute(user.id);
+    }
+
+    @Get('partner/onboarding')
+    @HttpCode(HttpStatus.OK)
+    // 무파트너/PENDING/REJECTED 도 자기 온보딩 상태 조회 가능해야 함 → AuthGuard 만(PartnerGuard 금지).
+    @UseGuards(AuthGuard)
+    @ResponseMessage('온보딩 상태를 조회했습니다.')
+    @ApiOkResponse({
+        description: '온보딩 상태 조회 성공',
+        type: GetPartnerOnboardingResponseDto,
+    })
+    async getPartnerOnboarding(
+        @CurrentUser() user: RequestUser,
+    ): Promise<GetPartnerOnboardingResponseDto> {
+        return this.getPartnerOnboardingUseCase.execute(user.id);
     }
 
     @Get('partner/stores/:storeId/programs')

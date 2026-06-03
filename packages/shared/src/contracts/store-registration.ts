@@ -234,3 +234,21 @@ export const storeRegistrationStatusResultSchema = z.object({
     email: z.string(),
 });
 export type StoreRegistrationStatusResult = z.infer<typeof storeRegistrationStatusResultSchema>;
+
+// ─── 온보딩 상태 조회 (GET /partner/onboarding — plan API Contract #5 스냅샷) ──
+// 중첩 {partnerStatus, store{id,status,rejectedReason}}. 게이트 분기 키 = partnerStatus.
+export const partnerOnboardingStoreSchema = z.object({
+    id: z.string(),
+    status: z.nativeEnum(StoreStatus),
+    // store.status === REJECTED 일 때만 값, 그 외 null.
+    rejectedReason: z.string().nullable(),
+});
+export type PartnerOnboardingStore = z.infer<typeof partnerOnboardingStoreSchema>;
+
+export const partnerOnboardingResultSchema = z.object({
+    // partner 없으면 null.
+    partnerStatus: z.nativeEnum(PartnerStatus).nullable(),
+    // 최신 생성순 온보딩 store 1건. 없으면 null.
+    store: partnerOnboardingStoreSchema.nullable(),
+});
+export type PartnerOnboardingResult = z.infer<typeof partnerOnboardingResultSchema>;
