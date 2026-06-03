@@ -10,7 +10,7 @@
 
 - [x] API 구현
 - [x] UI 구현
-- [ ] API 연동
+- [x] API 연동
 
 ## Context
 
@@ -72,8 +72,21 @@
     - `apps/api/src/modules/store/application/use-cases/confirm-store-image.use-case.ts`
     - `apps/api/src/modules/store/application/use-cases/submit-store.use-case.ts`
     - `apps/api/src/common/s3/s3.service.ts` (objectExists), `s3-object.util.ts` (keyFromImageUrl)
-- UI:
+- UI: (디자인 변경 없음 — 연동 레이어만 수정)
+  - `apps/web/src/features/store/registration/ui/StoreRegistrationFlow.tsx` — 제출 결과를 `storeId` 상태로 보관, 완료 화면에 전달. 에러 분기를 실 API 코드(`SLUG_CONFLICT`/`PARTNER_NOT_APPROVED`/`BAD_REQUEST`)로 교체.
+  - `apps/web/src/features/store/registration/ui/StoreRegistrationComplete.tsx` — `storeId` prop 수신 → `GET /partner/stores/{storeId}`(PartnerStoreDetailResult) 기반으로 검수 상태/반려 사유/요약 표시. REJECTED 시 반려 사유 노출.
 - 연동:
+  - `packages/shared/src/contracts/store-registration.ts` — 실 API 4종 계약 타입 신설(`CreateStoreRequest/Result`, `CreateStoreImageRequest/Result`, `ConfirmStoreImageResult`, `SubmitStoreResult`) + `StoreRegistrationApiErrorCode` enum. (기존 onboarding mock 계약은 유지.)
+  - `apps/web/src/features/store/registration/api.ts` — 루트 경로 실 엔드포인트로 재작성: `POST /stores`, `POST /partner/stores/{id}/images`, `uploadToPresignedUrl`(S3 직접 PUT), `PATCH .../confirm`, `POST .../submit`, `getStoreReviewStatus(GET /partner/stores/{id})`. 폼→body 매핑 `toCreateStoreBody`.
+  - `apps/web/src/features/store/registration/queries.ts` — `useSubmitStoreRegistration` 을 초안생성→이미지 presigned 업로드/확인(순차)→제출 오케스트레이션으로 재작성, `storeId` 반환. `useStoreReviewStatus` 신설.
+  - `apps/web/.env.local` — `NEXT_PUBLIC_API_MOCKING=disabled`, `NEXT_PUBLIC_API_URL=http://localhost:4000`.
+  - 인증: `apps/web/src/shared/api/client.ts` 가 `getAuthToken()` → `Authorization: Bearer` 자동 주입(기존 패턴 재사용, 변경 없음).
+  - 미해결(재plan 필요): geocode·slug-availability 실 BE 미존재. contract 스냅샷에도 미정의 → `api.ts` 에서 MSW 경로 유지(`/api/v1/...`)로 표시만 남김. mock disabled 전환 시 두 호출 및 기타 MSW 의존 화면 영향 — Risks 참조.
+  - (후속 갭 보정, BOSS 결정 반영):
+    - geocode 실연동: `apps/web/src/shared/lib/kakaoGeocode.ts` 신설 — Kakao Maps JS SDK `services.Geocoder().addressSearch` 로 주소→좌표 변환(BE 변환 없음, 현 contract 대로 FE 가 `latitude`/`longitude` 산출). `api.ts geocode()` 가 MSW(`/api/v1/geocode`) 의존 제거하고 `geocodeAddress()` 호출로 교체. `BusinessStep.handleAddressSearch` 는 좌표 변환 실패해도 주소 선택 유지(0/0 폴백 + 안내 토스트) — 키 미설정 graceful. env 키 `NEXT_PUBLIC_KAKAO_MAP_KEY` placeholder 추가.
+    - slug 중복확인: MSW mock 유지(별도 be 후속). `api.ts checkSlug` 는 `/api/v1/partner/stores/slug-availability` 경로 유지, 전역 mock(on) 이 가로챔. UI 게이트(`slugChecked && slugAvailable`) 미변경.
+    - maxCapacityPerSlot contract 보정: plan 스냅샷 데이터모델 표 + `POST /stores` body 예시에 `maxCapacityPerSlot`(number) 추가. shared `createStoreRequestSchema` 는 이미 보유, FE 폼값 전송 유지.
+    - mock 경로 분리: `.env.local` `NEXT_PUBLIC_API_MOCKING=disabled`→`enabled` 되돌림. 등록 실 API 4종은 루트 경로(`/stores`, `/partner/stores/...`)라 mock 핸들러(`*/api/v1`)와 충돌 없음(검증: `handlers.ts API='*/api/v1'`) → unhandled→bypass→실 BE. 핸들러 제거 불필요. env 주석을 현 상태(전역 mock on, 등록만 실 BE)로 갱신.
 
 ## Risks
 
@@ -106,6 +119,7 @@
 - Status:
 - Follow-up: Admin 검수(승인/반려) — 별도 admin plan. 반려 후 재제출(공방 수정) — 별도 기능. 사업자등록증 OCR — 백로그.
 - Follow-up: **추가 공방 등록 APPROVED 가드 구현** — contract `PARTNER_NOT_APPROVED`(403) 추가 + MSW `/partner/onboarding` status 게이트 + FE 403 토스트. (규칙=Decision Log 2026-06-01, 현재 미구현 — Risks 참조.)
+- Follow-up: **BE slug-availability 엔드포인트 추가** (별도 be) — 현재 slug 중복확인은 MSW mock 의존(`/api/v1/partner/stores/slug-availability`). 실 BE 엔드포인트 신설 후 FE `checkSlug` 경로를 루트 실 API 로 전환. 제출 시점 `409 SLUG_CONFLICT` 는 이미 실 연동됨.
 
 ## API Contract (스냅샷)
 
@@ -127,6 +141,7 @@
 | `autoConfirm` | boolean | 자동 예약 확정 여부 |
 | `cancelDeadlineDays` | number | 취소 가능 기한(d-day) |
 | `reservationIntervalMinutes` | number | 예약 시간 간격(분). `60`/`90`/`120`/`180` 중 하나. 추후 프로그램 타임슬롯 생성 기준 |
+| `maxCapacityPerSlot` | number | 타임슬롯당 최대 예약 인원. BE `CreateStoreDto` 필수 |
 | `operatingHours` | array | 영업 요일·시간 (아래 참조) |
 | `status` | enum | `DRAFT` \| `PENDING` \| `PUBLISHED` \| `REJECTED` \| `SUSPENDED` |
 
@@ -174,6 +189,7 @@
     "autoConfirm": false,
     "cancelDeadlineDays": 1,
     "reservationIntervalMinutes": 60,
+    "maxCapacityPerSlot": 8,
     "operatingHours": [
       {
         "dayOfWeek": "MON",
