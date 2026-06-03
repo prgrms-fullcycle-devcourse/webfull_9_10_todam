@@ -1,11 +1,22 @@
 'use client';
 
+import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { useModalStore } from '../model/modal';
 
 export function AppModal() {
     const { isOpen, content, close } = useModalStore();
+
+    // Esc 키로 닫기 (열려 있을 때만).
+    useEffect(() => {
+        if (!isOpen) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') close();
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isOpen, close]);
 
     return (
         <AnimatePresence>
