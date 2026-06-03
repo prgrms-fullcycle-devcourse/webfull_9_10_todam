@@ -115,6 +115,8 @@ export const createStoreBusinessDocumentSchema = z.object({
     ownerName: z.string().min(1).max(100),
     businessAddress: z.string().min(1).max(500),
     email: emailSchema.nullable().optional(),
+    // 사업자등록증 파일 S3 URL. POST /partner/business-documents/images 발급 URL. 미첨부 시 null.
+    documentUrl: z.string().nullable().optional(),
 });
 
 export const createStoreRequestSchema = z.object({
@@ -167,6 +169,19 @@ export const createStoreImageResultSchema = z.object({
     imageUrl: z.string(),
 });
 export type CreateStoreImageResult = z.infer<typeof createStoreImageResultSchema>;
+
+// 2-1) POST /partner/business-documents/images — 사업자등록증 presigned PUT URL 발급 (store-비종속)
+export const businessDocumentImageRequestSchema = z.object({
+    fileName: z.string(),
+    fileType: z.string(),
+});
+export type BusinessDocumentImageRequest = z.infer<typeof businessDocumentImageRequestSchema>;
+
+export const businessDocumentImageResultSchema = z.object({
+    uploadUrl: z.string(),
+    documentUrl: z.string(),
+});
+export type BusinessDocumentImageResult = z.infer<typeof businessDocumentImageResultSchema>;
 
 // 3) PATCH /partner/stores/{storeId}/images/{imageId}/confirm — 업로드 확인
 export const confirmStoreImageResultSchema = z.object({

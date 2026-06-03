@@ -5,6 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import {
     checkSlug,
     confirmStoreImage,
+    createBusinessDocumentImage,
     createStore,
     createStoreImage,
     geocode,
@@ -30,6 +31,20 @@ export function useSlugAvailability(slug: string, enabled: boolean) {
 // 주소 → 좌표
 export function useGeocode() {
     return useMutation({ mutationFn: (query: string) => geocode(query) });
+}
+
+// 사업자등록증 실 업로드: presigned 발급 → S3 직접 PUT → 발급된 documentUrl 반환.
+export function useUploadBusinessDocument() {
+    return useMutation({
+        mutationFn: async (file: File): Promise<{ documentUrl: string }> => {
+            const { uploadUrl, documentUrl } = await createBusinessDocumentImage({
+                fileName: file.name,
+                fileType: file.type,
+            });
+            await uploadToPresignedUrl(uploadUrl, file, file.type);
+            return { documentUrl };
+        },
+    });
 }
 
 // 공방 등록 제출 = 초안 생성 → 이미지 presigned 업로드/확인 → 심사 제출 오케스트레이션.

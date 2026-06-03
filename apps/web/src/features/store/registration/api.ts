@@ -1,5 +1,7 @@
 import {
     DAY_OF_WEEK,
+    type BusinessDocumentImageRequest,
+    type BusinessDocumentImageResult,
     type ConfirmStoreImageResult,
     type CreateStoreImageRequest,
     type CreateStoreImageResult,
@@ -70,13 +72,16 @@ function toCreateStoreBody(form: StoreRegistrationForm): CreateStoreRequest {
                 breakStart: form.operating.breakStart || null,
                 breakEnd: form.operating.breakEnd || null,
             })),
-        // documentUrl/OCR 은 백로그 → BE businessDocument 계약에 미포함.
+        // 사업자등록증 파일은 IN scope(파일 저장). OCR/진위확인만 백로그.
+        // documentUrl 은 BusinessStep 에서 실 presigned 업로드로 발급받아 폼에 보관된 S3 URL.
         businessDocument: {
-            businessNumber: form.business.businessNumber,
+            // BE 는 하이픈 없이 숫자 10자리 요구. 폼은 하이픈 포함 표시(000-00-00000) → 전송 직전 strip.
+            businessNumber: form.business.businessNumber.replace(/-/g, ''),
             businessName: form.business.businessName,
             ownerName: form.business.ownerName,
             businessAddress: fullAddress,
             email: form.business.email || null,
+            documentUrl: form.business.documentUrl,
         },
     };
 }
@@ -86,6 +91,14 @@ export function createStore(form: StoreRegistrationForm) {
     return apiFetch<CreateStoreResult>('/stores', {
         method: 'POST',
         body: toCreateStoreBody(form),
+    });
+}
+
+// 1-1) 사업자등록증 presigned PUT URL 발급 (store-비종속, 루트 경로 → MSW(/api/v1) 미가로챔, 실 BE).
+export function createBusinessDocumentImage(body: BusinessDocumentImageRequest) {
+    return apiFetch<BusinessDocumentImageResult>('/partner/business-documents/images', {
+        method: 'POST',
+        body,
     });
 }
 
