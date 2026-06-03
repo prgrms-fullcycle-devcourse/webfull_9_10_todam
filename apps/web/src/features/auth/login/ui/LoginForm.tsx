@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { Button, TextInput, Logo, Divider } from '@todam/ui';
 
-import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { KakaoLoginButton } from './KakaoLoginButton';
 import { GoogleLoginButton } from './GoogleLoginButton';
 

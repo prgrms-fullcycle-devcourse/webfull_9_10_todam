@@ -1,7 +1,7 @@
 import { CalendarIcon, ClockIcon, FlagIcon, NametagIcon } from '@todam/ui';
-import { formatDuration, type ProgramDetail } from '@todam/shared';
+import { formatDuration, formatPrice, type ProgramDetail } from '@todam/shared';
 
-import { InfoTable, type InfoTableRow } from '../../../../shared/ui';
+import { InfoTable, type InfoTableRow } from '@/shared/ui';
 
 const ICON_SIZE = 16;
 
@@ -14,7 +14,7 @@ export function ClassInfoTable({ program }: Props) {
     const rows: InfoTableRow[] = [
         {
             label: '가격',
-            value: `${program.price.toLocaleString()}원`,
+            value: formatPrice(program.price),
             icon: <NametagIcon size={ICON_SIZE} />,
         },
         {

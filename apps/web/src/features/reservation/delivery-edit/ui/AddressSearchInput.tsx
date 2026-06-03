@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 
-import { openPostcode } from '../../../../shared/lib/daumPostcode';
+import { openPostcode } from '@/shared/lib/daumPostcode';
 
 // 주소 input. 클릭 시 Daum 우편번호 팝업 → resolve 결과로 postalCode + address 동시 set.
 // Figma 정본: 주소 미완료 = placeholder "도로명 또는 지번 주소를 검색해 주세요" (status=default).

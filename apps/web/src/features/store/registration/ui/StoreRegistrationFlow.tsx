@@ -4,12 +4,12 @@ import { BottomBar, Button, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { StoreRegistrationErrorCode } from '@todam/shared';
+import { StoreRegistrationApiErrorCode } from '@todam/shared';
 
-import { ApiError } from '../../../../shared/api';
-import { useModal, useToast } from '../../../../shared/model';
-import { ProgressBarWrapper } from '../../../../shared/ui';
-import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
+import { ApiError } from '@/shared/api';
+import { useModal, useToast } from '@/shared/model';
+import { ProgressBarWrapper } from '@/shared/ui';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { isAllValid, isDirty, isStepValid, useStoreRegistrationStore } from '../model/store';
 import { useSubmitStoreRegistration } from '../queries';
 import { StoreRegistrationStep, STEP_TITLES, TOTAL_STEPS } from '../model/types';
@@ -39,7 +39,8 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
 
     const submitMutation = useSubmitStoreRegistration();
     const submitting = submitMutation.isPending;
-    const [submitted, setSubmitted] = useState(false);
+    const [submittedStoreId, setSubmittedStoreId] = useState<string | null>(null);
+    const submitted = submittedStoreId !== null;
 
     const dirty = isDirty(form);
 
@@ -87,16 +88,17 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
         enabled: !submitted,
     });
 
-    if (submitted) {
+    if (submittedStoreId) {
         return (
             <StoreRegistrationComplete
+                storeId={submittedStoreId}
                 onClose={() => {
                     reset();
                     router.push('/');
                 }}
                 onEditInfo={() => {
                     // 반려 → 정보 수정: 폼 유지한 채 1단계로 복귀 (링크 연동 추후)
-                    setSubmitted(false);
+                    setSubmittedStoreId(null);
                     setStep(StoreRegistrationStep.Business);
                 }}
             />
@@ -110,17 +112,18 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
     const handleSubmit = async () => {
         if (!isAllValid(form) || submitting) return;
         try {
-            await submitMutation.mutateAsync(form);
-            setSubmitted(true);
+            const { storeId } = await submitMutation.mutateAsync(form);
+            setSubmittedStoreId(storeId);
         } catch (err) {
             if (err instanceof ApiError) {
                 push({ message: err.message });
-                if (err.code === StoreRegistrationErrorCode.STORE_SLUG_DUPLICATED) {
+                if (err.code === StoreRegistrationApiErrorCode.SLUG_CONFLICT) {
                     patchStore({ slugChecked: true, slugAvailable: false });
                     setStep(StoreRegistrationStep.StoreInfo);
-                } else if (
-                    err.code === StoreRegistrationErrorCode.BUSINESS_NUMBER_ALREADY_REGISTERED
-                ) {
+                } else if (err.code === StoreRegistrationApiErrorCode.PARTNER_NOT_APPROVED) {
+                    // 승인되지 않은 파트너의 추가 공방 등록 차단 → 메시지만 노출.
+                    setStep(StoreRegistrationStep.Business);
+                } else if (err.code === StoreRegistrationApiErrorCode.BAD_REQUEST) {
                     setStep(StoreRegistrationStep.Business);
                 }
             } else {

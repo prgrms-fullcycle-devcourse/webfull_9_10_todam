@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-import { ApiError } from '../../../shared/api';
+import { ApiError } from '@/shared/api';
 
 import { getArtworkDetail } from './api';
 

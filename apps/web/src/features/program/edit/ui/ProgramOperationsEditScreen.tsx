@@ -4,11 +4,11 @@ import { useRouter } from 'next/navigation';
 
 import type { ProgramDetail } from '@todam/shared';
 
-import { ApiError } from '../../../../shared/api';
-import { useToast } from '../../../../shared/model/toast';
-import { useEditableForm } from '../../../../shared/lib/useEditableForm';
-import { useFormValidation } from '../../../../shared/lib/useFormValidation';
-import { validateDurationMinutes, validatePrice } from '../../../../entities/program';
+import { ApiError } from '@/shared/api';
+import { useToast } from '@/shared/model/toast';
+import { useEditableForm } from '@/shared/lib/useEditableForm';
+import { useFormValidation } from '@/shared/lib/useFormValidation';
+import { validateDurationMinutes, validatePrice } from '@/entities/program';
 import { usePatchProgram } from '../queries';
 import type { ProgramOperationsFormState } from '../model/types';
 import { ProgramEditScaffold } from './ProgramEditScaffold';

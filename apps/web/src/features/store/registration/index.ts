@@ -1,2 +1,3 @@
 export { StoreRegistrationFlow } from './ui/StoreRegistrationFlow';
-export { useStoreRegistrationStatus } from './queries';
+export { usePartnerOnboarding } from './queries';
+export { StoreRegistrationComplete } from './ui/StoreRegistrationComplete';

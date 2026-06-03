@@ -4,8 +4,8 @@ import { BottomBar, Button, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 
-import { useModal } from '../../../../shared/model/modal';
-import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
+import { useModal } from '@/shared/model/modal';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 
 type Props = {
     title: string;

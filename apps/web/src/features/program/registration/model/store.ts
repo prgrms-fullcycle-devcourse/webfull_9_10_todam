@@ -1,16 +1,14 @@
-import { ProgramDifficulty } from '@todam/shared';
+import { MAX_PROGRAM_IMAGE_COUNT, ProgramDifficulty } from '@todam/shared';
 import { create } from 'zustand';
 
-import { filterValidImageFiles } from '../../../../shared/lib/imageFile';
-import type { PendingImage } from '../../../../shared/model';
+import { filterValidImageFiles } from '@/shared/lib/imageFile';
+import type { PendingImage } from '@/shared/model';
 import {
     ProgramRegistrationStep,
     TITLE_MAX,
     TITLE_MIN,
     type ProgramRegistrationForm,
 } from './types';
-
-const MAX_PROGRAM_IMAGES = 1;
 
 function initialForm(): ProgramRegistrationForm {
     return {
@@ -49,7 +47,7 @@ export const useProgramRegistrationStore = create<ProgramRegistrationStore>((set
     patch: (p) => set((s) => ({ form: { ...s.form, ...p } })),
     addImageFiles: (files) =>
         set((s) => {
-            const room = MAX_PROGRAM_IMAGES - s.form.images.length;
+            const room = MAX_PROGRAM_IMAGE_COUNT - s.form.images.length;
             if (room <= 0) return s;
             const valid = filterValidImageFiles(files).slice(0, room);
             if (valid.length === 0) return s;

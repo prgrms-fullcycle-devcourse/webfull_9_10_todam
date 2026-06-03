@@ -38,6 +38,7 @@ jobs:
           docker build \
             -f apps/web/Dockerfile \
             --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_WEB }} \
+            --build-arg NEXT_PUBLIC_KAKAO_MAP_KEY=${{ secrets.NEXT_PUBLIC_KAKAO_MAP_KEY_WEB }} \
             -t ${{ secrets.ECR_REPOSITORY_WEB }} .
 
       - name: Tag Docker image

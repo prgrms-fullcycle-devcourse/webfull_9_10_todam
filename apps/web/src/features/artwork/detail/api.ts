@@ -1,6 +1,6 @@
 import type { ArtworkDetailResult } from '@todam/shared';
 
-import { apiFetch } from '../../../shared/api';
+import { apiFetch } from '@/shared/api';
 
 const BASE = '/api/v1';
 

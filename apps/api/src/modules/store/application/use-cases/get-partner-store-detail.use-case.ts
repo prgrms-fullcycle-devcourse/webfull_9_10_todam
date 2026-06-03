@@ -37,7 +37,7 @@ export class GetPartnerStoreDetailUseCase {
     constructor(private readonly prisma: PrismaService) {}
 
     async execute(userId: string, storeId: string): Promise<GetPartnerStoreDetailResponseDto> {
-        // PartnerGuard 통과 시 승인된 파트너가 보장되지만, partnerId 식별을 위해 조회한다.
+        // 인증된 사용자의 partner 식별 (status 무관 — 소유권은 아래 store.partnerId 대조로 검증).
         const partner = await this.prisma.partner.findUnique({
             where: { userId },
             select: { id: true },

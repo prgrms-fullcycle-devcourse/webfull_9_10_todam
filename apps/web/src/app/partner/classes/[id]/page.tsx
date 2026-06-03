@@ -3,11 +3,11 @@
 import { Button, Tag, RightIcon, BottomBar } from '@todam/ui';
 import { ProgramDifficulty, ProgramStatus } from '@todam/shared';
 
-import { useSheet } from '../../../../shared/model';
-import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
-import { getDifficultyLabel } from '../../../../entities/program';
-import { useProgramEditPreload } from '../../../../features/program/edit';
-import { ClassEditSheet, ClassInfoTable } from '../../../../features/program/detail';
+import { useSheet } from '@/shared/model';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { getDifficultyLabel } from '@/entities/program';
+import { useProgramEditPreload } from '@/features/program/edit';
+import { ClassEditSheet, ClassInfoTable } from '@/features/program/detail';
 
 type PageProps = { params: Promise<{ id: string }> };
 

@@ -2,9 +2,8 @@ import type { ReactNode } from 'react';
 
 import { MswProvider } from '../mocks/MswProvider';
 import { AppModal, AppSheet, AppToast } from '../shared/ui';
+import { AppShell } from './AppShell';
 import { QueryProvider } from './QueryProvider';
-import { BottomNav } from '../widgets/bottom-navigation';
-import { Header } from '../widgets/header';
 
 import '../styles/globals.css';
 
@@ -31,9 +30,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <MswProvider>
                     <QueryProvider>
                         <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-background">
-                            <Header />
-                            {children}
-                            <BottomNav />
+                            <AppShell>{children}</AppShell>
                             <AppModal />
                             <AppSheet />
                             <AppToast />

@@ -4,7 +4,7 @@ import { Slot, TextArea, TextInput } from '@todam/ui';
 
 import type { ProgramDifficulty } from '@todam/shared';
 
-import { DIFFICULTY_OPTIONS, DESCRIPTION_MAX } from '../../../../entities/program';
+import { DIFFICULTY_OPTIONS, DESCRIPTION_MAX } from '@/entities/program';
 
 export type ProgramInfoFields = {
     title: string;

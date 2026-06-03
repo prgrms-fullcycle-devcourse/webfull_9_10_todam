@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import { Button, MoreIcon } from '@todam/ui';
 import { ReservationDeliveryMethod, ReservationStatus } from '@todam/shared';
 
-import { useReservationDetail } from '../../../../../../features/reservation/detail';
-import { ApiError } from '../../../../../../shared/api';
-import { useHeaderOverride } from '../../../../../../shared/lib/useHeaderOverride';
-import { useModal, useToast } from '../../../../../../shared/model';
+import { useReservationDetail } from '@/features/reservation/detail';
+import { ApiError } from '@/shared/api';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { useModal, useToast } from '@/shared/model';
 
 import { ArtworkStageCard } from './ArtworkStageCard';
 import { CancelDialog } from './CancelDialog';

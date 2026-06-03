@@ -1,6 +1,6 @@
 'use client';
 
-import { ReservationFields } from '../../shared/ui';
+import { ReservationFields } from '@/features/store/shared/ui';
 import { useStoreRegistrationStore } from '../model/store';
 
 export function ReservationStep() {

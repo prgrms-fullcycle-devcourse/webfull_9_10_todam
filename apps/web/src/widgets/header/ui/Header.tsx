@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { Logo, Button } from '@todam/ui';
 import { CloseIcon, LeftIcon, NotiIcon } from '@todam/ui';
 
-import { useHeaderActionStore } from '../../../shared/model';
+import { useHeaderActionStore } from '@/shared/model';
 import { useHeader } from '../model/useHeader';
 
 type HeaderType = 'home' | 'main' | 'mainText' | 'sub' | 'subText' | 'popup' | 'search';

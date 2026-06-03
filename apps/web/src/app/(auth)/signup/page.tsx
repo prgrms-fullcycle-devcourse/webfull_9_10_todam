@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 
 import { Button, TextInput, BottomBar, InformationIcon } from '@todam/ui';
 import { CODE_LENGTH, emailSchema, passwordSchema, verifyCodeSchema } from '@todam/shared';
-import { useHeaderOverride } from '../../../shared/lib/useHeaderOverride';
-import { useToast } from '../../../shared/model';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { useToast } from '@/shared/model';
 
 type Step = 'email' | 'code' | 'password';
 

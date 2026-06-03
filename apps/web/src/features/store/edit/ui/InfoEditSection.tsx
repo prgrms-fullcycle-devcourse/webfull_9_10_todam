@@ -2,7 +2,7 @@
 
 import { phoneSchema, slugSchema } from '@todam/shared';
 
-import { StoreInfoFields } from '../../shared/ui';
+import { StoreInfoFields } from '@/features/store/shared/ui';
 import { useStoreEditStore } from '../model/store';
 
 const isSlug = (v: string) => slugSchema.safeParse(v).success;
@@ -25,7 +25,7 @@ export function InfoEditSection() {
             ? '2~40자로 입력해 주세요'
             : undefined;
     const slugFormatError =
-        store.slug.length > 0 && !isSlug(store.slug) ? '영문 소문자·숫자·-·_ 3~30자' : undefined;
+        store.slug.length > 0 && !isSlug(store.slug) ? '영문 소문자·숫자·- 4~40자' : undefined;
     const phoneError =
         store.phone.length > 0 && !isPhone(store.phone) ? '02-1234-5678 형식' : undefined;
     const slugHasError = !!slugFormatError || slugDuplicated;

@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 
-import { useHeaderActionStore } from '../../../shared/model';
+import { useHeaderActionStore } from '@/shared/model';
 
 export type LayoutHeaderType =
     | 'home'

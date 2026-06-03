@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { EditIcon, InformationIcon, PauseIcon, RightIcon, StandardBottomSheet } from '@todam/ui';
 import type { ReactElement } from 'react';
 
-import { useToast } from '../../../../shared/model';
+import { useToast } from '@/shared/model';
 
 type Props = {
     programId: string;

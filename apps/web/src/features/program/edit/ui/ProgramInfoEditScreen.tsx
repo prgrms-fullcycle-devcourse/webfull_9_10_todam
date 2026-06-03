@@ -4,13 +4,13 @@ import { useRouter } from 'next/navigation';
 
 import { MAX_PROGRAM_IMAGE_COUNT, ProgramDifficulty, type ProgramDetail } from '@todam/shared';
 
-import { ApiError } from '../../../../shared/api';
-import { useToast } from '../../../../shared/model/toast';
-import { validateDescription, validateTitle } from '../../../../entities/program';
-import { usePendingImages } from '../../../../shared/model';
-import { PendingImageField } from '../../../../shared/ui';
-import { useEditableForm } from '../../../../shared/lib/useEditableForm';
-import { useFormValidation } from '../../../../shared/lib/useFormValidation';
+import { ApiError } from '@/shared/api';
+import { useToast } from '@/shared/model/toast';
+import { validateDescription, validateTitle } from '@/entities/program';
+import { usePendingImages } from '@/shared/model';
+import { PendingImageField } from '@/shared/ui';
+import { useEditableForm } from '@/shared/lib/useEditableForm';
+import { useFormValidation } from '@/shared/lib/useFormValidation';
 import { useDeleteProgramImage, usePatchProgram, useUploadProgramImage } from '../queries';
 import { ProgramEditScaffold } from './ProgramEditScaffold';
 import { ProgramInfoEditForm, type ProgramInfoFields } from './ProgramInfoEditForm';

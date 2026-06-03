@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Divider, EditIcon, PinIcon, SectionTitle } from '@todam/ui';
 import type { ReservationDetail } from '@todam/shared';
 
-import { useToast } from '../../../../../../shared/model';
+import { useToast } from '@/shared/model';
 
 // 디자인 정본 (변형 A/B/C) — 배송 정보 섹션.
 // 빈 상태 (변형 A): "작품을 받을 주소를 미리 입력해 볼까요?" + "배송지 입력하기" 버튼

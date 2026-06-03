@@ -2,7 +2,7 @@
 
 import { use } from 'react';
 
-import { StoreEditLayout } from '../../../../../../features/store/edit';
+import { StoreEditLayout } from '@/features/store/edit';
 
 export default function PartnerStoreEditReservationPage({
     params,

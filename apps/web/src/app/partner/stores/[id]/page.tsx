@@ -21,18 +21,18 @@ import {
     StoreReviewResult,
     usePartnerStoreDetail,
     usePartnerStorePrograms,
-} from '../../../../features/store/detail';
+} from '@/features/store/detail';
 import {
     ConvenienceChips,
     StoreImageCarousel,
     StoreInfoSummary,
     StoreLocation,
-} from '../../../../entities/store';
-import { PartnerClassListItem } from '../../../../features/program/list';
-import { ApiError } from '../../../../shared/api';
-import { useHeaderOverride } from '../../../../shared/lib/useHeaderOverride';
-import { useSheet } from '../../../../shared/model';
-import { EmptyState } from '../../../../shared/ui';
+} from '@/entities/store';
+import { PartnerClassListItem } from '@/features/program/list';
+import { ApiError } from '@/shared/api';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { useSheet } from '@/shared/model';
+import { EmptyState } from '@/shared/ui';
 
 // 에러 코드 → 안내 문구. 401/403/404/500 분기.
 function errorMessage(error: unknown): string {
