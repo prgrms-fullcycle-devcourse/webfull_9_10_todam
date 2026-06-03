@@ -18,6 +18,7 @@ import { ResponseMessage } from '../../../../common/decorators/response-message.
 import type { RequestUser } from '../../../../common/types/request-user.type';
 import { CreateStoreUseCase } from '../../application/use-cases/create-store.use-case';
 import { CreateStoreImageUseCase } from '../../application/use-cases/create-store-image.use-case';
+import { CreateBusinessDocumentImageUseCase } from '../../application/use-cases/create-business-document-image.use-case';
 import {
     ConfirmStoreImageUseCase,
     ConfirmStoreImageResponseDto,
@@ -30,6 +31,10 @@ import { UpdateStoreUseCase } from '../../application/use-cases/update-store.use
 import { DeleteStoreImageUseCase } from '../../application/use-cases/delete-store-image.use-case';
 import { CreateStoreDto, CreateStoreResponseDto } from '../dto/create-store.dto';
 import { CreateStoreImageDto, CreateStoreImageResponseDto } from '../dto/store-image.dto';
+import {
+    CreateBusinessDocumentImageDto,
+    CreateBusinessDocumentImageResponseDto,
+} from '../dto/business-document-image.dto';
 import { SubmitStoreResponseDto } from '../dto/submit-store.dto';
 import { ListPartnerStoresResponseDto } from '../dto/list-partner-stores.dto';
 import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detail.dto';
@@ -43,6 +48,7 @@ export class StoreController {
     constructor(
         private readonly createStoreUseCase: CreateStoreUseCase,
         private readonly createStoreImageUseCase: CreateStoreImageUseCase,
+        private readonly createBusinessDocumentImageUseCase: CreateBusinessDocumentImageUseCase,
         private readonly confirmStoreImageUseCase: ConfirmStoreImageUseCase,
         private readonly submitStoreUseCase: SubmitStoreUseCase,
         private readonly listPartnerStoresUseCase: ListPartnerStoresUseCase,
@@ -80,7 +86,8 @@ export class StoreController {
 
     @Get('partner/stores/:storeId')
     @HttpCode(HttpStatus.OK)
-    @UseGuards(AuthGuard, PartnerGuard)
+    // 첫 공방 등록(partner=PENDING)도 검수중 화면에서 자기 공방 조회 가능해야 함. 소유권은 use-case 에서 검증.
+    @UseGuards(AuthGuard)
     @ResponseMessage('공방 상세 정보가 성공적으로 조회되었습니다.')
     @ApiOkResponse({
         description: '내 공방 상세 조회 성공',
@@ -117,8 +124,26 @@ export class StoreController {
         return this.createStoreUseCase.execute(user.id, dto);
     }
 
+    @Post('partner/business-documents/images')
+    // store-비종속. 첫 등록 USER(partner=PENDING 또는 미생성)도 사용해야 하므로 AuthGuard만.
+    @UseGuards(AuthGuard)
+    @ResponseMessage(
+        'Pre-signed URL이 성공적으로 발급되었습니다. 5분 이내에 업로드를 완료해주세요.',
+    )
+    @ApiCreatedResponse({
+        description: '사업자등록증 presigned URL 발급 성공',
+        type: CreateBusinessDocumentImageResponseDto,
+    })
+    async createBusinessDocumentImage(
+        @CurrentUser() user: RequestUser,
+        @Body() dto: CreateBusinessDocumentImageDto,
+    ): Promise<CreateBusinessDocumentImageResponseDto> {
+        return this.createBusinessDocumentImageUseCase.execute(user.id, dto);
+    }
+
     @Post('partner/stores/:storeId/images')
-    @UseGuards(AuthGuard, PartnerGuard)
+    // 첫 공방 등록(partner=PENDING)도 이미지 업로드 가능해야 함. 소유권은 use-case 에서 검증.
+    @UseGuards(AuthGuard)
     @ResponseMessage(
         'Pre-signed URL이 성공적으로 발급되었습니다. 5분 이내에 업로드를 완료해주세요.',
     )
@@ -136,7 +161,8 @@ export class StoreController {
 
     @Patch('partner/stores/:storeId/images/:imageId/confirm')
     @HttpCode(HttpStatus.OK)
-    @UseGuards(AuthGuard, PartnerGuard)
+    // 첫 공방 등록(partner=PENDING)도 업로드 확인 가능해야 함. 소유권은 use-case 에서 검증.
+    @UseGuards(AuthGuard)
     @ResponseMessage('이미지 업로드가 확인되었습니다.')
     @ApiOkResponse({ description: '공방 이미지 업로드 확인 성공' })
     async confirmStoreImage(

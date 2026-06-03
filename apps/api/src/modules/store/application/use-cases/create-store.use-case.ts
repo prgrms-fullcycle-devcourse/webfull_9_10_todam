@@ -1,6 +1,8 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../../../../database/prisma.service';
+import { S3Service } from '../../../../common/s3/s3.service';
+import { keyFromImageUrl } from '../../../../common/s3/s3-object.util';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import type {
     CreateStoreDto,
@@ -20,10 +22,26 @@ function parseTime(hhmm: string): Date {
 
 @Injectable()
 export class CreateStoreUseCase {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly s3: S3Service,
+    ) {}
 
     async execute(userId: string, dto: CreateStoreDto): Promise<CreateStoreResponseDto> {
         const slug = dto.slug ?? generateSlug();
+
+        // 사업자등록증 documentUrl이 있으면 presigned 업로드가 실제로 완료됐는지 검증.
+        const documentUrl = dto.businessDocument.documentUrl ?? null;
+        if (documentUrl) {
+            const exists = await this.s3.objectExists(keyFromImageUrl(documentUrl));
+            if (!exists) {
+                throw new BusinessException(
+                    'BAD_REQUEST',
+                    '사업자등록증 파일이 업로드되지 않았습니다.',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+        }
 
         const existing = await this.prisma.store.findUnique({
             where: { slug },
@@ -90,6 +108,7 @@ export class CreateStoreUseCase {
                         businessName: dto.businessDocument.businessName,
                         businessNumber: dto.businessDocument.businessNumber,
                         businessAddress: dto.businessDocument.businessAddress,
+                        documentUrl,
                     },
                 },
             },
