@@ -14,6 +14,9 @@
 - [x] (2026-06-03 reopen) 사업자등록증 파일 저장 — BE `POST /partner/business-documents/images` 신규
 - [x] (2026-06-03 reopen) 사업자등록증 파일 저장 — `BusinessDocumentDto.documentUrl` + `create-store.use-case` `document_url` 저장 복원
 - [x] (2026-06-03 reopen) 사업자등록증 파일 저장 — FE BusinessStep 실 업로드 연동(가짜 `mock://uploads` 제거) + 미리보기 + contract 반영
+- [x] (2026-06-03) 검수중/반려 영속화 — BE `GET /partner/onboarding`(AuthGuard, `{partnerStatus, store{id,status,rejectedReason}}`) 신규
+- [x] (2026-06-03) 검수중/반려 영속화 — FE 온보딩 게이트 layout(`partner/layout.tsx` + `(user)/apply/layout.tsx` + 공유 `PartnerOnboardingGate`)으로 진입 시 서버 상태 분기 렌더
+- [x] (2026-06-03) 검수중/반려 영속화 — mock(`getStoreRegistrationStatus`, `/api/v1/partner/onboarding`) → 실 `GET /partner/onboarding` 전환(경로/응답 정렬)
 
 ## Context
 
@@ -41,6 +44,10 @@
   - UI: 4단계 폼(공방 정보 / 영업 정보 / 이미지 업로드 / 예약 정보) + 제출 완료(검토중 / 반려) 화면. (`apps/web/src/features/store-registration` 기존 UI가 존재하므로 실 API 연동 집중.)
   - 연동: 실 API로 mock 전환 (`.env.local` `NEXT_PUBLIC_API_MOCKING=disabled`), 인증 헤더 연결, presigned 업로드(공방 이미지), geocode 연동.
   - **(2026-06-03 추가) 사업자등록증 파일 저장**: BE `POST /partner/business-documents/images`(store-비종속 presigned 신규), `BusinessDocumentDto.documentUrl` 추가 + `create-store.use-case`의 `document_url` 저장 복원, FE BusinessStep 실 업로드 연동 + 파일 미리보기.
+  - **(2026-06-03 추가) 검수중/반려 화면 영속화**:
+    - BE: `GET /partner/onboarding`(AuthGuard. PENDING/무파트너도 호출 가능, PartnerGuard 금지) — 토큰 userId로 partner·최신 온보딩 store 1건 조회 → `{ partnerStatus, store{id,status,rejectedReason} }` 반환.
+    - FE: 온보딩 게이트 layout 신규 — `src/app/partner/layout.tsx` + `src/app/(user)/apply/layout.tsx` + 공유 `PartnerOnboardingGate`. 진입 시 `GET /partner/onboarding` 1회 조회 → `partnerStatus` 분기(PENDING→검수중, REJECTED→반려, APPROVED/null→children 통과).
+    - 전환: 기존 mock(`getStoreRegistrationStatus`, `GET /api/v1/partner/onboarding`, `storeRegistrationStatusResultSchema`)을 실 `GET /partner/onboarding` + 중첩 응답 스키마로 전환(경로/응답 정렬).
 - Out:
   - 사업자등록증 **OCR 국세청 진위 확인**(`ocrStatus`/`verifiedAt`) — 백로그. (파일 저장 자체는 In scope로 정정, 2026-06-03 Decision Log 참조.)
   - Admin 검수 승인/반려 처리 — 별도 admin 기능.
@@ -60,6 +67,14 @@
 5-1. **(UI, 신규) 사업자등록증 실 업로드**: BusinessStep의 `mock://uploads/{name}` 가짜 documentUrl 제거 → `POST /partner/business-documents/images` 호출 → `uploadUrl`로 S3 직접 PUT → 발급된 `documentUrl`을 폼 상태에 보관 → `POST /stores` body `businessDocument.documentUrl`로 전송. 업로드된 파일 미리보기(파일명/썸네일) 노출.
 6. **(UI) geocode 연동**: 다음 주소 검색 → 카카오 로컬 API 또는 BE geocode 엔드포인트로 위경도 변환.
 7. **(연동) 제출 완료 → 검수 대기 화면**: `POST /partner/stores/{storeId}/submit` 성공 시 검토중 화면 렌더. 반려(`REJECTED`) 상태 조회 시 반려 사유 표시.
+8. **(BE, 신규) 온보딩 상태 조회 `GET /partner/onboarding`**: `AuthGuard`만 적용(PartnerGuard 금지 — 무파트너/PENDING도 호출 가능). 토큰 userId로 partner 조회 → 없으면 `{partnerStatus: null, store: null}`. 있으면 `partnerStatus = partner.status`, 해당 파트너의 최신 생성순 온보딩 store 1건 조회 → `{id, status, rejectedReason}`(store 없으면 null). `rejectedReason`은 store.status가 REJECTED일 때만 값, 그 외 null.
+9. **(FE, 신규) 온보딩 게이트 layout**: `src/app/partner/layout.tsx` + `src/app/(user)/apply/layout.tsx` 신규 → 공유 `PartnerOnboardingGate` 마운트. 게이트는 진입 시 `GET /partner/onboarding` 1회 조회 후 `partnerStatus`로 분기:
+   - `PENDING` → `StoreRegistrationComplete`(검수중), `store.id` 사용.
+   - `REJECTED` → 반려 화면(`store.rejectedReason` 노출).
+   - `APPROVED` / `null` → `children` 통과(파트너센터 / 첫 등록 폼).
+   - `StoreRegistrationComplete`의 '목록으로' 버튼은 `partnerStatus !== APPROVED`면 hidden.
+   - `StoreRegistrationFlow`의 클라 `submittedStoreId` useState 분기는 같은 세션 즉시 전환용으로 유지(새로고침 후엔 게이트가 서버 상태로 렌더).
+10. **(연동) mock → 실 전환**: `getStoreRegistrationStatus`/`/api/v1/partner/onboarding` GET mock 의존을 실 `GET /partner/onboarding`(루트 경로) + 중첩 응답 스키마(`partnerOnboardingResultSchema`)로 정렬. `partner-store-list`/`GET /partner/stores`는 **건드리지 않음**(전용 엔드포인트라 파급 없음).
 
 ## Out (단계별 완료물)
 
@@ -69,6 +84,9 @@
   - `POST /partner/stores/:storeId/images` — 공방 이미지 presigned PUT URL 발급
   - `PATCH /partner/stores/:storeId/images/:imageId/confirm` — S3 객체 존재 검증 후 PENDING→UPLOADED
   - `POST /partner/stores/:storeId/submit` — 공방 심사 제출 (DRAFT/REJECTED → PENDING)
+  - **[2026-06-03 완료] `GET /partner/onboarding` — 온보딩 상태 조회 (검수중/반려 영속화)** — 가드 `AuthGuard`만(PartnerGuard 금지). 토큰 userId로 partner 조회 → 없으면 `{partnerStatus:null, store:null}`. 있으면 `partnerStatus = partner.status` + 해당 partner의 최신 생성순(`createdAt desc`) store 1건 `{id, status, rejectedReason}`(store 없으면 null). `rejectedReason`은 `store.status === REJECTED`일 때만 값(`stores.rejected_reason` 컬럼 출처), 그 외 null. 정상상태(PENDING/REJECTED/무파트너) 모두 200, 에러는 401뿐.
+    - 신규 파일: `application/use-cases/get-partner-onboarding.use-case.ts`, `presentation/dto/get-partner-onboarding.dto.ts`. 라우트는 `store.controller.ts`에 `GET partner/onboarding`(static, `partner/stores/:storeId`보다 먼저 등록). `store.module.ts` provider 등록.
+    - shared: `packages/shared/src/contracts/store-registration.ts`에 `partnerOnboardingResultSchema`(+`partnerOnboardingStoreSchema`) 및 타입 신규. 기존 flat `storeRegistrationStatusResultSchema`는 mock 소비처 위해 유지(FE 전환은 fe 단계).
   - 주요 파일:
     - `apps/api/src/modules/store/store.module.ts`
     - `apps/api/src/modules/store/presentation/controllers/store.controller.ts`
@@ -94,6 +112,16 @@
   - **`apps/web/src/features/store/registration/queries.ts` (2026-06-03 완료)** — `useUploadBusinessDocument` mutation 신설(`useGeocode` 패턴): presigned 발급 → `uploadToPresignedUrl` S3 PUT → `{documentUrl}` 반환.
   - `apps/web/src/features/store/registration/model/store.ts` — `business.documentUrl` 초기 null / 필수조건 `!!b.documentUrl` 유지. mock 문자열 가정 코드 없음(변경 불필요).
   - `apps/web/src/features/store/registration/queries.ts` — `useSubmitStoreRegistration` 을 초안생성→이미지 presigned 업로드/확인(순차)→제출 오케스트레이션으로 재작성, `storeId` 반환. `useStoreReviewStatus` 신설.
+  - **[2026-06-03 완료] 검수중/반려 영속화 — FE 온보딩 게이트 layout (fe)**:
+    - `apps/web/src/features/store/registration/api.ts` — `getPartnerOnboarding()` 신규(`GET /partner/onboarding` 루트 경로, MSW 미가로챔 → 실 BE, 응답 `PartnerOnboardingResult`). 기존 mock `getStoreRegistrationStatus`(`/api/v1/partner/onboarding`) 제거.
+    - `apps/web/src/features/store/registration/queries.ts` — `usePartnerOnboarding()` query hook 신규(진입 1회 조회). 기존 `useStoreRegistrationStatus` 제거.
+    - `apps/web/src/features/store/registration/ui/PartnerOnboardingGate.tsx` (신규) — `usePartnerOnboarding()` 조회 → `partnerStatus` 분기: PENDING/REJECTED & store 존재 → `StoreRegistrationComplete`(store.id, partnerStatus 전달), APPROVED/null/조회실패 → children 통과. 로딩 중 null.
+    - `apps/web/src/app/partner/layout.tsx` (신규) + `apps/web/src/app/(user)/apply/layout.tsx` (신규) — 동일 `PartnerOnboardingGate` 로 영역 전체 wrap.
+    - `apps/web/src/features/store/registration/ui/StoreRegistrationComplete.tsx` — `partnerStatus?: PartnerStatus|null` prop 추가. `partnerStatus` 가 전달되고 APPROVED 아니면 하단 '홈으로'(BottomBar) 버튼 hidden(`showBottomAction`). 미전달(같은 세션 제출 직후 플로우)이면 기존 버튼 유지.
+    - `apps/web/src/app/partner/page.tsx` — 기존 `useStoreRegistrationStatus` 기반 검수중 리다이렉트 로직 제거(게이트가 layout 에서 처리). static 컴포넌트로 단순화.
+    - `apps/web/src/features/store/registration/index.ts` — `PartnerOnboardingGate`/`usePartnerOnboarding` export, `useStoreRegistrationStatus` export 제거.
+    - `StoreRegistrationFlow` 의 `submittedStoreId` useState 즉시 전환 유지(같은 세션 UX). 새로고침 후엔 layout 게이트가 서버 상태로 렌더.
+    - 검증: `@todam/shared` typecheck → `web typecheck`/`lint` 통과(0 errors). MSW `/api/v1/partner/onboarding` 핸들러는 dead code 로 잔존(실 경로 무영향).
   - `apps/web/.env.local` — `NEXT_PUBLIC_API_MOCKING=disabled`, `NEXT_PUBLIC_API_URL=http://localhost:4000`.
   - 인증: `apps/web/src/shared/api/client.ts` 가 `getAuthToken()` → `Authorization: Bearer` 자동 주입(기존 패턴 재사용, 변경 없음).
   - 미해결(재plan 필요): geocode·slug-availability 실 BE 미존재. contract 스냅샷에도 미정의 → `api.ts` 에서 MSW 경로 유지(`/api/v1/...`)로 표시만 남김. mock disabled 전환 시 두 호출 및 기타 MSW 의존 화면 영향 — Risks 참조.
@@ -132,6 +160,12 @@
   - store-비종속 presigned 업로드 엔드포인트 **신규**(`POST /partner/business-documents/images`) 필요 — 사업자등록증은 `POST /stores` body의 `businessDocument`에 포함돼 **store 생성 전**에 업로드돼야 하므로(닭-달걀), store-scoped 이미지 패턴(`POST /partner/stores/:storeId/images`) 재사용 불가.
   - `BusinessDocumentDto`에 `documentUrl` 필드 추가, `create-store.use-case`가 `business_documents.document_url` 저장하도록 복원(현재 미사용 → null). `business_documents.document_url` nullable 컬럼은 이미 존재(migration `20260601090000_business_document_url_nullable`).
   - **confirm 단계 생략**(단순화): 업로드 후 confirm 핸드셰이크 없이 `POST /stores` 시점에 `businessDocument.documentUrl`만 받는다. 객체 존재 검증은 `POST /stores` use-case에서 `s3.objectExists(documentUrl)`로 수행.
+- **2026-06-03: 검수중/반려 화면 영속화 — 전용 200 엔드포인트 채택(BOSS 결정, contract 정식 스냅샷).** Follow-up 노트("전용 GET /partner/onboarding으로 구현 예정")를 정식 contract로 확정한다.
+  - **bundle 방식(`GET /partner/stores` 확장) 폐기**: 목록 엔드포인트에 온보딩 상태를 끼워넣지 않고 책임을 분리한 전용 200 엔드포인트(`GET /partner/onboarding`)를 둔다. `partner-store-list`/`GET /partner/stores`는 무변경(파급 없음).
+  - **가드 = AuthGuard**(PartnerGuard 금지): 무파트너/PENDING/REJECTED 사용자도 자기 온보딩 상태를 조회해야 하므로 PartnerGuard를 걸면 안 된다. 가드 정책표(온보딩=AuthGuard, 파트너센터=PartnerGuard)와 일관.
+  - **게이트 키 = `partnerStatus`**(storeStatus 아님): 추가 공방 등록 시에도 partner는 APPROVED 불변이므로 게이트가 파트너센터/등록 폼을 통과시킨다(추가 공방의 PENDING store가 전체 진입을 막지 않음). store는 검수중/반려 화면의 표시 데이터(id/rejectedReason) 용도.
+  - **응답 형태 = 중첩 `{partnerStatus, store{...}}`**: 기존 flat mock `storeRegistrationStatusResultSchema`(partnerId/storeId/partnerStatus/storeStatus/rejectedReason)를 중첩 형태로 정리. partner 유무로 한 단계, store 유무로 또 한 단계 분기가 명확해 게이트 로직에 유리. null 처리: partner 없음→`{partnerStatus:null, store:null}`, store 없음→`store:null`, `rejectedReason`은 REJECTED일 때만 값.
+  - 정상상태(PENDING/REJECTED 포함)는 모두 200으로 표현. 에러는 401(미인증)뿐.
 
 ## Outcome
 
@@ -139,7 +173,7 @@
 - Follow-up: Admin 검수(승인/반려) — 별도 admin plan. 반려 후 재제출(공방 수정) — 별도 기능. 사업자등록증 **OCR/국세청 진위 확인(`ocrStatus`/`verifiedAt`)** — 백로그. (파일 저장 자체는 2026-06-03 IN scope로 정정.)
 - Follow-up: **추가 공방 등록 APPROVED 가드 구현** — contract `PARTNER_NOT_APPROVED`(403) 추가 + MSW `/partner/onboarding` status 게이트 + FE 403 토스트. (규칙=Decision Log 2026-06-01, 현재 미구현 — Risks 참조.)
 - Follow-up: **BE slug-availability 엔드포인트 추가** (별도 be) — 현재 slug 중복확인은 MSW mock 의존(`/api/v1/partner/stores/slug-availability`). 실 BE 엔드포인트 신설 후 FE `checkSlug` 경로를 루트 실 API 로 전환. 제출 시점 `409 SLUG_CONFLICT` 는 이미 실 연동됨.
-- Follow-up: **검수중/반려 화면 영속화(새로고침/전 진입 시 유지)** = 전용 `GET /partner/onboarding`(AuthGuard, `{ partnerStatus, store{id,status,rejectedReason} }` 반환 — 기존 mock `storeRegistrationStatusResultSchema`를 실 BE로 승격)으로 구현 예정. 게이트 키=partnerStatus. **별도 작업(미착수)** — 상세 contract는 구현 착수 시 스냅샷. (2026-06-03 BOSS 결정: bundle 방식(GET /partner/stores 확장) 폐기, 책임분리 위해 전용 200 엔드포인트 채택.)
+- ~~Follow-up: 검수중/반려 화면 영속화~~ → **2026-06-03 본 plan In scope로 승격, contract 스냅샷 완료**(아래 API Contract #5 `GET /partner/onboarding`). Status·Scope·Plan·Decision Log 반영. 구현 대기(미체크).
 
 ## API Contract (스냅샷)
 
@@ -385,5 +419,82 @@
   - `403 FORBIDDEN` — 공방 소유 권한 없음
   - `409 INVALID_STORE_STATUS` — DRAFT/REJECTED 외 상태
   - `500 INTERNAL_SERVER_ERROR`
+
+---
+
+#### 5. `GET /partner/onboarding` — 온보딩 상태 조회 (검수중/반려 영속화)
+
+- 가드: **`AuthGuard`** (User 이상). **PartnerGuard 금지** — 무파트너/PENDING/REJECTED 사용자도 자기 온보딩 상태를 조회해야 함. (온보딩 상태조회라 AuthGuard. 파트너센터 기능과 가드 정책 일관.)
+- Request Headers: `Authorization: Bearer {accessToken}`
+- Path/Query Params: 없음
+- Request Body: 없음
+- 시스템 처리: 토큰 `userId`로 partner 조회.
+  - partner 없음 → `{ partnerStatus: null, store: null }`.
+  - partner 있음 → `partnerStatus = partner.status`. 해당 파트너의 **최신 생성순(created_at desc) 온보딩 store 1건** 조회 → `store = { id, status, rejectedReason }`. store 없음 → `store: null`.
+  - `rejectedReason` — `store.status === REJECTED`일 때 반려 사유 문자열, 그 외 모든 상태에서 `null`.
+- 응답 데이터 스키마 (`data`):
+
+  | 필드 | 타입 | 설명 |
+  |------|------|------|
+  | `partnerStatus` | `PartnerStatus \| null` | `PENDING`/`APPROVED`/`REJECTED`/`SUSPENDED`/`TERMINATED`. partner 없으면 null |
+  | `store` | `object \| null` | 최신 온보딩 store 1건. 없으면 null |
+  | `store.id` | string(UUID) | 공방 ID |
+  | `store.status` | `StoreStatus` | `DRAFT`/`PENDING`/`PUBLISHED`/`REJECTED`/`SUSPENDED` |
+  | `store.rejectedReason` | `string \| null` | `store.status === REJECTED`일 때만 값, 그 외 null |
+
+  > FE 게이트 분기 키 = `partnerStatus`. `PENDING`→검수중 화면(store.id 사용), `REJECTED`→반려 화면(store.rejectedReason), `APPROVED`/`null`→children 통과. (추가 공방 등록 시에도 partner는 APPROVED 불변이라 게이트가 막지 않음.)
+
+- Response `200 OK` (partner 있음, 검수중):
+  ```json
+  {
+    "statusCode": 200,
+    "timestamp": "2026-06-03T00:00:00.000Z",
+    "path": "/partner/onboarding",
+    "message": "온보딩 상태를 조회했습니다.",
+    "data": {
+      "partnerStatus": "PENDING",
+      "store": {
+        "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+        "status": "PENDING",
+        "rejectedReason": null
+      }
+    },
+    "error": null
+  }
+  ```
+- Response `200 OK` (반려):
+  ```json
+  {
+    "statusCode": 200,
+    "timestamp": "2026-06-03T00:00:00.000Z",
+    "path": "/partner/onboarding",
+    "message": "온보딩 상태를 조회했습니다.",
+    "data": {
+      "partnerStatus": "REJECTED",
+      "store": {
+        "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+        "status": "REJECTED",
+        "rejectedReason": "사업자등록증 이미지가 식별되지 않습니다. 재첨부 후 다시 제출해 주세요."
+      }
+    },
+    "error": null
+  }
+  ```
+- Response `200 OK` (무파트너 / 첫 등록 전):
+  ```json
+  {
+    "statusCode": 200,
+    "timestamp": "2026-06-03T00:00:00.000Z",
+    "path": "/partner/onboarding",
+    "message": "온보딩 상태를 조회했습니다.",
+    "data": { "partnerStatus": null, "store": null },
+    "error": null
+  }
+  ```
+- 에러:
+  - `401 UNAUTHORIZED` — 미인증
+  - (정상상태 PENDING/REJECTED/무파트너는 모두 200으로 표현 — 에러 아님)
+
+> **contract 정리 노트**: 기존 mock `storeRegistrationStatusResultSchema`(flat: partnerId/storeId/storeName/slug/partnerStatus/storeStatus/rejectedReason/...)를 폐기하고 위 중첩 `{partnerStatus, store{id,status,rejectedReason}}` 단일 스키마로 확정. shared `packages/shared/src/contracts/store-registration.ts`에 신규 `partnerOnboardingResultSchema`로 정의(또는 기존 스키마 교체). `partner-store-list`/`GET /partner/stores`는 무변경.
 
 ---
