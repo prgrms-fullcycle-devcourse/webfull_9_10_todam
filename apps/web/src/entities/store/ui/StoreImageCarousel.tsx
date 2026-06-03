@@ -56,7 +56,11 @@ export function StoreImageCarousel({ images }: { images: StoreImage[] }) {
         const el = trackRef.current;
         drag.current.active = false;
         if (el) {
-            el.releasePointerCapture(e.pointerId);
+            try {
+                el.releasePointerCapture(e.pointerId);
+            } catch {
+                /* 캡처 없는 pointerId 면 InvalidPointerId throw — 무시 */
+            }
             // 수동 scrollLeft 변경은 CSS snap 을 트리거하지 않으므로 가까운 인덱스로 직접 스냅.
             const index = Math.round(el.scrollLeft / el.clientWidth);
             scrollToIndex(index);
