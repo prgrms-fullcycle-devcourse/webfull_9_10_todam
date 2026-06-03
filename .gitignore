@@ -10,6 +10,10 @@ coverage
 .env.local
 .env.*.local
 .env.production
+.env.test
+
+# mobile-dev 토큰 임시 파일
+.dev-login.json
 
 # 로그
 *.log

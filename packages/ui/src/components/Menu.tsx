@@ -6,9 +6,11 @@ export type MenuItem = {
   label: string;
   selected?: boolean;
   // 우측 trailing 아이콘 (selected 가 아닐 때 노출). 예: 공방 등록 '+'.
-  icon?: ReactElement<{ size?: number }>;
+  icon?: ReactElement<{ size?: number; className?: string }>;
   // 비활성 항목. native disabled 로 클릭 차단 + 흐리게 표시. 예: 클래스 1개 이하 → 순서 변경 불가.
   disabled?: boolean;
+  // 위험 액션(삭제·취소 등). 라벨·아이콘을 danger 색으로 표시.
+  danger?: boolean;
 };
 
 export type MenuProps = {
@@ -45,11 +47,11 @@ export function Menu({
           onClick={() => onItemSelect?.(index)}
           className="group flex h-10 w-full cursor-pointer items-center border-t border-border-subtle px-1 disabled:cursor-not-allowed"
         >
-          <span className="flex h-8 w-full cursor-pointer items-center justify-between gap-2.5 rounded-lg px-2 text-sm text-foreground transition-colors duration-200 ease-in-out group-hover:bg-muted group-disabled:text-foreground-disabled group-disabled:group-hover:bg-transparent">
+          <span className={["flex h-8 w-full cursor-pointer items-center justify-between gap-2.5 rounded-lg px-2 text-sm transition-colors duration-200 ease-in-out group-hover:bg-muted group-disabled:text-foreground-disabled group-disabled:group-hover:bg-transparent", item.danger ? "text-danger" : "text-foreground"].join(" ")}>
             <span>{item.label}</span>
             {item.selected ? (
               <CheckIcon size={20} className="shrink-0 text-inverse" />
-            ) : item.icon && cloneElement(item.icon, { size: 20 })}
+            ) : item.icon && cloneElement(item.icon, { size: 20, className: item.danger ? "text-danger" : item.icon.props.className })}
           </span>
         </button>
       ))}

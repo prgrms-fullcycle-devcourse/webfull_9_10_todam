@@ -10,7 +10,7 @@
 
 - [x] API 구현
 - [x] UI 구현
-- [ ] API 연동
+- [x] API 연동
 
 ## Context
 
@@ -69,6 +69,14 @@
   - 헤더 더보기: `shared/model/header-action.ts`(store) + `widgets/header` rightAction 슬롯 + `features/store/list/ui/StoreListHeaderMenu.tsx`
   - 헤더 전역 스타일: `bg-transparent`·border 제거(Header 위젯/등록 인라인 헤더)
 - 연동: `features/store/list/` `api.ts`(`getPartnerStores`) + `queries.ts`(`usePartnerStores`). 계약 `packages/shared/.../store-list.ts`.
+- 연동(실 BE 전환, 2026-06-03):
+  - contract drift 검증 PASS — BE DTO(`apps/api/.../list-partner-stores.dto.ts`: id/name/ownerName/status(StoreStatus)/createdAt + `{ stores: [] }`) ↔ shared zod(`store-list.ts`) ↔ plan 스냅샷이 1:1 일치. `StoreStatus`(DRAFT|PENDING|PUBLISHED|REJECTED|SUSPENDED)도 `@prisma/client`·`@todam/shared` 동일.
+  - mock→실 BE 전환: `apps/web/src/mocks/handlers.ts`에서 `GET */api/v1/partner/stores` mock 핸들러 제거 + 미사용 import(`listPartnerStores`, `PartnerStoreListResult`) 정리. 핸들러 미등록 → MSW `onUnhandledRequest:'bypass'`(기존 `MswProvider` 설정)로 해당 요청만 실 BE로 통과. 다른 화면 mock은 그대로 유지.
+  - env: 기존 패턴 그대로. `apps/web/.env` `NEXT_PUBLIC_API_URL=http://localhost:4000`(apiFetch BASE_URL), `NEXT_PUBLIC_API_MOCKING=enabled`(전역 mock 유지). 신규 env 추가 없음.
+  - 연결 지점: `app/partner/stores/page.tsx` → `usePartnerStores()` → `getPartnerStores()` → `apiFetch('/api/v1/partner/stores')`. 봉투 언래핑은 `shared/api/client.ts` 단일 지점.
+  - 에러/상태: 401/403/500/error≠null은 `apiFetch`가 `ApiError` throw → react-query `isError`로 page에서 공통 오류 UI. 빈배열은 `stores.length===0` → `EmptyState`. 로딩 `isLoading`. (contract상 상태별 분기 표기 요구 없음 — 공통 오류 처리 유지.)
+  - 검증: `pnpm --filter web typecheck` PASS, `eslint handlers.ts` clean.
+  - 메모: `mocks/db.ts` `listPartnerStores()`는 미사용 export로 남김(시드/후속 재사용 여지, 제거는 별도).
 - 부수: 등록 플로우 `returnTo` prop 추가(`/partner/stores/new` → 닫기 시 리스트 복귀).
 
 ## Risks
@@ -104,9 +112,8 @@
 
 ## Outcome
 
-- Status: UI·연동(mock) 완료. 실 BE(apps/api) + CONTRACT-1 확정 + 상세화면/공방전환 후속.
+- Status: **완료 (2026-06-03)** — UI + 실 BE 연동 완료. `GET /partner/stores`(실 BE, AuthGuard+PartnerGuard) 구현·계약 1:1, FE list/api.ts 루트 경로 전환 + MSW mock 핸들러 제거. APPROVED 파트너 토큰으로 목록 조회 확인.
 - Follow-up:
-  - 실 `GET /api/v1/partner/stores` BE 구현 + 계약 합의(ownerName/제외필드).
   - CONTRACT-1(사업자 승인 상태 표기) 기획·BE 확정.
   - DRAFT/REJECTED Badge 디자인 확정.
   - 더보기 외 항목·페이지네이션(CONTRACT-3)·현재선택 강조(CONTRACT-2).
