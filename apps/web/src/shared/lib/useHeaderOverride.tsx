@@ -66,7 +66,9 @@ export function useHeaderOverride({
     const hasOnBack = !!onBack;
     const hasOnClose = !!onClose;
 
-    useLeaveGuard(enabled && guardDirty);
+    // 새로고침/탭닫기 + 브라우저/제스처 뒤로가기(popstate) 가드.
+    // popstate 시 onBack(=dirty 이탈 확인 모달)을 재사용한다.
+    useLeaveGuard(enabled && guardDirty, () => onBackRef.current?.());
 
     useEffect(() => {
         if (!enabled) return;
