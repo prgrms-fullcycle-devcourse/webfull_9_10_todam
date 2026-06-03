@@ -13,6 +13,7 @@ import { Header } from '@/widgets/header';
  * - 게이트 영역(/partner·/apply)에서만 GET /partner/onboarding 조회(고객 라우트는 미조회).
  * - 검수중(PENDING)/반려(REJECTED) → Header·BottomNav 없이 StoreRegistrationComplete 전체 takeover.
  * - 무파트너(null)가 /partner 진입 → /apply 로 리다이렉트(파트너센터 영역).
+ * - 반려 후 정보수정 라우트(/partner/stores/{id}/business·edit)는 차단 예외 → 재제출 진입 가능.
  * - 그 외 → Header + children + BottomNav 정상 chrome.
  * 게이트 키 = partnerStatus (storeStatus 아님).
  */
@@ -24,6 +25,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     const isApplyArea = pathname === '/apply' || pathname.startsWith('/apply/');
     const isGated = isPartnerArea || isApplyArea;
 
+    // 반려 후 재제출용 편집 라우트는 게이트 예외(차단 시 정보수정 진입 불가 루프).
+    // /partner/stores/{id}/business, /partner/stores/{id}/edit/*
+    const isStoreEditRoute = /^\/partner\/stores\/[^/]+\/(business|edit)(\/|$)/.test(pathname);
+
     const { data, isLoading, isError } = usePartnerOnboarding(isGated);
 
     const partnerStatus = data?.partnerStatus ?? null;
@@ -31,6 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
     const blocking =
         isGated &&
+        !isStoreEditRoute &&
         !isError &&
         store !== null &&
         (partnerStatus === PartnerStatus.PENDING || partnerStatus === PartnerStatus.REJECTED);
@@ -53,7 +59,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 storeId={store.id}
                 partnerStatus={partnerStatus}
                 onClose={() => router.push('/')}
-                onEditInfo={() => router.push('/apply')}
+                onEditInfo={() => router.push(`/partner/stores/${store.id}/business`)}
             />
         );
     }
