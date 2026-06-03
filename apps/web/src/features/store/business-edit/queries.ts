@@ -35,15 +35,22 @@ export function useBusinessEditStoreDetail(storeId: string) {
 
 // 사업자 정보 수정. 성공 시:
 //  - business-edit 상세 캐시 무효화(상태 PENDING 전이 반영)
-//  - 온보딩 캐시 무효화 → 루트 AppShell 게이트가 재심사(PENDING) 즉시 반영.
 export function useUpdateBusinessDocument(storeId: string) {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (body: BusinessDocumentUpdateRequest) => updateBusinessDocument(storeId, body),
+        // 캐시 stale 표시만. 실제 fresh 보장은 화면 전환 직전 refetchOnboardingThenGo() 에서 await.
+        // (검수중/반려 화면으로 네비하기 전에 그 화면이 읽는 쿼리를 미리 fresh 시켜 깜빡임 원천 차단.)
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: [...KEY, storeId] });
-            // usePartnerOnboarding queryKey: ['partner','onboarding','onboarding']
             qc.invalidateQueries({ queryKey: ['partner', 'onboarding'] });
         },
     });
+}
+
+// 저장 후 네비 직전 호출: 검수중/반려 화면이 읽는 onboarding 네임스페이스 쿼리(onboarding + review)를
+// inactive 포함 전부 refetch 완료까지 await → 목적지 화면이 처음부터 PENDING(검수중)으로 렌더.
+export function useRefreshOnboardingThenGo() {
+    const qc = useQueryClient();
+    return () => qc.refetchQueries({ queryKey: ['partner', 'onboarding'], type: 'all' });
 }

@@ -18,6 +18,7 @@ import { useToast } from '@/shared/model';
 import { ImageUploadField, type ImageUploadGridItem } from '@/shared/ui';
 import {
     useBusinessEditStoreDetail,
+    useRefreshOnboardingThenGo,
     useUpdateBusinessDocument,
     useUploadBusinessDocument,
 } from '../queries';
@@ -80,6 +81,7 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
 
     const mutation = useUpdateBusinessDocument(storeId);
     const uploadDoc = useUploadBusinessDocument();
+    const refreshOnboarding = useRefreshOnboardingThenGo();
     const saving = mutation.isPending;
 
     // 업로드한 파일의 로컬 미리보기 URL. 이미지일 때만 썸네일(PDF 는 라벨 유지). (등록 BusinessStep 동일 패턴)
@@ -162,6 +164,8 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
                 documentUrl: form.documentUrl,
             });
             push({ message: '사업자 정보가 수정되어 재심사를 요청했어요.' });
+            // 검수중 화면이 읽는 onboarding/review 쿼리를 fresh 시킨 뒤 네비 → 반려 깜빡임 차단.
+            await refreshOnboarding();
             router.push(`/partner/stores/${storeId}`);
         } catch (err) {
             push({
