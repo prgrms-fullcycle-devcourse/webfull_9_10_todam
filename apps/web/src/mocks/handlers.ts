@@ -35,7 +35,6 @@ import {
     type BusinessDocumentUpdateResult,
     type ToggleFavoriteResult,
     type FavoriteStoreListResult,
-    type PartnerStoreListResult,
     type ProgramDetailResult,
     type ProgramEditResult,
     type ProgramImageUploadResult,
@@ -68,7 +67,6 @@ import {
     isSlugTakenByOther,
     listFavoriteStores,
     listMyReservations,
-    listPartnerStores,
     mockGeocode,
     nowIso,
     toggleFavorite,
@@ -96,12 +94,8 @@ function fail(path: string, statusCode: number, code: string, message: string) {
 const API = '*/api/v1';
 
 export const handlers = [
-    // 내 공방 목록 조회 (파트너센터) — 본인 소유 공방 전체, 최신 생성순
-    http.get(`${API}/partner/stores`, () => {
-        const path = '/api/v1/partner/stores';
-        const result: PartnerStoreListResult = { stores: listPartnerStores() };
-        return ok(path, result, '내 공방 목록이 성공적으로 조회되었습니다.');
-    }),
+    // 내 공방 목록 조회 (파트너센터)는 실 BE(apps/api) 연동.
+    // mock 핸들러 미등록 → onUnhandledRequest:'bypass' 로 NEXT_PUBLIC_API_URL(실 BE)로 통과.
 
     // 공방 URL(slug) 중복 확인
     http.get(`${API}/partner/stores/slug-availability`, ({ request }) => {

@@ -1,17 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import type { ArtworkPhoto } from '@todam/shared';
 
 import { Stepper } from '@/entities/artwork';
 import { ApiError } from '@/shared/api';
+import { useModal } from '@/shared/model';
 import { useArtworkDetail } from '../queries';
 
 import { ArtworkDetailEmpty } from './ArtworkDetailEmpty';
 import { ArtworkDetailError } from './ArtworkDetailError';
-import { ImageModal } from './ImageModal';
+
+// 작품 이미지 확대 패널 (Figma `8505:16496`). 오버레이·Esc·닫기는 전역 AppModal 이 처리.
+// D1: BE 정본은 thumbnailUrl 만 보장. imageUrl 있으면 우선.
+function ArtworkImageView({ photo }: { photo: ArtworkPhoto }) {
+    const src = photo.imageUrl ?? photo.thumbnailUrl;
+    return (
+        <div
+            className="h-80 w-80 overflow-hidden rounded-[32px] bg-muted"
+            onClick={(e) => e.stopPropagation()}
+        >
+            <img src={src} alt="작품 이미지" className="h-full w-full object-cover" />
+        </div>
+    );
+}
 
 // 작품 상세 클라이언트.
 // 서버 컴포넌트(page.tsx) 가 artworkId 만 넘기고 동적 동작은 본 컴포넌트가 캡슐화.
@@ -29,7 +43,7 @@ export type ArtworkDetailClientProps = {
 export function ArtworkDetailClient({ artworkId }: ArtworkDetailClientProps) {
     const router = useRouter();
     const { data, error, isLoading, isError } = useArtworkDetail(artworkId);
-    const [selectedPhoto, setSelectedPhoto] = useState<ArtworkPhoto | null>(null);
+    const { open: openModal } = useModal();
 
     // 401 → /login 리다이렉트 (선행 예약 상세 패턴 일치).
     useEffect(() => {
@@ -77,13 +91,9 @@ export function ArtworkDetailClient({ artworkId }: ArtworkDetailClientProps) {
                 <div className="pt-0">
                     <Stepper
                         timeline={artwork.timeline}
-                        onSelectPhoto={(photo) => setSelectedPhoto(photo)}
+                        onSelectPhoto={(photo) => openModal(<ArtworkImageView photo={photo} />)}
                     />
                 </div>
-            )}
-
-            {selectedPhoto && (
-                <ImageModal photo={selectedPhoto} onClose={() => setSelectedPhoto(null)} />
             )}
         </main>
     );

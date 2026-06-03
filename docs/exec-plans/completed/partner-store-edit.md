@@ -10,7 +10,7 @@
 
 - [x] API 구현
 - [x] UI 구현
-- [ ] API 연동
+- [x] API 연동 (실 BE 직결 — `/partner` 루트 경로, MSW 미경유. reviewer drift 0 검증)
 
 ## Context
 
@@ -98,8 +98,23 @@
   - PATCH body는 dirty 필드만 전송(DEC-2). operatingHours·images[]는 배열 전체 치환. slug 변경 시 즉시 교체(DEC-1) — 저장 후 `/stores/{slug}` 미리보기 이동.
   - 이미지 presigned 플로우(OD-3): 추가 시 POST→S3 PUT(mock)→confirm, X 클릭 시 DELETE, 최종 반영은 PATCH images[].
   - 409 STORE_SLUG_DUPLICATED 수신 시 slug 필드 중복 에러 표시(slugDuplicated 상태), 403/404 토스트 매핑.
-  - **실 BE(apps/api) 미구현 → MSW mock 바인딩 상태**: `apps/web/src/mocks/db.ts`(공방 상세 시드·부분 갱신·presigned/confirm/delete), `apps/web/src/mocks/handlers.ts`(GET/PATCH/POST images/confirm/DELETE 5종). 실 API 연결은 BE 구현 후 체크 — 현재 미체크.
+  - ~~실 BE 미구현 → MSW mock 바인딩~~ → **정정(2026-06-03): 실 BE(apps/api) 구현 완료·실 API 연동 완료**. apps/api store 모듈에 `update-store`/`delete-store-image`/`confirm-store-image`/`create-store-image`/`get-partner-store-detail` use-case + 컨트롤러 라우트(`PATCH/POST/PATCH confirm/DELETE/GET`) 전부 구현됨. `UpdateStoreDto`/`update-store.use-case`가 contract와 1:1(slug 중복 409, status 불변 DEC-3, maxCapacityPerSlot 저장 DEC-5, 부분 갱신 DEC-2). FE는 실 BE로 직결 — 아래 연동 컨벤션 참조. MSW mock(`apps/web/src/mocks/handlers.ts`의 `/api/v1` 5종)은 잔존하나 edit feature 미경유(dead, 추후 제거 가능).
   - 검증: web typecheck/lint 통과(신규 파일 0 error).
+
+### 연동 완료 내역 (2026-06-03)
+
+- contract 타입/스키마 (완료): `packages/shared/src/contracts/store-edit.ts` — `StoreEditErrorCode`, `storeImageSchema`/`StoreImage`, `partnerStoreDetailSchema`/`PartnerStoreDetail`(+`reservationIntervalMinutes`/`maxCapacityPerSlot` OD-1·DEC-5), `partnerStoreDetailResultSchema`, `storeUpdateRequestSchema`/`StoreUpdateRequest`(전 필드 optional·DEC-2 부분 갱신, `slug?`/`maxCapacityPerSlot?`/`operatingHours?`/`images?[]` 포함), `storeUpdateResultSchema`(`{id,name,slug,status,updatedAt}`), `storeImageUploadRequestSchema`/`storeImageUploadResultSchema`(presigned), `storeImageConfirmResultSchema`. `packages/shared/src/index.ts`에서 export.
+- API 클라이언트 (완료): `apps/web/src/features/store/edit/api.ts` — `getStoreDetail`(GET) / `updateStore`(PATCH) / `requestImageUpload`(POST presigned) / `putToPresignedUrl`(S3 PUT) / `confirmImageUpload`(PATCH confirm) / `deleteImage`(DELETE). contract 경로·메서드 1:1.
+- **실 API 연동 cutover (2026-06-03)**: edit/api.ts `BASE`를 `/api/v1/partner` → `/partner`(루트 경로)로 전환. 이 코드베이스 컨벤션 = `/api/v1/*`는 MSW(`*/api/v1`)가 가로채 mock, 루트 경로(`/partner/*`, apps/api global prefix 없음)는 MSW 미가로챔 → 실 BE 직결. store/detail·business-edit과 동일 패턴. GET 상세는 store/detail이 동일 엔드포인트로 실연동 검증 완료, PATCH/이미지도 실 BE 라우트로 직결.
+- 쿼리 훅 (완료): `apps/web/src/features/store/edit/queries.ts` — `useStoreDetail`(preload) / `useUpdateStore`(invalidate) / `useAddStoreImage`(presigned→PUT→confirm 연쇄 후 `{id,imageUrl}` 반환) / `useDeleteStoreImage`.
+- dirty 필드만 PATCH (DEC-2, 완료): `apps/web/src/features/store/edit/model/store.ts` `buildPatchBody`(섹션별 initial 대비 변경분만 body 적재, `operatingHours`/`convenienceInfo` 배열·객체 전체 치환) + `buildImageIds`(남은 기존+업로드 신규 id 목록, 미변경 시 undefined). `isDirty`/`isSectionValid`로 저장 버튼 게이팅.
+- 이미지 presigned 플로우 (OD-3, 완료): `StoreEditLayout.handleSave` info 섹션 — 삭제 예정 `DELETE` → pending 신규 `presigned→PUT→confirm` → 최종 id 목록을 PATCH `images[]`로 반영(저장 전 미반영, 이탈 롤백 무관). `addImageFiles`/`removeExistingImage`/`removePendingImage`로 대기 상태 관리.
+- 409 slug 중복 처리 (OD-2, 완료): `StoreEditLayout.handleSave` catch에서 `ApiError.code === STORE_SLUG_DUPLICATED` 시 `setSlugDuplicated(true)` + 토스트. `403 FORBIDDEN`/`404 STORE_NOT_FOUND` 메시지 매핑. 저장 성공 시 `AppToast` "수정된 공방 정보가 반영되었어요" + 라우팅 이동.
+- **라우팅 변경 (2026-06-03)**: 저장 성공 후 이동 대상을 공개 slug URL(`/stores/{slug}`) → **파트너 전용 공방 상세(`/partner/stores/{storeId}`, storeId 기반·slug 비종속)** 로 변경. `StoreEditLayout.handleSave`에서 `router.push(backPath)`(backPath = `returnTo ?? /partner/stores/${storeId}`). 토스트 노출 후 파트너 상세 라우팅. slug 즉시 교체 정책(DEC-1) 자체는 유지하되 저장 후 진입점은 파트너센터 상세로 통일.
+- MSW mock 바인딩 (완료, 실 BE 대체): `apps/web/src/mocks/handlers.ts` 5종 핸들러(GET 상세 / PATCH 부분 갱신·409 slug / POST presigned 201 / PATCH confirm / DELETE), `apps/web/src/mocks/db.ts` `getStoreDetail`·`updateStoreDetail`(전달 필드만 갱신·status 불변·images[] 재구성)·`isSlugTakenByOther`·`createPendingImage`/`confirmPendingImage`/`deleteStoreImage`.
+- 라우트 연결 (완료): `apps/web/src/app/partner/stores/[id]/edit/{info,business,reservation}/page.tsx` → `StoreEditLayout` section 연결.
+- 검증 (완료): `@todam/web` typecheck 통과, lint 0 error(기존 `<img>` 경고만, 신규 파일 무관), `@todam/shared` typecheck 통과.
+- 미체크(BE 후행): 실 apps/api 엔드포인트 연결.
 
 ## Risks
 
@@ -128,8 +143,8 @@
 
 ## Outcome
 
-- Status:
-- Follow-up: 공방 공개 상태 토글(게시 중/중단) 별도 기능. 주소 변경 + geocode 재변환 범위 확정.
+- Status: 완료 (2026-06-03). API 구현·UI 구현·실 BE 연동 3단계 전부 완료. reviewer drift 0 검증 통과. 저장 성공 후 파트너 전용 상세(`/partner/stores/{storeId}`) 라우팅 + 토스트.
+- Follow-up: 공방 공개 상태 토글(게시 중/중단) 별도 기능. 주소 변경 + geocode 재변환 범위 확정. MSW `/api/v1` store-edit 핸들러 5종 dead → 추후 제거.
 
 ## API Contract (스냅샷)
 

@@ -67,7 +67,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     return (
         <>
             <Header />
-            {children}
+            {/* Header·BottomNav 사이 잔여 높이만 차지. 페이지의 h-full/flex-1 이 이 박스 기준으로 해석됨. */}
+            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
             <BottomNav />
         </>
     );

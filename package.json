@@ -14,13 +14,26 @@
     "api": "turbo dev --filter=@todam/api",
     "web": "turbo dev --filter=@todam/web",
     "admin": "turbo dev --filter=@todam/admin",
-    "storybook": "turbo dev --filter=@todam/storybook"
+    "storybook": "turbo dev --filter=@todam/storybook",
+    "mobile": "node scripts/mobile-dev.mjs",
+    "all": "concurrently -n api,web,mobile -c green,cyan,magenta \"pnpm --filter @todam/api dev\" \"pnpm --filter @todam/web dev\" \"pnpm mobile\""
   },
   "lint-staged": {
-    "apps/api/**/*.ts": ["eslint --fix", "prettier --write"],
-    "apps/web/**/*.{ts,tsx}": ["eslint --fix", "prettier --write"],
-    "apps/admin/**/*.{ts,tsx}": ["eslint --fix", "prettier --write"],
-    "packages/**/*.ts": ["prettier --write"]
+    "apps/api/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "apps/web/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "apps/admin/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "packages/**/*.ts": [
+      "prettier --write"
+    ]
   },
   "pnpm": {
     "overrides": {
@@ -31,9 +44,11 @@
     }
   },
   "devDependencies": {
+    "concurrently": "^10.0.3",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.5",
     "prettier": "^3.8.3",
+    "qrcode-terminal": "^0.12.0",
     "turbo": "^2.9.14",
     "typescript": "^5.9.3"
   }

@@ -16,6 +16,7 @@ Review implementation against the active plan and API Contract.
 5. If subagents are unavailable, review inline.
 6. Compare `git diff` and relevant files against `API Contract (스냅샷)`.
 7. Report drift and phase verdicts. Only check plan Status when API 구현, UI 구현, API 연동 are all ✅ and drift is zero.
+8. (권고·비차단) Also flag local reimplementations replaceable by shared components (`packages/ui`, `apps/web/src/shared/ui`) and constants/formatters/utils that duplicate or should be promoted to `packages/shared`.
 
 ## Output
 

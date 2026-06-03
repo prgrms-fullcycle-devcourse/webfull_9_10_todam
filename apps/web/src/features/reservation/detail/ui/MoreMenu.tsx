@@ -2,28 +2,20 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { Button, EditIcon, Menu, MoreIcon, TrashIcon, type MenuItem } from '@todam/ui';
+import { Button, CloseIcon, EditIcon, Menu, MoreIcon, type MenuItem } from '@todam/ui';
+import type { ReservationDetail } from '@todam/shared';
 
-// 리뷰 상세 헤더 우측 더보기 버튼 + 메뉴보기 드롭다운 (self-contained, StoreListHeaderMenu 패턴).
-// 항목: "수정하기"(D13 30일 가드 → disabled) / "삭제하기"(danger). Figma 정본 `8507:23762`.
-const EDIT_DEADLINE_DAYS = 30;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-export type ReviewMoreMenuProps = {
-    createdAt: string;
+// 예약 상세 헤더 우측 더보기 버튼 + 메뉴보기 드롭다운 (self-contained, StoreListHeaderMenu 패턴).
+// 항목: "수정하기" / "예약 취소하기"(canCancel 시, danger).
+export type MoreMenuProps = {
+    reservation: ReservationDetail;
+    onCancel: () => void;
     onEdit: () => void;
-    onDelete: () => void;
 };
 
-export function ReviewMoreMenu({ createdAt, onEdit, onDelete }: ReviewMoreMenuProps) {
+export function MoreMenu({ reservation, onCancel, onEdit }: MoreMenuProps) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
-
-    // D13: 작성 후 30일 초과 시 "수정하기" 비활성. mount 시점 기준으로 1회 계산.
-    const [editDisabled] = useState(() => {
-        const created = new Date(createdAt).getTime();
-        return Number.isNaN(created) || created + EDIT_DEADLINE_DAYS * DAY_MS < Date.now();
-    });
 
     useEffect(() => {
         if (!open) return;
@@ -35,9 +27,17 @@ export function ReviewMoreMenu({ createdAt, onEdit, onDelete }: ReviewMoreMenuPr
     }, [open]);
 
     const actions: Array<{ item: MenuItem; run: () => void }> = [
-        { item: { label: '수정하기', icon: <EditIcon />, disabled: editDisabled }, run: onEdit },
-        { item: { label: '삭제하기', icon: <TrashIcon />, danger: true }, run: onDelete },
+        {
+            item: { label: '수정하기', icon: <EditIcon className="text-foreground-tertiary" /> },
+            run: onEdit,
+        },
     ];
+    if (reservation.canCancel) {
+        actions.push({
+            item: { label: '예약 취소하기', icon: <CloseIcon />, danger: true },
+            run: onCancel,
+        });
+    }
 
     return (
         <div ref={ref} className="relative">
