@@ -19,12 +19,30 @@ interface KakaoGeocoder {
         cb: (result: KakaoGeocoderResult[], status: string) => void,
     ) => void;
 }
+// ── 지도 렌더용 최소 타입 ─────────────────────────────────────────
+export interface KakaoLatLng {
+    getLat: () => number;
+    getLng: () => number;
+}
+export interface KakaoMap {
+    setDraggable: (v: boolean) => void;
+    setZoomable: (v: boolean) => void;
+    relayout: () => void;
+    setCenter: (latlng: KakaoLatLng) => void;
+}
+export interface KakaoMarker {
+    setMap: (map: KakaoMap | null) => void;
+}
+
 interface KakaoMapsNamespace {
     load: (cb: () => void) => void;
     services: {
         Geocoder: new () => KakaoGeocoder;
         Status: { OK: string };
     };
+    LatLng: new (lat: number, lng: number) => KakaoLatLng;
+    Map: new (container: HTMLElement, options: { center: KakaoLatLng; level: number }) => KakaoMap;
+    Marker: new (options: { position: KakaoLatLng; map?: KakaoMap }) => KakaoMarker;
 }
 
 declare global {
@@ -34,6 +52,10 @@ declare global {
 }
 
 let loading: Promise<void> | null = null;
+
+export function loadKakaoMaps(): Promise<void> {
+    return loadSdk();
+}
 
 function loadSdk(): Promise<void> {
     if (typeof window === 'undefined') return Promise.reject(new Error('no window'));

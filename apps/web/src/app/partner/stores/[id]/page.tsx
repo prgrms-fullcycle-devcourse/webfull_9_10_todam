@@ -221,17 +221,36 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                                 클래스 목록을 불러오지 못했습니다.
                             </p>
                         )}
-                        {/* 등록된 클래스 없음 → 준비 중 안내 카드 */}
+                        {/* 등록된 클래스 없음 → 안내 + 클래스 관리 진입 (관리 페이지서 등록·순서변경) */}
                         {!programs.isLoading && !programs.isError && !hasPrograms && (
-                            <DescriptionBlock title="공방 안내">
-                                새로운 클래스를 정성껏 준비 중이에요.
-                            </DescriptionBlock>
+                            <div className="flex flex-col gap-3">
+                                <DescriptionBlock title="공방 안내">
+                                    아직 등록된 클래스가 없어요. 첫 클래스를 등록해보세요.
+                                </DescriptionBlock>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full"
+                                    onClick={() => router.push(`/partner/classes?storeId=${id}`)}
+                                >
+                                    클래스 관리
+                                </Button>
+                            </div>
                         )}
+                        {/* 클래스 있음 → 목록 + 하단 클래스 관리 진입 (현재 공방 스코프) */}
                         {!programs.isLoading && !programs.isError && hasPrograms && (
                             <div className="flex flex-col gap-2">
                                 {programList.map((program) => (
                                     <PartnerClassListItem key={program.id} program={program} />
                                 ))}
+                                <Button
+                                    variant="outline"
+                                    size="lg"
+                                    className="mt-1 w-full"
+                                    onClick={() => router.push(`/partner/classes?storeId=${id}`)}
+                                >
+                                    클래스 관리
+                                </Button>
                             </div>
                         )}
                     </section>
@@ -241,7 +260,12 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                     {/* 위치 — 지도 placeholder + 주소 (실 지도 SDK 연동은 follow-up) */}
                     <SectionTitle title="위치" size="lg" />
                     <section className="py-2">
-                        <StoreLocation address={store.address} />
+                        <StoreLocation
+                            address={store.address}
+                            latitude={store.latitude}
+                            longitude={store.longitude}
+                            name={store.name}
+                        />
                     </section>
                 </div>
             </main>
