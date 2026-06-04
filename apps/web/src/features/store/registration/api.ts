@@ -107,22 +107,6 @@ export function createStoreImage(storeId: string, body: CreateStoreImageRequest)
     });
 }
 
-// presigned URL 로 S3 직접 PUT 업로드
-export async function uploadToPresignedUrl(
-    uploadUrl: string,
-    file: File,
-    contentType: string,
-): Promise<void> {
-    const res = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': contentType },
-        body: file,
-    });
-    if (!res.ok) {
-        throw new Error(`S3 업로드 실패 (${res.status})`);
-    }
-}
-
 // 3) 업로드 완료 확인 (PENDING → UPLOADED)
 export function confirmStoreImage(storeId: string, imageId: string) {
     return apiFetch<ConfirmStoreImageResult>(
