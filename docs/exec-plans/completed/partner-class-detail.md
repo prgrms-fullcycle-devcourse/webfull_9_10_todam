@@ -10,7 +10,7 @@
 
 - [x] API 구현
 - [x] UI 구현
-- [ ] API 연동
+- [x] API 연동
 
 ## Context
 
@@ -99,6 +99,21 @@
 - 검증: `tsc --noEmit` 0 에러, `nest build` 성공, `jest` 12/12 통과.
 - 비고: `partner-class-create`에 테스트 toolchain이 부재(`.spec.ts` 0개, jest 미설치)했으나 repo의 `test: jest` 스크립트 의도에 맞춰 최소 toolchain을 신설함. 공유 config(`tsconfig.json`, `package.json`) 변경 포함 — reviewer 확인 요망.
 
+### FE 연동 완료 (2026-06-04)
+
+- 추가:
+  - `apps/web/src/features/program/detail/api.ts` — `getPartnerProgramDetail(storeId, programId)` → 루트 `GET /partner/stores/{storeId}/programs/{programId}` (BASE `/partner`, store 도메인 컨벤션, apiFetch가 accessToken 부착). 응답 뷰 타입 `PartnerProgramDetailView`/`PartnerProgramDetailResultView` 신설 — Contract #1과 1:1 (images `{ imageUrl, thumbnailUrl|null }`, deliverable/childFriendly boolean, difficulty `ProgramDifficulty`, status `ProgramStatus`).
+  - `apps/web/src/features/program/detail/queries.ts` — `usePartnerProgramDetail(storeId, programId)` (react-query, `enabled: !!storeId && !!programId`, queryKey `['partner','stores',storeId,'programs',programId]`).
+- 수정:
+  - `apps/web/src/features/program/detail/index.ts` — 신규 api/queries export.
+  - `apps/web/src/app/partner/classes/[id]/page.tsx` — 데이터 소스를 `useProgramEditPreload`(edit preload, MOCK_SLUG 퍼블릭)에서 `usePartnerProgramDetail(storeId, programId)`로 교체. `use(params)`로 programId 언랩, `useSearchParams().get('storeId')`로 storeId 수신. 로딩/이미지 폴백/난이도 태그/featureTags/CTA·UI 보존.
+  - `apps/web/src/features/program/list/ui/PartnerClassListItem.tsx` — `storeId` prop 추가, 진입 링크 `/partner/classes/${program.id}?storeId=${storeId}`로 변경.
+  - `apps/web/src/app/partner/classes/page.tsx` — list 항목에 `storeId` 전달.
+  - `apps/web/src/app/partner/stores/[id]/page.tsx` — 공방 상세 내 클래스 목록 `PartnerClassListItem`에 `storeId={id}` 전달(신규 required prop 대응).
+- 연결지점: 클래스 관리 목록/공방 상세 → 클래스 상세(`?storeId=` 운반) → `GET /partner/stores/{storeId}/programs/{programId}` (DRAFT·INACTIVE·ACTIVE 전체 상태).
+- 비범위 유지: edit 화면(`/partner/classes/[id]/edit/*`)의 `useProgramEditPreload`/`MOCK_SLUG`·퍼블릭 `getProgramDetail`·MSW 퍼블릭 mock은 미변경(별도 연동 작업).
+- 검증: `apps/web` `tsc --noEmit` 0 에러, `lint` 0 error (잔여 `<img>` 경고는 전역 기존 경고).
+
 ## Risks
 
 - 파트너 전용 GET 엔드포인트 신설: API명세 DB에 미등록 엔드포인트이므로 BE에서 신규 구현 필요. Notion API명세 DB에도 추가 필요.
@@ -121,8 +136,10 @@
 
 ## Outcome
 
-- Status: 계획 수립 완료. Open decisions 전체 해소. Contract 승인 대기.
-- Follow-up: contract 승인 후 BE/FE 병렬 착수 가능. Notion API명세 DB에 `difficulty` 필드 및 파트너 GET 엔드포인트 추가 필요.
+- Status: 완료(2026-06-04). API 구현·UI·API 연동 3단계 완료, reviewer drift 0 판정.
+  - BE `GET /partner/stores/{storeId}/programs/{programId}`(AuthGuard+PartnerGuard, 전체 상태) 구현.
+  - FE: 퍼블릭 mock preload → 파트너 실 BE 훅(`usePartnerProgramDetail`) 전환, storeId `?storeId=` 쿼리 운반. 설명 빈값 안내문구 + 3줄 더보기/접기 UI.
+- Follow-up: `PartnerProgramDetailView`(Contract/BE DTO/FE 3곳 수기 중복) → packages/shared 파트너 detail zod 계약 승격 후보(비차단). edit 화면 storeId 연동은 별도.
 
 ## API Contract (스냅샷)
 
