@@ -20,7 +20,7 @@
 - Relevant design docs: DESIGN.md (작업 시작 전 확인 필요)
 - Open decisions:
   1. ~~파트너 전용 클래스 목록 GET 엔드포인트 미확인~~ → **확정: 파트너 전용 `GET /partner/stores/{storeId}/programs` 신규 추가**
-  2. **클래스 순서 변경 엔드포인트 미확인** — BE에서 엔드포인트 경로·req 스키마 확정 후 Contract 업데이트 필요.
+  2. ~~클래스 순서 변경 엔드포인트 미확인~~ → **확정(2026-06-04): `PATCH /partner/stores/{storeId}/programs/order`, body `{ programs: [{ id, sortOrder }] }`, 응답=재정렬 목록.**
   3. ~~DRAFT 상태 노출 여부~~ → **확정: DRAFT 상태 생략. ACTIVE / INACTIVE만 반환.**
   4. ~~UI 컴포넌트 규격~~ → **확정: FE 구현 시 DESIGN.md 확인하며 진행. 현재 블로커 아님.**
   5. **[BE 후속] 목록 응답 서브텍스트 필드 누락** — 디자인 서브텍스트 `난이도・소요시간・평균제작일`(예: `기본・2시간・평균 28일`) 표기 필요하나, 현 `GET /partner/stores/{storeId}/programs` 응답은 `durationMinutes`만 반환. `difficulty`(ProgramDifficulty), `leadTimeDays`(Int) 필드 미반환 → FE 서브텍스트에 소요시간만 노출됨. **BE 동시 작업 중이라 충돌 우려로 보류**, BE 측 list DTO/use-case에 두 필드 추가 후 shared `partnerProgramListItemSchema`·FE `buildProgramMetaItems` 연동 예정. (prisma Program 모델엔 `difficulty`·`leadTimeDays` 이미 존재 — 조회·매핑만 추가하면 됨. FE는 `getDifficultyLabel`(entities/program) 보유.)
@@ -56,9 +56,30 @@
 
 ## Out (단계별 완료물)
 
-- API: `GET /partner/stores/{storeId}/programs`, `PATCH /partner/stores/{storeId}/programs/order`
+- API: `GET /partner/stores/{storeId}/programs` (수정/확장 완료). `PATCH .../order`는 Open decision #2 미확정으로 범위 제외(미구현).
+  - 변경 파일:
+    - `packages/shared/src/contracts/store-programs.ts` — `partnerProgramListItemSchema` 7필드 재정합.
+    - `apps/api/src/modules/store/application/use-cases/list-partner-store-programs.use-case.ts` — prisma select(difficulty·leadTimeDays 추가, images 조인·createdAt 제거)·map 7필드.
+    - `apps/api/src/modules/store/presentation/dto/list-partner-store-programs.dto.ts` — Swagger DTO 7필드 동기화.
+  - 최종 응답 항목 필드(7): `id, title, price, durationMinutes, difficulty(BASIC|INTERMEDIATE|ADVANCED), leadTimeDays, status(DRAFT|ACTIVE|INACTIVE 전체)`.
+  - orderBy(`sortOrder asc, createdAt desc`)·소유권 403(FORBIDDEN)·404(STORE_NOT_FOUND)·Guard 유지.
+- API: `PATCH /partner/stores/{storeId}/programs/order` (신규, Open decision #2 해소·구현 완료).
+  - 신규 파일:
+    - `apps/api/src/modules/store/application/use-cases/reorder-partner-store-programs.use-case.ts` — 소유권 검증·id 집합 정확 일치 검증·`$transaction` 일괄 sortOrder 갱신·재정렬 목록 재조회.
+    - `apps/api/src/modules/store/presentation/dto/reorder-partner-store-programs.dto.ts` — 요청 DTO(`programs: [{ id: uuid, sortOrder: int }]`, `@ArrayNotEmpty`·`@ValidateNested`·`@Type`·`@IsUUID`·`@IsInt`).
+  - 변경 파일:
+    - `packages/shared/src/contracts/store-programs.ts` — `partnerProgramReorderItemSchema`·`partnerProgramReorderRequestSchema`(zod) 추가. 200 응답은 `partnerProgramListResultSchema` 재사용.
+    - `apps/api/src/modules/store/store.module.ts` — `ReorderPartnerStoreProgramsUseCase` provider 등록.
+    - `apps/api/src/modules/store/presentation/controllers/store.controller.ts` — `@Patch('partner/stores/:storeId/programs/order')` 라우트 추가(GET 과 동일 Guard·envelope·응답 DTO 7필드).
+  - 요청 바디: `{ programs: [{ id, sortOrder }] }`(non-empty). 응답 200: GET 과 동일 envelope·7필드 재정렬 전체 목록.
+  - 검증: id 집합이 공방 전체 program 집합과 정확 불일치(누락·중복·타 공방) → 400 `INVALID_PROGRAM_ORDER`. 소유권 → 403 `FORBIDDEN`. 공방 미존재 → 404 `STORE_NOT_FOUND`. sortOrder 갱신은 `$transaction` all-or-nothing.
+- 리팩토링(2026-06-04, 모듈 경계 정리): GET 목록·PATCH 순서 변경 2개 엔드포인트를 store 모듈 → program 모듈로 이전. URL·Guard·응답 7필드·400/403/404 의미 변화 없음(코드 위치만 이동).
+  - 이동 파일: use-case 2개(`list-partner-store-programs.use-case.ts`, `reorder-partner-store-programs.use-case.ts`) `store/application/use-cases/` → `program/application/use-cases/`. DTO 2개(`list-partner-store-programs.dto.ts`, `reorder-partner-store-programs.dto.ts`) `store/presentation/dto/` → `program/presentation/dto/`.
+  - 라우트: `GET partner/stores/:storeId/programs`·`PATCH partner/stores/:storeId/programs/order`를 `ProgramController`로 이전(`StoreController`에서 제거). URL 동일.
+  - 모듈: program.module provider 2개 추가, store.module provider 2개 제거.
+  - 검증: `apps/api` `tsc --noEmit` 통과, store 모듈 잔존 참조 0.
 - UI: 클래스 관리 페이지, 클래스 카드 컴포넌트, 빈 상태 화면
-- 연동: 실 API 요청/응답 contract 스키마 검증 결과
+- 연동: 실 API 요청/응답 contract 스키마 검증 결과 (미착수)
 
 ### 연동 산출물 (2026-06-04, fe)
 
@@ -96,6 +117,7 @@
 - 2026-06-01: `GET /partner/stores/{storeId}/programs` 및 순서 변경 엔드포인트가 API 명세 DB에 미등재. Open decisions로 분류, 사람 결정 대기.
 - 2026-06-01: 퍼블릭 `GET /stores/{slug}/programs`는 ACTIVE만 반환하므로 파트너 관리 목적으로는 사용 불가. 파트너 전용 엔드포인트 별도 설계 필요.
 - 2026-06-01: Decision #1 확정 — 파트너 전용 GET 신규 추가. Decision #3 확정 — DRAFT 생략, ACTIVE/INACTIVE만. Decision #4 확정 — FE 구현 시 DESIGN.md 확인으로 처리.
+- 2026-06-04: 구현 착수 중 contract↔코드 모순 발견·재정의. (1) GET 엔드포인트는 이미 Store 모듈에 구현 존재 → 신규가 아니라 **수정/확장**. (2) `capacity` 컬럼은 마이그레이션 `20260602160000_drop_capacity...`로 삭제됨 → contract에서 **제거**. (3) Decision #3 **번복**: DRAFT **포함**(파트너 본인 관리 화면, 퍼블릭 아님). (4) 응답 필드 재확정 — 피그마/FE 실사용 기준 `id,title,price,durationMinutes,difficulty,leadTimeDays,status` 7개. `thumbnailUrl`(목록 미사용)·`sortOrder`·`createdAt` 제거, `difficulty`·`leadTimeDays` 추가. FE는 mock `level`(string)을 `difficulty`(enum)+`getDifficultyLabel`로 전환 필요(별도 FE 작업).
 
 ## Outcome
 
@@ -112,11 +134,11 @@ id              string  (UUID)
 title           string  클래스명
 price           number  가격(원)
 durationMinutes number  소요시간(분)
-capacity        number  최대 정원
-thumbnailUrl    string  대표 썸네일 URL
-status          enum    ACTIVE | INACTIVE  (DRAFT 생략)
-sortOrder       number  노출 순서
+difficulty      enum    BASIC | INTERMEDIATE | ADVANCED  난이도
+leadTimeDays    number  작품 수령까지 평균 제작일
+status          enum    DRAFT | ACTIVE | INACTIVE  (파트너센터: 전체 노출)
 ```
+> 갱신(2026-06-04): 실제 코드/피그마 정합. `capacity`(컬럼 삭제됨)·`thumbnailUrl`·`sortOrder`·`createdAt` 제거. `difficulty`·`leadTimeDays` 추가. DRAFT 포함(파트너 본인 관리 화면).
 
 **deliveryOption enum** — `DELIVERY` | `PICKUP` | `CUSTOMER_SELECT`
 
@@ -125,7 +147,7 @@ sortOrder       number  노출 순서
 ### 엔드포인트
 
 #### `GET /partner/stores/{storeId}/programs` — 파트너 클래스 목록 조회
-> 확정. ACTIVE / INACTIVE만 반환. DRAFT 생략.
+> 확정(2026-06-04). 기존 구현 존재 → **수정/확장**. status enum 전체(DRAFT/ACTIVE/INACTIVE) 노출(파트너 본인 관리 화면). `sortOrder asc` 정렬은 유지하되 응답 필드로는 내리지 않음.
 - Guard: `AuthGuard`, `PartnerGuard`
 - Path: `storeId` (UUID)
 - Response `200`:
@@ -139,18 +161,17 @@ sortOrder       number  노출 순서
         "title": "물레 체험 기초반",
         "price": 45000,
         "durationMinutes": 120,
-        "capacity": 6,
-        "thumbnailUrl": "https://cdn.todam.app/programs/prog-uuid-001/thumb.jpg",
-        "status": "ACTIVE",
-        "sortOrder": 1
+        "difficulty": "BASIC",
+        "leadTimeDays": 30,
+        "status": "ACTIVE"
       }
     ]
   },
   "error": null
 }
 ```
-- Response `403`: 공방 소유 권한 없음
-- Response `404`: 공방 없음
+- Response `403`: 공방 소유 권한 없음 (`FORBIDDEN`)
+- Response `404`: 공방 없음 (`STORE_NOT_FOUND`)
 
 ---
 
@@ -185,10 +206,11 @@ sortOrder       number  노출 순서
 
 ---
 
-#### [미확인] `PATCH /partner/stores/{storeId}/programs/order` — 클래스 순서 변경
-> API 명세 DB에 해당 항목 없음. Open decision #2 해소 후 스냅샷 확정.
+#### `PATCH /partner/stores/{storeId}/programs/order` — 클래스 순서 변경
+> 확정(2026-06-04). Open decision #2 해소. body = `{ programs: [{ id, sortOrder }] }`. 응답은 재정렬된 전체 목록(GET 과 동일 7필드).
 - Guard: `AuthGuard`, `PartnerGuard`
-- Request body (추정):
+- Path: `storeId` (UUID)
+- Request body:
 ```json
 {
   "programs": [
@@ -197,7 +219,31 @@ sortOrder       number  노출 순서
   ]
 }
 ```
-- Response `200`: 순서 변경 완료
+- 검증: `programs[].id` 집합이 해당 공방의 전체 program 집합과 **정확히 일치**해야 함(누락·중복·타 공방 ID 섞임 → `400 INVALID_PROGRAM_ORDER`).
+- 트랜잭션: `sortOrder` 일괄 갱신, 실패 시 전체 rollback.
+- Response `200`: 재정렬된 전체 목록 (GET 과 동일 envelope·항목 스키마)
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "programs": [
+      {
+        "id": "prog-uuid-001",
+        "title": "물레 체험 기초반",
+        "price": 45000,
+        "durationMinutes": 120,
+        "difficulty": "BASIC",
+        "leadTimeDays": 30,
+        "status": "ACTIVE"
+      }
+    ]
+  },
+  "error": null
+}
+```
+- Response `400`: 잘못된 순서 목록 (`INVALID_PROGRAM_ORDER`)
+- Response `403`: 공방 소유 권한 없음 (`FORBIDDEN`)
+- Response `404`: 공방 없음 (`STORE_NOT_FOUND`)
 
 ---
 

@@ -17,6 +17,8 @@ import { ResponseMessage } from '../../../../common/decorators/response-message.
 import type { RequestUser } from '../../../../common/types/request-user.type';
 import { CreateProgramUseCase } from '../../application/use-cases/create-program.use-case';
 import { GetProgramDetailUseCase } from '../../application/use-cases/get-program-detail.use-case';
+import { ListPartnerStoreProgramsUseCase } from '../../application/use-cases/list-partner-store-programs.use-case';
+import { ReorderPartnerStoreProgramsUseCase } from '../../application/use-cases/reorder-partner-store-programs.use-case';
 import { CreateProgramImageUseCase } from '../../application/use-cases/create-program-image.use-case';
 import { UpdateProgramStatusUseCase } from '../../application/use-cases/update-program-status.use-case';
 import {
@@ -30,6 +32,8 @@ import {
     UpdateProgramStatusResponseDto,
 } from '../dto/update-program-status.dto';
 import { GetProgramDetailResponseDto } from '../dto/get-program-detail.dto';
+import { ListPartnerStoreProgramsResponseDto } from '../dto/list-partner-store-programs.dto';
+import { ReorderPartnerStoreProgramsDto } from '../dto/reorder-partner-store-programs.dto';
 
 @ApiTags('programs')
 @ApiBearerAuth()
@@ -41,6 +45,8 @@ export class ProgramController {
         private readonly createProgramImageUseCase: CreateProgramImageUseCase,
         private readonly updateProgramStatusUseCase: UpdateProgramStatusUseCase,
         private readonly confirmProgramImageUseCase: ConfirmProgramImageUseCase,
+        private readonly listPartnerStoreProgramsUseCase: ListPartnerStoreProgramsUseCase,
+        private readonly reorderPartnerStoreProgramsUseCase: ReorderPartnerStoreProgramsUseCase,
     ) {}
 
     @Post('partner/stores/:storeId/programs')
@@ -53,6 +59,37 @@ export class ProgramController {
         @Body() dto: CreateProgramDto,
     ): Promise<CreateProgramResponseDto> {
         return this.createProgramUseCase.execute(user.id, storeId, dto);
+    }
+
+    @Get('partner/stores/:storeId/programs')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('운영 클래스 목록이 성공적으로 조회되었습니다.')
+    @ApiOkResponse({
+        description: '운영 클래스 목록 조회 성공',
+        type: ListPartnerStoreProgramsResponseDto,
+    })
+    async listPartnerStorePrograms(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+    ): Promise<ListPartnerStoreProgramsResponseDto> {
+        return this.listPartnerStoreProgramsUseCase.execute(user.id, storeId);
+    }
+
+    @Patch('partner/stores/:storeId/programs/order')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('클래스 순서가 성공적으로 변경되었습니다.')
+    @ApiOkResponse({
+        description: '클래스 순서 변경 성공',
+        type: ListPartnerStoreProgramsResponseDto,
+    })
+    async reorderPartnerStorePrograms(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+        @Body() dto: ReorderPartnerStoreProgramsDto,
+    ): Promise<ListPartnerStoreProgramsResponseDto> {
+        return this.reorderPartnerStoreProgramsUseCase.execute(user.id, storeId, dto);
     }
 
     @Get('partner/stores/:storeId/programs/:programId')
