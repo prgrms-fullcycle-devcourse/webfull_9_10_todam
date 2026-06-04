@@ -1,6 +1,7 @@
 ---
 name: reviewer
 description: 구현 diff를 plan.md의 API Contract와 대조해 스펙 drift를 검출. API구현/UI구현/연동 각각 실제 됐는지 검증하고 Status 체크 가부를 판정.
+model: sonnet
 tools: Read, Grep, Glob, Bash
 ---
 

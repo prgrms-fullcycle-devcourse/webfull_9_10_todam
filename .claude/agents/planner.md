@@ -1,6 +1,7 @@
 ---
 name: planner
 description: 기능 하나의 실행계획(plan)을 명세 기반으로 작성. 요구사항(고정)+기능명세 읽고 API 추론 후 API명세 요구. 데이터모델/API contract를 plan.md에 스냅샷.
+model: sonnet
 tools: Read, Write, Edit, Grep, Glob, Bash
 ---
 
