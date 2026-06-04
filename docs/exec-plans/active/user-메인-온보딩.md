@@ -17,7 +17,7 @@
 -->
 
 - [ ] API 구현
-- [ ] UI 구현
+- [x] UI 구현
 - [ ] API 연동
 
 ## Context
@@ -202,8 +202,19 @@ interface UserProfile {
 ## Out (단계별 완료물)
 
 - API: <!-- 구현된 엔드포인트, 파일 -->
-- UI: <!-- 구현된 화면, 컴포넌트 -->
-- 연동: <!-- 연결 지점, 검증 결과 -->
+- UI: (피그마 `온보딩.png` 시안 기준 — 카드 선택 → "시작하기" 확정 2단계 모델)
+  - 온보딩 바텀시트 컴포넌트 — `apps/web/src/features/onboarding/ui/OnboardingSheet.tsx`
+    (제목 "토담에 오신 것을 환영합니다!"/부제 "어떤 서비스부터 시작할까요?". 이용 유형 2열 카드(공방 예약하기/공방 등록하기) — 탭 시 `useState`로 선택, 선택 카드는 테두리만 초록(`border-primary`). 하단 "시작하기" CTA는 미선택 시 비활성(`actionDisabled`)→선택 시 활성. "건너뛰기"(subLabel) 시 안내 토스트("공방 등록은 마이페이지에서 언제든 가능해요.") 노출). 콜백 주입형(onSelectReserve/onSelectRegister/onSkip).
+  - 온보딩 전용 시트 셸 — `apps/web/src/features/onboarding/ui/OnboardingSheetShell.tsx`
+    (공통 컴포넌트 `@todam/ui` 수정 금지 원칙에 따라 `StandardBottomSheet`를 고치지 않고, 동일 셸 마크업을 피처 내부에 자체 구현 + primary CTA `actionDisabled` 지원. `@todam/ui`의 `Button`은 사용만 함).
+  - 노출 트리거 훅 — `apps/web/src/features/onboarding/model/useOnboardingSheet.tsx`
+    (isOnboarded API 필드 부재 → 부모가 `shouldShow` prop 으로 노출 시점 주입, AppSheet host 에 content 주입).
+  - 배럴 — `apps/web/src/features/onboarding/index.ts`
+  - 분기/네비게이션: (시트 카드 선택 후 "시작하기"로 확정) 공방 예약하기→시트 닫기(+onSelectReserve), 공방 등록하기→시트 닫고 `/partner/stores/new` 라우팅(라우트 존재 확인됨)(+onSelectRegister override 가능), 건너뛰기→시트 닫고 토스트(+onSkip).
+  - Storybook: 앱-피처 시트(StoreEditSheet/ClassEditSheet)와 동일하게 디자인시스템 외 컴포넌트는 스토리 미등록(컨벤션 준수).
+- 연동: 온보딩-저장 API 미확정(Open decision #1)으로 미연동. 저장 API 호출 코드는 의도적으로 작성하지 않음.
+  TODO(온보딩-저장-API) 주석 위치 — `OnboardingSheet.tsx` 의 handleReserve/handleRegister/handleSkip 내부, `useOnboardingSheet.tsx` 상단 노출 판단 주석.
+  실제 API 필드(isOnboarded) 의존 코드 없음 — 노출은 `shouldShow` prop 주입형. Open decision #1 확정 후 부모에서 콜백/shouldShow 에 연동.
 
 ## Risks
 
