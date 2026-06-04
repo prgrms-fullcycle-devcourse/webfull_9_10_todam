@@ -28,7 +28,6 @@ import { SubmitStoreUseCase } from '../../application/use-cases/submit-store.use
 import { ListPartnerStoresUseCase } from '../../application/use-cases/list-partner-stores.use-case';
 import { GetPartnerStoreDetailUseCase } from '../../application/use-cases/get-partner-store-detail.use-case';
 import { GetPartnerOnboardingUseCase } from '../../application/use-cases/get-partner-onboarding.use-case';
-import { ListPartnerStoreProgramsUseCase } from '../../application/use-cases/list-partner-store-programs.use-case';
 import { UpdateStoreUseCase } from '../../application/use-cases/update-store.use-case';
 import { UpdateBusinessDocumentUseCase } from '../../application/use-cases/update-business-document.use-case';
 import { DeleteStoreImageUseCase } from '../../application/use-cases/delete-store-image.use-case';
@@ -46,7 +45,6 @@ import { SubmitStoreResponseDto } from '../dto/submit-store.dto';
 import { ListPartnerStoresResponseDto } from '../dto/list-partner-stores.dto';
 import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detail.dto';
 import { GetPartnerOnboardingResponseDto } from '../dto/get-partner-onboarding.dto';
-import { ListPartnerStoreProgramsResponseDto } from '../dto/list-partner-store-programs.dto';
 import { UpdateStoreDto, UpdateStoreResponseDto } from '../dto/update-store.dto';
 import {
     UpdateBusinessDocumentDto,
@@ -66,7 +64,6 @@ export class StoreController {
         private readonly listPartnerStoresUseCase: ListPartnerStoresUseCase,
         private readonly getPartnerStoreDetailUseCase: GetPartnerStoreDetailUseCase,
         private readonly getPartnerOnboardingUseCase: GetPartnerOnboardingUseCase,
-        private readonly listPartnerStoreProgramsUseCase: ListPartnerStoreProgramsUseCase,
         private readonly updateStoreUseCase: UpdateStoreUseCase,
         private readonly updateBusinessDocumentUseCase: UpdateBusinessDocumentUseCase,
         private readonly deleteStoreImageUseCase: DeleteStoreImageUseCase,
@@ -107,21 +104,6 @@ export class StoreController {
         @CurrentUser() user: RequestUser,
     ): Promise<GetPartnerOnboardingResponseDto> {
         return this.getPartnerOnboardingUseCase.execute(user.id);
-    }
-
-    @Get('partner/stores/:storeId/programs')
-    @HttpCode(HttpStatus.OK)
-    @UseGuards(AuthGuard, PartnerGuard)
-    @ResponseMessage('운영 클래스 목록이 성공적으로 조회되었습니다.')
-    @ApiOkResponse({
-        description: '운영 클래스 목록 조회 성공',
-        type: ListPartnerStoreProgramsResponseDto,
-    })
-    async listPartnerStorePrograms(
-        @CurrentUser() user: RequestUser,
-        @Param('storeId') storeId: string,
-    ): Promise<ListPartnerStoreProgramsResponseDto> {
-        return this.listPartnerStoreProgramsUseCase.execute(user.id, storeId);
     }
 
     @Get('partner/stores/:storeId')

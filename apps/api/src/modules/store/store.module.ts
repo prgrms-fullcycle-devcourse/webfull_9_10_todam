@@ -8,7 +8,6 @@ import { SubmitStoreUseCase } from './application/use-cases/submit-store.use-cas
 import { ListPartnerStoresUseCase } from './application/use-cases/list-partner-stores.use-case';
 import { GetPartnerStoreDetailUseCase } from './application/use-cases/get-partner-store-detail.use-case';
 import { GetPartnerOnboardingUseCase } from './application/use-cases/get-partner-onboarding.use-case';
-import { ListPartnerStoreProgramsUseCase } from './application/use-cases/list-partner-store-programs.use-case';
 import { UpdateStoreUseCase } from './application/use-cases/update-store.use-case';
 import { UpdateBusinessDocumentUseCase } from './application/use-cases/update-business-document.use-case';
 import { DeleteStoreImageUseCase } from './application/use-cases/delete-store-image.use-case';
@@ -28,7 +27,6 @@ import { StoreController } from './presentation/controllers/store.controller';
         ListPartnerStoresUseCase,
         GetPartnerStoreDetailUseCase,
         GetPartnerOnboardingUseCase,
-        ListPartnerStoreProgramsUseCase,
         UpdateStoreUseCase,
         UpdateBusinessDocumentUseCase,
         DeleteStoreImageUseCase,
