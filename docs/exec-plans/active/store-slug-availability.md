@@ -14,7 +14,7 @@
 - API 연동: 실 API 요청/응답이 contract 스키마로 연결. MSW mock 바인딩 상태는 미체크.
 -->
 
-- [ ] API 구현 — `GET /stores/slug-availability` (apps/api) 신설 + shared `SLUG_REGEX`/`slugSchema` 4~40·하이픈만 정렬
+- [x] API 구현 — `GET /stores/slug-availability` (apps/api) 신설 + shared `SLUG_REGEX`/`slugSchema` 4~40·하이픈만 정렬
 - [x] UI 구현 — 기존 UI 존재(BusinessStep slug input, InfoEditSection). 신규 UI 없음 → N/A
 - [ ] API 연동 — FE 2곳 mock→실 API 전환 + mock/경로 `/stores/slug-availability` 통일 (별도 후속 plan으로 Out, 아래 Scope 참조)
 
@@ -82,7 +82,13 @@
 
 ## Out (단계별 완료물)
 
-- API: <!-- 구현된 엔드포인트, 파일 -->
+- API: `GET /stores/slug-availability` (`@UseGuards(AuthGuard)`, query `slug` 필수 + `excludeStoreId?`). res `data` = `{ slug, available }` (shared `slugAvailabilityResultSchema` 일치). 검증: slug 미존재/본인 동일 slug→available:true, 타 store 점유→false, slug 누락·형식위반→400 `BAD_REQUEST`, excludeStoreId 미존재/타인→404 `NOT_FOUND`.
+  - 파일:
+    - `apps/api/src/modules/store/presentation/controllers/store.controller.ts` — 라우트 추가(정적 `stores/*` 그룹 내 배치, 동적 세그먼트 충돌 회피).
+    - `apps/api/src/modules/store/application/use-cases/get-slug-availability.use-case.ts` — 신규 use-case(PrismaService 직접 사용 — 모듈 컨벤션). slug 형식검증 + excludeStoreId 소유권(`store.partner.userId === user.id`) + 점유 조회.
+    - `apps/api/src/modules/store/presentation/dto/slug-availability.dto.ts` — `SlugAvailabilityQueryDto` / `SlugAvailabilityResponseDto`.
+    - `apps/api/src/modules/store/store.module.ts` — provider 등록.
+  - shared(동반 정렬, OD-1): `packages/shared/src/constants/regex.ts` `SLUG_REGEX = /^[a-z0-9-]{4,40}$/`, `packages/shared/src/contracts/fields.ts` `slugSchema` 메시지 4~40·하이픈만 — **이미 정합 상태였음(추가 변경 불필요), 확인 완료**.
 - UI: 신규 없음 (기존 UI 재사용)
 - 연동: <!-- 후속 단계 -->
 
