@@ -18,14 +18,11 @@ import { geocodeAddress, type GeocodeCoords } from '@/shared/lib/kakaoGeocode';
 
 import type { StoreRegistrationForm } from './model/types';
 
-// ─── slug 중복확인 (BE 미존재 — MSW mock 유지) ────────────────────
-// 실 BE 에 slug-availability 엔드포인트가 아직 없다(별도 be 후속). 전역 mock(on) 의
-// /api/v1 핸들러가 이 경로를 가로채 mock 응답을 준다. 제출 시점 실 BE 의 409 SLUG_CONFLICT 는 별도 연동됨.
-const MOCK_BASE = '/api/v1/partner';
-
+// ─── slug 사전 중복확인
+// 등록은 신규 공방이므로 excludeStoreId 없음. 제출 시점 최종검증은 POST /stores 409 SLUG_CONFLICT
 export function checkSlug(slug: string) {
     return apiFetch<SlugAvailabilityResult>(
-        `${MOCK_BASE}/stores/slug-availability?slug=${encodeURIComponent(slug)}`,
+        `/stores/slug-availability?slug=${encodeURIComponent(slug)}`,
         { method: 'GET' },
     );
 }
