@@ -22,6 +22,7 @@ export * from './TextInput';
 export * from './Toast';
 export * from './Tag';
 export * from './Rating';
+export * from './RatingInput';
 export * from './StatusFilterChip';
 export * from './FilterDropdown';
 export * from './Toggle';
