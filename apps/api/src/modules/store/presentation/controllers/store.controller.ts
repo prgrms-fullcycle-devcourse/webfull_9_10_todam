@@ -8,6 +8,7 @@ import {
     Param,
     Patch,
     Post,
+    Query,
     UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
@@ -31,6 +32,10 @@ import { ListPartnerStoreProgramsUseCase } from '../../application/use-cases/lis
 import { UpdateStoreUseCase } from '../../application/use-cases/update-store.use-case';
 import { UpdateBusinessDocumentUseCase } from '../../application/use-cases/update-business-document.use-case';
 import { DeleteStoreImageUseCase } from '../../application/use-cases/delete-store-image.use-case';
+import { ListStoresUseCase } from '../../application/use-cases/list-stores.use-case';
+import { ListStoresQueryDto } from '../dto/list-stores.dto';
+import { ListStoresResponseDto } from '../dto/list-stores-response.dto';
+import { ListStoresQueryPipe } from '../pipes/list-stores-query.pipe';
 import { CreateStoreDto, CreateStoreResponseDto } from '../dto/create-store.dto';
 import { CreateStoreImageDto, CreateStoreImageResponseDto } from '../dto/store-image.dto';
 import {
@@ -65,7 +70,18 @@ export class StoreController {
         private readonly updateStoreUseCase: UpdateStoreUseCase,
         private readonly updateBusinessDocumentUseCase: UpdateBusinessDocumentUseCase,
         private readonly deleteStoreImageUseCase: DeleteStoreImageUseCase,
+        private readonly listStoresUseCase: ListStoresUseCase,
     ) {}
+
+    @Get('stores')
+    @HttpCode(HttpStatus.OK)
+    @ResponseMessage('공방 목록이 성공적으로 탐색되었습니다.')
+    @ApiOkResponse({ description: '공방 목록 탐색 성공', type: ListStoresResponseDto })
+    async listStores(
+        @Query(ListStoresQueryPipe) query: ListStoresQueryDto,
+    ): Promise<ListStoresResponseDto> {
+        return this.listStoresUseCase.execute(query);
+    }
 
     @Get('partner/stores')
     @HttpCode(HttpStatus.OK)
