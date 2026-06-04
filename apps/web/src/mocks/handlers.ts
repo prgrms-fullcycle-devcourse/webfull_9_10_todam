@@ -147,10 +147,10 @@ export const handlers = [
 
     // 공방 찜 등록/해제 (토글). Request body 없음 — path param storeId 만.
     // plan: docs/exec-plans/active/유저 마이 - 찜한 공방 목록 조회, 공방 찜 등록_해제.md
-    // 시뮬: ?unauth=1 → 401.
-    http.post(`${API}/stores/:storeId/favorite`, ({ params, request }) => {
+    // 실 BE 연동: 토글은 root 경로(/stores/...)로 실연동 → mock 핸들러도 prefix 없이 매칭. 시뮬: ?unauth=1 → 401.
+    http.post(`*/stores/:storeId/favorite`, ({ params, request }) => {
         const storeId = String(params.storeId);
-        const path = `/api/v1/stores/${storeId}/favorite`;
+        const path = `/stores/${storeId}/favorite`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
