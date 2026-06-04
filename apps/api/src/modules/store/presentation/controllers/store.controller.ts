@@ -19,6 +19,7 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
+import { OptionalAuthGuard } from '../../../../common/guards/optional-auth.guard';
 import { PartnerGuard } from '../../../../common/guards/partner.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../../../common/decorators/response-message.decorator';
@@ -40,6 +41,8 @@ import { DeleteStoreImageUseCase } from '../../application/use-cases/delete-stor
 import { ListStoresUseCase } from '../../application/use-cases/list-stores.use-case';
 import { AutocompleteStoresUseCase } from '../../application/use-cases/autocomplete-stores.use-case';
 import { GetSlugAvailabilityUseCase } from '../../application/use-cases/get-slug-availability.use-case';
+import { GetStoreDetailUseCase } from '../../application/use-cases/get-store-detail.use-case';
+import { ListStoreProgramsUseCase } from '../../application/use-cases/list-store-programs.use-case';
 import { ListStoresQueryDto } from '../dto/list-stores.dto';
 import { ListStoresResponseDto } from '../dto/list-stores-response.dto';
 import { AutocompleteStoresResponseDto } from '../dto/autocomplete-stores-response.dto';
@@ -58,6 +61,8 @@ import { SubmitStoreResponseDto } from '../dto/submit-store.dto';
 import { ListPartnerStoresResponseDto } from '../dto/list-partner-stores.dto';
 import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detail.dto';
 import { GetPartnerOnboardingResponseDto } from '../dto/get-partner-onboarding.dto';
+import { GetStoreDetailResponseDto } from '../dto/get-store-detail.dto';
+import { ListStoreProgramsResponseDto } from '../dto/list-store-programs.dto';
 import { UpdateStoreDto, UpdateStoreResponseDto } from '../dto/update-store.dto';
 import {
     UpdateBusinessDocumentDto,
@@ -83,6 +88,8 @@ export class StoreController {
         private readonly listStoresUseCase: ListStoresUseCase,
         private readonly autocompleteStoresUseCase: AutocompleteStoresUseCase,
         private readonly getSlugAvailabilityUseCase: GetSlugAvailabilityUseCase,
+        private readonly getStoreDetailUseCase: GetStoreDetailUseCase,
+        private readonly listStoreProgramsUseCase: ListStoreProgramsUseCase,
     ) {}
 
     @Get('stores')
@@ -111,7 +118,8 @@ export class StoreController {
         return this.autocompleteStoresUseCase.execute(keyword);
     }
 
-    // 정적 라우트. 동적 세그먼트(:storeId 등)에 가려지지 않도록 static stores/* 라우트들 사이에 배치.
+    // 정적 라우트. 동적 세그먼트(stores/:slug)보다 반드시 먼저 등록해야
+    // /stores/slug-availability 요청이 :slug 로 빨려들어가지 않는다.
     @Get('stores/slug-availability')
     @HttpCode(HttpStatus.OK)
     // AuthGuard 만 (PartnerGuard 없음). 첫 등록 USER도 사전 중복확인이 가능해야 함 (POST /stores 가드 정책과 동일).
@@ -137,6 +145,31 @@ export class StoreController {
         @Query() query: SlugAvailabilityQueryDto,
     ): Promise<SlugAvailabilityResponseDto> {
         return this.getSlugAvailabilityUseCase.execute(user.id, query.slug, query.excludeStoreId);
+    }
+
+    @Get('stores/:slug')
+    @HttpCode(HttpStatus.OK)
+    // 퍼블릭(Guest·User 공통). Bearer 가 있으면 isFavorite 에 찜 여부 반영, 없으면 false.
+    @UseGuards(OptionalAuthGuard)
+    @ResponseMessage('공방 상세 정보가 성공적으로 조회되었습니다.')
+    @ApiOkResponse({ description: '공방 상세 조회 성공', type: GetStoreDetailResponseDto })
+    async getStoreDetail(
+        @Param('slug') slug: string,
+        @CurrentUser() user?: RequestUser,
+    ): Promise<GetStoreDetailResponseDto> {
+        return this.getStoreDetailUseCase.execute(slug, user?.id);
+    }
+
+    @Get('stores/:slug/programs')
+    @HttpCode(HttpStatus.OK)
+    // 퍼블릭. PUBLISHED 공방의 ACTIVE 클래스 목록.
+    @ResponseMessage('운영 클래스 목록이 성공적으로 조회되었습니다.')
+    @ApiOkResponse({
+        description: '운영 클래스 목록 조회 성공',
+        type: ListStoreProgramsResponseDto,
+    })
+    async listStorePrograms(@Param('slug') slug: string): Promise<ListStoreProgramsResponseDto> {
+        return this.listStoreProgramsUseCase.execute(slug);
     }
 
     @Get('partner/stores')
