@@ -16,7 +16,7 @@
 - API 연동: 실 API 요청/응답이 contract 스키마로 연결. MSW mock 바인딩만 한 상태는 미체크.
 -->
 
-- [ ] API 구현
+- [x] API 구현
 - [ ] UI 구현
 - [ ] API 연동
 
@@ -164,7 +164,11 @@
 
 ## Out (단계별 완료물)
 
-- API: <!-- GET /stores keyword 확장+matchedClass, GET /stores/search/autocomplete 엔드포인트, 파일 -->
+- API:
+  - **신규 (이 작업)** `GET /stores/search/autocomplete` (Contract B) — 인증 불필요(공개). `keyword` 필수·공백 불가 → 400 `KEYWORD_REQUIRED`. REGION(PUBLISHED 공방 존재 지역 distinct `regionDong` 부분매칭, 최대 3) + STORE(PUBLISHED `name` 부분매칭, 최대 5) + PROGRAM(ACTIVE `Program.title` 부분매칭, 최대 5). 부분매칭 `contains` + `mode:'insensitive'`. 응답 `data.suggestions[]`={type,id,text,subtitle}; REGION/STORE subtitle="{sido} {sigungu} {dong}"(null 파트 제외), REGION id=`regionSigungu-regionDong` 조합, PROGRAM subtitle=null. 공통 인터셉터/필터로 envelope·500 처리.
+    - 파일: `apps/api/src/modules/store/application/use-cases/autocomplete-stores.use-case.ts`, `apps/api/src/modules/store/presentation/dto/autocomplete-stores-response.dto.ts`, 라우트·DI 추가 = `apps/api/src/modules/store/presentation/controllers/store.controller.ts`, `apps/api/src/modules/store/store.module.ts`.
+  - **별도 완료(범위 밖, 이번 작업 미변경)**: `GET /stores`의 keyword 클래스 매칭·`matchedClass`·`region` 구조화(시/구/동)는 PR #135로 이미 dev 머지됨(`list-stores.use-case.ts`/`list-stores-response.dto.ts`). 본 작업에서 `GET /stores` 측은 건드리지 않음.
+  - **폐기**: `GET /stores/search`(결과 제출) — 미구현. 최근 검색어는 localStorage(FE)로 BE 작업 없음.
 - UI: <!-- 검색 화면, 자동완성 드롭다운, 결과(공방 카드 재사용), 최근 검색어 컴포넌트 -->
 - 연동: <!-- 실 API 바인딩, debounce/빈검색 차단/빈결과/에러/최근검색 검증 -->
 
