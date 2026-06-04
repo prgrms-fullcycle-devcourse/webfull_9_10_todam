@@ -2,7 +2,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { verifyStoreOwnership } from '../verify-store-ownership';
+import { StoreAccessService } from '../services/store-access.service';
 import type {
     DeleteReservationRestrictionsDto,
     DeleteReservationRestrictionsResponseDto,
@@ -13,14 +13,17 @@ import { kstDayRange, parseDateOnly } from '../time.util';
 export class DeleteReservationRestrictionsUseCase {
     private readonly logger = new Logger(DeleteReservationRestrictionsUseCase.name);
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly storeAccess: StoreAccessService,
+    ) {}
 
     async execute(
         userId: string,
         storeId: string,
         dto: DeleteReservationRestrictionsDto,
     ): Promise<DeleteReservationRestrictionsResponseDto> {
-        await verifyStoreOwnership(this.prisma, userId, storeId);
+        await this.storeAccess.verifyOwnership(userId, storeId);
 
         // (1) 개별 restrictionIds 우선 — 해당 공방 소속만 삭제.
         if (dto.restrictionIds && dto.restrictionIds.length > 0) {

@@ -56,16 +56,17 @@ Note: 본 plan은 신규 기능이 아니라 BE 전체 리팩토링 계획이다
   - 리팩토링 중 API behavior를 바꾸고 싶은 항목이 발견되면 이 plan에서 처리하지 않고 별도 feature/bugfix plan으로 분리한다.
 - 보존해야 할 현재 구현 API:
   - Health
-    - `GET /health`
+    - `GET /health/db`
+    - `GET /health/s3`
   - Auth
-    - `POST /auth/send-code`
-    - `POST /auth/verify-code`
+    - `POST /auth/email/send-code`
+    - `POST /auth/email/verify-code`
     - `POST /auth/signup`
     - `POST /auth/login`
     - `POST /auth/logout`
     - `POST /auth/refresh`
-    - `POST /auth/reset-password/request`
-    - `POST /auth/reset-password`
+    - `POST /auth/password/reset-request`
+    - `POST /auth/password/reset`
     - `POST /auth/oauth/kakao`
     - `POST /auth/oauth/google`
   - Store
@@ -223,6 +224,14 @@ Layer rules:
 ## Out (단계별 완료물)
 
 - API:
+  - 2026-06-04: 1차 baseline 안전망 추가 완료.
+    - `apps/api/src/modules/api-routes.snapshot.spec.ts` 추가.
+    - 현재 구현 controller의 route path / HTTP method / handler / guard 조합을 metadata 기반으로 고정.
+    - plan endpoint 목록을 실제 구현 route 기준으로 정정.
+  - 2026-06-04: Timeslot 1차 application service 분리 완료.
+    - `StoreAccessService`를 추가해 공방 존재/소유권 검증을 use-case 밖으로 분리.
+    - timeslot use-case 6개가 직접 helper/Prisma를 넘기는 대신 injectable service를 주입받도록 변경.
+    - 기존 error code/status/message와 반환 store config는 보존.
   - 기존 구현 API 전체 route/behavior 유지.
   - `auth`, `store`, `program`, `timeslot` repository/persistence 또는 infrastructure boundary 정리.
   - 각 도메인의 mapper/domain service/application service 도입.
@@ -246,8 +255,13 @@ Layer rules:
 ## Validation
 
 - Tests:
-  - `pnpm --filter @todam/api typecheck`
-  - `pnpm --filter @todam/api test`
+  - 2026-06-04: `corepack pnpm --filter @todam/api test -- --runInBand` 통과.
+  - 2026-06-04: `corepack pnpm --filter @todam/api typecheck` 통과.
+  - 2026-06-04: `corepack pnpm --filter @todam/api lint` 통과(기존 warning 3건: email console 2건, create-store any 1건).
+  - 2026-06-04: `corepack pnpm --filter @todam/api exec tsc -p tsconfig.spec.json --noEmit` 통과.
+  - 2026-06-04: `corepack pnpm --filter @todam/api build` 통과. `dist`에 `*.spec.js` 미생성 확인.
+  - 2026-06-04: `StoreAccessService` 단위 테스트 추가. 소유 성공, 공방 없음, 타 소유자 접근 케이스 검증.
+  - 2026-06-04: timeslot service 분리 후 `corepack pnpm --filter @todam/api test -- --runInBand`, `typecheck`, `lint`, `build` 통과.
   - route snapshot/smoke test.
   - auth: send/verify code, login/refresh/logout, OAuth user flow characterization.
   - store: list/detail/favorite/image behavior characterization.
@@ -268,6 +282,10 @@ Layer rules:
 - 2026-06-04: 사용자 요청에 따라 현재 구현된 API 전체(`auth`, `health`, `store`, `program`, `timeslot`) 리팩토링 기준으로 plan 재작성.
 - 2026-06-04: 신규 API/DB 변경 없이 route/contract/behavior 보존을 리팩토링 contract로 고정.
 - 2026-06-04: 실제 구현은 전체 일괄 변경이 아니라 baseline/test -> 공통 service -> domain별 phase -> controller 분리 순서로 나누는 것으로 권장.
+- 2026-06-04: implementation 착수 전 실제 controller metadata와 plan endpoint 목록 drift 발견. Health/Auth route를 현재 구현 기준(`GET /health/db`, `GET /health/s3`, `POST /auth/email/*`, `POST /auth/password/*`)으로 정정.
+- 2026-06-04: route snapshot 테스트를 추가해 현재 구현 API의 route/method/guard baseline을 고정. 향후 controller 분리 또는 route 정리 시 drift 감지 안전망으로 사용.
+- 2026-06-04: VSCode/TS Server가 spec 파일을 메인 TS project에서 인식하도록 `apps/api/tsconfig.json`에 Jest 타입을 포함하고, 빌드 제외는 `tsconfig.build.json`로 분리.
+- 2026-06-04: 첫 실제 리팩토링 범위는 timeslot ownership helper의 injectable application service 전환으로 제한. 전체 공통 ownership service는 store/program error semantics 확인 후 확장하기로 함.
 
 ## Outcome
 

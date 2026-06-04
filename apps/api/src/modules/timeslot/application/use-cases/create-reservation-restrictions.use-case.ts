@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { verifyStoreOwnership } from '../verify-store-ownership';
+import { StoreAccessService } from '../services/store-access.service';
 import type {
     CreateReservationRestrictionsDto,
     CreateReservationRestrictionsResponseDto,
@@ -12,14 +12,17 @@ import { kstDayRange, parseDateOnly } from '../time.util';
 export class CreateReservationRestrictionsUseCase {
     private readonly logger = new Logger(CreateReservationRestrictionsUseCase.name);
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly storeAccess: StoreAccessService,
+    ) {}
 
     async execute(
         userId: string,
         storeId: string,
         dto: CreateReservationRestrictionsDto,
     ): Promise<CreateReservationRestrictionsResponseDto> {
-        await verifyStoreOwnership(this.prisma, userId, storeId);
+        await this.storeAccess.verifyOwnership(userId, storeId);
 
         const dateParts = parseDateOnly(dto.date);
         if (!dateParts) {

@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { verifyStoreOwnership } from '../verify-store-ownership';
+import { StoreAccessService } from '../services/store-access.service';
 import type {
     GenerateTimeSlotsDto,
     GenerateTimeSlotsResponseDto,
@@ -18,7 +18,10 @@ import {
 export class GenerateTimeSlotsUseCase {
     private readonly logger = new Logger(GenerateTimeSlotsUseCase.name);
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly storeAccess: StoreAccessService,
+    ) {}
 
     async execute(
         userId: string,
@@ -46,7 +49,7 @@ export class GenerateTimeSlotsUseCase {
             );
         }
 
-        const store = await verifyStoreOwnership(this.prisma, userId, storeId);
+        const store = await this.storeAccess.verifyOwnership(userId, storeId);
 
         if (store.reservationIntervalMinutes == null || store.reservationIntervalMinutes <= 0) {
             throw new BusinessException(

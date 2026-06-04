@@ -7,6 +7,7 @@ import { UpdateTimeSlotStatusUseCase } from './application/use-cases/update-time
 import { CreateReservationRestrictionsUseCase } from './application/use-cases/create-reservation-restrictions.use-case';
 import { DeleteReservationRestrictionsUseCase } from './application/use-cases/delete-reservation-restrictions.use-case';
 import { GetProgramReservationCountsUseCase } from './application/use-cases/get-program-reservation-counts.use-case';
+import { StoreAccessService } from './application/services/store-access.service';
 import { TimeslotController } from './presentation/controllers/timeslot.controller';
 
 @Module({
@@ -19,6 +20,7 @@ import { TimeslotController } from './presentation/controllers/timeslot.controll
         CreateReservationRestrictionsUseCase,
         DeleteReservationRestrictionsUseCase,
         GetProgramReservationCountsUseCase,
+        StoreAccessService,
         PartnerGuard,
     ],
 })
