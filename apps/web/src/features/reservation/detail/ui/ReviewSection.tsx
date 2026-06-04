@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { EditIcon, Rating, SectionTitle } from '@todam/ui';
 import type { ReservationDetail } from '@todam/shared';
 
-import { useToast } from '@/shared/model';
-
 import { useReservationReview } from '../queries';
 
 // 디자인 정본 (변형 B/C) — 리뷰 섹션.
@@ -19,15 +17,14 @@ export type ReviewSectionProps = {
 
 export function ReviewSection({ reservation }: ReviewSectionProps) {
     const router = useRouter();
-    const { push } = useToast();
     const { data, isLoading } = useReservationReview(reservation.id, reservation.hasReview);
 
     const handleWriteReview = () => {
-        push({ message: '리뷰 쓰기는 곧 지원돼요.' });
+        router.push(`/my/reservations/${reservation.id}/review/write`);
     };
 
     const handleEditReview = () => {
-        push({ message: '리뷰 수정은 곧 지원돼요.' });
+        router.push(`/my/reservations/${reservation.id}/review/edit`);
     };
 
     // D4: 카드 전체 클릭 → 리뷰 상세 화면 라우팅.
