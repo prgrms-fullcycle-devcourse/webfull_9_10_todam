@@ -15,6 +15,7 @@ import { ListStoresUseCase } from './application/use-cases/list-stores.use-case'
 import { AutocompleteStoresUseCase } from './application/use-cases/autocomplete-stores.use-case';
 import { GetStoreDetailUseCase } from './application/use-cases/get-store-detail.use-case';
 import { ListStoreProgramsUseCase } from './application/use-cases/list-store-programs.use-case';
+import { ListStoreReviewsUseCase } from './application/use-cases/list-store-reviews.use-case';
 import { PartnerGuard } from '../../common/guards/partner.guard';
 import { OptionalAuthGuard } from '../../common/guards/optional-auth.guard';
 import { StoreController } from './presentation/controllers/store.controller';
@@ -38,6 +39,7 @@ import { StoreController } from './presentation/controllers/store.controller';
         AutocompleteStoresUseCase,
         GetStoreDetailUseCase,
         ListStoreProgramsUseCase,
+        ListStoreReviewsUseCase,
         PartnerGuard,
         OptionalAuthGuard,
     ],
