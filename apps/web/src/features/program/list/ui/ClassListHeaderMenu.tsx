@@ -6,14 +6,12 @@ import { useRouter } from 'next/navigation';
 import { Button, Menu, MoreIcon, PlusIcon, SwapIcon } from '@todam/ui';
 
 type ClassListHeaderMenuProps = {
-    // 순서 변경 메뉴 활성 조건: 등록 클래스 2개 이상.
     programCount: number;
+    storeId: string;
 };
 
-// 클래스 관리 헤더 우측 더보기 버튼 + 메뉴보기 드롭다운.
-// 항목: [클래스 등록], [클래스 순서 변경](1개 이하 disabled).
-// 순서 변경 PATCH 호출은 미확정 블로커 → 화면 이동까지만 구현(plan Decision #2).
-export function ClassListHeaderMenu({ programCount }: ClassListHeaderMenuProps) {
+// TODO: 클래스 순서 변경 PATCH 호출은 미확정 블로커 → 화면 이동까지만 구현(plan Decision #2).
+export function ClassListHeaderMenu({ programCount, storeId }: ClassListHeaderMenuProps) {
     const router = useRouter();
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
@@ -57,7 +55,7 @@ export function ClassListHeaderMenu({ programCount }: ClassListHeaderMenuProps) 
                         onItemSelect={(index) => {
                             if (index === 0) {
                                 setOpen(false);
-                                router.push('/partner/classes/new');
+                                router.push(`/partner/classes/new?storeId=${storeId}`);
                                 return;
                             }
                             if (index === 1) {

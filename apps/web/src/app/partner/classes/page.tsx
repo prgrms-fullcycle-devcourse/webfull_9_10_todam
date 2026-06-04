@@ -23,7 +23,9 @@ export default function PartnerClassesPage() {
     const programs = (data?.programs ?? []).filter((p) => p.status !== ProgramStatus.DRAFT);
 
     // 라우트 헤더(클래스 관리) 우측 슬롯에 메뉴 주입.
-    useHeaderOverride({ rightAction: <ClassListHeaderMenu programCount={programs.length} /> });
+    useHeaderOverride({
+        rightAction: <ClassListHeaderMenu programCount={programs.length} storeId={storeId} />,
+    });
 
     return (
         <main className="flex-1 overflow-y-auto px-4 pb-16">
@@ -47,7 +49,7 @@ export default function PartnerClassesPage() {
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push('/partner/classes/new')}
+                            onClick={() => router.push(`/partner/classes/new?storeId=${storeId}`)}
                         >
                             클래스 등록하기
                         </Button>

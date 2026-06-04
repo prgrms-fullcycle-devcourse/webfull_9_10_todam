@@ -42,6 +42,7 @@ export * from './contracts/store-edit';
 export * from './contracts/favorite';
 export * from './contracts/store-list';
 export * from './contracts/program-edit';
+export * from './contracts/program-registration';
 export * from './contracts/store-programs';
 export * from './contracts/reservation-list';
 export * from './contracts/reservation-detail';

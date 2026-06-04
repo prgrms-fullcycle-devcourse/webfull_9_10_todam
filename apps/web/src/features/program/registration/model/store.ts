@@ -76,17 +76,17 @@ export const useProgramRegistrationStore = create<ProgramRegistrationStore>((set
 export function isStepValid(form: ProgramRegistrationForm, step: ProgramRegistrationStep): boolean {
     switch (step) {
         case ProgramRegistrationStep.BasicInfo: {
-            // 클래스명 2~60자 + 난이도(기본 선택값 있음). 대표 이미지·상세설명은 선택.
             const len = form.title.trim().length;
             return len >= TITLE_MIN && len <= TITLE_MAX && !!form.difficulty;
         }
         case ProgramRegistrationStep.Operating: {
-            // 필수: 가격·소요시간·리드타임. 어린이동반/택배는 선택(기본 false).
+            // 소요시간 30~480분: BE DTO(create-program.dto)
             return (
                 form.price !== null &&
                 form.price > 0 &&
                 form.durationMinutes !== null &&
-                form.durationMinutes > 0 &&
+                form.durationMinutes >= 30 &&
+                form.durationMinutes <= 480 &&
                 form.leadTimeDays !== null &&
                 form.leadTimeDays >= 0
             );

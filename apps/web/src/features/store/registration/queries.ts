@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { uploadToPresignedUrl } from '@/shared/api';
+
 import {
     checkSlug,
     confirmStoreImage,
@@ -12,7 +14,6 @@ import {
     getPartnerOnboarding,
     getStoreReviewStatus,
     submitStore,
-    uploadToPresignedUrl,
 } from './api';
 import type { StoreRegistrationForm } from './model/types';
 

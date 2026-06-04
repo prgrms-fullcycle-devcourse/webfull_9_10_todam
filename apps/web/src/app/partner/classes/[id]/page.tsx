@@ -52,15 +52,12 @@ export default function PartnerClassDetailPage({ params }: PageProps) {
                 {/* 대표 이미지 */}
                 <div className="py-2">
                     <div className="relative flex h-44 w-full items-center justify-center overflow-hidden rounded-2xl bg-muted">
-                        {program.images[0] ? (
-                            <img
-                                src={program.images[0].imageUrl}
-                                alt={program.title}
-                                className="h-full w-full object-cover"
-                            />
-                        ) : (
-                            <Tag>IMG</Tag>
-                        )}
+                        {/* 이미지 없으면(미업로드/업로드 실패) 기본 OG 이미지 폴백. */}
+                        <img
+                            src={program.images[0]?.imageUrl ?? '/OG-image.png'}
+                            alt={program.title}
+                            className="h-full w-full object-cover"
+                        />
                     </div>
                 </div>
 

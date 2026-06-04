@@ -8,15 +8,15 @@
 
 ## Status
 
-- [ ] API 구현
+- [X] API 구현
   - [x] `POST /partner/stores/{storeId}/programs` (클래스 등록)
   - [x] `POST /partner/stores/{storeId}/programs/{programId}/images` (presigned 발급, status=PENDING row 선생성)
   - [x] `PATCH /partner/stores/{storeId}/programs/{programId}/status` (상태 변경)
   - [x] `PATCH /partner/stores/{storeId}/programs/{programId}/images/{imageId}/confirm` (이미지 업로드 확인, PENDING→UPLOADED) — **신규(2026-06-02 협의)** / 2026-06-02 구현 완료
   - [x] 이미지 노출 정책(serve-UPLOADED-only) 반영 — 조회 응답에서 PENDING 은폐 (횡단) / **2026-06-02: 본 등록 plan 내에 이미지를 반환하는 조회 EP가 없음(program 모듈 전수 확인). 적용 대상 EP 부재로 정책 명문화로 갈음(reviewer 검증 완료, drift 0). 실제 `where:{status:'UPLOADED'}` 필터는 조회 기능 plan(partner-class-detail/list)이 준수 예정.**
-  - [ ] PENDING cleanup 스케줄 작업 (createdAt 1시간 경과 PENDING 자동 삭제 + S3 객체 삭제) — **구현 보류(2026-06-02 결정). 인프라 방식(BullMQ vs @nestjs/schedule) 팀 협의 후 별도 진행. 이번 구현 범위에서 제외.**
+  - PENDING cleanup 스케줄 작업 — **본 plan 범위에서 제외(2026-06-02 결정). Follow-up 으로 이관(아래 Outcome 참조).** 인프라 방식(BullMQ vs @nestjs/schedule) 팀 협의 후 별도 진행.
 - [x] UI 구현
-- [ ] API 연동 (confirm 호출 단계 추가 반영 필요)
+- [x] API 연동 (실 BE `/partner` 직접 호출, ①POST→②presigned→③S3 PUT→④confirm + storeId 가드 — 2026-06-04 reviewer 연동✅·drift0)
 
 ## Context
 
@@ -159,7 +159,23 @@
     - 검증: `tsc --noEmit` 통과, `npx nest build` 통과.
   - 검증: `tsc --noEmit` 통과, `nest build` 통과. (API 패키지에 jest 하니스 미구성 — 단위 테스트는 별도 인프라 작업 필요.)
 - UI:
-- 연동:
+- 연동: (FE API 연동 + MSW mock, 2026-06-04)
+  - 연결지점: `apps/web/src/features/program/registration/ui/ProgramRegistrationFlow.tsx` `handleSubmit` — 기존 TODO(성공 처리만)를 실제 오케스트레이션으로 교체. ① `POST /programs`(ACTIVE 직접 생성) → ② `POST .../images` presigned 발급(programImageId 보관) → ③ uploadUrl S3 직접 PUT → ④ S3 PUT 성공 직후 `PATCH .../images/{imageId}/confirm`(PENDING→UPLOADED). 성공 시 reset+클래스 관리 화면 이동(`returnTo`)+토스트 "새로운 클래스가 등록되었어요", 실패 시 화면 유지+실패 토스트. 등록 중(`isPending`) 저장 버튼 비활성.
+  - 생성:
+    - `packages/shared/src/contracts/program-registration.ts` — `createProgramRequestSchema`/`CreateProgramResult`, `updateProgramStatusRequestSchema`/`UpdateProgramStatusResult`, `ConfirmProgramImageResult`, `ProgramRegistrationErrorCode` (plan API Contract 211~458행 1:1 바인딩). shared `index.ts`에 export 등록.
+    - `apps/web/src/features/program/registration/api.ts` — `getPartnerStores`, `createProgram`, `createProgramImage`, `uploadToPresignedUrl`, `confirmProgramImage`, `updateProgramStatus`. **BASE=`/partner` 실 BE 루트 경로 직접 호출**(store/registration·program/list 패턴 동일, 2026-06-04 전환). BE 구현 완료 기능이므로 mock(`/api/v1`) 미사용.
+    - `apps/web/src/features/program/registration/queries.ts` — `useSubmitProgramRegistration(storeId)` 오케스트레이션 뮤테이션(공방 등록 `useSubmitStoreRegistration` 패턴 복제). 폼→`CreateProgramRequest` 매핑.
+  - 수정:
+    - `apps/web/src/features/program/registration/ui/ProgramRegistrationFlow.tsx` — `storeId` prop 추가, 뮤테이션 연동, 버튼 pending 비활성.
+    - `apps/web/src/features/program/registration/index.ts` — `useSubmitProgramRegistration` re-export.
+    - `apps/web/src/app/partner/classes/new/page.tsx` — `useSearchParams`로 storeId 수신. **storeId 없으면 toast('공방을 선택해주세요') + `router.replace('/partner/classes')` + `return null`로 등록 차단**(POST 경로 storeId 누락 방지, 2026-06-04).
+    - `apps/web/src/app/partner/classes/page.tsx` — "클래스 등록하기" 버튼 + 헤더메뉴에 storeId 전파.
+    - `apps/web/src/features/program/list/ui/ClassListHeaderMenu.tsx` — `storeId` prop 추가, "클래스 등록" 진입 시 `?storeId=` 부착.
+  - **MSW mock 정리 (2026-06-04, 실 BE 전환에 따라 등록 mock 제거)**:
+    - `handlers.ts`: 등록 전용 `/api/v1` 핸들러 4블록(GET stores·POST programs·PATCH status·PATCH confirm) + 미사용 import 제거. (`POST .../images`·GET list·edit 핸들러는 타 기능 소유 — 보존.)
+    - `db.ts`: 등록 전용 헬퍼 3종(`createProgram`/`updateProgramStatus`/`confirmProgramImage`) 제거. `ProgramImageRow.status`(PENDING|UPLOADED)·`addProgramImage` 기본 PENDING은 edit 이미지발급 핸들러가 공유하므로 보존.
+  - 검증: web `tsc --noEmit` 통과 / web `lint` 0 errors(기존 img 경고만) / web `build` 성공.
+  - 주의: contract의 `GET /partner/stores` 응답 예시(slug/address/...)와 달리 코드 기존 `PartnerStoreListResult`({id,name,ownerName,status,createdAt}) 재사용(등록은 storeId만 필요). materials/caution은 폼 미수집+contract optional이라 미전송(정상). cleanup task는 plan 보류 결정(2026-06-02)대로 미손댐.
 
 ## Risks
 
@@ -205,8 +221,11 @@
 
 ## Outcome
 
-- Status:
+- Status: **완료 (2026-06-04)**. BE 등록/이미지발급/상태변경/confirm + serve-UPLOADED-only 구현. FE 2단계 등록 플로우 + 실 BE `/partner` 연동(①POST→②presigned→③S3 PUT→④confirm) + storeId 가드 + 부분성공 처리 + 목록 invalidate + 소요시간 debounce 검증/OG 폴백/autoFocus. reviewer 최종 판정 API·UI·연동 ✅ + drift 0. tsc/lint/build 통과.
 - Follow-up:
+  - **PENDING cleanup 스케줄** — `createdAt` 1h 경과 `status=PENDING` `program_images` 자동 삭제(row + S3 객체). 인프라 방식(`@nestjs/schedule @Cron` vs BullMQ) 팀 협의 후 별도 진행. 미구현 동안 고아 PENDING은 serve-UPLOADED-only로 노출만 차단(DB 잔존).
+  - **`uploadToPresignedUrl` 공용화 완료** (`@/shared/api`) — 발급→PUT→confirm 오케스트레이션 헬퍼로 한 단계 더 묶는 것은 flow별 분기(부분성공 등) 차이로 보류.
+  - serve-UPLOADED-only 횡단 정책 — 조회 기능 plan(partner-class-detail/list)이 `where:{status:'UPLOADED'}` 필터 준수 필요.
 
 ## API Contract (스냅샷)
 

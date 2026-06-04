@@ -3,7 +3,9 @@
 import type { BusinessDocumentUpdateRequest } from '@todam/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { createBusinessDocumentImage, uploadToPresignedUrl } from '../registration/api';
+import { uploadToPresignedUrl } from '@/shared/api';
+
+import { createBusinessDocumentImage } from '../registration/api';
 import { getBusinessEditStoreDetail, updateBusinessDocument } from './api';
 
 // 사업자등록증 실 업로드(등록 BusinessStep 과 동일 패턴): presigned 발급 → S3 직접 PUT → documentUrl 반환.
