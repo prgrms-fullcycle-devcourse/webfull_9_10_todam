@@ -36,14 +36,13 @@ export function geocode(query: string): Promise<GeocodeCoords> {
     return geocodeAddress(query);
 }
 
-// 온보딩 상태 조회 (검수중/반려 영속화). 루트 경로(/partner/onboarding) → MSW(/api/v1) 미가로챔 → 실 BE.
+// ─── 실 API 엔드포인트 (plan API Contract 스냅샷 바인딩) ──────────
+const BASE = '/partner';
+
 // 응답: { partnerStatus: PartnerStatus|null, store: {id,status,rejectedReason}|null }
 export function getPartnerOnboarding() {
-    return apiFetch<PartnerOnboardingResult>('/partner/onboarding', { method: 'GET' });
+    return apiFetch<PartnerOnboardingResult>(`${BASE}/onboarding`, { method: 'GET' });
 }
-
-// ─── 실 API 엔드포인트 (plan API Contract 스냅샷 바인딩) ──────────
-// apps/api 는 global prefix 없음 → 루트 경로(/stores, /partner/stores/...).
 
 // 폼 → POST /stores body 매핑.
 function toCreateStoreBody(form: StoreRegistrationForm): CreateStoreRequest {
@@ -94,7 +93,7 @@ export function createStore(form: StoreRegistrationForm) {
 
 // 1-1) 사업자등록증 presigned PUT URL 발급 (store-비종속, 루트 경로 → MSW(/api/v1) 미가로챔, 실 BE).
 export function createBusinessDocumentImage(body: BusinessDocumentImageRequest) {
-    return apiFetch<BusinessDocumentImageResult>('/partner/business-documents/images', {
+    return apiFetch<BusinessDocumentImageResult>(`${BASE}/business-documents/images`, {
         method: 'POST',
         body,
     });
@@ -102,13 +101,13 @@ export function createBusinessDocumentImage(body: BusinessDocumentImageRequest) 
 
 // 2) 공방 이미지 presigned PUT URL 발급
 export function createStoreImage(storeId: string, body: CreateStoreImageRequest) {
-    return apiFetch<CreateStoreImageResult>(`/partner/stores/${storeId}/images`, {
+    return apiFetch<CreateStoreImageResult>(`${BASE}/stores/${storeId}/images`, {
         method: 'POST',
         body,
     });
 }
 
-// presigned URL 로 S3 직접 PUT 업로드. (apiFetch 봉투 밖 — raw fetch)
+// presigned URL 로 S3 직접 PUT 업로드
 export async function uploadToPresignedUrl(
     uploadUrl: string,
     file: File,
@@ -127,17 +126,17 @@ export async function uploadToPresignedUrl(
 // 3) 업로드 완료 확인 (PENDING → UPLOADED)
 export function confirmStoreImage(storeId: string, imageId: string) {
     return apiFetch<ConfirmStoreImageResult>(
-        `/partner/stores/${storeId}/images/${imageId}/confirm`,
+        `${BASE}/stores/${storeId}/images/${imageId}/confirm`,
         { method: 'PATCH' },
     );
 }
 
 // 4) 공방 심사 제출 (DRAFT/REJECTED → PENDING)
 export function submitStore(storeId: string) {
-    return apiFetch<SubmitStoreResult>(`/partner/stores/${storeId}/submit`, { method: 'POST' });
+    return apiFetch<SubmitStoreResult>(`${BASE}/stores/${storeId}/submit`, { method: 'POST' });
 }
 
 // 검수 상태/반려 사유 조회 = 공방 상세 조회 재사용 (GET /partner/stores/{storeId}).
 export function getStoreReviewStatus(storeId: string) {
-    return apiFetch<PartnerStoreDetailResult>(`/partner/stores/${storeId}`, { method: 'GET' });
+    return apiFetch<PartnerStoreDetailResult>(`${BASE}/stores/${storeId}`, { method: 'GET' });
 }

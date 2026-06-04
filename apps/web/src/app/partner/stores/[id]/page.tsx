@@ -245,7 +245,7 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                                 ))}
                                 <Button
                                     variant="outline"
-                                    size="lg"
+                                    size="sm"
                                     className="mt-1 w-full"
                                     onClick={() => router.push(`/partner/classes?storeId=${id}`)}
                                 >

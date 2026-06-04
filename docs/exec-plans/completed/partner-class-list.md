@@ -10,7 +10,7 @@
 
 - [x] API 구현
 - [x] UI 구현
-- [ ] API 연동
+- [x] API 연동
 
 ## Context
 
@@ -23,6 +23,7 @@
   2. ~~클래스 순서 변경 엔드포인트 미확인~~ → **확정(2026-06-04): `PATCH /partner/stores/{storeId}/programs/order`, body `{ programs: [{ id, sortOrder }] }`, 응답=재정렬 목록.**
   3. ~~DRAFT 상태 노출 여부~~ → **확정: DRAFT 상태 생략. ACTIVE / INACTIVE만 반환.**
   4. ~~UI 컴포넌트 규격~~ → **확정: FE 구현 시 DESIGN.md 확인하며 진행. 현재 블로커 아님.**
+  5. **[BE 후속] 목록 응답 서브텍스트 필드 누락** — 디자인 서브텍스트 `난이도・소요시간・평균제작일`(예: `기본・2시간・평균 28일`) 표기 필요하나, 현 `GET /partner/stores/{storeId}/programs` 응답은 `durationMinutes`만 반환. `difficulty`(ProgramDifficulty), `leadTimeDays`(Int) 필드 미반환 → FE 서브텍스트에 소요시간만 노출됨. **BE 동시 작업 중이라 충돌 우려로 보류**, BE 측 list DTO/use-case에 두 필드 추가 후 shared `partnerProgramListItemSchema`·FE `buildProgramMetaItems` 연동 예정. (prisma Program 모델엔 `difficulty`·`leadTimeDays` 이미 존재 — 조회·매핑만 추가하면 됨. FE는 `getDifficultyLabel`(entities/program) 보유.)
 
 ## Scope
 
@@ -79,6 +80,18 @@
   - 검증: `apps/api` `tsc --noEmit` 통과, store 모듈 잔존 참조 0.
 - UI: 클래스 관리 페이지, 클래스 카드 컴포넌트, 빈 상태 화면
 - 연동: 실 API 요청/응답 contract 스키마 검증 결과 (미착수)
+
+### 연동 산출물 (2026-06-04, fe)
+
+- 전환: `GET /partner/stores/:storeId/programs` MSW mock → 실 BE 연동.
+  - `apps/web/src/mocks/handlers.ts` — 해당 program 목록 핸들러 제거(주석화). `onUnhandledRequest:'bypass'`로 실 BE 통과. 미사용 import(`findPartnerStorePrograms`, `PartnerProgramListResult`) 정리. 다른 program 핸들러는 미수정.
+  - `apps/web/src/app/partner/classes/page.tsx` — `MOCK_STORE_ID` 주석을 "실 BE 연동됨, 선택공방 컨텍스트 연결 시 교체" 취지로 갱신(전역 공방 선택 컨텍스트 미구현으로 시드 storeId 고정 유지).
+- Contract drift reconcile (FE 측):
+  1. `sortOrder` — BE 응답 미포함(서버가 `orderBy [sortOrder asc, createdAt desc]` 선정렬해 반환). shared `partnerProgramListItemSchema.sortOrder`를 `z.number().optional()`로 완화. page.tsx의 클라이언트 `.sort((a,b)=>a.sortOrder-b.sortOrder)` 제거, 정렬 주석을 "BE 선정렬" 취지로 갱신.
+  2. `thumbnailUrl` — BE nullable(대표 이미지 없으면 null). shared `z.string()` → `z.string().nullable()`. `ClassItem`/`PartnerClassListItem`은 썸네일을 렌더하지 않아 null 안전(추가 보강 불필요).
+  3. `createdAt` — shared/BE 양쪽 존재(ISO string). 정합, 변경 없음.
+- 검증: `pnpm --filter @todam/shared build`(tsc --noEmit) 통과, `apps/web` `tsc --noEmit` 통과.
+- 보류: `PATCH .../order`(클래스 순서 변경) — BE 미구현으로 연동/구현 보류. (Open decision #2 잔존.)
 
 ## Risks
 

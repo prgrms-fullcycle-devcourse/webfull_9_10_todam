@@ -11,7 +11,13 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiCreatedResponse,
+    ApiOkResponse,
+    ApiQuery,
+    ApiTags,
+} from '@nestjs/swagger';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { PartnerGuard } from '../../../../common/guards/partner.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
@@ -32,8 +38,10 @@ import { UpdateStoreUseCase } from '../../application/use-cases/update-store.use
 import { UpdateBusinessDocumentUseCase } from '../../application/use-cases/update-business-document.use-case';
 import { DeleteStoreImageUseCase } from '../../application/use-cases/delete-store-image.use-case';
 import { ListStoresUseCase } from '../../application/use-cases/list-stores.use-case';
+import { AutocompleteStoresUseCase } from '../../application/use-cases/autocomplete-stores.use-case';
 import { ListStoresQueryDto } from '../dto/list-stores.dto';
 import { ListStoresResponseDto } from '../dto/list-stores-response.dto';
+import { AutocompleteStoresResponseDto } from '../dto/autocomplete-stores-response.dto';
 import { ListStoresQueryPipe } from '../pipes/list-stores-query.pipe';
 import { CreateStoreDto, CreateStoreResponseDto } from '../dto/create-store.dto';
 import { CreateStoreImageDto, CreateStoreImageResponseDto } from '../dto/store-image.dto';
@@ -68,6 +76,7 @@ export class StoreController {
         private readonly updateBusinessDocumentUseCase: UpdateBusinessDocumentUseCase,
         private readonly deleteStoreImageUseCase: DeleteStoreImageUseCase,
         private readonly listStoresUseCase: ListStoresUseCase,
+        private readonly autocompleteStoresUseCase: AutocompleteStoresUseCase,
     ) {}
 
     @Get('stores')
@@ -78,6 +87,22 @@ export class StoreController {
         @Query(ListStoresQueryPipe) query: ListStoresQueryDto,
     ): Promise<ListStoresResponseDto> {
         return this.listStoresUseCase.execute(query);
+    }
+
+    @Get('stores/search/autocomplete')
+    @HttpCode(HttpStatus.OK)
+    @ResponseMessage('자동완성 목록 조회가 완료되었습니다.')
+    @ApiQuery({
+        name: 'keyword',
+        required: true,
+        description: '입력 중인 검색어(필수, 공백 불가).',
+        example: '성수',
+    })
+    @ApiOkResponse({ description: '자동완성 목록 조회 성공', type: AutocompleteStoresResponseDto })
+    async autocompleteStores(
+        @Query('keyword') keyword?: string,
+    ): Promise<AutocompleteStoresResponseDto> {
+        return this.autocompleteStoresUseCase.execute(keyword);
     }
 
     @Get('partner/stores')

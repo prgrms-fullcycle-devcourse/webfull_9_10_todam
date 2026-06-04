@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { ProgramStatus } from '@todam/shared';
 import { Button } from '@todam/ui';
@@ -13,15 +13,13 @@ import {
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { EmptyState } from '@/shared/ui';
 
-// 현재 선택 공방 컨텍스트(전역 store 선택)는 미구현 단계.
-// mock 단계에서는 시드 데이터가 있는 공방 id 로 고정해 화면을 렌더한다.
-// 실 API 연동 시 선택된 공방 storeId 로 교체한다.
-const MOCK_STORE_ID = 'store-seed-0001';
-
+// GET /partner/stores/:storeId/programs 연동 완료
 export default function PartnerClassesPage() {
     const router = useRouter();
-    const { data, isLoading, isError } = usePartnerPrograms(MOCK_STORE_ID);
-    // 클래스 관리 화면은 DRAFT(작성 중) UI 미표기 → 생략. 서버가 sortOrder 오름차순 정렬해 반환.
+    const storeId = useSearchParams().get('storeId') ?? '';
+    const { data, isLoading, isError } = usePartnerPrograms(storeId);
+
+    // DRAFT(작성 중)는 목록 미표기. BE가 sortOrder asc로 선정렬 → filter는 순서 보존하므로 클라 재정렬 불필요.
     const programs = (data?.programs ?? []).filter((p) => p.status !== ProgramStatus.DRAFT);
 
     // 라우트 헤더(클래스 관리) 우측 슬롯에 메뉴 주입.
@@ -37,7 +35,9 @@ export default function PartnerClassesPage() {
 
             {isError && (
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
-                    클래스 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
+                    클래스 목록을 불러오지 못했습니다.
+                    <br />
+                    잠시 후 다시 시도해주세요.
                 </p>
             )}
 

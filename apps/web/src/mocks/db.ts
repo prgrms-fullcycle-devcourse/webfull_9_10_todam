@@ -17,11 +17,8 @@ import {
     type ReservationDetail,
     type ReservationListItem,
     type ReviewDetail,
-    type StoreImage,
     type StoreRegistrationSubmitRequest,
     type ProgramImage,
-    type StoreUpdateRequest,
-    type BusinessDocumentUpdateRequest,
 } from '@todam/shared';
 
 // 인메모리 mock 저장소. prisma 모델 형태를 최소한으로 흉내낸다.
@@ -896,128 +893,6 @@ const storePrograms: Record<string, PartnerProgramListSeed[]> = {
 export function findPartnerStorePrograms(id: string): PartnerProgramListSeed[] | null {
     if (!getStoreDetail(id)) return null;
     return storePrograms[id] ?? [];
-}
-
-// PATCH: 전달된 필드만 갱신(부분 갱신), operatingHours·images는 배열 전체 치환. status 불변.
-export function updateStoreDetail(
-    id: string,
-    body: StoreUpdateRequest,
-): PartnerStoreDetail | undefined {
-    const detail = getStoreDetail(id);
-    if (!detail) return undefined;
-    if (body.name !== undefined) detail.name = body.name;
-    if (body.slug !== undefined) detail.slug = body.slug;
-    if (body.description !== undefined) detail.description = body.description;
-    if (body.phone !== undefined) detail.phone = body.phone;
-    // 주소(address/위경도)는 수정 Out scope — PATCH 대상 아님.
-    if (body.convenienceInfo !== undefined) detail.convenienceInfo = body.convenienceInfo;
-    if (body.autoConfirm !== undefined) detail.autoConfirm = body.autoConfirm;
-    if (body.cancelDeadlineDays !== undefined) detail.cancelDeadlineDays = body.cancelDeadlineDays;
-    if (body.reservationIntervalMinutes !== undefined)
-        detail.reservationIntervalMinutes = body.reservationIntervalMinutes;
-    if (body.maxCapacityPerSlot !== undefined) detail.maxCapacityPerSlot = body.maxCapacityPerSlot;
-    if (body.operatingHours !== undefined) detail.operatingHours = body.operatingHours;
-    if (body.images !== undefined) {
-        // 최종 이미지 id 목록 기준으로 재구성(순서·대표 반영).
-        const next: StoreImage[] = body.images.map((imgId, i) => {
-            const existing =
-                detail.images.find((img) => img.id === imgId) ??
-                pendingImages.find((img) => img.id === imgId);
-            return {
-                id: imgId,
-                imageUrl: existing?.imageUrl ?? `https://placehold.co/400x300?text=${imgId}`,
-                thumbnailUrl:
-                    existing?.thumbnailUrl ?? `https://placehold.co/200x150?text=${imgId}`,
-                isThumbnail: i === 0,
-                sortOrder: i + 1,
-            };
-        });
-        detail.images = next;
-    }
-    return detail;
-}
-
-// 사업자 정보 수정 → 변경 필드 부분 갱신. 반려(REJECTED) 공방은 저장 시 재심사(PENDING) 전이.
-export function updateStoreBusinessDocument(
-    id: string,
-    body: BusinessDocumentUpdateRequest,
-): PartnerStoreDetail | undefined {
-    const detail = getStoreDetail(id);
-    if (!detail) return undefined;
-    const doc = detail.businessDocument;
-    if (body.businessNumber !== undefined) doc.businessNumber = body.businessNumber;
-    if (body.businessName !== undefined) doc.businessName = body.businessName;
-    if (body.ownerName !== undefined) doc.ownerName = body.ownerName;
-    if (body.businessAddress !== undefined) doc.businessAddress = body.businessAddress;
-    if (body.email !== undefined) doc.email = body.email;
-    // documentUrl 은 상세 응답에 미포함(참조용 스키마). 갱신 시 무시(재업로드는 presigned 후행).
-
-    // 반려 → 재심사 전이 + 사유 초기화. 목록 시드/생성분 status 동기화.
-    if (detail.status === StoreStatus.REJECTED) {
-        detail.status = StoreStatus.PENDING;
-        detail.rejectedReason = null;
-        const seeded = SEEDED_PARTNER_STORES.find((s) => s.id === id);
-        if (seeded) seeded.status = StoreStatus.PENDING;
-        const created = db.stores.find((s) => s.id === id);
-        if (created) created.status = StoreStatus.PENDING;
-    }
-    return detail;
-}
-
-export function isSlugTakenByOther(slug: string, storeId: string): boolean {
-    if (SEEDED_TAKEN_SLUGS.has(slug)) return true;
-    if (db.stores.some((s) => s.slug === slug && s.id !== storeId)) return true;
-    return Object.values(storeDetails).some((d) => d.slug === slug && d.id !== storeId);
-}
-
-// ─── 이미지 presigned mock ──────────────────────────────────────
-// confirm 전까지 보관하는 임시 이미지 (PENDING). 최종 반영은 PATCH images[].
-interface PendingImage extends StoreImage {
-    status: 'PENDING' | 'UPLOADED';
-}
-const pendingImages: PendingImage[] = [];
-
-export function createPendingImage(
-    storeId: string,
-    fileName: string,
-    isThumbnail: boolean,
-): { imageId: string; uploadUrl: string; imageUrl: string } {
-    const imageId = genId('img');
-    const imageUrl = `https://placehold.co/400x300?text=${encodeURIComponent(fileName)}`;
-    pendingImages.push({
-        id: imageId,
-        imageUrl,
-        thumbnailUrl: `https://placehold.co/200x150?text=${encodeURIComponent(fileName)}`,
-        isThumbnail,
-        sortOrder: pendingImages.length + 1,
-        status: 'PENDING',
-    });
-    return {
-        imageId,
-        uploadUrl: `https://todam-bucket.s3.ap-northeast-2.amazonaws.com/stores/${storeId}/images/${imageId}.jpg?mock=1`,
-        imageUrl,
-    };
-}
-
-export function confirmPendingImage(imageId: string): boolean {
-    const img = pendingImages.find((i) => i.id === imageId);
-    if (!img) return false;
-    if (img.status === 'UPLOADED') return false; // ALREADY_UPLOADED
-    img.status = 'UPLOADED';
-    return true;
-}
-
-export function deleteStoreImage(storeId: string, imageId: string): boolean {
-    const pIdx = pendingImages.findIndex((i) => i.id === imageId);
-    if (pIdx >= 0) {
-        pendingImages.splice(pIdx, 1);
-        return true;
-    }
-    const detail = getStoreDetail(storeId);
-    if (!detail) return false;
-    const before = detail.images.length;
-    detail.images = detail.images.filter((img) => img.id !== imageId);
-    return detail.images.length < before;
 }
 
 // 주소 → 좌표 mock. (실연동: 카카오 로컬 API) 서울 도심 기준 deterministic offset.

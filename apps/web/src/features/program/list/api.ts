@@ -2,7 +2,9 @@ import { type PartnerProgramListItem } from '@todam/shared';
 
 import { apiFetch } from '@/shared/api';
 
-const BASE = '/api/v1/partner';
+// 실 BE 루트 경로(apps/api global prefix 없음). MSW(/api/v1) 미가로챔 → 실 BE.
+// store 도메인(features/store/*)과 동일 컨벤션.
+const BASE = '/partner';
 
 // 디자인 서브텍스트("난이도・소요시간・평균제작일")용 mock 확장 필드.
 // Contract(PartnerProgramListItem)에는 없는 level/leadTimeDays 를 mock 응답에서만 보강한다.
