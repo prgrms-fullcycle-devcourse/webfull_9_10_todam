@@ -33,9 +33,9 @@ export function BasicInfoStep() {
                 maxLength={TITLE_MAX}
                 value={form.title}
                 onChange={(e) => patch({ title: e.target.value })}
+                autoFocus
             />
 
-            {/* 난이도 (3개 분리 버튼, 선택=검정 채움) */}
             <div className="flex flex-col gap-2">
                 <span className="px-[5px] text-sm font-semibold text-foreground-tertiary">
                     난이도
