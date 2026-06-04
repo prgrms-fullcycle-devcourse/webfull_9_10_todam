@@ -3,6 +3,7 @@
   --color-surface: var(--color-base-white);
   --color-muted: var(--color-gray-100);
   --color-emphasis: var(--color-gray-700);
+  --color-control: var(--color-gray-800);
   --color-inverse: var(--color-gray-950);
 
   --color-border-subtle: var(--color-gray-200);

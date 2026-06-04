@@ -10,7 +10,6 @@ type ClassListHeaderMenuProps = {
     storeId: string;
 };
 
-// TODO: 클래스 순서 변경 PATCH 호출은 미확정 블로커 → 화면 이동까지만 구현(plan Decision #2).
 export function ClassListHeaderMenu({ programCount, storeId }: ClassListHeaderMenuProps) {
     const router = useRouter();
     const [open, setOpen] = useState(false);
@@ -61,7 +60,7 @@ export function ClassListHeaderMenu({ programCount, storeId }: ClassListHeaderMe
                             if (index === 1) {
                                 if (reorderDisabled) return;
                                 setOpen(false);
-                                router.push('/partner/classes/reorder');
+                                router.push(`/partner/classes/order?storeId=${storeId}`);
                             }
                         }}
                     />
