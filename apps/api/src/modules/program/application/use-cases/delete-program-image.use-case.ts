@@ -4,28 +4,37 @@ import { S3Service } from '../../../../common/s3/s3.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 
 @Injectable()
-export class DeleteStoreImageUseCase {
+export class DeleteProgramImageUseCase {
     constructor(
         private readonly prisma: PrismaService,
         private readonly s3: S3Service,
     ) {}
 
-    async execute(userId: string, storeId: string, imageId: string): Promise<void> {
-        const store = await this.prisma.store.findUnique({
-            where: { id: storeId },
-            select: { id: true, partner: { select: { userId: true } } },
+    async execute(
+        userId: string,
+        storeId: string,
+        programId: string,
+        imageId: string,
+    ): Promise<void> {
+        // 소유권 검증: program → store → partner.userId.
+        const program = await this.prisma.program.findUnique({
+            where: { id: programId },
+            select: {
+                id: true,
+                storeId: true,
+                store: { select: { partner: { select: { userId: true } } } },
+            },
         });
 
-        if (!store) {
+        if (!program || program.storeId !== storeId) {
             throw new BusinessException(
-                'STORE_NOT_FOUND',
-                '공방을 찾을 수 없습니다.',
+                'PROGRAM_NOT_FOUND',
+                '클래스를 찾을 수 없습니다.',
                 HttpStatus.NOT_FOUND,
             );
         }
 
-        // 소유권 검증
-        if (store.partner.userId !== userId) {
+        if (program.store.partner.userId !== userId) {
             throw new BusinessException(
                 'FORBIDDEN',
                 '공방 소유 권한이 없습니다.',
@@ -33,9 +42,9 @@ export class DeleteStoreImageUseCase {
             );
         }
 
-        // 이미지가 해당 공방 소속인지 확인
-        const image = await this.prisma.storeImage.findFirst({
-            where: { id: imageId, storeId },
+        // 이미지가 해당 프로그램 소속인지 확인.
+        const image = await this.prisma.programImage.findFirst({
+            where: { id: imageId, programId },
             select: { id: true, imageUrl: true, thumbnailUrl: true },
         });
 
@@ -50,6 +59,6 @@ export class DeleteStoreImageUseCase {
         // S3 원본·썸네일 삭제 → 실패해도 row 삭제는 진행(고아 row 방지).
         await this.s3.deleteImageObjects([image.imageUrl, image.thumbnailUrl]);
 
-        await this.prisma.storeImage.delete({ where: { id: imageId } });
+        await this.prisma.programImage.delete({ where: { id: imageId } });
     }
 }
