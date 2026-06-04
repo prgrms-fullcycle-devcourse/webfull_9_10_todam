@@ -3,7 +3,7 @@
 ## Summary
 
 - Goal: 파트너가 등록된 클래스(프로그램)의 기본 정보와 운영 정보를 수정할 수 있도록 한다.
-- Owner:
+- Owner: nogglee (FE) / taesong (BE)
 - Date: 2026-06-01
 
 ## Status
