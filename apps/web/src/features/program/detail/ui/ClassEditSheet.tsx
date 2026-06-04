@@ -3,12 +3,16 @@
 import { useRouter } from 'next/navigation';
 
 import { EditIcon, InformationIcon, PauseIcon, RightIcon, StandardBottomSheet } from '@todam/ui';
+import { ProgramStatus } from '@todam/shared';
 import type { ReactElement } from 'react';
 
+import { ApiError } from '@/shared/api';
 import { useToast } from '@/shared/model';
+import { useUpdateProgramStatus } from '../queries';
 
 type Props = {
     programId: string;
+    storeId: string;
     title: string;
     reservationCount: number;
     onClose: () => void;
@@ -25,9 +29,35 @@ type Action = {
 const ICON_SIZE = 16;
 
 // 클래스 수정 액션 바텀시트 (게시 ACTIVE 상태에서 노출). 액션·라우팅을 자체 보유.
-export function ClassEditSheet({ programId, title, reservationCount, onClose }: Props) {
+export function ClassEditSheet({ programId, storeId, title, reservationCount, onClose }: Props) {
     const router = useRouter();
     const { push: pushToast } = useToast();
+    const statusMutation = useUpdateProgramStatus(storeId, programId);
+
+    // 게시 중단: ACTIVE → INACTIVE. 성공 시 상세/목록 invalidate 로 갱신.
+    const handlePause = () => {
+        if (statusMutation.isPending) return;
+        statusMutation.mutate(
+            { status: ProgramStatus.INACTIVE },
+            {
+                onSuccess: () => {
+                    pushToast({ message: '클래스 게시를 중단했어요.' });
+                    onClose();
+                },
+                onError: (err) => {
+                    pushToast({
+                        message:
+                            err instanceof ApiError
+                                ? err.message
+                                : '게시 중단 중 오류가 발생했어요.',
+                    });
+                },
+            },
+        );
+    };
+
+    // edit 화면 preload·mutation 이 storeId 를 요구 → ?storeId= 쿼리로 운반(detail/list 컨벤션).
+    const storeQuery = `?storeId=${encodeURIComponent(storeId)}`;
 
     const actions: Action[] = [
         {
@@ -37,7 +67,7 @@ export function ClassEditSheet({ programId, title, reservationCount, onClose }: 
             description: '기존 예약에도 즉시 반영돼요',
             onClick: () => {
                 onClose();
-                router.push(`/partner/classes/${programId}/edit/info`);
+                router.push(`/partner/classes/${programId}/edit/info${storeQuery}`);
             },
         },
         {
@@ -47,7 +77,7 @@ export function ClassEditSheet({ programId, title, reservationCount, onClose }: 
             description: '신규 예약부터 반영돼요',
             onClick: () => {
                 onClose();
-                router.push(`/partner/classes/${programId}/edit/operations`);
+                router.push(`/partner/classes/${programId}/edit/operations${storeQuery}`);
             },
         },
         {
@@ -55,11 +85,7 @@ export function ClassEditSheet({ programId, title, reservationCount, onClose }: 
             icon: <PauseIcon size={ICON_SIZE} />,
             label: '게시 중단',
             description: '신규 예약을 더 이상 받지 않아요',
-            onClick: () => {
-                onClose();
-                // TODO(연동 후행): 게시 중단 PATCH(status=INACTIVE).
-                pushToast({ message: '게시 중단 기능은 준비 중이에요.' });
-            },
+            onClick: handlePause,
         },
     ];
 

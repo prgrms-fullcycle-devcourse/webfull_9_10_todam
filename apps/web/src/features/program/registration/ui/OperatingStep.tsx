@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 import { CheckboxInput, TextInput } from '@todam/ui';
 
 import { useProgramRegistrationStore } from '../model/store';
@@ -10,9 +12,31 @@ const toNum = (v: string): number | null => {
     return digits === '' ? null : Number(digits);
 };
 
+// 소요 시간 제약 (BE create-program.dto)
+const DURATION_MIN = 30;
+const DURATION_MAX = 480;
+const DURATION_HINT = '30분부터 480분(8시간)까지 입력할 수 있어요';
+
+function durationErrorMessage(value: number): string | null {
+    if (value < DURATION_MIN) return `소요 시간은 최소 ${DURATION_MIN}분부터 등록할 수 있어요`;
+    if (value > DURATION_MAX)
+        return `소요 시간은 최대 ${DURATION_MAX}분(8시간)까지 등록할 수 있어요`;
+    return null;
+}
+
 export function OperatingStep() {
     const form = useProgramRegistrationStore((s) => s.form);
     const patch = useProgramRegistrationStore((s) => s.patch);
+
+    // 소요 시간 실시간 유효성 피드백. 입력 멈춘 뒤 400ms 후 범위 검사
+    const [durationError, setDurationError] = useState<string | null>(null);
+    const duration = form.durationMinutes;
+    useEffect(() => {
+        const t = setTimeout(() => {
+            setDurationError(duration === null ? null : durationErrorMessage(duration));
+        }, 400);
+        return () => clearTimeout(t);
+    }, [duration]);
 
     return (
         <div className="flex flex-col gap-4">
@@ -21,8 +45,11 @@ export function OperatingStep() {
                     label="소요 시간 (분)"
                     inputMode="numeric"
                     placeholder="예) 120"
+                    error={!!durationError}
+                    helperText={durationError ?? DURATION_HINT}
                     value={form.durationMinutes === null ? '' : String(form.durationMinutes)}
                     onChange={(e) => patch({ durationMinutes: toNum(e.target.value) })}
+                    autoFocus
                 />
                 <TextInput
                     label="리드타임 (일)"

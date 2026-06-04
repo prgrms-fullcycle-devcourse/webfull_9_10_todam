@@ -171,7 +171,7 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
                     </div>
                 ) : (
                     <div className="flex flex-col gap-4 py-2">
-                        {section === 'info' && <InfoEditSection />}
+                        {section === 'info' && <InfoEditSection storeId={storeId} />}
                         {section === 'operating' && <OperatingEditSection />}
                         {section === 'reservation' && <ReservationEditSection />}
                     </div>

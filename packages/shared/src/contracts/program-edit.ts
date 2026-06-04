@@ -15,10 +15,10 @@ export type ProgramEditErrorCode = (typeof ProgramEditErrorCode)[keyof typeof Pr
 
 // ─── program_images ──────────────────────────────────────────────
 export const programImageSchema = z.object({
-    programImageId: z.string(),
+    programImageId: z.string().optional(),
     imageUrl: z.string(),
-    thumbnailUrl: z.string(),
-    isThumbnail: z.boolean(),
+    thumbnailUrl: z.string().nullable(),
+    isThumbnail: z.boolean().optional(),
 });
 export type ProgramImage = z.infer<typeof programImageSchema>;
 
@@ -49,6 +49,8 @@ export type ProgramDetailResult = z.infer<typeof programDetailResultSchema>;
 export const programEditRequestSchema = z.object({
     title: z.string().min(2).max(60).optional(),
     description: z.string().max(1000).nullable().optional(),
+    materials: z.string().nullable().optional(),
+    caution: z.string().nullable().optional(),
     difficulty: z.nativeEnum(ProgramDifficulty).optional(),
     price: z.number().int().positive().optional(),
     leadTimeDays: z.number().int().min(0).optional(),

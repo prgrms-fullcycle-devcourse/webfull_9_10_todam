@@ -15,8 +15,7 @@ type Props = {
     children: ReactNode;
 };
 
-// 클래스 수정 화면 공통 셸: 전역 Header(타이틀+이탈 가드 뒤로가기) override + 스크롤 폼 영역 + 하단 저장 버튼.
-// 진입 직전 화면(상세)으로 돌아가도록 router.back() 사용 → 히스토리 중복 방지.
+// 클래스 수정 화면 공통 셸
 export function ProgramEditScaffold({ title, isDirty, isSaving, onSave, children }: Props) {
     const router = useRouter();
     const { open: openModal, close: closeModal } = useModal();
@@ -42,7 +41,7 @@ export function ProgramEditScaffold({ title, isDirty, isSaving, onSave, children
         );
     };
 
-    useHeaderOverride({ title, onBack: handleBack, hideRightAction: true, guardDirty: isDirty });
+    useHeaderOverride({ title, onBack: handleBack, hideRightAction: true });
 
     return (
         <div className="flex flex-1 flex-col overflow-hidden">

@@ -1,21 +1,34 @@
 'use client';
 
+import { use } from 'react';
+
 import { Button, Tag, RightIcon, BottomBar } from '@todam/ui';
 import { ProgramDifficulty, ProgramStatus } from '@todam/shared';
+import { useSearchParams } from 'next/navigation';
 
-import { useSheet } from '@/shared/model';
+import { ApiError } from '@/shared/api';
+import { useSheet, useToast } from '@/shared/model';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { getDifficultyLabel } from '@/entities/program';
-import { useProgramEditPreload } from '@/features/program/edit';
-import { ClassEditSheet, ClassInfoTable } from '@/features/program/detail';
+import {
+    ClassDescription,
+    ClassEditSheet,
+    ClassInfoTable,
+    usePartnerProgramDetail,
+    useUpdateProgramStatus,
+} from '@/features/program/detail';
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default function PartnerClassDetailPage({ params }: PageProps) {
-    const { programId, program, isLoading } = useProgramEditPreload(params);
+    const { id: programId } = use(params);
+    const storeId = useSearchParams().get('storeId') ?? '';
+    const { data, isLoading } = usePartnerProgramDetail(storeId, programId);
+    const program = data?.program;
     const { open: openSheet, close: closeSheet } = useSheet();
+    const { push: pushToast } = useToast();
+    const statusMutation = useUpdateProgramStatus(storeId, programId);
 
-    // 라우트 헤더(클래스 미리보기) 우측 기본 알림 아이콘 숨김.
     useHeaderOverride({ hideRightAction: true });
 
     if (isLoading || !program) {
@@ -27,18 +40,38 @@ export default function PartnerClassDetailPage({ params }: PageProps) {
     }
 
     const isPublished = program.status === ProgramStatus.ACTIVE;
-    // reviewCount 는 리뷰 API 후행(임시 0). featureTags 는 운영 플래그에서 파생.
+    // TODO: reviewCount 는 리뷰 API 후행(임시 0). featureTags 는 운영 플래그에서 파생.
     const reviewCount = 0;
     const featureTags = [
         program.childFriendly && '어린이 가능',
         program.deliverable && '배송 가능',
     ].filter(Boolean) as string[];
 
+    const handlePublish = () => {
+        if (statusMutation.isPending) return;
+        // INACTIVE/DRAFT → ACTIVE 게시.
+        statusMutation.mutate(
+            { status: ProgramStatus.ACTIVE },
+            {
+                onSuccess: () => pushToast({ message: '클래스를 게시했어요.' }),
+                onError: (err) =>
+                    pushToast({
+                        message:
+                            err instanceof ApiError ? err.message : '게시 중 오류가 발생했어요.',
+                    }),
+            },
+        );
+    };
+
     const handleCta = () => {
-        if (!isPublished) return;
+        if (!isPublished) {
+            handlePublish();
+            return;
+        }
         openSheet(
             <ClassEditSheet
                 programId={programId}
+                storeId={storeId}
                 title={program.title}
                 reservationCount={12}
                 onClose={closeSheet}
@@ -52,15 +85,12 @@ export default function PartnerClassDetailPage({ params }: PageProps) {
                 {/* 대표 이미지 */}
                 <div className="py-2">
                     <div className="relative flex h-44 w-full items-center justify-center overflow-hidden rounded-2xl bg-muted">
-                        {program.images[0] ? (
-                            <img
-                                src={program.images[0].imageUrl}
-                                alt={program.title}
-                                className="h-full w-full object-cover"
-                            />
-                        ) : (
-                            <Tag>IMG</Tag>
-                        )}
+                        {/* 이미지 없으면(미업로드/업로드 실패) 기본 OG 이미지 폴백. */}
+                        <img
+                            src={program.images[0]?.imageUrl ?? '/OG-image.png'}
+                            alt={program.title}
+                            className="h-full w-full object-cover"
+                        />
                     </div>
                 </div>
 
@@ -88,11 +118,7 @@ export default function PartnerClassDetailPage({ params }: PageProps) {
                         <RightIcon size={16} />
                     </button>
 
-                    {program.description && (
-                        <p className="py-2 text-sm leading-[18px] text-foreground">
-                            {program.description}
-                        </p>
-                    )}
+                    <ClassDescription description={program.description} />
                 </section>
 
                 {/* 클래스 상세 정보 테이블 */}

@@ -14,9 +14,9 @@
 - API 연동: 실 API 요청/응답이 contract 스키마로 연결. MSW mock 바인딩 상태는 미체크.
 -->
 
-- [ ] API 구현 — `GET /stores/slug-availability` (apps/api) 신설 + shared `SLUG_REGEX`/`slugSchema` 4~40·하이픈만 정렬
+- [x] API 구현 — `GET /stores/slug-availability` (apps/api) 신설 + shared `SLUG_REGEX`/`slugSchema` 4~40·하이픈만 정렬
 - [x] UI 구현 — 기존 UI 존재(BusinessStep slug input, InfoEditSection). 신규 UI 없음 → N/A
-- [ ] API 연동 — FE 2곳 mock→실 API 전환 + mock/경로 `/stores/slug-availability` 통일 (별도 후속 plan으로 Out, 아래 Scope 참조)
+- [x] API 연동 — FE 2곳 mock→실 API 전환 + mock/경로 `/stores/slug-availability` 통일 (아래 Out 연동 섹션 참조)
 
 ## Context
 
@@ -82,9 +82,26 @@
 
 ## Out (단계별 완료물)
 
-- API: <!-- 구현된 엔드포인트, 파일 -->
+- API: `GET /stores/slug-availability` (`@UseGuards(AuthGuard)`, query `slug` 필수 + `excludeStoreId?`). res `data` = `{ slug, available }` (shared `slugAvailabilityResultSchema` 일치). 검증: slug 미존재/본인 동일 slug→available:true, 타 store 점유→false, slug 누락·형식위반→400 `BAD_REQUEST`, excludeStoreId 미존재/타인→404 `NOT_FOUND`.
+  - 파일:
+    - `apps/api/src/modules/store/presentation/controllers/store.controller.ts` — 라우트 추가(정적 `stores/*` 그룹 내 배치, 동적 세그먼트 충돌 회피).
+    - `apps/api/src/modules/store/application/use-cases/get-slug-availability.use-case.ts` — 신규 use-case(PrismaService 직접 사용 — 모듈 컨벤션). slug 형식검증 + excludeStoreId 소유권(`store.partner.userId === user.id`) + 점유 조회.
+    - `apps/api/src/modules/store/presentation/dto/slug-availability.dto.ts` — `SlugAvailabilityQueryDto` / `SlugAvailabilityResponseDto`.
+    - `apps/api/src/modules/store/store.module.ts` — provider 등록.
+  - shared(동반 정렬, OD-1): `packages/shared/src/constants/regex.ts` `SLUG_REGEX = /^[a-z0-9-]{4,40}$/`, `packages/shared/src/contracts/fields.ts` `slugSchema` 메시지 4~40·하이픈만 — **이미 정합 상태였음(추가 변경 불필요), 확인 완료**.
 - UI: 신규 없음 (기존 UI 재사용)
-- 연동: <!-- 후속 단계 -->
+- 연동: FE 2곳 mock→실 API(`GET /stores/slug-availability`, AuthGuard, 루트 경로 → MSW 미가로챔) 전환 완료. 응답 shared `slugAvailabilityResultSchema`(`{slug, available}`) 그대로 소비.
+  - 등록(신규 공방, excludeStoreId 없음):
+    - `apps/web/src/features/store/registration/api.ts` `checkSlug()` — `MOCK_BASE='/api/v1/partner'` 제거, `/stores/slug-availability?slug=...` 실 BE 루트 경로로 변경.
+    - 연동 지점: `registration/queries.ts` `useSlugAvailability(slug, enabled)` → `registration/ui/StoreInfoStep.tsx`(debounce 500ms + `isSlug` enabled). 기존 동작·문구 보존.
+  - 수정(본인 store 제외, excludeStoreId):
+    - `apps/web/src/features/store/edit/api.ts` `checkSlug(slug, excludeStoreId)` 신규 — `/stores/slug-availability?slug=...&excludeStoreId={storeId}`.
+    - `apps/web/src/features/store/edit/queries.ts` `useSlugAvailability(storeId, slug, enabled)` 신규 — 등록과 동일 패턴(debounce + enabled).
+    - `apps/web/src/features/store/edit/ui/InfoEditSection.tsx` — `storeId` prop 수신, debounce 500ms + 형식유효 + slug 변경(initial≠current)일 때만 조회. 결과 → 기존 `slugDuplicated` 상태에 반영(저장 게이트·문구 재사용). PATCH 409(`STORE_SLUG_DUPLICATED`) 경로와 공존.
+    - `apps/web/src/features/store/edit/ui/StoreEditLayout.tsx` — `<InfoEditSection storeId={storeId} />` 전달.
+  - mock 정리: `apps/web/src/mocks/handlers.ts` slug-availability 핸들러 제거 + 미사용 `isSlugTaken`/`SlugAvailabilityResult` import 정리. `apps/web/src/mocks/db.ts` dead 헬퍼 `isSlugTaken`·`SEEDED_TAKEN_SLUGS`(타 사용처 없음) 제거.
+  - 검증 문구: 등록/수정 slug 형식 안내 모두 shared `slugSchema` 메시지(`영문 소문자·숫자·- 4~40자`) 사용 — 옛 규칙 하드코딩 없음(추가 변경 불필요).
+  - 검증: `apps/web` tsc --noEmit 통과, lint 0 errors(touched 파일 경고 없음).
 
 ## Risks
 
@@ -109,5 +126,7 @@
 
 ## Outcome
 
-- Status: ready — OD-1~4 BOSS 결정 완료(2026-06-03). contract 확정. 구현(implementer) 착수 가능.
-- Follow-up: (1) BE `GET /stores/slug-availability` 구현 + shared SLUG 4~40·하이픈만 정렬(본 plan In), (2) FE 2곳 mock→실 API 전환 + 경로 `/stores/slug-availability` 통일 + UI 문구 정렬(후속 연동 plan, Out).
+- Status: 완료(2026-06-04). API 구현·UI·API 연동 3단계 완료, reviewer drift 0 판정.
+  - BE `GET /stores/slug-availability`(AuthGuard, slug+excludeStoreId) 구현, shared SLUG 4~40·하이픈만 정렬.
+  - FE 등록(registration)·수정(edit) 2곳 mock→실 BE 루트 경로 전환, MSW slug 핸들러·dead 헬퍼 제거.
+- Follow-up: BE 내부 slug 정규식 중복(`create-store.dto.ts` ↔ `get-slug-availability.use-case.ts`) → apps/api 내부 공용 상수 승격 후보(비차단).

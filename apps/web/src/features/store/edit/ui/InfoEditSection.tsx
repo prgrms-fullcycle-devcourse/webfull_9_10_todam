@@ -1,21 +1,55 @@
 'use client';
 
 import { phoneSchema, slugSchema } from '@todam/shared';
+import { useEffect, useState } from 'react';
 
 import { StoreInfoFields } from '@/features/store/shared/ui';
 import { useStoreEditStore } from '../model/store';
+import { useSlugAvailability } from '../queries';
 
 const isSlug = (v: string) => slugSchema.safeParse(v).success;
 const isPhone = (v: string) => phoneSchema.safeParse(v).success;
 
-export function InfoEditSection() {
+type InfoEditSectionProps = {
+    storeId: string;
+};
+
+export function InfoEditSection({ storeId }: InfoEditSectionProps) {
     const form = useStoreEditStore((s) => s.form);
+    const initial = useStoreEditStore((s) => s.initial);
     const slugDuplicated = useStoreEditStore((s) => s.slugDuplicated);
     const pendingImages = useStoreEditStore((s) => s.pendingImages);
     const patchStore = useStoreEditStore((s) => s.patchStore);
     const addImageFiles = useStoreEditStore((s) => s.addImageFiles);
     const removeExistingImage = useStoreEditStore((s) => s.removeExistingImage);
     const removePendingImage = useStoreEditStore((s) => s.removePendingImage);
+    const setSlugDuplicated = useStoreEditStore((s) => s.setSlugDuplicated);
+
+    const slug = form?.store.slug ?? '';
+    const initialSlug = initial?.store.slug ?? '';
+
+    // 공방 URL 실시간(debounce) 사전 중복확인 → TanStack Query
+    const [debouncedSlug, setDebouncedSlug] = useState(slug);
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSlug(slug), 500);
+        return () => clearTimeout(t);
+    }, [slug]);
+
+    // 형식 유효 + 변경된 slug 일 때만 조회
+    const slugChanged = debouncedSlug !== initialSlug;
+    const slugQuery = useSlugAvailability(
+        storeId,
+        debouncedSlug,
+        isSlug(debouncedSlug) && slugChanged,
+    );
+    const slugChecking = slugQuery.isFetching;
+
+    // 조회 결과 → 중복 상태 동기화 (저장 가능 여부·문구 판단용).
+    useEffect(() => {
+        if (slugQuery.data && slugQuery.data.slug === slug && slug !== initialSlug) {
+            setSlugDuplicated(!slugQuery.data.available);
+        }
+    }, [slugQuery.data, slug, initialSlug, setSlugDuplicated]);
 
     if (!form) return null;
     const store = form.store;
@@ -31,9 +65,11 @@ export function InfoEditSection() {
     const slugHasError = !!slugFormatError || slugDuplicated;
     const slugHelper = slugFormatError
         ? slugFormatError
-        : slugDuplicated
-          ? '이미 사용 중인 URL입니다.'
-          : '공방 주소로 사용돼요.';
+        : slugChecking
+          ? '확인 중...'
+          : slugDuplicated
+            ? '이미 사용 중인 URL입니다.'
+            : '공방 주소로 사용돼요.';
 
     // 서버 이미지(existing) → {id, src}. 삭제·업로드는 저장 시 일괄 처리.
     const existingImages = store.images.map((img) => ({ id: img.id, src: img.imageUrl }));

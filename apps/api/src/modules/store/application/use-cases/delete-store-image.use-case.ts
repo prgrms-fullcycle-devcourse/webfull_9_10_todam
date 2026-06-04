@@ -1,7 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
 import { S3Service } from '../../../../common/s3/s3.service';
-import { keyFromImageUrl } from '../../../../common/s3/s3-object.util';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 
 @Injectable()
@@ -49,19 +48,7 @@ export class DeleteStoreImageUseCase {
         }
 
         // S3 원본·썸네일 삭제 → 실패해도 row 삭제는 진행(고아 row 방지).
-        const keys = [image.imageUrl, image.thumbnailUrl]
-            .filter((url): url is string => Boolean(url))
-            .map((url) => keyFromImageUrl(url));
-
-        await Promise.all(
-            keys.map(async (key) => {
-                try {
-                    await this.s3.deleteObject(key);
-                } catch {
-                    // S3 삭제 실패는 무시(객체 부재 등). row 정리를 우선한다.
-                }
-            }),
-        );
+        await this.s3.deleteImageObjects([image.imageUrl, image.thumbnailUrl]);
 
         await this.prisma.storeImage.delete({ where: { id: imageId } });
     }

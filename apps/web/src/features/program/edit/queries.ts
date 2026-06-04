@@ -1,39 +1,29 @@
 'use client';
 
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import type { ProgramEditRequest, ProgramImageUploadRequest } from '@todam/shared';
 
-import {
-    deleteProgramImage,
-    getProgramDetail,
-    patchProgram,
-    postProgramImage,
-    uploadToS3,
-} from './api';
+import { confirmProgramImage, deleteProgramImage, patchProgram, postProgramImage } from './api';
 import type { PendingImage } from './model/types';
+import { uploadToPresignedUrl } from '@/shared/api';
 
-const KEY = ['program'] as const;
-
-// ─── 프로그램 상세 (preload) ─────────────────────────────────────
-export function useProgramDetail(slug: string, programId: string) {
-    return useQuery({
-        queryKey: [...KEY, 'detail', slug, programId],
-        queryFn: () => getProgramDetail(slug, programId),
-        enabled: !!slug && !!programId,
-        staleTime: 30_000,
-    });
-}
+// 프로그램 수정 preload 는 파트너 상세(usePartnerProgramDetail)를 재사용한다.
+// 수정/이미지 변경 후 상세·목록 캐시를 무효화해 재조회되게 한다.
+const PROGRAMS_KEY = (storeId: string) => ['partner', 'stores', storeId, 'programs'] as const;
 
 // ─── 프로그램 수정 ───────────────────────────────────────────────
 export function usePatchProgram(storeId: string, programId: string) {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (body: ProgramEditRequest) => patchProgram(storeId, programId, body),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: PROGRAMS_KEY(storeId) }),
     });
 }
 
 // ─── 이미지 업로드 (presigned → S3 PUT) ─────────────────────────
 export function useUploadProgramImage(storeId: string, programId: string) {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({
             pending,
@@ -43,15 +33,19 @@ export function useUploadProgramImage(storeId: string, programId: string) {
             req: ProgramImageUploadRequest;
         }) => {
             const result = await postProgramImage(storeId, programId, req);
-            await uploadToS3(result.uploadUrl, pending.file);
+            await uploadToPresignedUrl(result.uploadUrl, pending.file);
+            await confirmProgramImage(storeId, programId, result.programImageId);
             return result;
         },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: PROGRAMS_KEY(storeId) }),
     });
 }
 
 // ─── 이미지 삭제 ─────────────────────────────────────────────────
 export function useDeleteProgramImage(storeId: string, programId: string) {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (imageId: string) => deleteProgramImage(storeId, programId, imageId),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: PROGRAMS_KEY(storeId) }),
     });
 }
