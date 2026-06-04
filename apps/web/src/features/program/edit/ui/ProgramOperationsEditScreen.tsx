@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 
-import type { ProgramDetail } from '@todam/shared';
+import type { PartnerProgramDetail } from '@todam/shared';
 
 import { ApiError } from '@/shared/api';
 import { useToast } from '@/shared/model/toast';
@@ -16,7 +16,7 @@ import { ProgramOperationsEditForm } from './ProgramOperationsEditForm';
 
 type Props = {
     programId: string;
-    program: ProgramDetail;
+    program: PartnerProgramDetail;
 };
 
 export function ProgramOperationsEditScreen({ programId, program }: Props) {
@@ -57,6 +57,7 @@ export function ProgramOperationsEditScreen({ programId, program }: Props) {
             });
 
             pushToast({ message: '수정된 클래스 정보가 반영되었어요.' });
+            // 저장 성공 → 진입 직전(상세)으로 복귀. 상세는 onSuccess invalidate 로 재조회됨.
             router.back();
         } catch (err) {
             if (err instanceof ApiError) {

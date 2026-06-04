@@ -10,7 +10,7 @@
 
 - [x] API 구현
 - [x] UI 구현
-- [ ] API 연동
+- [x] API 연동 (텍스트/운영 PATCH·이미지 추가·기존 이미지 삭제 실 BE 연동 완료)
 
 ## Context
 
@@ -118,7 +118,20 @@
   - 수정 파일: `program.controller.ts`(PATCH·DELETE·퍼블릭 GET 라우트 추가), `program.module.ts`(provider 등록), `s3.service.ts`(deleteImageObjects), `delete-store-image.use-case.ts`(공용 메서드 사용).
   - 주의: contract 데이터모델 표의 `images` 필드는 PATCH request 예시에 미포함 → 이미지 관리는 POST/DELETE 전용으로 처리하고 PATCH DTO에서 제외(드리프트 방지).
 - UI: 기본 정보 수정 폼, 운영 정보 수정 폼, 이탈 다이얼로그
-- 연동: 실 API 요청/응답 확인, 스냅샷 분리 시나리오 검증
+- 연동 (fe, 2026-06-04):
+  - `apps/web/src/features/program/edit/api.ts` — MSW mock(`/api/v1`) 제거, 실 BE 루트(`/partner`)로 전환. `patchProgram`/`postProgramImage`/`deleteProgramImage` 모두 `apiFetch`(accessToken 자동 부착) 사용. 퍼블릭 `getProgramDetail`/`useProgramDetail` 은 edit 에서 제거(preload 는 파트너 상세 재사용).
+  - `apps/web/src/features/program/edit/model/useProgramEditPreload.ts` — MOCK_SLUG 퍼블릭 mock 제거 → `usePartnerProgramDetail(storeId, programId)`(features/program/detail) 재사용. 시그니처 `(storeId, programId)`.
+  - storeId 운반: `ClassEditSheet`(features/program/detail) 에 `storeId` prop 추가 → edit info/operations 링크에 `?storeId=` 부착. `classes/[id]/page.tsx` 가 `useSearchParams().get('storeId')` 로 받은 storeId 를 ClassEditSheet 에 전달. edit 두 page(`edit/info`,`edit/operations`) 가 `useSearchParams().get('storeId')` 수신 → preload·mutation 에 전달.
+  - PATCH 저장: `ProgramOperationsEditScreen`(price/leadTimeDays/durationMinutes/childFriendly/deliverable) + `ProgramInfoEditScreen`(title/description/difficulty) → `usePatchProgram(storeId, programId)` 실 BE 호출. shared `ProgramEditRequest`(partial) 로 전송. 성공 토스트·`router.back()` 보존.
+  - 이미지 추가: `ProgramInfoEditScreen` 신규 이미지 = `useUploadProgramImage`(postProgramImage presigned 발급) → `uploadToS3`(S3 PUT) 실 BE 연동.
+  - edit 화면 program 타입 `ProgramDetail`(퍼블릭) → `PartnerProgramDetail`(shared) 로 전환.
+  - 검증: `apps/web` tsc --noEmit 통과, eslint 변경분 error 0(기존 `<img>` warning 1, 이번 변경 무관).
+- **기존 이미지 삭제 (gap 해소·연동 완료, fe 2026-06-04)**:
+  - BE/shared 해소: 파트너 상세(`GET /partner/stores/{storeId}/programs/{programId}`) 이미지 응답에 `programImageId`·`isThumbnail` 추가됨. shared `partnerProgramDetailImageSchema` = `{ programImageId, imageUrl, thumbnailUrl|null, isThumbnail }`.
+  - 연동: `ProgramInfoEditScreen` 기존 이미지 매핑 id 를 실 `image.programImageId` 로 사용(합성키 `existing-{index}` 제거). 저장 시 `images.deletedImageIds` 를 `useDeleteProgramImage` → `deleteProgramImage(storeId, programId, programImageId)` 실 BE DELETE 로 호출(신규 추가분은 서버 미반영이라 로컬 제거만). `isSaving` 에 delete mutation pending 포함.
+  - 대표 이미지 지정 UI(`isThumbnail` 토글)는 현재 `PendingImageField`/`ImageUploadGrid` 에 없음 — 표시는 `thumbnailUrl ?? imageUrl` 유지. 별도 대표 지정 UI 추가는 범위 외.
+  - detail 화면(`classes/[id]/page.tsx`)은 `images[0].imageUrl` 만 소비 → 스키마 필드 추가는 비파괴, 영향 없음 확인.
+  - 검증: `apps/web` tsc --noEmit 통과, eslint error 0(기존 `<img>` warning 무관).
 
 ---
 

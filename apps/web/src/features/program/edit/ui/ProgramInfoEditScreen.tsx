@@ -2,7 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 
-import { MAX_PROGRAM_IMAGE_COUNT, ProgramDifficulty, type ProgramDetail } from '@todam/shared';
+import {
+    MAX_PROGRAM_IMAGE_COUNT,
+    ProgramDifficulty,
+    type PartnerProgramDetail,
+} from '@todam/shared';
 
 import { ApiError } from '@/shared/api';
 import { useToast } from '@/shared/model/toast';
@@ -17,7 +21,7 @@ import { ProgramInfoEditForm, type ProgramInfoFields } from './ProgramInfoEditFo
 
 type Props = {
     programId: string;
-    program: ProgramDetail;
+    program: PartnerProgramDetail;
 };
 
 export function ProgramInfoEditScreen({ programId, program }: Props) {
@@ -32,12 +36,12 @@ export function ProgramInfoEditScreen({ programId, program }: Props) {
     };
     const { form: fields, patch, isDirty: fieldsDirty } = useEditableForm(baseline);
 
-    // ProgramImage → ExistingImage(id, src) 매핑.
+    // 파트너 상세 이미지 → ExistingImage(id, src) 매핑.
     const images = usePendingImages(
         program.images.map((img) => ({
             ...img,
             id: img.programImageId,
-            src: img.thumbnailUrl,
+            src: img.thumbnailUrl ?? img.imageUrl,
         })),
     );
 
@@ -53,19 +57,20 @@ export function ProgramInfoEditScreen({ programId, program }: Props) {
     const storeId = program.storeId;
     const patchMutation = usePatchProgram(storeId, programId);
     const uploadMutation = useUploadProgramImage(storeId, programId);
-    const deleteMutation = useDeleteProgramImage(storeId, programId);
+    const deleteImageMutation = useDeleteProgramImage(storeId, programId);
 
     const isSaving =
-        patchMutation.isPending || uploadMutation.isPending || deleteMutation.isPending;
+        patchMutation.isPending || uploadMutation.isPending || deleteImageMutation.isPending;
 
     // ─── 저장 ────────────────────────────────────────────────────
     const handleSave = async () => {
         if (!validate(fields) || isSaving) return;
 
         try {
-            // 1. 삭제 예정 이미지 먼저 삭제
+            // 1. 제거된 기존 이미지 삭제
+            //    신규(대기) 이미지는 서버 미반영 상태라 로컬 제거로 끝 — DELETE 불필요
             for (const imageId of images.deletedImageIds) {
-                await deleteMutation.mutateAsync(imageId);
+                await deleteImageMutation.mutateAsync(imageId);
             }
 
             // 2. 신규 이미지 업로드 (presigned URL → S3 PUT)
@@ -88,6 +93,7 @@ export function ProgramInfoEditScreen({ programId, program }: Props) {
             });
 
             pushToast({ message: '수정된 클래스 정보가 반영되었어요.' });
+            // 저장 성공 → 진입 직전(상세)으로 복귀. 상세는 onSuccess invalidate 로 재조회됨.
             router.back();
         } catch (err) {
             if (err instanceof ApiError) {

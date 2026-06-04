@@ -1,11 +1,17 @@
 'use client';
 
+import { use } from 'react';
+
+import { useSearchParams } from 'next/navigation';
+
 import { ProgramOperationsEditScreen, useProgramEditPreload } from '@/features/program/edit';
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default function PartnerClassEditOperationsPage({ params }: PageProps) {
-    const { programId, program, isLoading } = useProgramEditPreload(params);
+    const { id } = use(params);
+    const storeId = useSearchParams().get('storeId') ?? '';
+    const { programId, program, isLoading } = useProgramEditPreload(storeId, id);
 
     if (isLoading || !program) {
         return (

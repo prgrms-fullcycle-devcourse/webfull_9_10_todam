@@ -34,7 +34,7 @@ export class GetProgramDetailUseCase {
                 images: {
                     where: { status: 'UPLOADED' },
                     orderBy: { sortOrder: 'asc' },
-                    select: { imageUrl: true, thumbnailUrl: true },
+                    select: { id: true, imageUrl: true, thumbnailUrl: true, isThumbnail: true },
                 },
             },
         });
@@ -72,8 +72,10 @@ export class GetProgramDetailUseCase {
                 difficulty: program.difficulty,
                 status: program.status,
                 images: program.images.map((image) => ({
+                    programImageId: image.id,
                     imageUrl: image.imageUrl,
                     thumbnailUrl: image.thumbnailUrl,
+                    isThumbnail: image.isThumbnail,
                 })),
             },
         };
