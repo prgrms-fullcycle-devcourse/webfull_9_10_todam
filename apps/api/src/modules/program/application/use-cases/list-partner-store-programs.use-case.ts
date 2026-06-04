@@ -52,32 +52,24 @@ export class ListPartnerStoreProgramsUseCase {
             select: {
                 id: true,
                 title: true,
-                status: true,
                 price: true,
                 durationMinutes: true,
-                createdAt: true,
-                images: {
-                    where: { isThumbnail: true },
-                    orderBy: { sortOrder: 'asc' },
-                    take: 1,
-                    select: { thumbnailUrl: true, imageUrl: true },
-                },
+                difficulty: true,
+                leadTimeDays: true,
+                status: true,
             },
         });
 
         return {
-            programs: programs.map((program) => {
-                const thumbnail = program.images[0];
-                return {
-                    id: program.id,
-                    title: program.title,
-                    status: program.status,
-                    thumbnailUrl: thumbnail?.thumbnailUrl ?? thumbnail?.imageUrl ?? null,
-                    price: program.price,
-                    durationMinutes: program.durationMinutes,
-                    createdAt: program.createdAt.toISOString(),
-                };
-            }),
+            programs: programs.map((program) => ({
+                id: program.id,
+                title: program.title,
+                price: program.price,
+                durationMinutes: program.durationMinutes,
+                difficulty: program.difficulty,
+                leadTimeDays: program.leadTimeDays,
+                status: program.status,
+            })),
         };
     }
 }
