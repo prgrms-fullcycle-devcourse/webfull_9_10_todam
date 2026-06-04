@@ -43,14 +43,18 @@ import { AutocompleteStoresUseCase } from '../../application/use-cases/autocompl
 import { GetSlugAvailabilityUseCase } from '../../application/use-cases/get-slug-availability.use-case';
 import { GetStoreDetailUseCase } from '../../application/use-cases/get-store-detail.use-case';
 import { ListStoreProgramsUseCase } from '../../application/use-cases/list-store-programs.use-case';
+import { ListStoreReviewsUseCase } from '../../application/use-cases/list-store-reviews.use-case';
 import { ListStoresQueryDto } from '../dto/list-stores.dto';
 import { ListStoresResponseDto } from '../dto/list-stores-response.dto';
+import { ListStoreReviewsQueryDto } from '../dto/list-store-reviews.dto';
+import { ListStoreReviewsResponseDto } from '../dto/list-store-reviews-response.dto';
 import { AutocompleteStoresResponseDto } from '../dto/autocomplete-stores-response.dto';
 import {
     SlugAvailabilityQueryDto,
     SlugAvailabilityResponseDto,
 } from '../dto/slug-availability.dto';
 import { ListStoresQueryPipe } from '../pipes/list-stores-query.pipe';
+import { ListStoreReviewsQueryPipe } from '../pipes/list-store-reviews-query.pipe';
 import { CreateStoreDto, CreateStoreResponseDto } from '../dto/create-store.dto';
 import { CreateStoreImageDto, CreateStoreImageResponseDto } from '../dto/store-image.dto';
 import {
@@ -90,6 +94,7 @@ export class StoreController {
         private readonly getSlugAvailabilityUseCase: GetSlugAvailabilityUseCase,
         private readonly getStoreDetailUseCase: GetStoreDetailUseCase,
         private readonly listStoreProgramsUseCase: ListStoreProgramsUseCase,
+        private readonly listStoreReviewsUseCase: ListStoreReviewsUseCase,
     ) {}
 
     @Get('stores')
@@ -170,6 +175,18 @@ export class StoreController {
     })
     async listStorePrograms(@Param('slug') slug: string): Promise<ListStoreProgramsResponseDto> {
         return this.listStoreProgramsUseCase.execute(slug);
+    }
+
+    @Get('stores/:slug/reviews')
+    @HttpCode(HttpStatus.OK)
+    // 퍼블릭(Guest·User 공통). PUBLISHED 공방의 노출(is_visible=true) 리뷰 목록. 커서 기반.
+    @ResponseMessage('공방 리뷰 목록이 성공적으로 조회되었습니다.')
+    @ApiOkResponse({ description: '공방 리뷰 목록 조회 성공', type: ListStoreReviewsResponseDto })
+    async listStoreReviews(
+        @Param('slug') slug: string,
+        @Query(ListStoreReviewsQueryPipe) query: ListStoreReviewsQueryDto,
+    ): Promise<ListStoreReviewsResponseDto> {
+        return this.listStoreReviewsUseCase.execute(slug, query);
     }
 
     @Get('partner/stores')
