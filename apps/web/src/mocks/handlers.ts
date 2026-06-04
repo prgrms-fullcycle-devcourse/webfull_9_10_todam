@@ -2,19 +2,14 @@ import {
     deliveryEditRequestSchema,
     DeliveryEditErrorCode,
     ReservationDeliveryMethod,
-    StoreEditErrorCode,
     RESERVATION_LIST_DEFAULT_LIMIT,
     ReservationStatus,
     StoreRegistrationErrorCode,
-    storeRegistrationSubmitRequestSchema,
     reviewWriteRequestSchema,
-    PartnerStatus,
-    StoreStatus,
     ProgramEditErrorCode,
     type DeliveryEditResult,
     type ArtworkDetailResult,
     type GeocodeResult,
-    type PartnerProgramListResult,
     type ReservationDetailResult,
     type ReservationListResult,
     type ReviewDetailResult,
@@ -22,35 +17,25 @@ import {
     type ReviewUpdateResult,
     type ReviewImageUploadRequest,
     type ReviewImageUploadResult,
-    type StoreRegistrationStatusResult,
-    type StoreRegistrationSubmitResult,
     type SlugAvailabilityResult,
     type ToggleFavoriteResult,
     type FavoriteStoreListResult,
     type ProgramDetailResult,
     type ProgramEditResult,
-    type ProgramImageUploadResult,
 } from '@todam/shared';
 import { http, HttpResponse } from 'msw';
 
 import {
-    createStoreRegistration,
     findArtworkDetail,
-    findLatestStoreRegistration,
     findProgramBySlugAndId,
     findProgramByStoreAndId,
-    addProgramImage,
-    removeProgramImage,
     updateProgram,
     programToApiShape,
-    genId,
-    findPartnerStorePrograms,
     findReservationDetail,
     findReviewByReservation,
     createReview,
     updateReview,
     createReviewImageUpload,
-    isBusinessNumberRegistered,
     isSlugTaken,
     listFavoriteStores,
     listMyReservations,
@@ -79,31 +64,12 @@ function fail(path: string, statusCode: number, code: string, message: string) {
 const API = '*/api/v1';
 
 export const handlers = [
-    // 내 공방 목록 조회 (파트너센터)는 실 BE(apps/api) 연동.
-    // mock 핸들러 미등록 → onUnhandledRequest:'bypass' 로 NEXT_PUBLIC_API_URL(실 BE)로 통과.
-
     // 공방 URL(slug) 중복 확인
     http.get(`${API}/partner/stores/slug-availability`, ({ request }) => {
         const path = '/api/v1/partner/stores/slug-availability';
         const slug = new URL(request.url).searchParams.get('slug') ?? '';
         const result: SlugAvailabilityResult = { slug, available: !isSlugTaken(slug) };
         return ok(path, result);
-    }),
-
-    // [제거] 공방 이미지/정보/사업자/상세 mock 핸들러 — partner-store 도메인 실 BE 연동 완료.
-    // features/store/* 가 루트 경로(/partner/stores/...)로 실 BE 직접 호출 → /api/v1 mock 불필요.
-    // (slug-availability 만 실 BE 미존재로 mock 유지.)
-
-    // 공방 운영 클래스 목록 (파트너센터) — status enum 전체, 0개 시 []
-    http.get(`${API}/partner/stores/:storeId/programs`, ({ params }) => {
-        const storeId = String(params.storeId);
-        const path = `/api/v1/partner/stores/${storeId}/programs`;
-        const programs = findPartnerStorePrograms(storeId);
-        if (programs === null) {
-            return fail(path, 404, StoreEditErrorCode.STORE_NOT_FOUND, '공방을 찾을 수 없습니다.');
-        }
-        const result: PartnerProgramListResult = { programs };
-        return ok(path, result, '운영 클래스 목록이 성공적으로 조회되었습니다.');
     }),
 
     // 주소 → 좌표 (주소 API 연동 mock)
@@ -120,82 +86,6 @@ export const handlers = [
         }
         const { latitude, longitude } = mockGeocode(query);
         const result: GeocodeResult = { address: query, latitude, longitude };
-        return ok(path, result);
-    }),
-
-    // 공방 등록 제출 → Partner(PENDING)+Store(PENDING)+BusinessDocument+OperatingHours
-    http.post(`${API}/partner/onboarding`, async ({ request }) => {
-        const path = '/api/v1/partner/onboarding';
-        const raw = await request.json();
-
-        // zod 런타임 검증 (web mock·api 동일 스키마). 형식 오류 = VALIDATION_ERROR
-        const parsed = storeRegistrationSubmitRequestSchema.safeParse(raw);
-        if (!parsed.success) {
-            return fail(
-                path,
-                400,
-                StoreRegistrationErrorCode.VALIDATION_ERROR,
-                parsed.error.issues[0]?.message ?? '필수 입력값이 누락되었습니다.',
-            );
-        }
-        const body = parsed.data;
-        const doc = body.businessDocument;
-
-        if (isBusinessNumberRegistered(doc.businessNumber)) {
-            return fail(
-                path,
-                409,
-                StoreRegistrationErrorCode.BUSINESS_NUMBER_ALREADY_REGISTERED,
-                '이미 다른 계정에 등록된 사업자번호입니다.',
-            );
-        }
-        if (isSlugTaken(body.slug)) {
-            return fail(
-                path,
-                409,
-                StoreRegistrationErrorCode.STORE_SLUG_DUPLICATED,
-                '이미 사용 중인 공방 URL입니다.',
-            );
-        }
-
-        const { partner, store } = createStoreRegistration(body);
-        const result: StoreRegistrationSubmitResult = {
-            partnerId: partner.id,
-            storeId: store.id,
-            partnerStatus: PartnerStatus.PENDING,
-            storeStatus: StoreStatus.PENDING,
-            slug: store.slug,
-        };
-        return ok(path, result, '공방 등록 신청이 접수되었습니다.', 201);
-    }),
-
-    // 온보딩/검수 상태 조회 (완료 화면용)
-    // ?preview=rejected → 반려 화면 미리보기 (어드민 검수 미구현 대체)
-    http.get(`${API}/partner/onboarding`, ({ request }) => {
-        const path = '/api/v1/partner/onboarding';
-        const found = findLatestStoreRegistration();
-        if (!found) {
-            return fail(path, 404, 'ONBOARDING_NOT_FOUND', '신청 내역이 없습니다.');
-        }
-        const { partner, store, businessDoc } = found;
-        const preview = new URL(request.url).searchParams.get('preview');
-        const rejected = preview === 'rejected';
-        const result: StoreRegistrationStatusResult = {
-            partnerId: partner.id,
-            storeId: store.id,
-            storeName: store.name,
-            slug: store.slug,
-            // 심사 결과는 스토어 단위(store.status). partner.status 는 계정 승인용으로 불변.
-            partnerStatus: partner.status,
-            storeStatus: rejected ? StoreStatus.REJECTED : store.status,
-            rejectedReason: rejected
-                ? '사업자 등록증 이미지의 글씨가 흐려서 식별이 어렵습니다. 재업로드 부탁드립니다.'
-                : store.rejectedReason,
-            createdAt: partner.createdAt,
-            address: store.address,
-            businessNumber: businessDoc?.businessNumber ?? '',
-            email: businessDoc?.email ?? '',
-        };
         return ok(path, result);
     }),
 
@@ -262,72 +152,6 @@ export const handlers = [
                 },
             };
             return ok(path, result, '프로그램이 성공적으로 수정되었습니다.');
-        },
-    ),
-
-    // ─── 이미지 Pre-signed URL 발급 ──────────────────────────────────
-    // POST /partner/stores/{storeId}/programs/{programId}/images
-    http.post(
-        `${API}/partner/stores/:storeId/programs/:programId/images`,
-        async ({ request, params }) => {
-            const storeId = String(params.storeId);
-            const programId = String(params.programId);
-            const path = `/api/v1/partner/stores/${storeId}/programs/${programId}/images`;
-
-            const body = (await request.json()) as {
-                fileName: string;
-                fileType: string;
-                isThumbnail: boolean;
-            };
-
-            const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/heic'];
-            if (!ALLOWED_TYPES.includes(body.fileType)) {
-                return fail(
-                    path,
-                    400,
-                    ProgramEditErrorCode.INVALID_FILE_TYPE,
-                    '지원하지 않는 파일 형식입니다.',
-                );
-            }
-
-            const programImageId = genId('prog-img');
-            const imageUrl = `https://cdn.todam.app/programs/${programId}/${programImageId}.png`;
-            // mock: uploadUrl 은 자체 엔드포인트로 대체 (실제 S3 URL 흉내)
-            const uploadUrl = `https://todam-bucket.s3.ap-northeast-2.amazonaws.com/programs/${programId}/${programImageId}.png?mock=1`;
-
-            addProgramImage(programId, {
-                programImageId,
-                imageUrl,
-                thumbnailUrl: imageUrl,
-                isThumbnail: body.isThumbnail,
-            });
-
-            const result: ProgramImageUploadResult = { programImageId, uploadUrl, imageUrl };
-            return ok(path, result, '프로그램 이미지 업로드용 URL이 발급되었습니다.', 201);
-        },
-    ),
-
-    // ─── 이미지 삭제 ────────────────────────────────────────────────
-    // DELETE /partner/stores/{storeId}/programs/{programId}/images/{imageId}
-    http.delete(
-        `${API}/partner/stores/:storeId/programs/:programId/images/:imageId`,
-        ({ params }) => {
-            const storeId = String(params.storeId);
-            const programId = String(params.programId);
-            const imageId = String(params.imageId);
-            const path = `/api/v1/partner/stores/${storeId}/programs/${programId}/images/${imageId}`;
-
-            const deleted = removeProgramImage(imageId);
-            if (!deleted) {
-                return fail(
-                    path,
-                    404,
-                    ProgramEditErrorCode.IMAGE_NOT_FOUND,
-                    '이미지를 찾을 수 없습니다.',
-                );
-            }
-
-            return ok(path, null, '프로그램 이미지가 삭제되었습니다.');
         },
     ),
 
