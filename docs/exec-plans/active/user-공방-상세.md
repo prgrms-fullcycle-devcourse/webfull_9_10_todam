@@ -169,20 +169,18 @@
 ### C. `GET /stores/{slug}/reviews` — 공방 리뷰 목록 (전체보기 + 상세 미리보기 후보)
 
 - 인증: 불필요. Path: `slug`.
-- Query: `page`(기본 1), `limit`(기본 10), `sort`(`latest`|`rating_high`, 기본 `latest`).
-  - **상세 미리보기(확정 #2):** `?limit=3&sort=latest` 호출. "이미지·본문 우선" 정렬은 도입 안 함.
-- 시스템 처리: `slug`로 PUBLISHED 공방 조회 → 전체 리뷰 페이지네이션 → 전체 수·평균 별점 동봉.
+- **커서 기반**(전체보기 무한스크롤과 공유 — `user-공방-리뷰-전체보기` 동기화). Query: `cursor`(선택, 첫 페이지 미전송), `limit`(기본 10), `sort`(`latest`|`rating_high`, 기본 `latest`).
+  - **상세 미리보기(확정 #2):** `?limit=3&sort=latest`(cursor 없이 첫 페이지)로 최신 3건. 정렬 토글·요약 헤더 없음.
+- 시스템 처리: `slug`로 PUBLISHED 공방 조회 → `is_visible=true` 리뷰 `sort` 정렬 → `cursor` 이후 `limit`개 → `nextCursor`/`hasNext` 산출.
 - `200 OK` `data`:
 
 | 필드 | 타입 | 비고 |
 |------|------|------|
-| `totalCount` | number | |
-| `averageRating` | number | |
-| `reviews[]` | object[] | `id, nickname, rating, content, photos[{thumbnailUrl}], programTitle, createdAt` |
-| `pagination` | `{ currentPage, totalPages, limit }` | |
+| `reviews[]` | object[] | `id, nickname(마스킹), rating, content, photos[{imageUrl, thumbnailUrl}], programTitle, createdAt` |
+| `pageInfo` | `{ nextCursor: string\|null, hasNext: boolean }` | 커서 기반. `totalCount`/`averageRating` 미포함(상세 평점은 코어 응답 제공) |
 
 - `404 STORE_NOT_FOUND` / `500 INTERNAL_SERVER_ERROR`.
-- 상세 미리보기 = `?limit=3&sort=latest` (확정 #2). 각 리뷰 `programTitle`(예약→프로그램명)이 클래스 태그로 노출(UI 리뷰 더보기).
+- 각 리뷰 `programTitle`(예약→프로그램명)이 클래스 태그로 노출. `photos.imageUrl`=확대보기 원본, `thumbnailUrl`=목록 썸네일.
 
 ### D. (참조) `GET /stores/{slug}/programs/{programId}` — 프로그램 상세 (퍼블릭)
 
@@ -249,6 +247,7 @@
 - 2026-06-04: **명세-화면 갭 발견** — `GET /stores/{slug}` 응답에 이미지목록·평점·리뷰수·좌표·찜·region객체·운영시간 부재. 추측 금지 → Open decisions #1~3로 사람 결정 대기. PROPOSED 필드는 미확정 표기.
 - 2026-06-04: `GET /stores/{slug}` BE 미구현 확인(store.controller.ts에 `stores/:slug` 라우트 없음). 목록(`GET /stores`)은 머지됨. 상세 `rating` 규칙(`isVisible=true` 평균, 0건 null)은 목록 DTO 재사용.
 - 2026-06-04: **UI 화면 기준 #1~#3 확정.** #1 compose(코어에 `images[]`/`rating`/`reviewCount`/`location`/`isFavorite` 추가 + `/programs`·`/reviews?limit=3` 조합), #2 미리보기 최신순, #3 `isFavorite` 추가. 상세엔 `region`객체·`operatingHours`·`isOperating` 미포함(UI "준비 중"=클래스0개 빈상태). 운영 클래스에 `difficulty` 추가(UI 기본/중급/심화).
+- 2026-06-04: **`GET /stores/{slug}/reviews` 커서 기반으로 변경** — `user-공방-리뷰-전체보기`(전체보기 무한스크롤) UI 확정에 따라 offset(`page`/`pagination`) → 커서(`cursor`/`pageInfo{nextCursor,hasNext}`). `totalCount`/`averageRating` 제거(코어 평점 사용), `photos`에 확대용 `imageUrl` 추가. 상세 미리보기는 cursor 없이 `limit=3&sort=latest`. 두 plan·Notion 명세 동기.
 
 ## Outcome
 
