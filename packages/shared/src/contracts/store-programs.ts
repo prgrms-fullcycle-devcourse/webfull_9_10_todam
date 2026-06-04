@@ -12,11 +12,12 @@ export const partnerProgramListItemSchema = z.object({
     title: z.string(),
     // CONTRACT-4: DRAFT(작성 중) / ACTIVE(예약 가능) / INACTIVE(일시 중단).
     status: z.nativeEnum(ProgramStatus),
-    thumbnailUrl: z.string(),
+    // BE는 대표 이미지 미존재 시 null 반환 → nullable로 맞춤.
+    thumbnailUrl: z.string().nullable(),
     price: z.number(),
     durationMinutes: z.number(),
-    // 클래스 관리 화면 노출 순서(오름차순 정렬 기준).
-    sortOrder: z.number(),
+    // 노출 순서. BE가 sortOrder asc 선정렬해 반환하므로 응답 필드로는 미포함 → optional.
+    sortOrder: z.number().optional(),
     createdAt: z.string(),
 });
 export type PartnerProgramListItem = z.infer<typeof partnerProgramListItemSchema>;
