@@ -856,8 +856,9 @@ export function getStoreDetail(id: string): PartnerStoreDetail | undefined {
 
 // ─── 운영 클래스 목록 시드 (GET /partner/stores/{storeId}/programs) ──
 // store-seed-0001 만 보유, store-seed-0002 는 empty([]) — empty UI 확인용.
-// level·leadTimeDays 는 Contract 외 mock 표시 확장 필드(서브텍스트 "난이도・소요시간・평균제작일"용).
-type PartnerProgramListSeed = PartnerProgramListItem & { level?: string; leadTimeDays?: number };
+// 응답 7필드 contract(2026-06-04): id,title,price,durationMinutes,difficulty,leadTimeDays,status.
+// 서버가 sortOrder 오름차순으로 정렬해 반환하므로 시드는 노출 순서대로 나열한다.
+type PartnerProgramListSeed = PartnerProgramListItem;
 
 const storePrograms: Record<string, PartnerProgramListSeed[]> = {
     'store-seed-0001': [
@@ -865,36 +866,27 @@ const storePrograms: Record<string, PartnerProgramListSeed[]> = {
             id: 'prog-seed-0001',
             title: '도자기 물레 원데이 클래스',
             status: ProgramStatus.ACTIVE,
-            thumbnailUrl: 'https://placehold.co/200x150?text=wheel',
             price: 45000,
             durationMinutes: 120,
-            sortOrder: 1,
-            createdAt: '2026-05-21T09:00:00.000Z',
-            level: '기본',
+            difficulty: ProgramDifficulty.BASIC,
             leadTimeDays: 28,
         },
         {
             id: 'prog-seed-0002',
             title: '핸드빌딩 머그컵 만들기',
             status: ProgramStatus.DRAFT,
-            thumbnailUrl: 'https://placehold.co/200x150?text=mug',
             price: 38000,
             durationMinutes: 90,
-            sortOrder: 2,
-            createdAt: '2026-05-22T09:00:00.000Z',
-            level: '중급',
+            difficulty: ProgramDifficulty.INTERMEDIATE,
             leadTimeDays: 30,
         },
         {
             id: 'prog-seed-0003',
             title: '커플 도자기 클래스',
             status: ProgramStatus.INACTIVE,
-            thumbnailUrl: 'https://placehold.co/200x150?text=couple',
             price: 88000,
             durationMinutes: 150,
-            sortOrder: 3,
-            createdAt: '2026-05-23T09:00:00.000Z',
-            level: '심화',
+            difficulty: ProgramDifficulty.ADVANCED,
             leadTimeDays: 35,
         },
     ],

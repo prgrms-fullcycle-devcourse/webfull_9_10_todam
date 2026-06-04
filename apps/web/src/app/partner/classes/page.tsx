@@ -21,10 +21,8 @@ const MOCK_STORE_ID = 'store-seed-0001';
 export default function PartnerClassesPage() {
     const router = useRouter();
     const { data, isLoading, isError } = usePartnerPrograms(MOCK_STORE_ID);
-    // 클래스 관리 화면은 DRAFT(작성 중) UI 미표기 → 생략, ACTIVE/INACTIVE 만 sortOrder 오름차순 노출.
-    const programs = (data?.programs ?? [])
-        .filter((p) => p.status !== ProgramStatus.DRAFT)
-        .sort((a, b) => a.sortOrder - b.sortOrder);
+    // 클래스 관리 화면은 DRAFT(작성 중) UI 미표기 → 생략. 서버가 sortOrder 오름차순 정렬해 반환.
+    const programs = (data?.programs ?? []).filter((p) => p.status !== ProgramStatus.DRAFT);
 
     // 라우트 헤더(클래스 관리) 우측 슬롯에 메뉴 주입.
     useHeaderOverride({ rightAction: <ClassListHeaderMenu programCount={programs.length} /> });
