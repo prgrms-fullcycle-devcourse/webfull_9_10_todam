@@ -10,7 +10,7 @@ import { useReservationDetail, useReservationReview } from '@/features/reservati
 import { useDeleteReviewMutation } from '@/features/review/actions';
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
-import { useModal, useToast } from '@/shared/model';
+import { useModal } from '@/shared/model';
 
 import { ReviewMoreMenu } from './ReviewMoreMenu';
 
@@ -29,7 +29,6 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
     const { data, error, isLoading, isError } = useReservationReview(reservationId, true);
     const { data: reservationData } = useReservationDetail(reservationId);
     const { open: openModal, close: closeModal } = useModal();
-    const { push: pushToast } = useToast();
     const { mutate: deleteReviewMutate } = useDeleteReviewMutation(reservationId);
 
     // 401 → /login 리다이렉트.
@@ -43,7 +42,7 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
     const reservation = reservationData?.reservation;
 
     const handleEdit = () => {
-        pushToast({ message: '리뷰 수정은 곧 지원돼요.' });
+        router.push(`/my/reservations/${reservationId}/review/edit`);
     };
 
     const handleDelete = () => {
