@@ -241,7 +241,11 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                         {!programs.isLoading && !programs.isError && hasPrograms && (
                             <div className="flex flex-col gap-2">
                                 {programList.map((program) => (
-                                    <PartnerClassListItem key={program.id} program={program} />
+                                    <PartnerClassListItem
+                                        key={program.id}
+                                        program={program}
+                                        storeId={id}
+                                    />
                                 ))}
                                 <Button
                                     variant="outline"

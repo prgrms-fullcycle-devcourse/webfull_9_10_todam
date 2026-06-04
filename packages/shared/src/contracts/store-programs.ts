@@ -45,3 +45,39 @@ export const partnerProgramReorderRequestSchema = z.object({
     programs: z.array(partnerProgramReorderItemSchema).nonempty(),
 });
 export type PartnerProgramReorderRequest = z.infer<typeof partnerProgramReorderRequestSchema>;
+
+// ─── 파트너센터 운영 클래스 상세 ──────────────────────────────────
+// GET /partner/stores/{storeId}/programs/{programId}  (AuthGuard, PartnerGuard)
+// API Contract 스냅샷(docs/exec-plans/completed/partner-class-detail.md) SSOT.
+// 퍼블릭 상세(program-edit programDetailSchema)와 달리 이미지가 { imageUrl, thumbnailUrl|null }만,
+// status enum 전체(DRAFT/ACTIVE/INACTIVE) 반환. serve-UPLOADED-only.
+
+export const partnerProgramDetailImageSchema = z.object({
+    imageUrl: z.string(),
+    thumbnailUrl: z.string().nullable(),
+});
+export type PartnerProgramDetailImage = z.infer<typeof partnerProgramDetailImageSchema>;
+
+export const partnerProgramDetailSchema = z.object({
+    id: z.string(),
+    storeId: z.string(),
+    title: z.string(),
+    description: z.string().nullable(),
+    materials: z.string().nullable(),
+    caution: z.string().nullable(),
+    price: z.number(),
+    durationMinutes: z.number(),
+    leadTimeDays: z.number(),
+    deliverable: z.boolean(),
+    childFriendly: z.boolean(),
+    difficulty: z.nativeEnum(ProgramDifficulty),
+    status: z.nativeEnum(ProgramStatus),
+    images: z.array(partnerProgramDetailImageSchema),
+});
+export type PartnerProgramDetail = z.infer<typeof partnerProgramDetailSchema>;
+
+// 상세 응답 봉투의 data 부분: { program }.
+export const partnerProgramDetailResultSchema = z.object({
+    program: partnerProgramDetailSchema,
+});
+export type PartnerProgramDetailResult = z.infer<typeof partnerProgramDetailResultSchema>;

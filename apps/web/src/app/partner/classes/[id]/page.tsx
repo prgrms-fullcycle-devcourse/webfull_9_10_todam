@@ -1,18 +1,28 @@
 'use client';
 
+import { use } from 'react';
+
 import { Button, Tag, RightIcon, BottomBar } from '@todam/ui';
 import { ProgramDifficulty, ProgramStatus } from '@todam/shared';
+import { useSearchParams } from 'next/navigation';
 
 import { useSheet } from '@/shared/model';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { getDifficultyLabel } from '@/entities/program';
-import { useProgramEditPreload } from '@/features/program/edit';
-import { ClassEditSheet, ClassInfoTable } from '@/features/program/detail';
+import {
+    ClassDescription,
+    ClassEditSheet,
+    ClassInfoTable,
+    usePartnerProgramDetail,
+} from '@/features/program/detail';
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default function PartnerClassDetailPage({ params }: PageProps) {
-    const { programId, program, isLoading } = useProgramEditPreload(params);
+    const { id: programId } = use(params);
+    const storeId = useSearchParams().get('storeId') ?? '';
+    const { data, isLoading } = usePartnerProgramDetail(storeId, programId);
+    const program = data?.program;
     const { open: openSheet, close: closeSheet } = useSheet();
 
     // 라우트 헤더(클래스 미리보기) 우측 기본 알림 아이콘 숨김.
@@ -85,11 +95,7 @@ export default function PartnerClassDetailPage({ params }: PageProps) {
                         <RightIcon size={16} />
                     </button>
 
-                    {program.description && (
-                        <p className="py-2 text-sm leading-[18px] text-foreground">
-                            {program.description}
-                        </p>
-                    )}
+                    <ClassDescription description={program.description} />
                 </section>
 
                 {/* 클래스 상세 정보 테이블 */}

@@ -60,7 +60,11 @@ export default function PartnerClassesPage() {
             {!isLoading && !isError && programs.length > 0 && (
                 <section className="flex flex-col gap-3 py-2">
                     {programs.map((program) => (
-                        <PartnerClassListItem key={program.id} program={program} />
+                        <PartnerClassListItem
+                            key={program.id}
+                            program={program}
+                            storeId={storeId}
+                        />
                     ))}
                 </section>
             )}

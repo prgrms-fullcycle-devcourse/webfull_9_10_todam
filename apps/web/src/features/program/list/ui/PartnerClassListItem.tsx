@@ -16,10 +16,11 @@ export function buildProgramMetaItems(program: PartnerProgramListItemView): stri
 
 type Props = {
     program: PartnerProgramListItemView;
+    storeId: string;
 };
 
 // 파트너 클래스 목록 아이템
-export function PartnerClassListItem({ program }: Props) {
+export function PartnerClassListItem({ program, storeId }: Props) {
     const router = useRouter();
     return (
         <ClassItem
@@ -29,7 +30,7 @@ export function PartnerClassListItem({ program }: Props) {
             isClosed={program.status === ProgramStatus.INACTIVE}
             role="button"
             tabIndex={0}
-            onClick={() => router.push(`/partner/classes/${program.id}`)}
+            onClick={() => router.push(`/partner/classes/${program.id}?storeId=${storeId}`)}
             className="cursor-pointer text-left"
         />
     );
