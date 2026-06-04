@@ -15,7 +15,7 @@
 - API 연동: 실 API 요청/응답이 contract 스키마로 연결. MSW mock 바인딩만 한 상태는 미체크.
 -->
 
-- [ ] API 구현
+- [x] API 구현
 - [ ] UI 구현
 - [ ] API 연동
 
@@ -169,7 +169,17 @@
 
 ## Out (단계별 완료물)
 
-- API: <!-- GET /stores 엔드포인트, 파일 -->
+- API: `GET /stores` (공방 목록 탐색 + 검색 통합) 구현 완료. 응답 envelope/카드필드/커서 페이징/거리순/keyword(name·address·ACTIVE Program.title)·matchedClass·isOperating(KST) 전부 contract 스냅샷 1:1.
+  - 라우트/컨트롤러: `apps/api/src/modules/store/presentation/controllers/store.controller.ts` (`@Get('stores')`, 공개·무인증)
+  - 유스케이스: `apps/api/src/modules/store/application/use-cases/list-stores.use-case.ts` (PUBLISHED 필터, Haversine 거리, 거리순/publishedAt순 분기, 집계 rating/reviewCount/representativeClass{hasMore}/matchedClass/thumbnail/region/isOperating)
+  - 커서 코덱: `apps/api/src/modules/store/application/use-cases/store-cursor.ts` (base64url opaque, lat/lng 있으면 `{distance,id}` / 없으면 `{publishedAt,id}`)
+  - 쿼리 DTO: `apps/api/src/modules/store/presentation/dto/list-stores.dto.ts` (lat/lng/keyword/cursor/limit 전부 선택, limit 기본 20)
+  - 응답 DTO: `apps/api/src/modules/store/presentation/dto/list-stores-response.dto.ts` (`stores[]` + `pageInfo{nextCursor,hasNext}`, region 객체 `{sido,sigungu,dong}`)
+  - 검증 파이프: `apps/api/src/modules/store/presentation/pipes/list-stores-query.pipe.ts` (lat/lng 형식 오류 → 400 `INVALID_QUERY_PARAMETERS`). 서버 내부 오류는 공통 필터가 500 `INTERNAL_SERVER_ERROR`.
+  - 모듈 등록: `apps/api/src/modules/store/store.module.ts` (`ListStoresUseCase` provider 추가)
+  - 스키마: `Store`에 `regionSido`/`regionSigungu`/`regionDong` 컬럼 추가 — `apps/api/prisma/schema.prisma` + 마이그레이션 `apps/api/prisma/migrations/20260602130000_add_store_region_columns/migration.sql`
+  - 빌드/타입체크: `nest build`·`tsc --noEmit` 통과. 신규 파일 lint 클린.
+  - **별도 작업(미완·골격만)**: 기존 데이터 region 백필 스크립트 `apps/api/prisma/scripts/backfill-store-region.ts` (카카오 coord2regioncode 호출부 TODO). 운영 작업으로 분리.
 - UI: <!-- 메인 공방 목록 섹션, 공방 카드 컴포넌트 -->
 - 연동: <!-- 실 GET /stores 바인딩, 권한 허용/거부 경로 검증 결과 -->
 
