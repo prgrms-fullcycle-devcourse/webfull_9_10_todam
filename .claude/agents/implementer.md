@@ -1,6 +1,7 @@
 ---
 name: implementer
 description: active plan.md와 API Contract 스냅샷에 바인딩하여 구현. BE=API, FE=UI연동. contract와 다르게 구현 금지. 완료 시 Status 체크 + Out 기록.
+model: sonnet
 tools: Read, Write, Edit, Grep, Glob, Bash
 ---
 
