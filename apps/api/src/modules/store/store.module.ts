@@ -13,6 +13,7 @@ import { UpdateBusinessDocumentUseCase } from './application/use-cases/update-bu
 import { DeleteStoreImageUseCase } from './application/use-cases/delete-store-image.use-case';
 import { ListStoresUseCase } from './application/use-cases/list-stores.use-case';
 import { AutocompleteStoresUseCase } from './application/use-cases/autocomplete-stores.use-case';
+import { GetSlugAvailabilityUseCase } from './application/use-cases/get-slug-availability.use-case';
 import { PartnerGuard } from '../../common/guards/partner.guard';
 import { StoreController } from './presentation/controllers/store.controller';
 
@@ -33,6 +34,7 @@ import { StoreController } from './presentation/controllers/store.controller';
         DeleteStoreImageUseCase,
         ListStoresUseCase,
         AutocompleteStoresUseCase,
+        GetSlugAvailabilityUseCase,
         PartnerGuard,
     ],
 })

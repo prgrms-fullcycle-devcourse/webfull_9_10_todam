@@ -39,9 +39,14 @@ import { UpdateBusinessDocumentUseCase } from '../../application/use-cases/updat
 import { DeleteStoreImageUseCase } from '../../application/use-cases/delete-store-image.use-case';
 import { ListStoresUseCase } from '../../application/use-cases/list-stores.use-case';
 import { AutocompleteStoresUseCase } from '../../application/use-cases/autocomplete-stores.use-case';
+import { GetSlugAvailabilityUseCase } from '../../application/use-cases/get-slug-availability.use-case';
 import { ListStoresQueryDto } from '../dto/list-stores.dto';
 import { ListStoresResponseDto } from '../dto/list-stores-response.dto';
 import { AutocompleteStoresResponseDto } from '../dto/autocomplete-stores-response.dto';
+import {
+    SlugAvailabilityQueryDto,
+    SlugAvailabilityResponseDto,
+} from '../dto/slug-availability.dto';
 import { ListStoresQueryPipe } from '../pipes/list-stores-query.pipe';
 import { CreateStoreDto, CreateStoreResponseDto } from '../dto/create-store.dto';
 import { CreateStoreImageDto, CreateStoreImageResponseDto } from '../dto/store-image.dto';
@@ -77,6 +82,7 @@ export class StoreController {
         private readonly deleteStoreImageUseCase: DeleteStoreImageUseCase,
         private readonly listStoresUseCase: ListStoresUseCase,
         private readonly autocompleteStoresUseCase: AutocompleteStoresUseCase,
+        private readonly getSlugAvailabilityUseCase: GetSlugAvailabilityUseCase,
     ) {}
 
     @Get('stores')
@@ -103,6 +109,34 @@ export class StoreController {
         @Query('keyword') keyword?: string,
     ): Promise<AutocompleteStoresResponseDto> {
         return this.autocompleteStoresUseCase.execute(keyword);
+    }
+
+    // 정적 라우트. 동적 세그먼트(:storeId 등)에 가려지지 않도록 static stores/* 라우트들 사이에 배치.
+    @Get('stores/slug-availability')
+    @HttpCode(HttpStatus.OK)
+    // AuthGuard 만 (PartnerGuard 없음). 첫 등록 USER도 사전 중복확인이 가능해야 함 (POST /stores 가드 정책과 동일).
+    @UseGuards(AuthGuard)
+    @ResponseMessage('slug 사용 가능 여부를 확인했습니다.')
+    @ApiQuery({
+        name: 'slug',
+        required: true,
+        description: '중복 확인할 공방 URL slug (영문 소문자·숫자·하이픈, 4~40자).',
+        example: 'my-workshop',
+    })
+    @ApiQuery({
+        name: 'excludeStoreId',
+        required: false,
+        description: '수정 화면에서 자기 자신 store를 충돌 검사에서 제외하기 위한 store id.',
+    })
+    @ApiOkResponse({
+        description: 'slug 사용 가능 여부 확인 성공',
+        type: SlugAvailabilityResponseDto,
+    })
+    async getSlugAvailability(
+        @CurrentUser() user: RequestUser,
+        @Query() query: SlugAvailabilityQueryDto,
+    ): Promise<SlugAvailabilityResponseDto> {
+        return this.getSlugAvailabilityUseCase.execute(user.id, query.slug, query.excludeStoreId);
     }
 
     @Get('partner/stores')
