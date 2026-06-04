@@ -6,7 +6,8 @@ import { Button, Tag, RightIcon, BottomBar } from '@todam/ui';
 import { ProgramDifficulty, ProgramStatus } from '@todam/shared';
 import { useSearchParams } from 'next/navigation';
 
-import { useSheet } from '@/shared/model';
+import { ApiError } from '@/shared/api';
+import { useSheet, useToast } from '@/shared/model';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { getDifficultyLabel } from '@/entities/program';
 import {
@@ -14,6 +15,7 @@ import {
     ClassEditSheet,
     ClassInfoTable,
     usePartnerProgramDetail,
+    useUpdateProgramStatus,
 } from '@/features/program/detail';
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -24,8 +26,9 @@ export default function PartnerClassDetailPage({ params }: PageProps) {
     const { data, isLoading } = usePartnerProgramDetail(storeId, programId);
     const program = data?.program;
     const { open: openSheet, close: closeSheet } = useSheet();
+    const { push: pushToast } = useToast();
+    const statusMutation = useUpdateProgramStatus(storeId, programId);
 
-    // 라우트 헤더(클래스 미리보기) 우측 기본 알림 아이콘 숨김.
     useHeaderOverride({ hideRightAction: true });
 
     if (isLoading || !program) {
@@ -37,18 +40,38 @@ export default function PartnerClassDetailPage({ params }: PageProps) {
     }
 
     const isPublished = program.status === ProgramStatus.ACTIVE;
-    // reviewCount 는 리뷰 API 후행(임시 0). featureTags 는 운영 플래그에서 파생.
+    // TODO: reviewCount 는 리뷰 API 후행(임시 0). featureTags 는 운영 플래그에서 파생.
     const reviewCount = 0;
     const featureTags = [
         program.childFriendly && '어린이 가능',
         program.deliverable && '배송 가능',
     ].filter(Boolean) as string[];
 
+    const handlePublish = () => {
+        if (statusMutation.isPending) return;
+        // INACTIVE/DRAFT → ACTIVE 게시.
+        statusMutation.mutate(
+            { status: ProgramStatus.ACTIVE },
+            {
+                onSuccess: () => pushToast({ message: '클래스를 게시했어요.' }),
+                onError: (err) =>
+                    pushToast({
+                        message:
+                            err instanceof ApiError ? err.message : '게시 중 오류가 발생했어요.',
+                    }),
+            },
+        );
+    };
+
     const handleCta = () => {
-        if (!isPublished) return;
+        if (!isPublished) {
+            handlePublish();
+            return;
+        }
         openSheet(
             <ClassEditSheet
                 programId={programId}
+                storeId={storeId}
                 title={program.title}
                 reservationCount={12}
                 onClose={closeSheet}
