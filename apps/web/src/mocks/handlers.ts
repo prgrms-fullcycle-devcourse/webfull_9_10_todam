@@ -17,7 +17,6 @@ import {
     type ReviewUpdateResult,
     type ReviewImageUploadRequest,
     type ReviewImageUploadResult,
-    type SlugAvailabilityResult,
     type ToggleFavoriteResult,
     type FavoriteStoreListResult,
     type ProgramDetailResult,
@@ -36,7 +35,6 @@ import {
     createReview,
     updateReview,
     createReviewImageUpload,
-    isSlugTaken,
     listFavoriteStores,
     listMyReservations,
     mockGeocode,
@@ -64,14 +62,6 @@ function fail(path: string, statusCode: number, code: string, message: string) {
 const API = '*/api/v1';
 
 export const handlers = [
-    // 공방 URL(slug) 중복 확인
-    http.get(`${API}/partner/stores/slug-availability`, ({ request }) => {
-        const path = '/api/v1/partner/stores/slug-availability';
-        const slug = new URL(request.url).searchParams.get('slug') ?? '';
-        const result: SlugAvailabilityResult = { slug, available: !isSlugTaken(slug) };
-        return ok(path, result);
-    }),
-
     // 주소 → 좌표 (주소 API 연동 mock)
     http.get(`${API}/geocode`, ({ request }) => {
         const path = '/api/v1/geocode';

@@ -73,9 +73,6 @@ interface MockDb {
     operatingHours: OperatingHourRow[];
 }
 
-// 시드: 슬러그 중복 케이스 테스트용.
-export const SEEDED_TAKEN_SLUGS = new Set(['todam', 'ceramic-studio']);
-
 export const db: MockDb = {
     partners: [],
     stores: [],
@@ -245,11 +242,6 @@ export function genId(prefix: string): string {
 
 export function nowIso(): string {
     return new Date().toISOString();
-}
-
-export function isSlugTaken(slug: string): boolean {
-    if (SEEDED_TAKEN_SLUGS.has(slug)) return true;
-    return db.stores.some((s) => s.slug === slug);
 }
 
 // ─── 프로그램 mock DB ────────────────────────────────────────────
