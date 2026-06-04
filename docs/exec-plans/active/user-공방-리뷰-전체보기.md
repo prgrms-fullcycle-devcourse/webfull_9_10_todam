@@ -16,7 +16,7 @@
 - API 연동: **실 API** 요청/응답이 contract 스키마로 연결. MSW mock 바인딩만 한 상태는 미체크(연동 아님).
 -->
 
-- [ ] API 구현  <!-- 본 기능에선 신규 BE 없음. GET /stores/{slug}/reviews(+Review 도메인) 는 #120(공방 리뷰 전체보기)이 BE 소유. 여기선 그 엔드포인트 동작에 의존만 함 → completed 게이트는 "#120에서 엔드포인트 구현됨" 확인으로 충족 -->
+- [x] API 구현  <!-- #120 BE = GET /stores/{slug}/reviews (커서 기반) 구현 완료 (store 모듈). 앞서의 "신규 BE 없음" 주석은 이 작업으로 정정됨 — 본 기능(#120)이 reviews 엔드포인트를 소유·구현. -->
 - [ ] UI 구현
 - [ ] API 연동
 
@@ -135,7 +135,14 @@ ReviewListItem: {
 
 ## Out (단계별 완료물)
 
-- API: <!-- 본 기능 신규 BE 없음. 의존 엔드포인트 GET /stores/{slug}/reviews 구현 위치(#118) 기록 -->
+- API: `GET /stores/{slug}/reviews` (커서 기반, 공개) 구현 완료 — store 모듈에 추가.
+  - 라우트/핸들러: `apps/api/src/modules/store/presentation/controllers/store.controller.ts` (`listStoreReviews`, `stores/:slug/programs` 뒤·정적 라우트와 충돌 없게 등록)
+  - use-case: `apps/api/src/modules/store/application/use-cases/list-store-reviews.use-case.ts`
+  - 커서 유틸: `apps/api/src/modules/store/application/use-cases/store-reviews-cursor.ts` (latest=`{createdAt,id}`, rating_high=`{rating,createdAt,id}`, base64url)
+  - query DTO/pipe: `apps/api/src/modules/store/presentation/dto/list-store-reviews.dto.ts`, `.../pipes/list-store-reviews-query.pipe.ts` (cursor/limit/sort, sort enum=`latest|rating_high`, 기본 latest, limit 기본 10)
+  - response DTO: `apps/api/src/modules/store/presentation/dto/list-store-reviews-response.dto.ts` (`reviews[]{id,nickname(마스킹),rating,content,photos[{imageUrl,thumbnailUrl}],programTitle,createdAt}` + `pageInfo{nextCursor,hasNext}`, totalCount/averageRating 미포함)
+  - 모듈 등록: `apps/api/src/modules/store/store.module.ts`
+  - 동작: PUBLISHED 공방 아니면 404 `STORE_NOT_FOUND` / `isVisible=true` 필터 / programTitle=Review→Reservation→Program.title / nickname 마스킹(앞 3글자 노출)
 - UI: <!-- /stores/[slug]/reviews 페이지, 정렬 토글, 리뷰 카드, 빈 상태, 이미지 확대보기, 신규 컴포넌트/스토리 -->
 - 연동: <!-- useStoreReviews 실 API 바인딩, 정렬·페이지·404·빈상태 검증 결과 -->
 
