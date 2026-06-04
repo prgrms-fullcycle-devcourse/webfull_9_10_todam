@@ -17,6 +17,7 @@ import { GetSlugAvailabilityUseCase } from './application/use-cases/get-slug-ava
 import { GetStoreDetailUseCase } from './application/use-cases/get-store-detail.use-case';
 import { ListStoreProgramsUseCase } from './application/use-cases/list-store-programs.use-case';
 import { ListStoreReviewsUseCase } from './application/use-cases/list-store-reviews.use-case';
+import { ToggleFavoriteStoreUseCase } from './application/use-cases/toggle-favorite-store.use-case';
 import { PartnerGuard } from '../../common/guards/partner.guard';
 import { OptionalAuthGuard } from '../../common/guards/optional-auth.guard';
 import { StoreController } from './presentation/controllers/store.controller';
@@ -42,6 +43,7 @@ import { StoreController } from './presentation/controllers/store.controller';
         GetStoreDetailUseCase,
         ListStoreProgramsUseCase,
         ListStoreReviewsUseCase,
+        ToggleFavoriteStoreUseCase,
         PartnerGuard,
         OptionalAuthGuard,
     ],

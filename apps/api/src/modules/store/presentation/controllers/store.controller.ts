@@ -44,6 +44,7 @@ import { GetSlugAvailabilityUseCase } from '../../application/use-cases/get-slug
 import { GetStoreDetailUseCase } from '../../application/use-cases/get-store-detail.use-case';
 import { ListStoreProgramsUseCase } from '../../application/use-cases/list-store-programs.use-case';
 import { ListStoreReviewsUseCase } from '../../application/use-cases/list-store-reviews.use-case';
+import { ToggleFavoriteStoreUseCase } from '../../application/use-cases/toggle-favorite-store.use-case';
 import { ListStoresQueryDto } from '../dto/list-stores.dto';
 import { ListStoresResponseDto } from '../dto/list-stores-response.dto';
 import { ListStoreReviewsQueryDto } from '../dto/list-store-reviews.dto';
@@ -66,6 +67,7 @@ import { ListPartnerStoresResponseDto } from '../dto/list-partner-stores.dto';
 import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detail.dto';
 import { GetPartnerOnboardingResponseDto } from '../dto/get-partner-onboarding.dto';
 import { GetStoreDetailResponseDto } from '../dto/get-store-detail.dto';
+import { ToggleFavoriteStoreResponseDto } from '../dto/toggle-favorite-store.dto';
 import { ListStoreProgramsResponseDto } from '../dto/list-store-programs.dto';
 import { UpdateStoreDto, UpdateStoreResponseDto } from '../dto/update-store.dto';
 import {
@@ -95,6 +97,7 @@ export class StoreController {
         private readonly getStoreDetailUseCase: GetStoreDetailUseCase,
         private readonly listStoreProgramsUseCase: ListStoreProgramsUseCase,
         private readonly listStoreReviewsUseCase: ListStoreReviewsUseCase,
+        private readonly toggleFavoriteStoreUseCase: ToggleFavoriteStoreUseCase,
     ) {}
 
     @Get('stores')
@@ -344,5 +347,19 @@ export class StoreController {
         @Param('storeId') storeId: string,
     ): Promise<SubmitStoreResponseDto> {
         return this.submitStoreUseCase.execute(user.id, storeId);
+    }
+
+    @Post('stores/:storeId/favorite')
+    @HttpCode(HttpStatus.OK)
+    // 찜 등록/해제 토글. User 이상 인증 필수(미인증 401 UNAUTHORIZED).
+    // PUBLISHED 공방만 찜 가능(비존재/비공개 404 STORE_NOT_FOUND). Request body 없음.
+    @UseGuards(AuthGuard)
+    @ResponseMessage('찜 상태가 변경되었습니다.')
+    @ApiOkResponse({ description: '공방 찜 등록/해제 성공', type: ToggleFavoriteStoreResponseDto })
+    async toggleFavoriteStore(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+    ): Promise<ToggleFavoriteStoreResponseDto> {
+        return this.toggleFavoriteStoreUseCase.execute(user.id, storeId);
     }
 }
