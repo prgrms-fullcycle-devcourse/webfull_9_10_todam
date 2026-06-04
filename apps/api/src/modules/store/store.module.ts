@@ -13,7 +13,10 @@ import { UpdateBusinessDocumentUseCase } from './application/use-cases/update-bu
 import { DeleteStoreImageUseCase } from './application/use-cases/delete-store-image.use-case';
 import { ListStoresUseCase } from './application/use-cases/list-stores.use-case';
 import { AutocompleteStoresUseCase } from './application/use-cases/autocomplete-stores.use-case';
+import { GetStoreDetailUseCase } from './application/use-cases/get-store-detail.use-case';
+import { ListStoreProgramsUseCase } from './application/use-cases/list-store-programs.use-case';
 import { PartnerGuard } from '../../common/guards/partner.guard';
+import { OptionalAuthGuard } from '../../common/guards/optional-auth.guard';
 import { StoreController } from './presentation/controllers/store.controller';
 
 @Module({
@@ -33,7 +36,10 @@ import { StoreController } from './presentation/controllers/store.controller';
         DeleteStoreImageUseCase,
         ListStoresUseCase,
         AutocompleteStoresUseCase,
+        GetStoreDetailUseCase,
+        ListStoreProgramsUseCase,
         PartnerGuard,
+        OptionalAuthGuard,
     ],
 })
 export class StoreModule {}
