@@ -10,13 +10,13 @@
 
 ## Status
 
-- [ ] DB 마이그레이션 (ProgramTimeSlot → StoreTimeSlot, Reservation FK 변경, ReservationRestriction 신설)
-- [ ] API: 타임슬롯 자동 생성 (POST `.../time-slots/generate`)
-- [ ] API: 타임슬롯 목록 조회 (GET `.../time-slots`, confirmedReservationCount·제한상태 포함)
-- [ ] API: 타임슬롯 상태 변경 (PATCH `.../time-slots/{id}/status`)
-- [ ] API: 클래스별 예약 막기 적용 (POST `.../reservation-restrictions`)
-- [ ] API: 클래스별 예약 막기 해제 (DELETE `.../reservation-restrictions`)
-- [ ] API: 프로그램별 확정건수 조회 (GET `.../programs/reservation-counts`)
+- [x] DB 마이그레이션 (ProgramTimeSlot → StoreTimeSlot, Reservation FK 변경, ReservationRestriction 신설)
+- [x] API: 타임슬롯 자동 생성 (POST `.../time-slots/generate`)
+- [x] API: 타임슬롯 목록 조회 (GET `.../time-slots`, confirmedReservationCount·제한상태 포함)
+- [x] API: 타임슬롯 상태 변경 (PATCH `.../time-slots/{id}/status`)
+- [x] API: 클래스별 예약 막기 적용 (POST `.../reservation-restrictions`)
+- [x] API: 클래스별 예약 막기 해제 (DELETE `.../reservation-restrictions`)
+- [x] API: 프로그램별 확정건수 조회 (GET `.../programs/reservation-counts`)
 - [ ] FE: 타임슬롯 생성/목록/슬롯 막기·취소·재오픈 + 클래스별 막기/해제 UI (DESIGN.md 준수)
 - [ ] API 연동
 
@@ -262,8 +262,20 @@ model ReservationRestriction {
 
 ## Out (단계별 완료물)
 
-- DB: <!-- 마이그레이션 파일, 적용 결과 -->
-- API: <!-- 구현된 엔드포인트, 파일 -->
+- DB (BE 완료 2026-06-04):
+  - 마이그레이션: `apps/api/prisma/migrations/20260604062159_store_time_slot_and_reservation_restriction/migration.sql` (RDS에 `prisma migrate deploy` 적용 완료).
+  - 스키마 변경(`apps/api/prisma/schema.prisma`): `ProgramTimeSlot` → `StoreTimeSlot`(programId 제거, `@@unique([storeId, startAt])`, enum `StoreTimeSlotStatus = OPEN|CLOSED|CANCELED`). `Reservation.programTimeSlotId` → `storeTimeSlotId`(FK·관계 `storeTimeSlot StoreTimeSlot` 교체). `Program.timeSlots` 관계 제거. `Store.timeSlots` 타입 `StoreTimeSlot[]`로 교체. `ReservationRestriction` 신설(시각 기반 `id/storeId/startAt/endAt/programId/createdBy?/createdAt`, `@@unique([storeId, startAt, programId])`, `@@index([storeId])`, Store/Program 관계 추가). enum `ProgramTimeSlotStatus` 삭제.
+- API (BE 완료 2026-06-04) — 신규 모듈 `apps/api/src/modules/timeslot/`:
+  - `POST /partner/stores/:storeId/time-slots/generate` → `application/use-cases/generate-time-slots.use-case.ts`
+  - `GET  /partner/stores/:storeId/time-slots` → `application/use-cases/list-time-slots.use-case.ts`
+  - `PATCH /partner/stores/:storeId/time-slots/:timeSlotId/status` → `application/use-cases/update-time-slot-status.use-case.ts`
+  - `POST /partner/stores/:storeId/reservation-restrictions` → `application/use-cases/create-reservation-restrictions.use-case.ts`
+  - `DELETE /partner/stores/:storeId/reservation-restrictions` → `application/use-cases/delete-reservation-restrictions.use-case.ts`
+  - `GET  /partner/stores/:storeId/programs/reservation-counts` → `application/use-cases/get-program-reservation-counts.use-case.ts`
+  - 컨트롤러: `presentation/controllers/timeslot.controller.ts` / DTO: `presentation/dto/*.dto.ts` / 모듈: `timeslot.module.ts` (app.module 에 ProgramModule 보다 먼저 등록 — `programs/reservation-counts` 리터럴 라우트가 program `:programId` 보다 먼저 매칭되도록).
+  - 공통: `application/time.util.ts`(KST 벽시계↔UTC instant 변환·날짜 파싱·요일·하루범위), `application/verify-store-ownership.ts`(공방 존재+소유권 검증).
+  - 가드: AuthGuard + PartnerGuard + 공방 소유권(verifyStoreOwnership). 응답은 공통 envelope.
+  - 검증: `tsc --noEmit` PASS, `eslint src/modules/timeslot/**` PASS, `nest build` PASS, `jest`(기존 12 tests) PASS.
 - UI: <!-- 구현된 화면, 컴포넌트 -->
 - 연동: <!-- 연결 지점, 검증 결과 -->
 
