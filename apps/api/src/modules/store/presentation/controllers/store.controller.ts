@@ -19,6 +19,7 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
+import { OptionalAuthGuard } from '../../../../common/guards/optional-auth.guard';
 import { PartnerGuard } from '../../../../common/guards/partner.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../../../common/decorators/response-message.decorator';
@@ -39,10 +40,21 @@ import { UpdateBusinessDocumentUseCase } from '../../application/use-cases/updat
 import { DeleteStoreImageUseCase } from '../../application/use-cases/delete-store-image.use-case';
 import { ListStoresUseCase } from '../../application/use-cases/list-stores.use-case';
 import { AutocompleteStoresUseCase } from '../../application/use-cases/autocomplete-stores.use-case';
+import { GetSlugAvailabilityUseCase } from '../../application/use-cases/get-slug-availability.use-case';
+import { GetStoreDetailUseCase } from '../../application/use-cases/get-store-detail.use-case';
+import { ListStoreProgramsUseCase } from '../../application/use-cases/list-store-programs.use-case';
+import { ListStoreReviewsUseCase } from '../../application/use-cases/list-store-reviews.use-case';
 import { ListStoresQueryDto } from '../dto/list-stores.dto';
 import { ListStoresResponseDto } from '../dto/list-stores-response.dto';
+import { ListStoreReviewsQueryDto } from '../dto/list-store-reviews.dto';
+import { ListStoreReviewsResponseDto } from '../dto/list-store-reviews-response.dto';
 import { AutocompleteStoresResponseDto } from '../dto/autocomplete-stores-response.dto';
+import {
+    SlugAvailabilityQueryDto,
+    SlugAvailabilityResponseDto,
+} from '../dto/slug-availability.dto';
 import { ListStoresQueryPipe } from '../pipes/list-stores-query.pipe';
+import { ListStoreReviewsQueryPipe } from '../pipes/list-store-reviews-query.pipe';
 import { CreateStoreDto, CreateStoreResponseDto } from '../dto/create-store.dto';
 import { CreateStoreImageDto, CreateStoreImageResponseDto } from '../dto/store-image.dto';
 import {
@@ -53,6 +65,8 @@ import { SubmitStoreResponseDto } from '../dto/submit-store.dto';
 import { ListPartnerStoresResponseDto } from '../dto/list-partner-stores.dto';
 import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detail.dto';
 import { GetPartnerOnboardingResponseDto } from '../dto/get-partner-onboarding.dto';
+import { GetStoreDetailResponseDto } from '../dto/get-store-detail.dto';
+import { ListStoreProgramsResponseDto } from '../dto/list-store-programs.dto';
 import { UpdateStoreDto, UpdateStoreResponseDto } from '../dto/update-store.dto';
 import {
     UpdateBusinessDocumentDto,
@@ -77,6 +91,10 @@ export class StoreController {
         private readonly deleteStoreImageUseCase: DeleteStoreImageUseCase,
         private readonly listStoresUseCase: ListStoresUseCase,
         private readonly autocompleteStoresUseCase: AutocompleteStoresUseCase,
+        private readonly getSlugAvailabilityUseCase: GetSlugAvailabilityUseCase,
+        private readonly getStoreDetailUseCase: GetStoreDetailUseCase,
+        private readonly listStoreProgramsUseCase: ListStoreProgramsUseCase,
+        private readonly listStoreReviewsUseCase: ListStoreReviewsUseCase,
     ) {}
 
     @Get('stores')
@@ -103,6 +121,72 @@ export class StoreController {
         @Query('keyword') keyword?: string,
     ): Promise<AutocompleteStoresResponseDto> {
         return this.autocompleteStoresUseCase.execute(keyword);
+    }
+
+    // 정적 라우트. 동적 세그먼트(stores/:slug)보다 반드시 먼저 등록해야
+    // /stores/slug-availability 요청이 :slug 로 빨려들어가지 않는다.
+    @Get('stores/slug-availability')
+    @HttpCode(HttpStatus.OK)
+    // AuthGuard 만 (PartnerGuard 없음). 첫 등록 USER도 사전 중복확인이 가능해야 함 (POST /stores 가드 정책과 동일).
+    @UseGuards(AuthGuard)
+    @ResponseMessage('slug 사용 가능 여부를 확인했습니다.')
+    @ApiQuery({
+        name: 'slug',
+        required: true,
+        description: '중복 확인할 공방 URL slug (영문 소문자·숫자·하이픈, 4~40자).',
+        example: 'my-workshop',
+    })
+    @ApiQuery({
+        name: 'excludeStoreId',
+        required: false,
+        description: '수정 화면에서 자기 자신 store를 충돌 검사에서 제외하기 위한 store id.',
+    })
+    @ApiOkResponse({
+        description: 'slug 사용 가능 여부 확인 성공',
+        type: SlugAvailabilityResponseDto,
+    })
+    async getSlugAvailability(
+        @CurrentUser() user: RequestUser,
+        @Query() query: SlugAvailabilityQueryDto,
+    ): Promise<SlugAvailabilityResponseDto> {
+        return this.getSlugAvailabilityUseCase.execute(user.id, query.slug, query.excludeStoreId);
+    }
+
+    @Get('stores/:slug')
+    @HttpCode(HttpStatus.OK)
+    // 퍼블릭(Guest·User 공통). Bearer 가 있으면 isFavorite 에 찜 여부 반영, 없으면 false.
+    @UseGuards(OptionalAuthGuard)
+    @ResponseMessage('공방 상세 정보가 성공적으로 조회되었습니다.')
+    @ApiOkResponse({ description: '공방 상세 조회 성공', type: GetStoreDetailResponseDto })
+    async getStoreDetail(
+        @Param('slug') slug: string,
+        @CurrentUser() user?: RequestUser,
+    ): Promise<GetStoreDetailResponseDto> {
+        return this.getStoreDetailUseCase.execute(slug, user?.id);
+    }
+
+    @Get('stores/:slug/programs')
+    @HttpCode(HttpStatus.OK)
+    // 퍼블릭. PUBLISHED 공방의 ACTIVE 클래스 목록.
+    @ResponseMessage('운영 클래스 목록이 성공적으로 조회되었습니다.')
+    @ApiOkResponse({
+        description: '운영 클래스 목록 조회 성공',
+        type: ListStoreProgramsResponseDto,
+    })
+    async listStorePrograms(@Param('slug') slug: string): Promise<ListStoreProgramsResponseDto> {
+        return this.listStoreProgramsUseCase.execute(slug);
+    }
+
+    @Get('stores/:slug/reviews')
+    @HttpCode(HttpStatus.OK)
+    // 퍼블릭(Guest·User 공통). PUBLISHED 공방의 노출(is_visible=true) 리뷰 목록. 커서 기반.
+    @ResponseMessage('공방 리뷰 목록이 성공적으로 조회되었습니다.')
+    @ApiOkResponse({ description: '공방 리뷰 목록 조회 성공', type: ListStoreReviewsResponseDto })
+    async listStoreReviews(
+        @Param('slug') slug: string,
+        @Query(ListStoreReviewsQueryPipe) query: ListStoreReviewsQueryDto,
+    ): Promise<ListStoreReviewsResponseDto> {
+        return this.listStoreReviewsUseCase.execute(slug, query);
     }
 
     @Get('partner/stores')

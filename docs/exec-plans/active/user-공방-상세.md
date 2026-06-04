@@ -20,7 +20,7 @@
 - API 연동: 실 API 요청/응답이 contract 스키마로 연결. MSW mock 바인딩만 한 상태는 미체크.
 -->
 
-- [ ] API 구현
+- [x] API 구현
 - [ ] UI 구현
 - [ ] API 연동
 
@@ -157,7 +157,7 @@
 | `durationMinutes` | number | UI "2시간" |
 | `leadTimeDays` | number | UI "평균 28일" |
 | `deliverable` | boolean |
-| `thumbnailUrl` | string |
+| `thumbnailUrl` | string \| null | `Program`엔 컬럼 없음 → `ProgramImage`(UPLOADED 최상단)에서 파생, 이미지 없으면 `null` |
 | `status` | `ACTIVE` |
 | `sortOrder` | number |
 
@@ -219,7 +219,19 @@
 
 ## Out (단계별 완료물)
 
-- API: <!-- GET /stores/{slug} 컨트롤러/use-case/DTO, PUBLISHED 가드, 파일 경로 -->
+- API: 구현 완료 (2026-06-04, `feature/store-detail`). **범위 = 코어 2개 엔드포인트만.**
+  - `GET /stores/:slug` (Contract A, 퍼블릭 + 선택 인증):
+    - 컨트롤러: `apps/api/src/modules/store/presentation/controllers/store.controller.ts` `getStoreDetail()` (`stores/search/autocomplete` 정적 라우트 뒤에 등록해 슬러그 섀도잉 방지)
+    - use-case: `apps/api/src/modules/store/application/use-cases/get-store-detail.use-case.ts` — slug 조회 → `status===PUBLISHED` 아니면(미존재·DRAFT·PENDING·REJECTED·SUSPENDED) 404 `STORE_NOT_FOUND`. 응답 필드: 기존(id, partnerId, slug, name, description, phone, address, status, convenienceInfo, autoConfirm, publishedAt) + `images[]`(StoreImage UPLOADED·sortOrder asc·`{imageUrl,thumbnailUrl}`), `rating`(isVisible=true 평균, 0건 null — list-stores 규칙 재사용), `reviewCount`(isVisible=true count), `location{lat,lng}`(latitude/longitude), `isFavorite`(인증 시 FavoriteStore userId+storeId 존재 여부, 비인증 false). `region`·`operatingHours`·`isOperating` 미포함(Decisions #1).
+    - DTO: `apps/api/src/modules/store/presentation/dto/get-store-detail.dto.ts`
+    - 선택 인증 가드 신규: `apps/api/src/common/guards/optional-auth.guard.ts` (`OptionalAuthGuard` — Bearer 있으면 req.user 채움, 없거나 검증 실패해도 throw 안 함)
+  - `GET /stores/:slug/programs` (Contract B, 퍼블릭):
+    - 컨트롤러: 동 controller `listStorePrograms()`
+    - use-case: `apps/api/src/modules/store/application/use-cases/list-store-programs.use-case.ts` — PUBLISHED 공방 아니면 404 `STORE_NOT_FOUND`. `status=ACTIVE` 프로그램만, `sortOrder→id` asc. 필드: `id, title, difficulty, description, price, durationMinutes, leadTimeDays, deliverable, thumbnailUrl, status, sortOrder`. `thumbnailUrl`은 Program에 직접 필드가 없어 ProgramImage(UPLOADED·sortOrder asc 1건, thumbnailUrl→imageUrl 순)에서 파생, 이미지 없으면 null. 0건이면 `programs: []` 200.
+    - DTO: `apps/api/src/modules/store/presentation/dto/list-store-programs.dto.ts`
+  - 모듈 등록: `apps/api/src/modules/store/store.module.ts` (use-case 2개 + `OptionalAuthGuard` providers 추가). 공통 envelope/404·500 처리는 기존 인터셉터/필터 재사용.
+  - 빌드(`nest build`)·`tsc --noEmit`·eslint 통과 확인.
+  - **범위 밖**: `GET /stores/:slug/reviews`(리뷰)는 **#120(공방 리뷰 전체보기)이 BE 소유** — 본 작업에서 미구현. `POST /stores/{storeId}/favorite` 토글 본체도 별도 찜 기능 소유(상세의 `isFavorite` 조회만 본 작업 포함).
 - UI: <!-- 공방 상세 화면, 캐러셀, 클래스 카드 목록, 리뷰 미리보기 -->
 - 연동: <!-- 상세+programs+reviews 조합, 404/빈상태/찜/라우팅 검증 -->
 
