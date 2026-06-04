@@ -53,8 +53,10 @@ export type PartnerProgramReorderRequest = z.infer<typeof partnerProgramReorderR
 // status enum 전체(DRAFT/ACTIVE/INACTIVE) 반환. serve-UPLOADED-only.
 
 export const partnerProgramDetailImageSchema = z.object({
+    programImageId: z.string(),
     imageUrl: z.string(),
     thumbnailUrl: z.string().nullable(),
+    isThumbnail: z.boolean(),
 });
 export type PartnerProgramDetailImage = z.infer<typeof partnerProgramDetailImageSchema>;
 
