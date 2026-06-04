@@ -8,6 +8,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { createApiEnv } from '@todam/config';
+import { keyFromImageUrl } from './s3-object.util';
 
 @Injectable()
 export class S3Service {
@@ -60,6 +61,24 @@ export class S3Service {
             new DeleteObjectCommand({
                 Bucket: this.env.S3_BUCKET_NAME,
                 Key: key,
+            }),
+        );
+    }
+
+    // 이미지 URL 배열의 S3 객체(원본·썸네일 등)를 best-effort 삭제한다.
+    // 개별 삭제 실패는 무시(객체 부재 등) — 호출부의 DB row 정리를 막지 않기 위함.
+    async deleteImageObjects(imageUrls: (string | null | undefined)[]): Promise<void> {
+        const keys = imageUrls
+            .filter((url): url is string => Boolean(url))
+            .map((url) => keyFromImageUrl(url));
+
+        await Promise.all(
+            keys.map(async (key) => {
+                try {
+                    await this.deleteObject(key);
+                } catch {
+                    // S3 삭제 실패는 무시(객체 부재 등). row 정리를 우선한다.
+                }
             }),
         );
     }
