@@ -2,7 +2,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { StoreTimeSlotStatus } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { verifyStoreOwnership } from '../verify-store-ownership';
+import { StoreAccessService } from '../services/store-access.service';
 import type {
     UpdateTimeSlotStatusDto,
     UpdateTimeSlotStatusResponseDto,
@@ -12,7 +12,10 @@ import type {
 export class UpdateTimeSlotStatusUseCase {
     private readonly logger = new Logger(UpdateTimeSlotStatusUseCase.name);
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly storeAccess: StoreAccessService,
+    ) {}
 
     async execute(
         userId: string,
@@ -20,7 +23,7 @@ export class UpdateTimeSlotStatusUseCase {
         timeSlotId: string,
         dto: UpdateTimeSlotStatusDto,
     ): Promise<UpdateTimeSlotStatusResponseDto> {
-        await verifyStoreOwnership(this.prisma, userId, storeId);
+        await this.storeAccess.verifyOwnership(userId, storeId);
 
         const slot = await this.prisma.storeTimeSlot.findUnique({
             where: { id: timeSlotId },

@@ -2,7 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { Prisma, StoreTimeSlotStatus } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { verifyStoreOwnership } from '../verify-store-ownership';
+import { StoreAccessService } from '../services/store-access.service';
 import type {
     ListTimeSlotsQueryDto,
     ListTimeSlotsResponseDto,
@@ -11,14 +11,17 @@ import { kstDayRange, parseDateOnly } from '../time.util';
 
 @Injectable()
 export class ListTimeSlotsUseCase {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly storeAccess: StoreAccessService,
+    ) {}
 
     async execute(
         userId: string,
         storeId: string,
         query: ListTimeSlotsQueryDto,
     ): Promise<ListTimeSlotsResponseDto> {
-        const store = await verifyStoreOwnership(this.prisma, userId, storeId);
+        const store = await this.storeAccess.verifyOwnership(userId, storeId);
 
         const where: Prisma.StoreTimeSlotWhereInput = { storeId };
 
