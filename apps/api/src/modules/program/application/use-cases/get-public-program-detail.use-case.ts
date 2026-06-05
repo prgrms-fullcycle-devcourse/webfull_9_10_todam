@@ -29,6 +29,8 @@ export class GetPublicProgramDetailUseCase {
                 childFriendly: true,
                 difficulty: true,
                 status: true,
+                // 정원은 공방 단위(Store.maxCapacityPerSlot) — 클래스 상세 "정원 최대 N명".
+                store: { select: { maxCapacityPerSlot: true } },
                 // serve-UPLOADED-only 정책: PENDING/FAILED 이미지는 은폐.
                 images: {
                     where: { status: 'UPLOADED' },
@@ -56,6 +58,7 @@ export class GetPublicProgramDetailUseCase {
                 caution: program.caution,
                 price: program.price,
                 durationMinutes: program.durationMinutes,
+                capacity: program.store.maxCapacityPerSlot,
                 leadTimeDays: program.leadTimeDays,
                 deliverable: program.deliverable,
                 childFriendly: program.childFriendly,
