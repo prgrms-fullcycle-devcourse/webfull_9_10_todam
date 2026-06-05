@@ -1,17 +1,20 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import type { Response } from 'express';
-import { PrismaService } from '../../../../database/prisma.service';
+import { RefreshTokenRepository } from '../../domain/repositories/refresh-token.repository';
 import { TokenService } from '../token.service';
 
 @Injectable()
 export class RefreshUseCase {
     constructor(
-        private readonly prisma: PrismaService,
+        private readonly refreshTokens: RefreshTokenRepository,
         private readonly tokenService: TokenService,
     ) {}
 
-    async execute(cookieValue: string | undefined, res: Response): Promise<{ accessToken: string }> {
+    async execute(
+        cookieValue: string | undefined,
+        res: Response,
+    ): Promise<{ accessToken: string }> {
         if (!cookieValue) throw new UnauthorizedException();
 
         // 쿠키 파싱: "<dbId>.<rawToken>"
@@ -21,16 +24,12 @@ export class RefreshUseCase {
         const tokenId = cookieValue.substring(0, dotIndex);
         const rawToken = cookieValue.substring(dotIndex + 1);
 
-        const stored = await this.prisma.refreshToken.findUnique({
-            where: { id: tokenId },
-            select: { id: true, userId: true, tokenHash: true, expiresAt: true },
-        });
-
+        const stored = await this.refreshTokens.findById(tokenId);
         if (!stored) throw new UnauthorizedException();
 
         // 만료 확인
-        if (stored.expiresAt < new Date()) {
-            await this.prisma.refreshToken.delete({ where: { id: stored.id } });
+        if (stored.isExpired(new Date())) {
+            await this.refreshTokens.deleteById(stored.id);
             throw new UnauthorizedException();
         }
 
@@ -38,12 +37,12 @@ export class RefreshUseCase {
         const isValid = await bcrypt.compare(rawToken, stored.tokenHash);
         if (!isValid) {
             // 토큰 불일치 = 도용 가능성 → 해당 유저 토큰 전체 삭제
-            await this.prisma.refreshToken.deleteMany({ where: { userId: stored.userId } });
+            await this.refreshTokens.deleteByUserId(stored.userId);
             throw new UnauthorizedException();
         }
 
         // rotation: 기존 토큰 삭제 후 새 토큰 발급
-        await this.prisma.refreshToken.delete({ where: { id: stored.id } });
+        await this.refreshTokens.deleteById(stored.id);
 
         const accessToken = this.tokenService.signAccessToken(stored.userId);
         await this.tokenService.issueRefreshToken(stored.userId, res);

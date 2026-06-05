@@ -1,8 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import type { Response } from 'express';
-import { PrismaService } from '../../../../database/prisma.service';
+import { UserRepository } from '../../domain/repositories/user.repository';
 import type { LoginDto, LoginResponseDto } from '../../presentation/dto/login.dto';
 import { TokenService } from '../token.service';
 
@@ -12,22 +11,19 @@ const INVALID_CREDENTIALS_MSG = '이메일 또는 비밀번호가 올바르지 �
 @Injectable()
 export class LoginUseCase {
     constructor(
-        private readonly prisma: PrismaService,
+        private readonly users: UserRepository,
         private readonly tokenService: TokenService,
     ) {}
 
     async execute(dto: LoginDto, res: Response): Promise<LoginResponseDto> {
-        const user = await this.prisma.user.findUnique({
-            where: { email: dto.email },
-            select: { id: true, password: true, status: true, email: true, nickname: true, isPartner: true },
-        });
+        const user = await this.users.findByEmail(dto.email);
 
         // 존재하지 않거나, 소셜 전용 가입(password null)이거나, 탈퇴한 경우
-        if (!user || !user.password || user.status === UserStatus.WITHDRAWN) {
+        if (!user || !user.canLoginWithPassword()) {
             throw new UnauthorizedException(INVALID_CREDENTIALS_MSG);
         }
 
-        const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+        const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash!);
         if (!isPasswordValid) {
             throw new UnauthorizedException(INVALID_CREDENTIALS_MSG);
         }

@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../../../../database/prisma.service';
 import { RedisService } from '../../../../redis/redis.service';
+import { UserRepository } from '../../domain/repositories/user.repository';
 import type { ResetPasswordDto } from '../../presentation/dto/reset-password.dto';
 
 const BCRYPT_ROUNDS = 10;
@@ -9,7 +9,7 @@ const BCRYPT_ROUNDS = 10;
 @Injectable()
 export class ResetPasswordUseCase {
     constructor(
-        private readonly prisma: PrismaService,
+        private readonly users: UserRepository,
         private readonly redis: RedisService,
     ) {}
 
@@ -21,25 +21,15 @@ export class ResetPasswordUseCase {
             throw new BadRequestException('유효하지 않거나 만료된 인증코드입니다.');
         }
 
-        const user = await this.prisma.user.findUnique({
-            where: { email },
-            select: { id: true },
-        });
+        const user = await this.users.findByEmail(email);
         if (!user) {
             throw new BadRequestException('유효하지 않거나 만료된 인증코드입니다.');
         }
 
         const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
 
-        await this.prisma.$transaction([
-            this.prisma.user.update({
-                where: { id: user.id },
-                data: { password: passwordHash },
-            }),
-            this.prisma.refreshToken.deleteMany({
-                where: { userId: user.id },
-            }),
-        ]);
+        // 비밀번호 변경 + 기존 refresh token 전체 폐기(세션 무효화)를 한 트랜잭션으로
+        await this.users.updatePasswordAndRevokeTokens(user.id, passwordHash);
 
         await this.redis.del(`password:reset:${email}`);
     }
