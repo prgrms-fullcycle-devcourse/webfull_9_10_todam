@@ -10,6 +10,7 @@ import { useToast, useSheet } from '@/shared/model';
 import { ApiError } from '@/shared/api';
 import { sendEmailCode, verifyEmailCode, signup } from '@/features/auth/signup/api';
 import { TermsAgreementSheet } from '@/features/auth/terms';
+import { markOnboardingPending } from '@/features/onboarding';
 
 type Step = 'email' | 'code' | 'password';
 
@@ -125,6 +126,8 @@ export default function SignupPage() {
             }
             try {
                 await signup({ email, password });
+                // 회원가입 직후 첫 로그인에 온보딩 1회 노출(서버 저장 안 함).
+                markOnboardingPending();
                 toast('회원가입이 완료되었습니다. 로그인해주세요.');
                 router.replace('/login');
             } catch (err) {
