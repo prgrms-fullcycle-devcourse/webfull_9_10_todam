@@ -18,8 +18,18 @@ import {
     ApiOkResponse,
     ApiTags,
 } from '@nestjs/swagger';
-import { generateTimeSlotsRequestSchema } from '@todam/shared';
-import type { GenerateTimeSlotsRequest } from '@todam/shared';
+import {
+    createReservationRestrictionsRequestSchema,
+    deleteReservationRestrictionsRequestSchema,
+    generateTimeSlotsRequestSchema,
+    updateTimeSlotStatusRequestSchema,
+} from '@todam/shared';
+import type {
+    CreateReservationRestrictionsRequest,
+    DeleteReservationRestrictionsRequest,
+    GenerateTimeSlotsRequest,
+    UpdateTimeSlotStatusRequest,
+} from '@todam/shared';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { PartnerGuard } from '../../../../common/guards/partner.guard';
@@ -100,6 +110,7 @@ export class TimeslotController {
     @HttpCode(HttpStatus.OK)
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('타임슬롯 상태가 성공적으로 변경되었습니다.')
+    @ApiBody({ type: UpdateTimeSlotStatusDto })
     @ApiOkResponse({
         description: '타임슬롯 상태 변경 성공',
         type: UpdateTimeSlotStatusResponseDto,
@@ -108,7 +119,8 @@ export class TimeslotController {
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
         @Param('timeSlotId') timeSlotId: string,
-        @Body() dto: UpdateTimeSlotStatusDto,
+        @Body(new ZodValidationPipe(updateTimeSlotStatusRequestSchema))
+        dto: UpdateTimeSlotStatusRequest,
     ): Promise<UpdateTimeSlotStatusResponseDto> {
         return this.updateTimeSlotStatusUseCase.execute(user.id, storeId, timeSlotId, dto);
     }
@@ -116,6 +128,7 @@ export class TimeslotController {
     @Post('partner/stores/:storeId/reservation-restrictions')
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('클래스별 예약 막기가 적용되었습니다.')
+    @ApiBody({ type: CreateReservationRestrictionsDto })
     @ApiCreatedResponse({
         description: '클래스별 예약 막기 적용 성공',
         type: CreateReservationRestrictionsResponseDto,
@@ -123,7 +136,8 @@ export class TimeslotController {
     async createReservationRestrictions(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Body() dto: CreateReservationRestrictionsDto,
+        @Body(new ZodValidationPipe(createReservationRestrictionsRequestSchema))
+        dto: CreateReservationRestrictionsRequest,
     ): Promise<CreateReservationRestrictionsResponseDto> {
         return this.createReservationRestrictionsUseCase.execute(user.id, storeId, dto);
     }
@@ -132,6 +146,7 @@ export class TimeslotController {
     @HttpCode(HttpStatus.OK)
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('클래스별 예약 막기가 해제되었습니다.')
+    @ApiBody({ type: DeleteReservationRestrictionsDto })
     @ApiOkResponse({
         description: '클래스별 예약 막기 해제 성공',
         type: DeleteReservationRestrictionsResponseDto,
@@ -139,7 +154,8 @@ export class TimeslotController {
     async deleteReservationRestrictions(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Body() dto: DeleteReservationRestrictionsDto,
+        @Body(new ZodValidationPipe(deleteReservationRestrictionsRequestSchema))
+        dto: DeleteReservationRestrictionsRequest,
     ): Promise<DeleteReservationRestrictionsResponseDto> {
         return this.deleteReservationRestrictionsUseCase.execute(user.id, storeId, dto);
     }

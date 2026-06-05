@@ -43,3 +43,43 @@ export const generateTimeSlotsResultSchema = z.object({
     createdSlots: z.array(generatedTimeSlotSchema),
 });
 export type GenerateTimeSlotsResult = z.infer<typeof generateTimeSlotsResultSchema>;
+
+// ─── 타임슬롯 상태 변경 (PATCH .../time-slots/{timeSlotId}/status) ─────
+export const updateTimeSlotStatusRequestSchema = z.object({
+    status: z.nativeEnum(StoreTimeSlotStatus),
+});
+export type UpdateTimeSlotStatusRequest = z.infer<typeof updateTimeSlotStatusRequestSchema>;
+
+// ─── 예약 제한 시간 범위 (ISO 8601, offset 포함) ──────────────────
+export const reservationRestrictionTimeRangeSchema = z.object({
+    startAt: z.string().datetime({ offset: true }),
+    endAt: z.string().datetime({ offset: true }),
+});
+export type ReservationRestrictionTimeRange = z.infer<typeof reservationRestrictionTimeRangeSchema>;
+
+// ─── 예약 제한 생성 (POST /partner/stores/{storeId}/reservation-restrictions) ─────
+// scope=ALL_DAY 종일 막기 / TIME_SLOTS 부분 막기(timeRanges). programIds 최소 1개.
+export const createReservationRestrictionsRequestSchema = z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    scope: z.enum(['ALL_DAY', 'TIME_SLOTS']),
+    timeRanges: z.array(reservationRestrictionTimeRangeSchema).optional(),
+    programIds: z.array(z.string().uuid()).min(1),
+});
+export type CreateReservationRestrictionsRequest = z.infer<
+    typeof createReservationRestrictionsRequestSchema
+>;
+
+// ─── 예약 제한 해제 (DELETE /partner/stores/{storeId}/reservation-restrictions) ─────
+// 조건 매칭(date/timeRanges/programIds) 또는 개별 restrictionIds. 전부 optional.
+export const deleteReservationRestrictionsRequestSchema = z.object({
+    date: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional(),
+    timeRanges: z.array(reservationRestrictionTimeRangeSchema).optional(),
+    programIds: z.array(z.string().uuid()).optional(),
+    restrictionIds: z.array(z.string().uuid()).optional(),
+});
+export type DeleteReservationRestrictionsRequest = z.infer<
+    typeof deleteReservationRestrictionsRequestSchema
+>;
