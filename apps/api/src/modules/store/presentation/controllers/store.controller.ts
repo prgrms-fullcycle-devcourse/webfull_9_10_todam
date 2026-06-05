@@ -45,6 +45,8 @@ import { GetStoreDetailUseCase } from '../../application/use-cases/get-store-det
 import { ListStoreProgramsUseCase } from '../../application/use-cases/list-store-programs.use-case';
 import { ListStoreReviewsUseCase } from '../../application/use-cases/list-store-reviews.use-case';
 import { ToggleFavoriteStoreUseCase } from '../../application/use-cases/toggle-favorite-store.use-case';
+import { GetPartnerCurrentStoreUseCase } from '../../application/use-cases/get-partner-current-store.use-case';
+import { UpdatePartnerCurrentStoreUseCase } from '../../application/use-cases/update-partner-current-store.use-case';
 import { ListStoresQueryDto } from '../dto/list-stores.dto';
 import { ListStoresResponseDto } from '../dto/list-stores-response.dto';
 import { ListStoreReviewsQueryDto } from '../dto/list-store-reviews.dto';
@@ -69,6 +71,11 @@ import { GetPartnerOnboardingResponseDto } from '../dto/get-partner-onboarding.d
 import { GetStoreDetailResponseDto } from '../dto/get-store-detail.dto';
 import { ToggleFavoriteStoreResponseDto } from '../dto/toggle-favorite-store.dto';
 import { ListStoreProgramsResponseDto } from '../dto/list-store-programs.dto';
+import {
+    GetPartnerCurrentStoreResponseDto,
+    UpdatePartnerCurrentStoreDto,
+    UpdatePartnerCurrentStoreResponseDto,
+} from '../dto/partner-current-store.dto';
 import { UpdateStoreDto, UpdateStoreResponseDto } from '../dto/update-store.dto';
 import {
     UpdateBusinessDocumentDto,
@@ -98,6 +105,8 @@ export class StoreController {
         private readonly listStoreProgramsUseCase: ListStoreProgramsUseCase,
         private readonly listStoreReviewsUseCase: ListStoreReviewsUseCase,
         private readonly toggleFavoriteStoreUseCase: ToggleFavoriteStoreUseCase,
+        private readonly getPartnerCurrentStoreUseCase: GetPartnerCurrentStoreUseCase,
+        private readonly updatePartnerCurrentStoreUseCase: UpdatePartnerCurrentStoreUseCase,
     ) {}
 
     @Get('stores')
@@ -190,6 +199,35 @@ export class StoreController {
         @Query(ListStoreReviewsQueryPipe) query: ListStoreReviewsQueryDto,
     ): Promise<ListStoreReviewsResponseDto> {
         return this.listStoreReviewsUseCase.execute(slug, query);
+    }
+
+    @Get('partner/me/current-store')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('현재 접속 공방 정보가 조회되었습니다.')
+    @ApiOkResponse({
+        description: '마지막 접속 공방 + 소유 공방 목록 조회 성공',
+        type: GetPartnerCurrentStoreResponseDto,
+    })
+    async getPartnerCurrentStore(
+        @CurrentUser() user: RequestUser,
+    ): Promise<GetPartnerCurrentStoreResponseDto> {
+        return this.getPartnerCurrentStoreUseCase.execute(user.id);
+    }
+
+    @Patch('partner/me/current-store')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('접속 공방이 전환되었습니다.')
+    @ApiOkResponse({
+        description: '마지막 접속 공방 갱신 성공',
+        type: UpdatePartnerCurrentStoreResponseDto,
+    })
+    async updatePartnerCurrentStore(
+        @CurrentUser() user: RequestUser,
+        @Body() dto: UpdatePartnerCurrentStoreDto,
+    ): Promise<UpdatePartnerCurrentStoreResponseDto> {
+        return this.updatePartnerCurrentStoreUseCase.execute(user.id, dto.storeId);
     }
 
     @Get('partner/stores')
