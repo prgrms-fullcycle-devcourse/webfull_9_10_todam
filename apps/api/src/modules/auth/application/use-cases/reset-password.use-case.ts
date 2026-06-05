@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import type { PasswordReset } from '@todam/shared';
 import { RedisService } from '../../../../redis/redis.service';
 import { UserRepository } from '../../domain/repositories/user.repository';
-import type { ResetPasswordDto } from '../../presentation/dto/reset-password.dto';
 
 const BCRYPT_ROUNDS = 10;
 
@@ -13,7 +13,7 @@ export class ResetPasswordUseCase {
         private readonly redis: RedisService,
     ) {}
 
-    async execute(dto: ResetPasswordDto): Promise<void> {
+    async execute(dto: PasswordReset): Promise<void> {
         const { email, code, newPassword } = dto;
 
         const stored = await this.redis.get(`password:reset:${email}`);

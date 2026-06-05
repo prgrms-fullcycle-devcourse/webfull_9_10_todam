@@ -1,4 +1,4 @@
-import type { SignupRequest, SignupResult } from '@todam/shared';
+import type { SignupRequest, SignupResponse } from '@todam/shared';
 
 import { apiFetch } from '@/shared/api';
 
@@ -16,9 +16,9 @@ export function verifyEmailCode(email: string, code: string) {
     });
 }
 
-// 약관 동의 필드는 SignupDto(BE)에 없음 + forbidNonWhitelisted → 전송 시 400. 동의 시트 확정 전까지 미전송.
+// 약관 동의 필드는 signupRequestSchema(shared, .strict)에 없음 → 전송 시 거부. 동의 시트 확정 전까지 미전송.
 export function signup(input: SignupRequest) {
-    return apiFetch<SignupResult>('/auth/signup', {
+    return apiFetch<SignupResponse>('/auth/signup', {
         method: 'POST',
         body: input,
     });

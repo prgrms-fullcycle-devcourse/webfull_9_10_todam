@@ -1,13 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { oauthResponseSchema } from '@todam/shared';
+import { createZodDto } from 'nestjs-zod';
 
-export class OAuthUserDto {
-    @ApiProperty() userId!: string;
-    @ApiProperty() email!: string;
-    @ApiProperty() nickname!: string;
-    @ApiProperty() isPartner!: boolean;
-}
-
-export class OAuthResponseDto {
-    @ApiProperty() accessToken!: string;
-    @ApiProperty({ type: OAuthUserDto }) user!: OAuthUserDto;
-}
+// SSOT = @todam/shared(zod). 소셜 로그인 응답 = 로그인 응답과 동일 스키마.
+export class OAuthResponseDto extends createZodDto(oauthResponseSchema) {}

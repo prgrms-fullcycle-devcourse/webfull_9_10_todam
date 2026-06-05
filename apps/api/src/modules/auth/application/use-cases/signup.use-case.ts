@@ -1,8 +1,8 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import type { SignupRequest, SignupResponse } from '@todam/shared';
 import { RedisService } from '../../../../redis/redis.service';
 import { UserRepository } from '../../domain/repositories/user.repository';
-import type { SignupDto, SignupResponseDto } from '../../presentation/dto/signup.dto';
 
 const BCRYPT_ROUNDS = 10;
 
@@ -17,7 +17,7 @@ export class SignupUseCase {
         private readonly redis: RedisService,
     ) {}
 
-    async execute(dto: SignupDto): Promise<SignupResponseDto> {
+    async execute(dto: SignupRequest): Promise<SignupResponse> {
         const verified = await this.redis.get(`email:verified:${dto.email}`);
         if (!verified) {
             throw new BadRequestException('이메일 인증이 필요합니다.');
