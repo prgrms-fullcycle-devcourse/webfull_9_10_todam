@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { DayOfWeek, Prisma, ProgramStatus, StoreStatus } from '@prisma/client';
+import { Prisma, ProgramStatus, StoreStatus } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
-import type { ListStoresQueryDto } from '../../presentation/dto/list-stores.dto';
+import { StoreListPolicy } from '../../domain/services/store-list-policy.service';
 import type {
-    ListStoresResponseDto,
-    StoreListItemDto,
-} from '../../presentation/dto/list-stores-response.dto';
+    ListStoresQuery,
+    ListStoresResult,
+    StoreListItem,
+} from '../../domain/repositories/store-readers';
 import {
     decodeCursor,
     encodeCursor,
@@ -14,21 +15,6 @@ import {
 } from './store-cursor';
 
 const DEFAULT_LIMIT = 20;
-const EARTH_RADIUS_M = 6_371_000;
-
-// 운영시간 비교는 KST 기준.
-const KST_OFFSET_MINUTES = 9 * 60;
-
-const PRISMA_DAY_OF_WEEK: DayOfWeek[] = [
-    DayOfWeek.SUN, // getUTCDay()=0
-    DayOfWeek.MON,
-    DayOfWeek.TUE,
-    DayOfWeek.WED,
-    DayOfWeek.THU,
-    DayOfWeek.FRI,
-    DayOfWeek.SAT,
-];
-
 // 거리·집계 계산에 필요한 store 행 형태 (Prisma select 결과).
 type StoreRow = Prisma.StoreGetPayload<{
     select: {
@@ -112,7 +98,7 @@ const STORE_SELECT = {
 export class PrismaStoresReader {
     constructor(private readonly prisma: PrismaService) {}
 
-    async execute(query: ListStoresQueryDto): Promise<ListStoresResponseDto> {
+    async execute(query: ListStoresQuery): Promise<ListStoresResult> {
         const limit = query.limit ?? DEFAULT_LIMIT;
         const hasCoords = query.lat !== undefined && query.lng !== undefined;
         const keyword = query.keyword?.trim();
@@ -151,12 +137,12 @@ export class PrismaStoresReader {
         limit: number,
         cursor: StoreCursorPayload | null,
         keyword?: string,
-    ): Promise<ListStoresResponseDto> {
+    ): Promise<ListStoresResult> {
         const rows = await this.prisma.store.findMany({ where, select: STORE_SELECT });
 
         type Ranked = { row: StoreRow; distance: number };
         const ranked: Ranked[] = rows
-            .map((row) => ({ row, distance: this.distanceMeters(lat, lng, row) }))
+            .map((row) => ({ row, distance: StoreListPolicy.distanceMeters(lat, lng, row) }))
             // 좌표가 없는 공방은 거리 정렬 불가 → 후순위로 밀되 안정 정렬 위해 Infinity
             .sort((a, b) => {
                 if (a.distance !== b.distance) {
@@ -195,7 +181,7 @@ export class PrismaStoresReader {
         limit: number,
         cursor: StoreCursorPayload | null,
         keyword?: string,
-    ): Promise<ListStoresResponseDto> {
+    ): Promise<ListStoresResult> {
         const effectiveWhere: Prisma.StoreWhereInput = { ...where };
 
         if (cursor && !isDistanceCursor(cursor)) {
@@ -235,21 +221,7 @@ export class PrismaStoresReader {
         };
     }
 
-    private distanceMeters(lat: number, lng: number, row: StoreRow): number {
-        if (row.latitude === null || row.longitude === null) {
-            return Number.POSITIVE_INFINITY;
-        }
-        const toRad = (deg: number): number => (deg * Math.PI) / 180;
-        const dLat = toRad(row.latitude - lat);
-        const dLng = toRad(row.longitude - lng);
-        const a =
-            Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(lat)) * Math.cos(toRad(row.latitude)) * Math.sin(dLng / 2) ** 2;
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return Math.round(EARTH_RADIUS_M * c);
-    }
-
-    private toDto(row: StoreRow, distance: number | null, keyword?: string): StoreListItemDto {
+    private toDto(row: StoreRow, distance: number | null, keyword?: string): StoreListItem {
         return {
             id: row.id,
             partnerId: row.partnerId,
@@ -272,13 +244,13 @@ export class PrismaStoresReader {
             distance: distance === null || !Number.isFinite(distance) ? null : distance,
             representativeClass: this.toRepresentativeClass(row.programs),
             matchedClass: this.toMatchedClass(row.programs, keyword),
-            isOperating: this.toIsOperating(row.operatingHours),
+            isOperating: StoreListPolicy.isOperating(row.operatingHours),
             publishedAt: (row.publishedAt ?? row.createdAt).toISOString(),
             createdAt: row.createdAt.toISOString(),
         };
     }
 
-    private toConvenienceInfo(value: Prisma.JsonValue | null): StoreListItemDto['convenienceInfo'] {
+    private toConvenienceInfo(value: Prisma.JsonValue | null): StoreListItem['convenienceInfo'] {
         const obj =
             value && typeof value === 'object' && !Array.isArray(value)
                 ? (value as Record<string, unknown>)
@@ -318,11 +290,11 @@ export class PrismaStoresReader {
     // 노출 가능(ACTIVE) Program 중 최저가. 동가는 sortOrder → id tie-break. hasMore=노출 2개↑.
     private toRepresentativeClass(
         programs: StoreRow['programs'],
-    ): StoreListItemDto['representativeClass'] {
+    ): StoreListItem['representativeClass'] {
         if (programs.length === 0) {
             return null;
         }
-        const cheapest = this.cheapest(programs);
+        const cheapest = StoreListPolicy.cheapest(programs);
         return {
             name: cheapest.title,
             price: cheapest.price,
@@ -334,7 +306,7 @@ export class PrismaStoresReader {
     private toMatchedClass(
         programs: StoreRow['programs'],
         keyword?: string,
-    ): StoreListItemDto['matchedClass'] {
+    ): StoreListItem['matchedClass'] {
         if (!keyword) {
             return null;
         }
@@ -343,67 +315,7 @@ export class PrismaStoresReader {
         if (matched.length === 0) {
             return null;
         }
-        const cheapest = this.cheapest(matched);
+        const cheapest = StoreListPolicy.cheapest(matched);
         return { name: cheapest.title, price: cheapest.price };
-    }
-
-    // 호출 측에서 비어있지 않음을 보장한다(programs.length === 0 가드 후 호출).
-    private cheapest(programs: StoreRow['programs']): StoreRow['programs'][number] {
-        const sorted = [...programs].sort((a, b) => {
-            if (a.price !== b.price) {
-                return a.price - b.price;
-            }
-            if (a.sortOrder !== b.sortOrder) {
-                return a.sortOrder - b.sortOrder;
-            }
-            return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-        });
-        const first = sorted[0];
-        if (!first) {
-            throw new Error('cheapest: programs must not be empty');
-        }
-        return first;
-    }
-
-    // 현재 KST 요일·시각이 운영시간 내인지. 휴게시간(breakStart~breakEnd)은 운영 외로 처리.
-    private toIsOperating(hours: StoreRow['operatingHours']): boolean {
-        const nowKst = new Date(Date.now() + KST_OFFSET_MINUTES * 60 * 1000);
-        const day = PRISMA_DAY_OF_WEEK[nowKst.getUTCDay()];
-        const nowMinutes = nowKst.getUTCHours() * 60 + nowKst.getUTCMinutes();
-
-        const today = hours.filter((h) => h.dayOfWeek === day);
-        if (today.length === 0) {
-            return false;
-        }
-
-        return today.some((h) => {
-            const open = this.timeToMinutes(h.openTime);
-            const close = this.timeToMinutes(h.closeTime);
-            if (open === null || close === null) {
-                return false;
-            }
-            const withinOpen =
-                close > open
-                    ? nowMinutes >= open && nowMinutes < close
-                    : // 자정 넘김(예: 22:00~02:00)
-                      nowMinutes >= open || nowMinutes < close;
-            if (!withinOpen) {
-                return false;
-            }
-            const bStart = this.timeToMinutes(h.breakStart);
-            const bEnd = this.timeToMinutes(h.breakEnd);
-            if (bStart !== null && bEnd !== null && nowMinutes >= bStart && nowMinutes < bEnd) {
-                return false; // 휴게시간
-            }
-            return true;
-        });
-    }
-
-    // Prisma @db.Time 값은 1970-01-01 기준 Date(UTC)로 들어옴 → 시:분만 추출.
-    private timeToMinutes(time: Date | null): number | null {
-        if (!time) {
-            return null;
-        }
-        return time.getUTCHours() * 60 + time.getUTCMinutes();
     }
 }
