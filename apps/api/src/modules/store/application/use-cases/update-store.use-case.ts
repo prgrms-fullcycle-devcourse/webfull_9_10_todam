@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { StoreCommandRepository } from '../../domain/repositories/store-command.repository';
-import type { UpdateStoreDto } from '../../presentation/dto/update-store.dto';
+import { UpdateStoreWriter, type UpdateStoreInput } from '../../domain/repositories/store-writers';
 
 @Injectable()
 export class UpdateStoreUseCase {
-    constructor(private readonly commands: StoreCommandRepository) {}
+    constructor(private readonly writer: UpdateStoreWriter) {}
 
-    execute(userId: string, storeId: string, dto: UpdateStoreDto) {
-        return this.commands.update(userId, storeId, dto);
+    execute(userId: string, storeId: string, input: UpdateStoreInput) {
+        return this.writer.execute(userId, storeId, input);
     }
 }

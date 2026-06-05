@@ -4,9 +4,9 @@ import { S3Service } from '../../../../common/s3/s3.service';
 import { keyFromImageUrl } from '../../../../common/s3/s3-object.util';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import type {
-    UpdateBusinessDocumentDto,
-    UpdateBusinessDocumentResponseDto,
-} from '../../presentation/dto/update-business-document.dto';
+    UpdateBusinessDocumentInput,
+    UpdateBusinessDocumentResult,
+} from '../../domain/repositories/store-writers';
 
 @Injectable()
 export class PrismaUpdateBusinessDocumentCommand {
@@ -18,8 +18,8 @@ export class PrismaUpdateBusinessDocumentCommand {
     async execute(
         userId: string,
         storeId: string,
-        dto: UpdateBusinessDocumentDto,
-    ): Promise<UpdateBusinessDocumentResponseDto> {
+        dto: UpdateBusinessDocumentInput,
+    ): Promise<UpdateBusinessDocumentResult> {
         const partner = await this.prisma.partner.findUnique({
             where: { userId },
             select: { id: true },

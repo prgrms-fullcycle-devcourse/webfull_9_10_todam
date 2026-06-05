@@ -3,10 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { parseStoreTime } from '../../domain/time.util';
-import type {
-    UpdateStoreDto,
-    UpdateStoreResponseDto,
-} from '../../presentation/dto/update-store.dto';
+import type { UpdateStoreInput, UpdateStoreResult } from '../../domain/repositories/store-writers';
 
 // @db.Time(6) 컬럼은 CreateStoreUseCase 와 동일하게 UTC 기준으로 저장한다.
 @Injectable()
@@ -16,8 +13,8 @@ export class PrismaUpdateStoreCommand {
     async execute(
         userId: string,
         storeId: string,
-        dto: UpdateStoreDto,
-    ): Promise<UpdateStoreResponseDto> {
+        dto: UpdateStoreInput,
+    ): Promise<UpdateStoreResult> {
         const partner = await this.prisma.partner.findUnique({
             where: { userId },
             select: { id: true },

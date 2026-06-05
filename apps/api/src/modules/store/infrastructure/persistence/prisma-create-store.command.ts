@@ -6,10 +6,7 @@ import { S3Service } from '../../../../common/s3/s3.service';
 import { keyFromImageUrl } from '../../../../common/s3/s3-object.util';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { parseStoreTime } from '../../domain/time.util';
-import type {
-    CreateStoreDto,
-    CreateStoreResponseDto,
-} from '../../presentation/dto/create-store.dto';
+import type { CreateStoreInput, CreateStoreResult } from '../../domain/repositories/store-writers';
 
 function generateSlug(): string {
     return randomBytes(6).toString('hex');
@@ -22,7 +19,7 @@ export class PrismaCreateStoreCommand {
         private readonly s3: S3Service,
     ) {}
 
-    async execute(userId: string, dto: CreateStoreDto): Promise<CreateStoreResponseDto> {
+    async execute(userId: string, dto: CreateStoreInput): Promise<CreateStoreResult> {
         const slug = dto.slug ?? generateSlug();
 
         // 사업자등록증 documentUrl이 있으면 presigned 업로드가 실제로 완료됐는지 검증.

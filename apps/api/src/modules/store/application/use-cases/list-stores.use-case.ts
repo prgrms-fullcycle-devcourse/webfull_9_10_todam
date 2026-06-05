@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { StoreQueryReader } from '../../domain/repositories/store-query.reader';
-import type { ListStoresQueryDto } from '../../presentation/dto/list-stores.dto';
+import { StoresReader, type ListStoresQuery } from '../../domain/repositories/store-readers';
 
 @Injectable()
 export class ListStoresUseCase {
-    constructor(private readonly reader: StoreQueryReader) {}
+    constructor(private readonly reader: StoresReader) {}
 
-    execute(query: ListStoresQueryDto) {
-        return this.reader.listStores(query);
+    execute(query: ListStoresQuery) {
+        return this.reader.execute(query);
     }
 }

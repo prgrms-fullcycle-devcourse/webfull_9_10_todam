@@ -5,10 +5,7 @@ import { S3Service } from '../../../../common/s3/s3.service';
 import { buildObjectKey, CDN_BASE } from '../../../../common/s3/s3-object.util';
 import { StoreImageRepository } from '../../domain/repositories/store-image.repository';
 import { StoreImagePolicy } from '../../domain/services/store-image-policy.service';
-import type {
-    CreateStoreImageDto,
-    CreateStoreImageResponseDto,
-} from '../../presentation/dto/store-image.dto';
+import type { CreateStoreImageCommand, CreateStoreImageResult } from '../dto/store-application.dto';
 
 @Injectable()
 export class CreateStoreImageUseCase {
@@ -21,8 +18,8 @@ export class CreateStoreImageUseCase {
     async execute(
         userId: string,
         storeId: string,
-        dto: CreateStoreImageDto,
-    ): Promise<CreateStoreImageResponseDto> {
+        dto: CreateStoreImageCommand,
+    ): Promise<CreateStoreImageResult> {
         await this.ownership.verify(userId, storeId, { notFound: 'NOT_FOUND' });
 
         const imageCount = await this.images.countByStore(storeId);

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { StoreStatus } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
-import type { GetPartnerOnboardingResponseDto } from '../../presentation/dto/get-partner-onboarding.dto';
+import type { PartnerOnboardingResult } from '../../domain/repositories/store-readers';
 
 // GET /partner/onboarding — 온보딩 상태 조회 (검수중/반려 영속화).
 // AuthGuard 만 적용(무파트너/PENDING/REJECTED 도 자기 상태 조회). 정상상태는 모두 200.
@@ -9,7 +9,7 @@ import type { GetPartnerOnboardingResponseDto } from '../../presentation/dto/get
 export class PrismaPartnerOnboardingReader {
     constructor(private readonly prisma: PrismaService) {}
 
-    async execute(userId: string): Promise<GetPartnerOnboardingResponseDto> {
+    async execute(userId: string): Promise<PartnerOnboardingResult> {
         const partner = await this.prisma.partner.findUnique({
             where: { userId },
             select: { id: true, status: true },

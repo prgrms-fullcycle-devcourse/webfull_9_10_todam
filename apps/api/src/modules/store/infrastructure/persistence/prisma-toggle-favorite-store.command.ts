@@ -2,14 +2,14 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { Prisma, StoreStatus } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import type { ToggleFavoriteStoreResponseDto } from '../../presentation/dto/toggle-favorite-store.dto';
+import type { ToggleFavoriteResult } from '../../domain/repositories/store-writers';
 
 @Injectable()
 export class PrismaToggleFavoriteStoreCommand {
     constructor(private readonly prisma: PrismaService) {}
 
     // 찜 이력 없으면 생성(isFavorite=true), 있으면 삭제(isFavorite=false).
-    async execute(userId: string, storeId: string): Promise<ToggleFavoriteStoreResponseDto> {
+    async execute(userId: string, storeId: string): Promise<ToggleFavoriteResult> {
         // PUBLISHED 공방만 찜 가능. 비존재/비공개(DRAFT/PENDING/REJECTED/SUSPENDED) → 404.
         // (다른 store 퍼블릭 엔드포인트와 동일하게 STORE_NOT_FOUND 로 일관. D4 결정.)
         const store = await this.prisma.store.findUnique({

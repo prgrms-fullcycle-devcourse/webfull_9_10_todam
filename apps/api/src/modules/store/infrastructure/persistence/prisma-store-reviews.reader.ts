@@ -3,13 +3,11 @@ import { Prisma, StoreStatus } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import type {
-    ListStoreReviewsQueryDto,
+    ListStoreReviewsQuery,
+    ListStoreReviewsResult,
+    StoreReviewListItem,
     StoreReviewSort,
-} from '../../presentation/dto/list-store-reviews.dto';
-import type {
-    ListStoreReviewsResponseDto,
-    StoreReviewListItemDto,
-} from '../../presentation/dto/list-store-reviews-response.dto';
+} from '../../domain/repositories/store-readers';
 import {
     decodeReviewCursor,
     encodeReviewCursor,
@@ -51,10 +49,7 @@ const REVIEW_SELECT = {
 export class PrismaStoreReviewsReader {
     constructor(private readonly prisma: PrismaService) {}
 
-    async execute(
-        slug: string,
-        query: ListStoreReviewsQueryDto,
-    ): Promise<ListStoreReviewsResponseDto> {
+    async execute(slug: string, query: ListStoreReviewsQuery): Promise<ListStoreReviewsResult> {
         const limit = query.limit ?? DEFAULT_LIMIT;
         const sort = query.sort ?? DEFAULT_SORT;
 
@@ -157,7 +152,7 @@ export class PrismaStoreReviewsReader {
         return { createdAt: row.createdAt.toISOString(), id: row.id };
     }
 
-    private toDto(row: ReviewRow): StoreReviewListItemDto {
+    private toDto(row: ReviewRow): StoreReviewListItem {
         return {
             id: row.id,
             nickname: this.maskNickname(row.user.nickname),
@@ -169,7 +164,7 @@ export class PrismaStoreReviewsReader {
         };
     }
 
-    private toPhotos(photos: ReviewRow['photos']): StoreReviewListItemDto['photos'] {
+    private toPhotos(photos: ReviewRow['photos']): StoreReviewListItem['photos'] {
         return [...photos]
             .sort((a, b) => {
                 if (a.sortOrder !== b.sortOrder) {

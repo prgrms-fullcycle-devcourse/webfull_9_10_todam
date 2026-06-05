@@ -2,7 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { StoreRepository } from '../../domain/repositories/store.repository';
-import type { SubmitStoreResponseDto } from '../../presentation/dto/submit-store.dto';
+import type { SubmitStoreResult } from '../dto/store-application.dto';
 
 @Injectable()
 export class SubmitStoreUseCase {
@@ -11,7 +11,7 @@ export class SubmitStoreUseCase {
         private readonly stores: StoreRepository,
     ) {}
 
-    async execute(userId: string, storeId: string): Promise<SubmitStoreResponseDto> {
+    async execute(userId: string, storeId: string): Promise<SubmitStoreResult> {
         await this.ownership.verify(userId, storeId, { notFound: 'NOT_FOUND' });
 
         const store = await this.stores.findSubmission(storeId);

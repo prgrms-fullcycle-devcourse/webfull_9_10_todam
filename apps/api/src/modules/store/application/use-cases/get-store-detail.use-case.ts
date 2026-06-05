@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { StoreQueryReader } from '../../domain/repositories/store-query.reader';
+import { StoreDetailReader } from '../../domain/repositories/store-readers';
 
 @Injectable()
 export class GetStoreDetailUseCase {
-    constructor(private readonly reader: StoreQueryReader) {}
+    constructor(private readonly reader: StoreDetailReader) {}
 
     execute(slug: string, userId?: string) {
-        return this.reader.getStoreDetail(slug, userId);
+        return this.reader.execute(slug, userId);
     }
 }

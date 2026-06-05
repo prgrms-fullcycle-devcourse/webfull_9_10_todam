@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import type { SlugAvailabilityResponseDto } from '../../presentation/dto/slug-availability.dto';
+import type { SlugAvailabilityResult } from '../../domain/repositories/store-readers';
 
 // shared runtime import는 API Jest ESM 변환 설정 정비 전까지 사용할 수 없다.
 const SLUG_PATTERN = /^[a-z0-9-]{4,40}$/;
@@ -14,7 +14,7 @@ export class PrismaSlugAvailabilityReader {
         userId: string,
         rawSlug: string | undefined,
         excludeStoreId?: string,
-    ): Promise<SlugAvailabilityResponseDto> {
+    ): Promise<SlugAvailabilityResult> {
         const slug = rawSlug?.trim();
 
         // slug 누락 / 형식 위반(4~40·하이픈만) → 400 BAD_REQUEST (contract error 코드 정합)

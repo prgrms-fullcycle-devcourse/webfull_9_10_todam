@@ -2,7 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ImageUploadStatus, Prisma, StoreStatus } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import type { GetStoreDetailResponseDto } from '../../presentation/dto/get-store-detail.dto';
+import type { PublicStoreDetailResult } from '../../domain/repositories/store-readers';
 
 function toConvenienceInfo(value: Prisma.JsonValue | null): {
     parking: boolean;
@@ -25,7 +25,7 @@ export class PrismaStoreDetailReader {
     constructor(private readonly prisma: PrismaService) {}
 
     // userId 가 있으면(선택 인증) 찜 여부를 반영, 없으면 isFavorite=false.
-    async execute(slug: string, userId?: string): Promise<GetStoreDetailResponseDto> {
+    async execute(slug: string, userId?: string): Promise<PublicStoreDetailResult> {
         const store = await this.prisma.store.findUnique({
             where: { slug },
             select: {

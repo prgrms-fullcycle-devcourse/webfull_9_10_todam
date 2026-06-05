@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { StoreCommandRepository } from '../../domain/repositories/store-command.repository';
+import { ToggleFavoriteStoreWriter } from '../../domain/repositories/store-writers';
 
 @Injectable()
 export class ToggleFavoriteStoreUseCase {
-    constructor(private readonly commands: StoreCommandRepository) {}
+    constructor(private readonly writer: ToggleFavoriteStoreWriter) {}
 
     execute(userId: string, storeId: string) {
-        return this.commands.toggleFavorite(userId, storeId);
+        return this.writer.execute(userId, storeId);
     }
 }

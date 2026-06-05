@@ -3,9 +3,9 @@ import { ProgramStatus, StoreStatus } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import type {
-    AutocompleteStoresResponseDto,
-    StoreSuggestionDto,
-} from '../../presentation/dto/autocomplete-stores-response.dto';
+    AutocompleteStoresResult,
+    StoreSuggestion,
+} from '../../domain/repositories/store-readers';
 
 const REGION_LIMIT = 3;
 const STORE_LIMIT = 5;
@@ -15,7 +15,7 @@ const PROGRAM_LIMIT = 5;
 export class PrismaAutocompleteStoresReader {
     constructor(private readonly prisma: PrismaService) {}
 
-    async execute(rawKeyword: string | undefined): Promise<AutocompleteStoresResponseDto> {
+    async execute(rawKeyword: string | undefined): Promise<AutocompleteStoresResult> {
         const keyword = rawKeyword?.trim();
         if (!keyword) {
             throw new BusinessException(
@@ -37,7 +37,7 @@ export class PrismaAutocompleteStoresReader {
     }
 
     // REGION: PUBLISHED 공방이 존재하는 지역의 distinct regionDong 부분매칭 (최대 3건).
-    private async findRegionSuggestions(keyword: string): Promise<StoreSuggestionDto[]> {
+    private async findRegionSuggestions(keyword: string): Promise<StoreSuggestion[]> {
         const rows = await this.prisma.store.findMany({
             where: {
                 status: StoreStatus.PUBLISHED,
@@ -48,7 +48,7 @@ export class PrismaAutocompleteStoresReader {
             orderBy: [{ regionDong: 'asc' }],
         });
 
-        const suggestions: StoreSuggestionDto[] = [];
+        const suggestions: StoreSuggestion[] = [];
         const seen = new Set<string>();
 
         for (const row of rows) {
@@ -77,7 +77,7 @@ export class PrismaAutocompleteStoresReader {
     }
 
     // STORE: PUBLISHED 공방명(name) 부분매칭 (최대 5건).
-    private async findStoreSuggestions(keyword: string): Promise<StoreSuggestionDto[]> {
+    private async findStoreSuggestions(keyword: string): Promise<StoreSuggestion[]> {
         const rows = await this.prisma.store.findMany({
             where: {
                 status: StoreStatus.PUBLISHED,
@@ -103,7 +103,7 @@ export class PrismaAutocompleteStoresReader {
     }
 
     // PROGRAM: ACTIVE 프로그램명(title) 부분매칭 (최대 5건).
-    private async findProgramSuggestions(keyword: string): Promise<StoreSuggestionDto[]> {
+    private async findProgramSuggestions(keyword: string): Promise<StoreSuggestion[]> {
         const rows = await this.prisma.program.findMany({
             where: {
                 status: ProgramStatus.ACTIVE,

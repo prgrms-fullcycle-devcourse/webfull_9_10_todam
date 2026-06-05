@@ -4,13 +4,7 @@ import { BusinessException } from '../../../../common/exceptions/business.except
 import { S3Service } from '../../../../common/s3/s3.service';
 import { keyFromImageUrl } from '../../../../common/s3/s3-object.util';
 import { StoreImageRepository } from '../../domain/repositories/store-image.repository';
-
-export interface ConfirmStoreImageResponseDto {
-    image: {
-        id: string;
-        status: string;
-    };
-}
+import type { ConfirmStoreImageResult } from '../dto/store-application.dto';
 
 @Injectable()
 export class ConfirmStoreImageUseCase {
@@ -24,7 +18,7 @@ export class ConfirmStoreImageUseCase {
         userId: string,
         storeId: string,
         imageId: string,
-    ): Promise<ConfirmStoreImageResponseDto> {
+    ): Promise<ConfirmStoreImageResult> {
         await this.ownership.verify(userId, storeId, { notFound: 'NOT_FOUND' });
 
         const image = await this.images.findByStoreAndId(storeId, imageId);

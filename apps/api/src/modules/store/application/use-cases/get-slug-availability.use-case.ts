@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { StoreQueryReader } from '../../domain/repositories/store-query.reader';
+import { SlugAvailabilityReader } from '../../domain/repositories/store-readers';
 
 @Injectable()
 export class GetSlugAvailabilityUseCase {
-    constructor(private readonly reader: StoreQueryReader) {}
+    constructor(private readonly reader: SlugAvailabilityReader) {}
 
     execute(userId: string, slug: string | undefined, excludeStoreId?: string) {
-        return this.reader.getSlugAvailability(userId, slug, excludeStoreId);
+        return this.reader.execute(userId, slug, excludeStoreId);
     }
 }

@@ -1,13 +1,13 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import type { ListPartnerStoresResponseDto } from '../../presentation/dto/list-partner-stores.dto';
+import type { PartnerStoresResult } from '../../domain/repositories/store-readers';
 
 @Injectable()
 export class PrismaPartnerStoresReader {
     constructor(private readonly prisma: PrismaService) {}
 
-    async execute(userId: string): Promise<ListPartnerStoresResponseDto> {
+    async execute(userId: string): Promise<PartnerStoresResult> {
         // PartnerGuard 통과 시 승인된 파트너가 보장되지만, partnerId 식별을 위해 조회한다.
         const partner = await this.prisma.partner.findUnique({
             where: { userId },

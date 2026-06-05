@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { StoreCommandRepository } from '../../domain/repositories/store-command.repository';
-import type { CreateStoreDto } from '../../presentation/dto/create-store.dto';
+import { CreateStoreWriter, type CreateStoreInput } from '../../domain/repositories/store-writers';
 
 @Injectable()
 export class CreateStoreUseCase {
-    constructor(private readonly commands: StoreCommandRepository) {}
+    constructor(private readonly writer: CreateStoreWriter) {}
 
-    execute(userId: string, dto: CreateStoreDto) {
-        return this.commands.create(userId, dto);
+    execute(userId: string, input: CreateStoreInput) {
+        return this.writer.execute(userId, input);
     }
 }

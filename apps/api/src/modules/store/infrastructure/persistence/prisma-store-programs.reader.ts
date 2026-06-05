@@ -2,13 +2,13 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ImageUploadStatus, ProgramStatus, StoreStatus } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import type { ListStoreProgramsResponseDto } from '../../presentation/dto/list-store-programs.dto';
+import type { StoreProgramsResult } from '../../domain/repositories/store-readers';
 
 @Injectable()
 export class PrismaStoreProgramsReader {
     constructor(private readonly prisma: PrismaService) {}
 
-    async execute(slug: string): Promise<ListStoreProgramsResponseDto> {
+    async execute(slug: string): Promise<StoreProgramsResult> {
         const store = await this.prisma.store.findUnique({
             where: { slug },
             select: { id: true, status: true },

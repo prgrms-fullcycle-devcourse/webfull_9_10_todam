@@ -2,10 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ImageUploadStatus, ReservationStatus } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import type {
-    GetPartnerStoreDetailResponseDto,
-    StoreDetailConvenienceInfoDto,
-} from '../../presentation/dto/get-partner-store-detail.dto';
+import type { PartnerStoreDetailResult } from '../../domain/repositories/store-readers';
 
 // CONTRACT-3: "진행 중" 예약 = 체험 완료 처리되지 않은 예약 건.
 // 체험(방문) 이전 단계인 PENDING/CONFIRMED 만 카운트.
@@ -23,7 +20,7 @@ function formatTime(value: Date | null): string | null {
     return `${hours}:${minutes}`;
 }
 
-function toConvenienceInfo(value: unknown): StoreDetailConvenienceInfoDto {
+function toConvenienceInfo(value: unknown): PartnerStoreDetailResult['store']['convenienceInfo'] {
     const info = (value ?? {}) as Record<string, unknown>;
     return {
         parking: info.parking === true,
@@ -36,7 +33,7 @@ function toConvenienceInfo(value: unknown): StoreDetailConvenienceInfoDto {
 export class PrismaPartnerStoreDetailReader {
     constructor(private readonly prisma: PrismaService) {}
 
-    async execute(userId: string, storeId: string): Promise<GetPartnerStoreDetailResponseDto> {
+    async execute(userId: string, storeId: string): Promise<PartnerStoreDetailResult> {
         // 인증된 사용자의 partner 식별 (status 무관 — 소유권은 아래 store.partnerId 대조로 검증).
         const partner = await this.prisma.partner.findUnique({
             where: { userId },
