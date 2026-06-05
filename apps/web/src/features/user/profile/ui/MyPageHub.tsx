@@ -2,12 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { Toggle } from '@todam/ui';
+import { PartnerStatus } from '@todam/shared';
 
 import { MenuTable } from '@/shared/ui';
 import { useSheet } from '@/shared/model';
 import { TERMS_CONTENT } from '@/features/auth/terms/model/termsContent';
 import type { TermsKey } from '@/features/auth/terms/model/termsContent';
-import { useMyProfile } from '../queries';
+import { usePartnerOnboarding } from '@/features/store/registration';
 import {
     useNotificationSettings,
     usePatchNotificationSettings,
@@ -25,11 +26,13 @@ export function MyPageHub() {
     const router = useRouter();
     const { open: openSheet } = useSheet();
 
-    const { data: profileData } = useMyProfile();
+    const { data: onboardingData } = usePartnerOnboarding();
     const { data: notifData } = useNotificationSettings();
     const patchNotif = usePatchNotificationSettings();
 
-    const isPartner = profileData?.user.isPartner ?? false;
+    // 파트너 여부 출처 = GET /partner/onboarding 의 partnerStatus (실 BE에 GET /users/me 미존재).
+    // APPROVED 만 파트너 센터 진입, 그 외(null/PENDING/REJECTED)는 공방 등록 진입.
+    const isPartner = onboardingData?.partnerStatus === PartnerStatus.APPROVED;
     const artworkEnabled = notifData?.notificationSettings.artworkEnabled ?? true;
     const marketingEnabled = notifData?.notificationSettings.marketingEnabled ?? false;
 
