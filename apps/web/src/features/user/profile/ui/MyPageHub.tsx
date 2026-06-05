@@ -5,8 +5,8 @@ import { Modal, Toggle } from '@todam/ui';
 import { PartnerStatus } from '@todam/shared';
 
 import { MenuTable } from '@/shared/ui';
-import { useModal, useSheet } from '@/shared/model';
-import { TERMS_CONTENT } from '@/features/auth/terms/model/termsContent';
+import { useModal } from '@/shared/model';
+import { TERMS } from '@/features/auth/terms/model/termsContent';
 import type { TermsKey } from '@/features/auth/terms/model/termsContent';
 import { logout } from '@/features/auth/logout';
 import { usePartnerOnboarding } from '@/features/store/registration';
@@ -14,7 +14,6 @@ import {
     useNotificationSettings,
     usePatchNotificationSettings,
 } from '../../notification-settings/queries';
-import { TermsViewSheet } from './TermsViewSheet';
 
 // 고객지원 약관 3종 정의 (Figma "마이" 8505:19320 — 서비스이용약관/개인정보처리방침/위치기반서비스)
 const CUSTOMER_SUPPORT_TERMS: { key: TermsKey; label: string }[] = [
@@ -25,7 +24,6 @@ const CUSTOMER_SUPPORT_TERMS: { key: TermsKey; label: string }[] = [
 
 export function MyPageHub() {
     const router = useRouter();
-    const { open: openSheet } = useSheet();
     const { open: openModal, close: closeModal } = useModal();
 
     const { data: onboardingData } = usePartnerOnboarding();
@@ -42,9 +40,10 @@ export function MyPageHub() {
         patchNotif.mutate({ [field]: value });
     };
 
+    // 약관은 노션 페이지로 연결(새 탭). termsContent가 인라인 본문 → 노션 링크 모델로 전환됨.
     const handleOpenTerms = (key: TermsKey) => {
-        const doc = TERMS_CONTENT[key];
-        openSheet(<TermsViewSheet title={doc.title} sections={doc.sections} />);
+        const item = TERMS.find((t) => t.key === key);
+        if (item) window.open(item.notionUrl, '_blank', 'noopener,noreferrer');
     };
 
     const doLogout = async () => {
