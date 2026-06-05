@@ -1,15 +1,16 @@
 'use client';
 
-import { BottomBar, Button, CloseIcon, LeftIcon } from '@todam/ui';
+import { BottomBar, Button, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { StoreRegistrationErrorCode } from '@todam/shared';
+import { StoreRegistrationApiErrorCode } from '@todam/shared';
 
-import { ApiError } from '../../../../shared/api';
-import { useToast } from '../../../../shared/model';
-import { ProgressBarWrapper } from '../../../../shared/ui';
-import { isAllValid, isStepValid, useStoreRegistrationStore } from '../model/store';
+import { ApiError } from '@/shared/api';
+import { useModal, useToast } from '@/shared/model';
+import { ProgressBarWrapper } from '@/shared/ui';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { isAllValid, isDirty, isStepValid, useStoreRegistrationStore } from '../model/store';
 import { useSubmitStoreRegistration } from '../queries';
 import { StoreRegistrationStep, STEP_TITLES, TOTAL_STEPS } from '../model/types';
 
@@ -34,10 +35,14 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
     const patchStore = useStoreRegistrationStore((s) => s.patchStore);
     const reset = useStoreRegistrationStore((s) => s.reset);
     const { push } = useToast();
+    const { open: openModal, close: closeModal } = useModal();
 
     const submitMutation = useSubmitStoreRegistration();
     const submitting = submitMutation.isPending;
-    const [submitted, setSubmitted] = useState(false);
+    const [submittedStoreId, setSubmittedStoreId] = useState<string | null>(null);
+    const submitted = submittedStoreId !== null;
+
+    const dirty = isDirty(form);
 
     // 진입점 2개(/apply, /partner/stores/new)가 전역 store 공유 → 플로우 이탈 시 초기화
     useEffect(() => () => reset(), [reset]);
@@ -47,16 +52,53 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
         router.push(returnTo);
     };
 
-    if (submitted) {
+    // 작성 중이면 확인 모달, 아니면 즉시 이탈.
+    const guardedExit = () => {
+        if (!dirty) {
+            exit();
+            return;
+        }
+        openModal(
+            <Modal
+                title="작성을 취소하고 나가시겠어요?"
+                description="작성한 내용은 저장되지 않아요."
+                confirmLabel="나가기"
+                cancelLabel="계속 작성"
+                danger
+                onConfirm={() => {
+                    closeModal();
+                    exit();
+                }}
+                onCancel={closeModal}
+            />,
+        );
+    };
+
+    const handleBack = () => {
+        if (step === StoreRegistrationStep.Business) guardedExit();
+        else prev();
+    };
+
+    // 전역 Header override: 뒤로가기(첫 단계는 이탈 가드) + 닫기(X). 완료 화면(submitted)은 헤더 없음.
+    useHeaderOverride({
+        title: '공방 등록하기',
+        onBack: handleBack,
+        onClose: guardedExit,
+        guardDirty: dirty,
+        enabled: !submitted,
+    });
+
+    if (submittedStoreId) {
         return (
             <StoreRegistrationComplete
+                storeId={submittedStoreId}
                 onClose={() => {
                     reset();
                     router.push('/');
                 }}
                 onEditInfo={() => {
                     // 반려 → 정보 수정: 폼 유지한 채 1단계로 복귀 (링크 연동 추후)
-                    setSubmitted(false);
+                    setSubmittedStoreId(null);
                     setStep(StoreRegistrationStep.Business);
                 }}
             />
@@ -67,25 +109,21 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
     const stepValid = isStepValid(form, step);
     const progress = ((step + 1) / TOTAL_STEPS) * 100;
 
-    const handleBack = () => {
-        if (step === StoreRegistrationStep.Business) exit();
-        else prev();
-    };
-
     const handleSubmit = async () => {
         if (!isAllValid(form) || submitting) return;
         try {
-            await submitMutation.mutateAsync(form);
-            setSubmitted(true);
+            const { storeId } = await submitMutation.mutateAsync(form);
+            setSubmittedStoreId(storeId);
         } catch (err) {
             if (err instanceof ApiError) {
                 push({ message: err.message });
-                if (err.code === StoreRegistrationErrorCode.STORE_SLUG_DUPLICATED) {
+                if (err.code === StoreRegistrationApiErrorCode.SLUG_CONFLICT) {
                     patchStore({ slugChecked: true, slugAvailable: false });
                     setStep(StoreRegistrationStep.StoreInfo);
-                } else if (
-                    err.code === StoreRegistrationErrorCode.BUSINESS_NUMBER_ALREADY_REGISTERED
-                ) {
+                } else if (err.code === StoreRegistrationApiErrorCode.PARTNER_NOT_APPROVED) {
+                    // 승인되지 않은 파트너의 추가 공방 등록 차단 → 메시지만 노출.
+                    setStep(StoreRegistrationStep.Business);
+                } else if (err.code === StoreRegistrationApiErrorCode.BAD_REQUEST) {
                     setStep(StoreRegistrationStep.Business);
                 }
             } else {
@@ -96,31 +134,6 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
 
     return (
         <div className="flex flex-1 flex-col overflow-hidden">
-            {/* Header (back + title + close) */}
-            <header className="flex h-15 shrink-0 items-center bg-transparent pt-safe">
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<LeftIcon />}
-                    aria-label="뒤로가기"
-                    onClick={handleBack}
-                    className="hover:!bg-transparent hover:!text-foreground"
-                />
-                <span className="flex-1 truncate text-lg font-medium leading-6 text-foreground">
-                    공방 등록하기
-                </span>
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<CloseIcon />}
-                    aria-label="닫기"
-                    onClick={exit}
-                    className="hover:!bg-transparent hover:!text-foreground"
-                />
-            </header>
-
             {/* Container */}
             <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-16">
                 <div className="py-2">

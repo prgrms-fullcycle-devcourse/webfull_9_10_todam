@@ -1,24 +1,20 @@
 import {
+    ArtworkStatus,
     OcrStatus,
     PartnerStatus,
     ProgramStatus,
     ReservationDeliveryMethod,
     ReservationStatus,
     StoreStatus,
-    ProgramDeliveryOption,
     ProgramDifficulty,
+    type ArtworkDetail,
     type ConvenienceInfo,
     type DayOfWeek,
-    type OperatingHourInput,
-    type PartnerProgramListItem,
-    type PartnerStoreDetail,
+    type FavoriteStoreItem,
     type ReservationDetail,
     type ReservationListItem,
     type ReviewDetail,
-    type StoreImage,
-    type StoreRegistrationSubmitRequest,
     type ProgramImage,
-    type StoreUpdateRequest,
 } from '@todam/shared';
 
 // 인메모리 mock 저장소. prisma 모델 형태를 최소한으로 흉내낸다.
@@ -77,13 +73,6 @@ interface MockDb {
     operatingHours: OperatingHourRow[];
 }
 
-// 현재 로그인 사용자 (mock 고정).
-export const MOCK_USER_ID = 'mock-user-0001';
-
-// 시드: 중복 케이스 테스트용.
-export const SEEDED_REGISTERED_BUSINESS_NUMBERS = new Set(['123-45-67890']);
-export const SEEDED_TAKEN_SLUGS = new Set(['todam', 'ceramic-studio']);
-
 export const db: MockDb = {
     partners: [],
     stores: [],
@@ -91,65 +80,158 @@ export const db: MockDb = {
     operatingHours: [],
 };
 
-// 찜한 공방 storeId 집합 (mock). 시드 2개.
-export const likedStores = new Set<string>(['1', '2']);
-
-export function setLike(storeId: string, liked: boolean): boolean {
-    if (liked) likedStores.add(storeId);
-    else likedStores.delete(storeId);
-    return likedStores.has(storeId);
-}
-
-// ─── 내 공방 목록 시드 ──────────────────────────────────────────
-// 온보딩 흐름(db.stores)과 분리한 데모 데이터. 최신 생성순 정렬을 위해 createdAt 내림차순으로 시드.
-export interface PartnerStoreListRow {
-    id: string;
-    name: string;
-    ownerName: string;
-    status: StoreStatus;
-    createdAt: string;
-}
-const SEEDED_PARTNER_STORES: PartnerStoreListRow[] = [
+// ─── 찜한 공방 mock ──────────────────────────────────────────────
+// 찜한 공방 목록 seed (최신 찜순 = createdAt 내림차순). 무한스크롤/빈상태 검증용 ≥ 12개.
+// 모두 PUBLISHED 공방 가정(목록은 PUBLISHED 만 노출 — 요구사항 store §1·§4).
+const SEEDED_FAVORITE_STORES: FavoriteStoreItem[] = [
     {
-        id: 'store-seed-0001',
+        favoriteId: 'fav-seed-0012',
+        storeId: 'store-fav-0012',
+        name: '토담 공방 성수점',
+        category: '도자기',
+        imageUrl: 'https://placehold.co/80x80?text=ceramic',
+        address: '서울특별시 성동구 성수이로 12길',
+        createdAt: '2026-05-30T18:00:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0011',
+        storeId: 'store-fav-0011',
         name: '흙과 사람',
-        ownerName: '김리듬',
-        status: StoreStatus.PUBLISHED,
-        createdAt: '2026-05-30T10:00:00.000Z',
+        category: '도자기',
+        imageUrl: 'https://placehold.co/80x80?text=clay',
+        address: '서울특별시 성동구 뚝섬로 273',
+        createdAt: '2026-05-29T17:30:00.000Z',
     },
     {
-        id: 'store-seed-0002',
+        favoriteId: 'fav-seed-0010',
+        storeId: 'store-fav-0010',
         name: '플러스 도자기',
-        ownerName: '김리듬',
-        status: StoreStatus.PENDING,
-        createdAt: '2026-05-25T10:00:00.000Z',
+        category: '도자기',
+        imageUrl: 'https://placehold.co/80x80?text=pottery',
+        address: '서울특별시 마포구 와우산로 100',
+        createdAt: '2026-05-28T16:00:00.000Z',
     },
     {
-        id: 'store-seed-0003',
+        favoriteId: 'fav-seed-0009',
+        storeId: 'store-fav-0009',
         name: '클레이 서울',
-        ownerName: '김리듬',
-        status: StoreStatus.SUSPENDED,
-        createdAt: '2026-05-20T10:00:00.000Z',
+        category: '공예',
+        imageUrl: 'https://placehold.co/80x80?text=craft',
+        address: '서울특별시 종로구 자하문로 50',
+        createdAt: '2026-05-27T15:20:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0008',
+        storeId: 'store-fav-0008',
+        name: '온도 스튜디오',
+        category: '캔들',
+        imageUrl: 'https://placehold.co/80x80?text=candle',
+        address: '서울특별시 용산구 이태원로 200',
+        createdAt: '2026-05-26T14:10:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0007',
+        storeId: 'store-fav-0007',
+        name: '백자방',
+        category: '도자기',
+        imageUrl: 'https://placehold.co/80x80?text=white',
+        address: '서울특별시 강남구 도산대로 33',
+        createdAt: '2026-05-25T13:00:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0006',
+        storeId: 'store-fav-0006',
+        name: '나무공방 손길',
+        category: '목공',
+        imageUrl: 'https://placehold.co/80x80?text=wood',
+        address: '서울특별시 마포구 성미산로 80',
+        createdAt: '2026-05-24T12:00:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0005',
+        storeId: 'store-fav-0005',
+        name: '가죽공방 무드',
+        category: '가죽',
+        imageUrl: 'https://placehold.co/80x80?text=leather',
+        address: '서울특별시 서대문구 연희로 11',
+        createdAt: '2026-05-23T11:30:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0004',
+        storeId: 'store-fav-0004',
+        name: '유리공방 빛',
+        category: '유리',
+        imageUrl: 'https://placehold.co/80x80?text=glass',
+        address: '서울특별시 성북구 동소문로 5',
+        createdAt: '2026-05-22T10:40:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0003',
+        storeId: 'store-fav-0003',
+        name: '향기연구소',
+        category: '향수',
+        imageUrl: 'https://placehold.co/80x80?text=perfume',
+        address: '서울특별시 강동구 천호대로 900',
+        createdAt: '2026-05-21T09:50:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0002',
+        storeId: 'store-fav-0002',
+        name: '플라워 아틀리에',
+        category: '플라워',
+        imageUrl: 'https://placehold.co/80x80?text=flower',
+        address: '서울특별시 송파구 올림픽로 240',
+        createdAt: '2026-05-20T09:00:00.000Z',
+    },
+    {
+        favoriteId: 'fav-seed-0001',
+        storeId: 'store-fav-0001',
+        name: '실과 바늘',
+        category: '자수',
+        imageUrl: 'https://placehold.co/80x80?text=embroidery',
+        address: '서울특별시 영등포구 여의대로 24',
+        createdAt: '2026-05-19T08:30:00.000Z',
     },
 ];
 
-// 내 공방 목록: 온보딩으로 생성된 공방 + 시드 데모, 최신 생성순.
-export function listPartnerStores(): PartnerStoreListRow[] {
-    const created: PartnerStoreListRow[] = db.stores
-        .filter((s) => {
-            const partner = db.partners.find((p) => p.id === s.partnerId);
-            return partner?.userId === MOCK_USER_ID;
-        })
-        .map((s) => ({
-            id: s.id,
-            name: s.name,
-            ownerName: db.businessDocuments.find((d) => d.storeId === s.id)?.ownerName ?? '',
-            status: s.status,
-            createdAt: s.createdAt,
-        }));
-    return [...created, ...SEEDED_PARTNER_STORES].sort((a, b) =>
+// 찜한 공방 storeId 집합 (mock). seed 의 storeId 로 초기화.
+export const likedStores = new Set<string>(SEEDED_FAVORITE_STORES.map((s) => s.storeId));
+
+// 찜 토글: 이력 없으면 add → true(등록됨), 있으면 delete → false(해제됨).
+export function toggleFavorite(storeId: string): boolean {
+    if (likedStores.has(storeId)) {
+        likedStores.delete(storeId);
+        return false;
+    }
+    likedStores.add(storeId);
+    return true;
+}
+
+// 찜한 공방 목록(커서 페이지네이션). createdAt 내림차순 + favoriteId 커서 슬라이스.
+// likedStores 와 동기화: 토글로 해제된 공방은 목록에서 제외.
+export function listFavoriteStores(
+    cursor: string | null,
+    limit: number,
+): { favoriteStores: FavoriteStoreItem[]; nextCursor: string | null } {
+    const all = SEEDED_FAVORITE_STORES.filter((s) => likedStores.has(s.storeId)).sort((a, b) =>
         b.createdAt.localeCompare(a.createdAt),
     );
+
+    let startIdx = 0;
+    if (cursor) {
+        const idx = all.findIndex((s) => s.favoriteId === cursor);
+        startIdx = idx >= 0 ? idx + 1 : all.length; // cursor 미존재 시 빈 결과.
+    }
+
+    // limit+1 방식으로 다음 페이지 존재 여부 판정.
+    const window = all.slice(startIdx, startIdx + limit + 1);
+    const hasMore = window.length > limit;
+    const favoriteStores = window.slice(0, limit);
+    const nextCursor = hasMore
+        ? (favoriteStores[favoriteStores.length - 1]?.favoriteId ?? null)
+        : null;
+
+    return { favoriteStores, nextCursor };
 }
 
 let seq = 0;
@@ -162,84 +244,6 @@ export function nowIso(): string {
     return new Date().toISOString();
 }
 
-export function isBusinessNumberRegistered(businessNumber: string): boolean {
-    if (SEEDED_REGISTERED_BUSINESS_NUMBERS.has(businessNumber)) return true;
-    return db.businessDocuments.some((d) => d.businessNumber === businessNumber);
-}
-
-export function isSlugTaken(slug: string): boolean {
-    if (SEEDED_TAKEN_SLUGS.has(slug)) return true;
-    return db.stores.some((s) => s.slug === slug);
-}
-
-// 온보딩 제출 → Partner(PENDING)+Store(PENDING)+BusinessDocument+OperatingHours 생성.
-export function createStoreRegistration(input: StoreRegistrationSubmitRequest) {
-    const createdAt = nowIso();
-    const partner: PartnerRow = {
-        id: genId('partner'),
-        userId: MOCK_USER_ID,
-        status: PartnerStatus.PENDING,
-        rejectedReason: null,
-        approvedAt: null,
-        createdAt,
-    };
-    const store: StoreRow = {
-        id: genId('store'),
-        partnerId: partner.id,
-        name: input.name,
-        slug: input.slug,
-        description: input.description,
-        phone: input.phone,
-        address: input.address,
-        latitude: input.latitude,
-        longitude: input.longitude,
-        convenienceInfo: input.convenienceInfo,
-        autoConfirm: input.autoConfirm,
-        status: StoreStatus.PENDING,
-        publishedAt: null,
-        rejectedReason: null,
-        createdAt,
-    };
-    const businessDoc: BusinessDocumentRow = {
-        id: genId('bizdoc'),
-        partnerId: partner.id,
-        storeId: store.id,
-        documentUrl: input.businessDocument.documentUrl,
-        ownerName: input.businessDocument.ownerName,
-        businessName: input.businessDocument.businessName,
-        businessNumber: input.businessDocument.businessNumber,
-        businessAddress: input.businessDocument.businessAddress,
-        email: input.businessDocument.email,
-        ocrStatus: OcrStatus.PENDING, // OCR 추후 연동
-        verifiedAt: null,
-    };
-    const hours: OperatingHourRow[] = input.operatingHours.map((h) => ({
-        id: genId('hour'),
-        storeId: store.id,
-        dayOfWeek: h.dayOfWeek,
-        openTime: h.openTime,
-        closeTime: h.closeTime,
-        breakStart: h.breakStart,
-        breakEnd: h.breakEnd,
-    }));
-
-    db.partners.push(partner);
-    db.stores.push(store);
-    db.businessDocuments.push(businessDoc);
-    db.operatingHours.push(...hours);
-
-    return { partner, store, businessDoc };
-}
-
-export function findLatestStoreRegistration() {
-    const partner = db.partners.filter((p) => p.userId === MOCK_USER_ID).at(-1);
-    if (!partner) return null;
-    const store = db.stores.filter((s) => s.partnerId === partner.id).at(-1);
-    if (!store) return null;
-    const businessDoc = db.businessDocuments.filter((d) => d.storeId === store.id).at(-1) ?? null;
-    return { partner, store, businessDoc };
-}
-
 // ─── 프로그램 mock DB ────────────────────────────────────────────
 
 export interface ProgramRow {
@@ -250,12 +254,10 @@ export interface ProgramRow {
     materials: string | null;
     price: number;
     durationMinutes: number;
-    capacity: number;
     leadTimeDays: number;
     difficulty: ProgramDifficulty;
-    deliveryOption: ProgramDeliveryOption;
-    childrenAllowed: boolean;
-    deliveryAvailable: boolean;
+    childFriendly: boolean;
+    deliverable: boolean;
     status: ProgramStatus;
     updatedAt: string;
 }
@@ -266,6 +268,7 @@ export interface ProgramImageRow {
     imageUrl: string;
     thumbnailUrl: string;
     isThumbnail: boolean;
+    status: 'PENDING' | 'UPLOADED';
 }
 
 // 시드: 테스트용 공방 + 프로그램 데이터
@@ -281,14 +284,58 @@ export const seededPrograms: ProgramRow[] = [
         materials: '앞치마 (공방 제공), 편한 복장',
         price: 45000,
         durationMinutes: 120,
-        capacity: 6,
         leadTimeDays: 30,
         difficulty: ProgramDifficulty.BASIC,
-        deliveryOption: ProgramDeliveryOption.CUSTOMER_SELECT,
-        childrenAllowed: true,
-        deliveryAvailable: false,
+        childFriendly: true,
+        deliverable: false,
         status: ProgramStatus.ACTIVE,
         updatedAt: '2026-05-25T19:05:00.000Z',
+    },
+    // 클래스 목록(storePrograms) 항목들의 상세 데이터 — 목록→상세 진입 시 조회됨.
+    {
+        id: 'prog-seed-0001',
+        storeId: MOCK_STORE_ID,
+        title: '도자기 물레 원데이 클래스',
+        description: '물레로 그릇을 빚어보는 원데이 클래스입니다.',
+        materials: '앞치마 (공방 제공)',
+        price: 45000,
+        durationMinutes: 120,
+        leadTimeDays: 28,
+        difficulty: ProgramDifficulty.BASIC,
+        childFriendly: true,
+        deliverable: true,
+        status: ProgramStatus.ACTIVE,
+        updatedAt: '2026-05-21T09:00:00.000Z',
+    },
+    {
+        id: 'prog-seed-0002',
+        storeId: MOCK_STORE_ID,
+        title: '핸드빌딩 머그컵 만들기',
+        description: '손으로 빚어 나만의 머그컵을 만듭니다.',
+        materials: null,
+        price: 38000,
+        durationMinutes: 90,
+        leadTimeDays: 30,
+        difficulty: ProgramDifficulty.INTERMEDIATE,
+        childFriendly: false,
+        deliverable: false,
+        status: ProgramStatus.DRAFT,
+        updatedAt: '2026-05-22T09:00:00.000Z',
+    },
+    {
+        id: 'prog-seed-0003',
+        storeId: MOCK_STORE_ID,
+        title: '커플 도자기 클래스',
+        description: '둘이 함께 만드는 도자기 클래스입니다.',
+        materials: null,
+        price: 88000,
+        durationMinutes: 150,
+        leadTimeDays: 35,
+        difficulty: ProgramDifficulty.ADVANCED,
+        childFriendly: false,
+        deliverable: true,
+        status: ProgramStatus.INACTIVE,
+        updatedAt: '2026-05-23T09:00:00.000Z',
     },
 ];
 
@@ -299,6 +346,7 @@ export const seededProgramImages: ProgramImageRow[] = [
         imageUrl: 'https://cdn.todam.app/programs/prog-uuid-001/01.jpg',
         thumbnailUrl: 'https://cdn.todam.app/programs/prog-uuid-001/01_thumb.jpg',
         isThumbnail: true,
+        status: 'UPLOADED',
     },
 ];
 
@@ -329,21 +377,7 @@ export function updateProgram(
     return seededPrograms[idx]!;
 }
 
-export function addProgramImage(
-    programId: string,
-    image: Omit<ProgramImageRow, 'programId'>,
-): ProgramImageRow {
-    const row: ProgramImageRow = { ...image, programId };
-    seededProgramImages.push(row);
-    return row;
-}
-
-export function removeProgramImage(imageId: string): boolean {
-    const idx = seededProgramImages.findIndex((img) => img.programImageId === imageId);
-    if (idx === -1) return false;
-    seededProgramImages.splice(idx, 1);
-    return true;
-}
+// [제거] createProgram/updateProgramStatus/confirmProgramImage mock 헬퍼 — 클래스 등록 실 BE 연동 완료로 불필요.
 
 export function programToApiShape(program: ProgramRow): object {
     const images: ProgramImage[] = getProgramImages(program.id).map((img) => ({
@@ -360,395 +394,13 @@ export function programToApiShape(program: ProgramRow): object {
         materials: program.materials,
         price: program.price,
         durationMinutes: program.durationMinutes,
-        capacity: program.capacity,
         leadTimeDays: program.leadTimeDays,
         difficulty: program.difficulty,
-        deliveryOption: program.deliveryOption,
-        childrenAllowed: program.childrenAllowed,
-        deliveryAvailable: program.deliveryAvailable,
+        childFriendly: program.childFriendly,
+        deliverable: program.deliverable,
         status: program.status,
         images,
     };
-}
-
-// ─── 공방 상세(수정 화면 preload) mock ──────────────────────────
-// 파트너센터 공방 상세 — GET/PATCH/이미지 엔드포인트가 참조하는 인메모리 저장소.
-// 목록 시드(SEEDED_PARTNER_STORES)와 id 정합. createStoreRegistration 생성분도 lazy 보강.
-const storeDetails: Record<string, PartnerStoreDetail> = {
-    'store-seed-0001': {
-        id: 'store-seed-0001',
-        partnerId: 'partner-seed-0001',
-        name: '흙과 사람',
-        slug: 'heuk-saram',
-        description: '흙과 함께하는 도자기 체험 공방입니다.',
-        phone: '02-1234-5678',
-        address: '서울특별시 성동구 성수이로 12길 34',
-        latitude: 37.5446,
-        longitude: 127.0556,
-        convenienceInfo: { parking: true, pet: false, wifi: true },
-        autoConfirm: false,
-        cancelDeadlineDays: 1,
-        reservationIntervalMinutes: 60,
-        maxCapacityPerSlot: 6,
-        status: StoreStatus.PUBLISHED,
-        rejectedReason: null,
-        suspendedReason: null,
-        rating: 4.8,
-        reviewCount: 132,
-        inProgressReservationCount: 5,
-        operatingHours: [
-            {
-                dayOfWeek: 'MON',
-                openTime: '10:00',
-                closeTime: '19:00',
-                breakStart: '13:00',
-                breakEnd: '14:00',
-            },
-            {
-                dayOfWeek: 'TUE',
-                openTime: '10:00',
-                closeTime: '19:00',
-                breakStart: '13:00',
-                breakEnd: '14:00',
-            },
-            {
-                dayOfWeek: 'WED',
-                openTime: '10:00',
-                closeTime: '19:00',
-                breakStart: '13:00',
-                breakEnd: '14:00',
-            },
-        ],
-        images: [
-            {
-                id: 'img-seed-0001',
-                imageUrl: 'https://placehold.co/400x300?text=workshop',
-                thumbnailUrl: 'https://placehold.co/200x150?text=workshop',
-                isThumbnail: true,
-                sortOrder: 1,
-            },
-        ],
-        businessDocument: {
-            ownerName: '김리듬',
-            email: 'partner@example.com',
-            businessName: '흙과 사람',
-            businessNumber: '111-22-33333',
-            businessAddress: '서울특별시 성동구 성수이로 12길 34',
-            ocrStatus: OcrStatus.VERIFIED,
-        },
-        publishedAt: '2026-05-20T10:00:00.000Z',
-        createdAt: '2026-05-30T10:00:00.000Z',
-    },
-    'store-seed-0002': {
-        id: 'store-seed-0002',
-        partnerId: 'partner-seed-0002',
-        name: '플러스 도자기',
-        slug: 'plus-pottery',
-        description: null,
-        phone: '02-2222-3333',
-        address: '서울특별시 마포구 와우산로 100',
-        latitude: 37.5512,
-        longitude: 126.9223,
-        convenienceInfo: { parking: false, pet: true, wifi: false },
-        autoConfirm: true,
-        cancelDeadlineDays: 2,
-        reservationIntervalMinutes: 90,
-        maxCapacityPerSlot: 4,
-        status: StoreStatus.PENDING,
-        rejectedReason: null,
-        suspendedReason: null,
-        rating: 0,
-        reviewCount: 0,
-        inProgressReservationCount: 0,
-        operatingHours: [
-            {
-                dayOfWeek: 'SAT',
-                openTime: '11:00',
-                closeTime: '20:00',
-                breakStart: null,
-                breakEnd: null,
-            },
-            {
-                dayOfWeek: 'SUN',
-                openTime: '11:00',
-                closeTime: '20:00',
-                breakStart: null,
-                breakEnd: null,
-            },
-        ],
-        images: [
-            {
-                id: 'img-seed-0002',
-                imageUrl: 'https://placehold.co/400x300?text=pottery',
-                thumbnailUrl: 'https://placehold.co/200x150?text=pottery',
-                isThumbnail: true,
-                sortOrder: 1,
-            },
-        ],
-        businessDocument: {
-            ownerName: '김리듬',
-            email: 'partner@example.com',
-            businessName: '플러스 도자기',
-            businessNumber: '222-33-44444',
-            businessAddress: '서울특별시 마포구 와우산로 100',
-            ocrStatus: OcrStatus.PENDING,
-        },
-        publishedAt: null,
-        createdAt: '2026-05-25T10:00:00.000Z',
-    },
-    'store-seed-0003': {
-        id: 'store-seed-0003',
-        partnerId: 'partner-seed-0003',
-        name: '클레이 서울',
-        slug: 'clay-seoul',
-        description: '도심 속 작은 도예 작업실.',
-        phone: '02-5555-6666',
-        address: '서울특별시 종로구 자하문로 50',
-        latitude: 37.5821,
-        longitude: 126.9706,
-        convenienceInfo: { parking: false, pet: false, wifi: true },
-        autoConfirm: false,
-        cancelDeadlineDays: 1,
-        reservationIntervalMinutes: 120,
-        maxCapacityPerSlot: 8,
-        status: StoreStatus.SUSPENDED,
-        rejectedReason: null,
-        suspendedReason: '운영 정책 위반으로 노출이 중단되었습니다.',
-        rating: 4.5,
-        reviewCount: 21,
-        inProgressReservationCount: 0,
-        operatingHours: [
-            {
-                dayOfWeek: 'MON',
-                openTime: '09:00',
-                closeTime: '18:00',
-                breakStart: null,
-                breakEnd: null,
-            },
-        ],
-        images: [
-            {
-                id: 'img-seed-0003',
-                imageUrl: 'https://placehold.co/400x300?text=clay',
-                thumbnailUrl: 'https://placehold.co/200x150?text=clay',
-                isThumbnail: true,
-                sortOrder: 1,
-            },
-        ],
-        businessDocument: {
-            ownerName: '김리듬',
-            email: 'partner@example.com',
-            businessName: '클레이 서울',
-            businessNumber: '333-44-55555',
-            businessAddress: '서울특별시 종로구 자하문로 50',
-            ocrStatus: OcrStatus.VERIFIED,
-        },
-        publishedAt: null,
-        createdAt: '2026-05-20T10:00:00.000Z',
-    },
-};
-
-// 온보딩(db.stores)으로 생성된 공방을 상세 형태로 lazy 변환.
-function buildDetailFromCreated(id: string): PartnerStoreDetail | undefined {
-    const store = db.stores.find((s) => s.id === id);
-    if (!store) return undefined;
-    const doc = db.businessDocuments.find((d) => d.storeId === id);
-    const hours: OperatingHourInput[] = db.operatingHours
-        .filter((h) => h.storeId === id)
-        .map((h) => ({
-            dayOfWeek: h.dayOfWeek,
-            openTime: h.openTime,
-            closeTime: h.closeTime,
-            breakStart: h.breakStart,
-            breakEnd: h.breakEnd,
-        }));
-    return {
-        id: store.id,
-        partnerId: store.partnerId,
-        name: store.name,
-        slug: store.slug,
-        description: store.description || null,
-        phone: store.phone,
-        address: store.address,
-        latitude: store.latitude,
-        longitude: store.longitude,
-        convenienceInfo: store.convenienceInfo,
-        autoConfirm: store.autoConfirm,
-        cancelDeadlineDays: 1,
-        reservationIntervalMinutes: 60,
-        maxCapacityPerSlot: 4,
-        status: store.status,
-        rejectedReason: store.rejectedReason,
-        suspendedReason: null,
-        rating: 0,
-        reviewCount: 0,
-        inProgressReservationCount: 0,
-        operatingHours: hours,
-        images: [],
-        businessDocument: {
-            ownerName: doc?.ownerName ?? '',
-            email: doc?.email ?? '',
-            businessName: doc?.businessName ?? '',
-            businessNumber: doc?.businessNumber ?? '',
-            businessAddress: doc?.businessAddress ?? '',
-            ocrStatus: doc?.ocrStatus ?? OcrStatus.PENDING,
-        },
-        publishedAt: store.publishedAt,
-        createdAt: store.createdAt,
-    };
-}
-
-export function getStoreDetail(id: string): PartnerStoreDetail | undefined {
-    if (storeDetails[id]) return storeDetails[id];
-    const built = buildDetailFromCreated(id);
-    if (built) {
-        storeDetails[id] = built;
-        return built;
-    }
-    return undefined;
-}
-
-// ─── 운영 클래스 목록 시드 (GET /partner/stores/{storeId}/programs) ──
-// store-seed-0001 만 보유, store-seed-0002 는 empty([]) — empty UI 확인용.
-const storePrograms: Record<string, PartnerProgramListItem[]> = {
-    'store-seed-0001': [
-        {
-            id: 'prog-seed-0001',
-            title: '도자기 물레 원데이 클래스',
-            status: ProgramStatus.ACTIVE,
-            thumbnailUrl: 'https://placehold.co/200x150?text=wheel',
-            price: 45000,
-            durationMinutes: 120,
-            capacity: 6,
-            sortOrder: 1,
-            createdAt: '2026-05-21T09:00:00.000Z',
-        },
-        {
-            id: 'prog-seed-0002',
-            title: '핸드빌딩 머그컵 만들기',
-            status: ProgramStatus.DRAFT,
-            thumbnailUrl: 'https://placehold.co/200x150?text=mug',
-            price: 38000,
-            durationMinutes: 90,
-            capacity: 8,
-            sortOrder: 2,
-            createdAt: '2026-05-22T09:00:00.000Z',
-        },
-        {
-            id: 'prog-seed-0003',
-            title: '커플 도자기 클래스 (일시 중단)',
-            status: ProgramStatus.INACTIVE,
-            thumbnailUrl: 'https://placehold.co/200x150?text=couple',
-            price: 88000,
-            durationMinutes: 150,
-            capacity: 2,
-            sortOrder: 3,
-            createdAt: '2026-05-23T09:00:00.000Z',
-        },
-    ],
-};
-
-// 운영 클래스 목록 조회. 공방 미존재 시 null(→404), 존재하나 클래스 없으면 [].
-export function findPartnerStorePrograms(id: string): PartnerProgramListItem[] | null {
-    if (!getStoreDetail(id)) return null;
-    return storePrograms[id] ?? [];
-}
-
-// PATCH: 전달된 필드만 갱신(부분 갱신), operatingHours·images는 배열 전체 치환. status 불변.
-export function updateStoreDetail(
-    id: string,
-    body: StoreUpdateRequest,
-): PartnerStoreDetail | undefined {
-    const detail = getStoreDetail(id);
-    if (!detail) return undefined;
-    if (body.name !== undefined) detail.name = body.name;
-    if (body.slug !== undefined) detail.slug = body.slug;
-    if (body.description !== undefined) detail.description = body.description;
-    if (body.phone !== undefined) detail.phone = body.phone;
-    if (body.address !== undefined) detail.address = body.address;
-    if (body.latitude !== undefined) detail.latitude = body.latitude;
-    if (body.longitude !== undefined) detail.longitude = body.longitude;
-    if (body.convenienceInfo !== undefined) detail.convenienceInfo = body.convenienceInfo;
-    if (body.autoConfirm !== undefined) detail.autoConfirm = body.autoConfirm;
-    if (body.cancelDeadlineDays !== undefined) detail.cancelDeadlineDays = body.cancelDeadlineDays;
-    if (body.reservationIntervalMinutes !== undefined)
-        detail.reservationIntervalMinutes = body.reservationIntervalMinutes;
-    if (body.maxCapacityPerSlot !== undefined) detail.maxCapacityPerSlot = body.maxCapacityPerSlot;
-    if (body.operatingHours !== undefined) detail.operatingHours = body.operatingHours;
-    if (body.images !== undefined) {
-        // 최종 이미지 id 목록 기준으로 재구성(순서·대표 반영).
-        const next: StoreImage[] = body.images.map((imgId, i) => {
-            const existing =
-                detail.images.find((img) => img.id === imgId) ??
-                pendingImages.find((img) => img.id === imgId);
-            return {
-                id: imgId,
-                imageUrl: existing?.imageUrl ?? `https://placehold.co/400x300?text=${imgId}`,
-                thumbnailUrl:
-                    existing?.thumbnailUrl ?? `https://placehold.co/200x150?text=${imgId}`,
-                isThumbnail: i === 0,
-                sortOrder: i + 1,
-            };
-        });
-        detail.images = next;
-    }
-    return detail;
-}
-
-export function isSlugTakenByOther(slug: string, storeId: string): boolean {
-    if (SEEDED_TAKEN_SLUGS.has(slug)) return true;
-    if (db.stores.some((s) => s.slug === slug && s.id !== storeId)) return true;
-    return Object.values(storeDetails).some((d) => d.slug === slug && d.id !== storeId);
-}
-
-// ─── 이미지 presigned mock ──────────────────────────────────────
-// confirm 전까지 보관하는 임시 이미지 (PENDING). 최종 반영은 PATCH images[].
-interface PendingImage extends StoreImage {
-    status: 'PENDING' | 'UPLOADED';
-}
-const pendingImages: PendingImage[] = [];
-
-export function createPendingImage(
-    storeId: string,
-    fileName: string,
-    isThumbnail: boolean,
-): { imageId: string; uploadUrl: string; imageUrl: string } {
-    const imageId = genId('img');
-    const imageUrl = `https://placehold.co/400x300?text=${encodeURIComponent(fileName)}`;
-    pendingImages.push({
-        id: imageId,
-        imageUrl,
-        thumbnailUrl: `https://placehold.co/200x150?text=${encodeURIComponent(fileName)}`,
-        isThumbnail,
-        sortOrder: pendingImages.length + 1,
-        status: 'PENDING',
-    });
-    return {
-        imageId,
-        uploadUrl: `https://todam-bucket.s3.ap-northeast-2.amazonaws.com/stores/${storeId}/images/${imageId}.jpg?mock=1`,
-        imageUrl,
-    };
-}
-
-export function confirmPendingImage(imageId: string): boolean {
-    const img = pendingImages.find((i) => i.id === imageId);
-    if (!img) return false;
-    if (img.status === 'UPLOADED') return false; // ALREADY_UPLOADED
-    img.status = 'UPLOADED';
-    return true;
-}
-
-export function deleteStoreImage(storeId: string, imageId: string): boolean {
-    const pIdx = pendingImages.findIndex((i) => i.id === imageId);
-    if (pIdx >= 0) {
-        pendingImages.splice(pIdx, 1);
-        return true;
-    }
-    const detail = getStoreDetail(storeId);
-    if (!detail) return false;
-    const before = detail.images.length;
-    detail.images = detail.images.filter((img) => img.id !== imageId);
-    return detail.images.length < before;
 }
 
 // 주소 → 좌표 mock. (실연동: 카카오 로컬 API) 서울 도심 기준 deterministic offset.
@@ -948,7 +600,8 @@ export function listMyReservations(): ReservationListItem[] {
 //
 // 디자인 정본: 머그컵 만들기 · 흙과 사람 (성수동) · 2026.04.18 (토) 15:00 · 2명 · 90,000원 · 택배.
 const SEEDED_RESERVATION_DETAILS: Record<string, ReservationDetail> = {
-    // 변형 A — 체험 전 (CONFIRMED + 배송 미입력 + 다음 단계 안내). cancelable.
+    // 변형 A — 체험 전 (CONFIRMED + 배송 입력됨 + 다음 단계 안내). cancelable.
+    // 본 시드는 "배송 정보 수정 — 입력됨 케이스" 흐름의 prefill 검증용으로 delivery 5필드를 채움.
     'res-seed-0002': {
         id: 'res-seed-0002',
         storeId: 'store-seed-0050',
@@ -960,7 +613,7 @@ const SEEDED_RESERVATION_DETAILS: Record<string, ReservationDetail> = {
         reserverPhone: '010-0000-0000',
         participantCount: 2,
         deliveryMethod: ReservationDeliveryMethod.DELIVERY,
-        shippingAddress: null,
+        shippingAddress: '서울특별시 마포구 월드컵북로 12',
         requestMemo: null,
         status: ReservationStatus.CONFIRMED,
         displayState: {
@@ -971,7 +624,13 @@ const SEEDED_RESERVATION_DETAILS: Record<string, ReservationDetail> = {
         artworkId: null,
         createdAt: '2026-05-31T18:00:00.000Z',
         totalPrice: 90000,
-        delivery: null, // 배송 정보 미입력 → 빈 상태 카드.
+        delivery: {
+            recipientName: '김리듬',
+            recipientPhone: '010-9876-5432',
+            address: '서울특별시 마포구 월드컵북로 12',
+            carrier: null,
+            trackingNumber: null,
+        },
         canCancel: true,
         cancelDeadlineDays: 3,
         artwork: null,
@@ -1105,6 +764,319 @@ export function findReservationDetail(id: string): ReservationDetail | undefined
     return SEEDED_RESERVATION_DETAILS[id];
 }
 
+// ─── 배송 정보 in-memory 저장소 (PATCH /reservations/:id/delivery) ──────
+// 본 endpoint 응답은 5필드(recipientName/recipientPhone/postalCode/address/addressDetail)지만
+// 예약 상세 응답의 delivery 는 5필드 중 postalCode/addressDetail 없는 다른 shape(+carrier/trackingNumber).
+// 두 shape 합치지 않고 별도 저장 — 본 store 는 PATCH 응답 echo + 예약 상세 5필드 부분 머지.
+type DeliveryEditRecord = {
+    recipientName: string;
+    recipientPhone: string;
+    postalCode: string;
+    address: string;
+    addressDetail?: string;
+};
+const deliveryEdits: Record<string, DeliveryEditRecord> = {};
+
+export function upsertDeliveryEdit(
+    reservationId: string,
+    record: DeliveryEditRecord,
+): DeliveryEditRecord {
+    deliveryEdits[reservationId] = record;
+    // 예약 상세 시드의 delivery 객체에 5필드 중 reservation-detail contract 가 갖는 부분만 미러링.
+    // (carrier/trackingNumber 는 본 endpoint 비책임 — 기존 값 보존)
+    const reservation = SEEDED_RESERVATION_DETAILS[reservationId];
+    if (reservation) {
+        const prev = reservation.delivery;
+        reservation.delivery = {
+            recipientName: record.recipientName,
+            recipientPhone: record.recipientPhone,
+            address: record.address,
+            carrier: prev?.carrier ?? null,
+            trackingNumber: prev?.trackingNumber ?? null,
+        };
+        reservation.shippingAddress = record.address;
+    }
+    return record;
+}
+
 export function findReviewByReservation(reservationId: string): ReviewDetail | undefined {
     return SEEDED_REVIEW_DETAILS[reservationId];
+}
+
+export function findReviewById(reviewId: string): ReviewDetail | undefined {
+    return Object.values(SEEDED_REVIEW_DETAILS).find((r) => r.id === reviewId);
+}
+
+// S3 Key → 노출 URL (mock). presigned 업로드된 사진의 표시용 URL 구성.
+function reviewPhotoKeyToUrl(key: string): string {
+    return `https://todam-bucket.s3.ap-northeast-2.amazonaws.com/${key}`;
+}
+
+interface ReviewWriteInput {
+    rating: number;
+    content?: string;
+    photos?: string[];
+}
+
+// 리뷰 작성 — SEEDED_REVIEW_DETAILS 갱신 + 예약 detail hasReview 전이.
+export function createReview(reservationId: string, input: ReviewWriteInput): ReviewDetail {
+    const id = genId('review');
+    const review: ReviewDetail = {
+        id,
+        reservationId,
+        rating: input.rating,
+        content: input.content ?? '',
+        photos: (input.photos ?? []).map((key, i) => ({
+            id: `${id}-p${i + 1}`,
+            imageUrl: reviewPhotoKeyToUrl(key),
+        })),
+        createdAt: nowIso(),
+    };
+    SEEDED_REVIEW_DETAILS[reservationId] = review;
+    const detail = SEEDED_RESERVATION_DETAILS[reservationId];
+    if (detail) {
+        detail.hasReview = true;
+        detail.reviewId = id;
+    }
+    return review;
+}
+
+// 리뷰 수정 — 기존 photos 통째 교체. 미존재 시 undefined.
+export function updateReview(reviewId: string, input: ReviewWriteInput): ReviewDetail | undefined {
+    const review = findReviewById(reviewId);
+    if (!review) return undefined;
+    review.rating = input.rating;
+    review.content = input.content ?? '';
+    if (input.photos) {
+        review.photos = input.photos.map((key, i) => ({
+            id: `${review.id}-p${i + 1}`,
+            imageUrl: reviewPhotoKeyToUrl(key),
+        }));
+    }
+    return review;
+}
+
+// 리뷰 사진 presigned (D14 — 추론 mock). 응답에 S3 key 포함.
+export function createReviewImageUpload(fileName: string): { uploadUrl: string; key: string } {
+    const id = genId('rphoto');
+    const key = `reviews/photos/${id}_${fileName}`;
+    return {
+        uploadUrl: `https://todam-bucket.s3.ap-northeast-2.amazonaws.com/${key}?mock=1`,
+        key,
+    };
+}
+
+// ─── 작품 상세 seed (GET /artworks/{artworkId}) ───────────────────────
+// plan: docs/exec-plans/active/유저 예약 - 작품 상세 조회.md
+// - reservation seed 의 artworkId 와 매핑 (res-seed-0004 ↔ artwork-seed-0004 등).
+// - displayState 는 plan §displayState 단계 매핑 표 SSOT 그대로(추측 금지).
+//   IN_PROGRESS substate(DRYING/BISQUE_FIRING/GLAZING/GLAZE_FIRING) +
+//   VISITED("체험이 완료되었어요.") + COMPLETED("작품이 완성되었어요.").
+//   ⚠️ RESERVED 는 plan D5 미해소 → timeline 에 등장시키지 않음.
+// - D1: imageUrl / thumbnailUrl 둘 다 채워 production 패턴 시연.
+const ARTWORK_SEED_THUMB = (slug: string) =>
+    `https://placehold.co/64x64?text=${encodeURIComponent(slug)}`;
+const ARTWORK_SEED_IMG = (slug: string) =>
+    `https://placehold.co/320x320?text=${encodeURIComponent(slug)}`;
+
+const SEEDED_ARTWORK_DETAILS: Record<string, ArtworkDetail> = {
+    // 변형 B (예약 상세 res-seed-0004 = IN_PROGRESS 건조) 와 연결.
+    // 단계 예시: VISITED(완료) + DRYING(현재) + BISQUE_FIRING/GLAZING/GLAZE_FIRING/COMPLETED(미완료).
+    'artwork-seed-0004': {
+        id: 'artwork-seed-0004',
+        estimatedCompletedAt: '2026-07-01T00:00:00.000Z',
+        currentStage: {
+            status: ArtworkStatus.DRYING,
+            displayState: {
+                label: '제작 중',
+                description: '작품이 단단해지도록 정성껏 말리고 있어요.',
+                subLabel: '건조',
+            },
+        },
+        timeline: [
+            {
+                stage: ArtworkStatus.VISITED,
+                isCompleted: true,
+                displayState: {
+                    label: '흙',
+                    description: '체험이 완료되었어요.',
+                    subLabel: null,
+                },
+                photos: [],
+                completedAt: '2026-04-03T12:30:00.000Z',
+            },
+            {
+                stage: ArtworkStatus.DRYING,
+                isCompleted: false,
+                isCurrent: true,
+                displayState: {
+                    label: '제작 중',
+                    description: '작품이 단단해지도록 정성껏 말리고 있어요.',
+                    subLabel: '건조',
+                },
+                photos: [
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('drying-1'),
+                        imageUrl: ARTWORK_SEED_IMG('drying-1'),
+                    },
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('drying-2'),
+                        imageUrl: ARTWORK_SEED_IMG('drying-2'),
+                    },
+                ],
+            },
+            {
+                stage: ArtworkStatus.BISQUE_FIRING,
+                isCompleted: false,
+                displayState: {
+                    label: '제작 중',
+                    description: '가마 속에서 첫 번째로 구워지는 중이에요.',
+                    subLabel: '초벌',
+                },
+                photos: [],
+            },
+            {
+                stage: ArtworkStatus.GLAZING,
+                isCompleted: false,
+                displayState: {
+                    label: '제작 중',
+                    description: '매끄러운 빛깔을 내기 위해 예쁘게 옷을 입혔어요.',
+                    subLabel: '유약',
+                },
+                photos: [],
+            },
+            {
+                stage: ArtworkStatus.GLAZE_FIRING,
+                isCompleted: false,
+                displayState: {
+                    label: '제작 중',
+                    description: '가장 뜨거운 가마를 견디며 더 튼튼해지고 있어요.',
+                    subLabel: '재벌',
+                },
+                photos: [],
+            },
+            {
+                stage: ArtworkStatus.COMPLETED,
+                isCompleted: false,
+                displayState: {
+                    label: '완성',
+                    description: '작품이 완성되었어요.',
+                    subLabel: null,
+                },
+                photos: [],
+            },
+        ],
+    },
+
+    // 추가 시드: 다수의 완료 단계 + 단계별 사진 검증용.
+    // Figma `8505:15922` 정본 stepper 예시(체험→건조→초벌→유약(current)→재벌→완성).
+    'artwork-seed-figma': {
+        id: 'artwork-seed-figma',
+        estimatedCompletedAt: '2026-07-01T00:00:00.000Z',
+        currentStage: {
+            status: ArtworkStatus.GLAZING,
+            displayState: {
+                label: '제작 중',
+                description: '매끄러운 빛깔을 내기 위해 예쁘게 옷을 입혔어요.',
+                subLabel: '유약',
+            },
+        },
+        timeline: [
+            {
+                stage: ArtworkStatus.VISITED,
+                isCompleted: true,
+                displayState: {
+                    label: '흙',
+                    description: '체험이 완료되었어요.',
+                    subLabel: null,
+                },
+                photos: [],
+                completedAt: '2026-04-03T12:30:00.000Z',
+            },
+            {
+                stage: ArtworkStatus.DRYING,
+                isCompleted: true,
+                displayState: {
+                    label: '제작 중',
+                    description: '작품이 단단해지도록 정성껏 말리고 있어요.',
+                    subLabel: '건조',
+                },
+                photos: [
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('drying-1'),
+                        imageUrl: ARTWORK_SEED_IMG('drying-1'),
+                    },
+                ],
+                completedAt: '2026-04-05T15:00:00.000Z',
+            },
+            {
+                stage: ArtworkStatus.BISQUE_FIRING,
+                isCompleted: true,
+                displayState: {
+                    label: '제작 중',
+                    description: '가마 속에서 첫 번째로 구워지는 중이에요.',
+                    subLabel: '초벌',
+                },
+                photos: [
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('bisque-1'),
+                        imageUrl: ARTWORK_SEED_IMG('bisque-1'),
+                    },
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('bisque-2'),
+                        imageUrl: ARTWORK_SEED_IMG('bisque-2'),
+                    },
+                ],
+                completedAt: '2026-04-20T11:00:00.000Z',
+            },
+            {
+                stage: ArtworkStatus.GLAZING,
+                isCompleted: false,
+                isCurrent: true,
+                displayState: {
+                    label: '제작 중',
+                    description: '매끄러운 빛깔을 내기 위해 예쁘게 옷을 입혔어요.',
+                    subLabel: '유약',
+                },
+                photos: [
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('glazing-1'),
+                        imageUrl: ARTWORK_SEED_IMG('glazing-1'),
+                    },
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('glazing-2'),
+                        imageUrl: ARTWORK_SEED_IMG('glazing-2'),
+                    },
+                    {
+                        thumbnailUrl: ARTWORK_SEED_THUMB('glazing-3'),
+                        imageUrl: ARTWORK_SEED_IMG('glazing-3'),
+                    },
+                ],
+            },
+            {
+                stage: ArtworkStatus.GLAZE_FIRING,
+                isCompleted: false,
+                displayState: {
+                    label: '제작 중',
+                    description: '가장 뜨거운 가마를 견디며 더 튼튼해지고 있어요.',
+                    subLabel: '재벌',
+                },
+                photos: [],
+            },
+            {
+                stage: ArtworkStatus.COMPLETED,
+                isCompleted: false,
+                displayState: {
+                    label: '완성',
+                    description: '작품이 완성되었어요.',
+                    subLabel: null,
+                },
+                photos: [],
+            },
+        ],
+    },
+};
+
+export function findArtworkDetail(id: string): ArtworkDetail | undefined {
+    return SEEDED_ARTWORK_DETAILS[id];
 }

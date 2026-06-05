@@ -11,7 +11,6 @@ export type ModalProps = {
   cancelLabel?: string;
   onConfirm?: () => void;
   onCancel?: () => void;
-  onBackdropClick?: () => void;
   danger?: boolean;
 };
 
@@ -23,7 +22,6 @@ export function Modal({
   cancelLabel = "취소",
   onConfirm,
   onCancel,
-  onBackdropClick,
   danger = false,
 }: ModalProps) {
   const confirmClassName = [
@@ -33,16 +31,13 @@ export function Modal({
     .filter(Boolean)
     .join(" ");
 
+  // 백드롭/딤/바깥클릭 닫기는 마운트 측(AppModal)이 담당. 여기선 패널만 렌더.
   return (
     <div
-      className="absolute inset-0 flex items-center justify-center bg-inverse/80 px-5"
-      onClick={onBackdropClick}
+      className="flex w-full flex-col gap-4 rounded-3xl bg-surface p-4 shadow-[0_0_10px_rgba(0,0,0,0.10)]"
+      onClick={(e) => e.stopPropagation()}
     >
-      <div
-        className="flex w-full flex-col gap-4 rounded-3xl bg-surface p-4 shadow-[0_0_10px_rgba(0,0,0,0.10)]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex flex-col gap-3 py-3">
+      <div className="flex flex-col gap-3 py-3">
           <p className="text-xl font-semibold leading-6 text-foreground">
             {title}
           </p>
@@ -93,6 +88,5 @@ export function Modal({
           </div>
         )}
       </div>
-    </div>
   );
 }

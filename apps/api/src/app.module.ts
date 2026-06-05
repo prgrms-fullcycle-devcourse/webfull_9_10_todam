@@ -1,12 +1,27 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from './database/database.module';
+import { AccessModule } from './common/access/access.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { StoreModule } from './modules/store/store.module';
+import { ProgramModule } from './modules/program/program.module';
+import { TimeslotModule } from './modules/timeslot/timeslot.module';
+import { ReservationModule } from './modules/reservation/reservation.module';
 import { S3Module } from './common/s3/s3.module';
 import { RedisModule } from './redis/redis.module';
 
 @Module({
-    imports: [DatabaseModule, RedisModule, AuthModule, HealthModule, S3Module, StoreModule],
+    imports: [
+        DatabaseModule,
+        AccessModule,
+        RedisModule,
+        AuthModule,
+        HealthModule,
+        S3Module,
+        StoreModule,
+        TimeslotModule,
+        ProgramModule,
+        ReservationModule,
+    ],
 })
 export class AppModule {}

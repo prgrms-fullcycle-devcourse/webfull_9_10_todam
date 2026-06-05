@@ -1,15 +1,23 @@
 'use client';
 
 import { StoreEditErrorCode } from '@todam/shared';
-import { BottomBar, Button, ConfirmIcon, LeftIcon, Modal } from '@todam/ui';
+import { BottomBar, Button, ConfirmIcon, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { ApiError } from '../../../../shared/api';
-import { useModal, useToast } from '../../../../shared/model';
+import { ApiError } from '@/shared/api';
+import { useModal, useToast } from '@/shared/model';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { detailToForm, type EditSection } from '../model/types';
-import { buildPatchBody, isDirty, isSectionValid, useStoreEditStore } from '../model/store';
-import { useStoreDetail, useUpdateStore } from '../queries';
+import {
+    buildImageIds,
+    buildPatchBody,
+    isDirty,
+    isSectionValid,
+    useStoreEditStore,
+} from '../model/store';
+import { useAddStoreImage, useDeleteStoreImage, useStoreDetail, useUpdateStore } from '../queries';
+import { generateTimeSlots, rollingGenerateRange } from '../../timeslot/api';
 
 import { InfoEditSection } from './InfoEditSection';
 import { OperatingEditSection } from './OperatingEditSection';
@@ -32,9 +40,13 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
     const router = useRouter();
     const detailQuery = useStoreDetail(storeId);
     const updateMutation = useUpdateStore(storeId);
+    const addImageMutation = useAddStoreImage(storeId);
+    const deleteImageMutation = useDeleteStoreImage(storeId);
 
     const form = useStoreEditStore((s) => s.form);
     const initial = useStoreEditStore((s) => s.initial);
+    const pendingImages = useStoreEditStore((s) => s.pendingImages);
+    const deletedImageIds = useStoreEditStore((s) => s.deletedImageIds);
     const load = useStoreEditStore((s) => s.load);
     const reset = useStoreEditStore((s) => s.reset);
     const setSlugDuplicated = useStoreEditStore((s) => s.setSlugDuplicated);
@@ -54,9 +66,11 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
     // 화면 이탈 시 폼 초기화.
     useEffect(() => () => reset(), [reset]);
 
-    const dirty = isDirty(form, initial);
-    const valid = isSectionValid(form, section);
-    const canSave = dirty && valid && !updateMutation.isPending;
+    const isSaving =
+        updateMutation.isPending || addImageMutation.isPending || deleteImageMutation.isPending;
+    const dirty = isDirty(form, initial, pendingImages.length);
+    const valid = isSectionValid(form, section, pendingImages.length);
+    const canSave = dirty && valid && !isSaving;
 
     const leave = () => {
         reset();
@@ -81,24 +95,59 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
                     leave();
                 }}
                 onCancel={close}
-                onBackdropClick={close}
             />,
         );
     };
+
+    // 전역 Header override: 섹션별 동적 타이틀 + 뒤로가기(이탈 가드). 우측 액션 없음.
+    useHeaderOverride({
+        title: SECTION_TITLE[section],
+        onBack: handleBack,
+        hideRightAction: true,
+        guardDirty: dirty,
+    });
 
     const handleSave = async () => {
         if (!form || !initial || !canSave) return;
         const body = buildPatchBody(form, initial, section);
         try {
-            const result = await updateMutation.mutateAsync(body);
+            // 정보 섹션: 이미지 삭제 → 신규 업로드(presigned+PUT+confirm) → 최종 id 목록 PATCH.
+            if (section === 'info') {
+                for (const imageId of deletedImageIds) {
+                    await deleteImageMutation.mutateAsync(imageId);
+                }
+                const uploadedIds: string[] = [];
+                for (const pending of pendingImages) {
+                    const uploaded = await addImageMutation.mutateAsync({
+                        file: pending.file,
+                        isThumbnail: pending.isThumbnail,
+                    });
+                    uploadedIds.push(uploaded.id);
+                }
+                const imageIds = buildImageIds(form, initial, uploadedIds);
+                if (imageIds) body.images = imageIds;
+            }
+            await updateMutation.mutateAsync(body);
+
+            // 영업정보(영업시간/요일) 또는 예약 간격(interval) 변경 시 타임슬롯 재생성 (#169 — 향후 30일 롤링).
+            // BE generate 가 새 격자 기준으로 멱등 생성 + 예약없는 미래 빈 슬롯 prune(삭제) 수행.
+            // best-effort: 실패해도 저장 완료 유지.
+            if (section === 'operating' || section === 'reservation') {
+                try {
+                    await generateTimeSlots(storeId, rollingGenerateRange());
+                } catch (err) {
+                    console.warn('[store-edit] 타임슬롯 재생성 실패', err);
+                }
+            }
+
             reset();
             push({
                 message: '수정된 공방 정보가 반영되었어요',
                 type: 'icon',
                 icon: <ConfirmIcon size={16} />,
             });
-            // 미리보기(공개 상세) 이동. slug 즉시 교체(DEC-1).
-            router.push(`/stores/${result.store.slug}`);
+            // 파트너 전용 공방 상세로 이동(slug 공개 URL 아님). storeId 기반.
+            router.push(backPath);
         } catch (err) {
             if (err instanceof ApiError) {
                 if (err.code === StoreEditErrorCode.STORE_SLUG_DUPLICATED) {
@@ -119,21 +168,6 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
 
     return (
         <div className="flex flex-1 flex-col overflow-hidden">
-            <header className="flex h-15 shrink-0 items-center bg-transparent pt-safe">
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<LeftIcon />}
-                    aria-label="뒤로가기"
-                    onClick={handleBack}
-                    className="hover:!bg-transparent hover:!text-foreground"
-                />
-                <span className="flex-1 truncate text-lg font-medium leading-6 text-foreground">
-                    {SECTION_TITLE[section]}
-                </span>
-            </header>
-
             <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-16">
                 {detailQuery.isLoading || !form ? (
                     <div className="flex flex-1 items-center justify-center py-20 text-sm text-foreground-tertiary">
@@ -150,7 +184,7 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
                     </div>
                 ) : (
                     <div className="flex flex-col gap-4 py-2">
-                        {section === 'info' && <InfoEditSection />}
+                        {section === 'info' && <InfoEditSection storeId={storeId} />}
                         {section === 'operating' && <OperatingEditSection />}
                         {section === 'reservation' && <ReservationEditSection />}
                     </div>
@@ -159,7 +193,7 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
 
             <BottomBar>
                 <Button className="w-full" disabled={!canSave} onClick={handleSave}>
-                    {updateMutation.isPending ? '저장 중...' : '저장'}
+                    {isSaving ? '저장 중...' : '저장'}
                 </Button>
             </BottomBar>
         </div>

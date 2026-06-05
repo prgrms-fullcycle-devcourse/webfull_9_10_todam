@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 
+import { AuthTokenProvider } from '@/features/auth/login';
 import { MswProvider } from '../mocks/MswProvider';
 import { AppModal, AppSheet, AppToast } from '../shared/ui';
+import { AppShell } from './AppShell';
 import { QueryProvider } from './QueryProvider';
-import { BottomNav } from '../widgets/bottom-navigation';
-import { Header } from '../widgets/header';
 
 import '../styles/globals.css';
 
@@ -21,7 +21,7 @@ type RootLayoutProps = {
 export default function RootLayout({ children }: RootLayoutProps) {
     return (
         <html lang="ko">
-            <body className="flex h-dvh justify-center bg-background text-foreground">
+            <body className="flex h-dvh justify-center bg-surface text-foreground">
                 <div
                     aria-hidden
                     className="hidden w-[500px] shrink-0 items-center justify-center bg-primary text-foreground-inverse/70 lg:flex"
@@ -30,14 +30,14 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 </div>
                 <MswProvider>
                     <QueryProvider>
-                        <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-background">
-                            <Header />
-                            {children}
-                            <BottomNav />
-                            <AppModal />
-                            <AppSheet />
-                            <AppToast />
-                        </div>
+                        <AuthTokenProvider>
+                            <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-background">
+                                <AppShell>{children}</AppShell>
+                                <AppModal />
+                                <AppSheet />
+                                <AppToast />
+                            </div>
+                        </AuthTokenProvider>
                     </QueryProvider>
                 </MswProvider>
             </body>

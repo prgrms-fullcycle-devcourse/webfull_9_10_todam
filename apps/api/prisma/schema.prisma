@@ -132,16 +132,20 @@ model Store {
   address            String?              @db.VarChar(500)
   latitude           Float?               @map("latitude")
   longitude          Float?               @map("longitude")
+  regionSido         String?              @map("region_sido") @db.VarChar(50) // 카카오 coord2regioncode 시·도 (예: 서울)
+  regionSigungu      String?              @map("region_sigungu") @db.VarChar(50) // 시·군·구 (예: 성동구)
+  regionDong         String?              @map("region_dong") @db.VarChar(50) // 읍·면·동 (예: 성수동)
   phone              String?              @db.VarChar(20)
   autoConfirm        Boolean              @default(false) @map("auto_confirm")
   cancelDeadlineDays Int?                 @map("cancel_deadline_days")
   reservationIntervalMinutes Int?         @map("reservation_interval_minutes") // 타임슬롯 생성 기준 간격(분)
+  maxCapacityPerSlot Int?                 @map("max_capacity_per_slot") // 슬롯당 최대 예약 정원(공방 단위 — 클래스 공통, 같은 슬롯 합산 한도)
   status             StoreStatus          @default(DRAFT)
   publishedAt        DateTime?            @map("published_at") @db.Timestamptz(6)
   createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   businessDocs       BusinessDocument[]
-  timeSlots          ProgramTimeSlot[]
+  timeSlots          StoreTimeSlot[]
   programs           Program[]
   reservations       Reservation[]
   reviews            Review[]
@@ -149,6 +153,7 @@ model Store {
   operatingHours     StoreOperatingHour[]
   partner            Partner              @relation(fields: [partnerId], references: [id])
   favoriteStores     FavoriteStore[] // [S-6]
+  reservationRestrictions ReservationRestriction[]
 
   @@index([slug])
   @@index([partnerId])
@@ -205,18 +210,19 @@ model Program {
   caution         String?
   price           Int
   durationMinutes Int                   @map("duration_minutes")
-  capacity        Int
+  difficulty      ProgramDifficulty     @default(BASIC)
+  childFriendly   Boolean               @default(false) @map("child_friendly")
   leadTimeDays    Int                   @default(30) @map("lead_time_days")
-  deliveryOption  ProgramDeliveryOption @default(CUSTOMER_SELECT) @map("delivery_option")
+  deliverable     Boolean               @default(false)
   status          ProgramStatus         @default(DRAFT)
   sortOrder       Int                   @default(0) @map("sort_order") // [S-10]
   createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
   snapshots       ProgramSnapshot[]
-  timeSlots       ProgramTimeSlot[]
   store           Store                 @relation(fields: [storeId], references: [id])
   reservations    Reservation[]
   images          ProgramImage[] // [S-7]
+  reservationRestrictions ReservationRestriction[]
 
   @@map("programs")
 }
@@ -240,7 +246,6 @@ model ProgramSnapshot {
   id           String        @id @default(uuid()) @db.Uuid
   programId    String        @map("program_id") @db.Uuid
   price        Int
-  capacity     Int
   leadTimeDays Int           @map("lead_time_days")
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   program      Program       @relation(fields: [programId], references: [id])
@@ -249,25 +254,37 @@ model ProgramSnapshot {
   @@map("program_snapshots")
 }
 
-model ProgramTimeSlot {
-  id            String                @id @default(uuid()) @db.Uuid
-  programId     String                @map("program_id") @db.Uuid
-  storeId       String                @map("store_id") @db.Uuid
-  startAt       DateTime              @map("start_at") @db.Timestamptz(6)
-  endAt         DateTime              @map("end_at") @db.Timestamptz(6)
-  capacity      Int
-  reservedCount Int                   @default(0) @map("reserved_count")
-  status        ProgramTimeSlotStatus @default(OPEN)
-  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
-  program       Program               @relation(fields: [programId], references: [id])
-  store         Store                 @relation(fields: [storeId], references: [id])
+model StoreTimeSlot {
+  id            String              @id @default(uuid()) @db.Uuid
+  storeId       String              @map("store_id") @db.Uuid
+  startAt       DateTime            @map("start_at") @db.Timestamptz(6)
+  endAt         DateTime            @map("end_at") @db.Timestamptz(6)
+  reservedCount Int                 @default(0) @map("reserved_count")
+  status        StoreTimeSlotStatus @default(OPEN)
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  store         Store               @relation(fields: [storeId], references: [id])
   reservations  Reservation[]
 
-  @@unique([programId, startAt])
-  @@index([storeId])
+  @@unique([storeId, startAt])
   @@index([status])
-  @@map("program_time_slots")
+  @@map("store_time_slots")
+}
+
+model ReservationRestriction {
+  id        String   @id @default(uuid()) @db.Uuid
+  storeId   String   @map("store_id") @db.Uuid
+  startAt   DateTime @map("start_at") @db.Timestamptz(6)
+  endAt     DateTime @map("end_at") @db.Timestamptz(6)
+  programId String   @map("program_id") @db.Uuid
+  createdBy String?  @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  store     Store    @relation(fields: [storeId], references: [id])
+  program   Program  @relation(fields: [programId], references: [id])
+
+  @@unique([storeId, startAt, programId])
+  @@index([storeId])
+  @@map("reservation_restrictions")
 }
 
 model Reservation {
@@ -275,7 +292,7 @@ model Reservation {
   userId            String?                   @map("user_id") @db.Uuid // null은 source=PARTNER_MANUAL(비회원 현장 예약)일 때만 허용
   programId         String                    @map("program_id") @db.Uuid
   storeId           String                    @map("store_id") @db.Uuid
-  programTimeSlotId String                    @map("program_time_slot_id") @db.Uuid
+  storeTimeSlotId   String                    @map("store_time_slot_id") @db.Uuid
   programSnapshotId String                    @map("program_snapshot_id") @db.Uuid
   scheduledAt       DateTime                  @map("scheduled_at") @db.Timestamptz(6)
   reserverName      String                    @map("reserver_name") @db.VarChar(100)
@@ -297,7 +314,7 @@ model Reservation {
   canceledByUser    User?                     @relation("ReservationCanceledBy", fields: [canceledBy], references: [id])
   program           Program                   @relation(fields: [programId], references: [id])
   programSnapshot   ProgramSnapshot           @relation(fields: [programSnapshotId], references: [id])
-  programTimeSlot   ProgramTimeSlot           @relation(fields: [programTimeSlotId], references: [id])
+  storeTimeSlot     StoreTimeSlot             @relation(fields: [storeTimeSlotId], references: [id])
   store             Store                     @relation(fields: [storeId], references: [id])
   user              User?                     @relation("ReservationUser", fields: [userId], references: [id])
   review            Review?
@@ -530,10 +547,10 @@ enum StoreStatus {
   SUSPENDED
 }
 
-enum ProgramDeliveryOption {
-  DELIVERY
-  PICKUP
-  CUSTOMER_SELECT
+enum ProgramDifficulty {
+  BASIC
+  INTERMEDIATE
+  ADVANCED
 }
 
 enum ProgramStatus {
@@ -542,7 +559,7 @@ enum ProgramStatus {
   INACTIVE
 }
 
-enum ProgramTimeSlotStatus {
+enum StoreTimeSlotStatus {
   OPEN
   CLOSED
   CANCELED

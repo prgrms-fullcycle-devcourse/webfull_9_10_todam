@@ -2,7 +2,7 @@
 
 import { formatScheduled, type ReservationListItem } from '@todam/shared';
 
-import { ReservationStatusBadge } from '../../../../../entities/reservation';
+import { ReservationStatusBadge } from '@/entities/reservation';
 
 // status message UI 숨김 조건.
 // 1) 정본 명세: DELIVERED/PICKUP_DONE 종료 상태 카드는 status message frame 자체 hidden.
@@ -37,11 +37,11 @@ export function ReservationCard({ item, onClick }: ReservationCardProps) {
                     <ReservationStatusBadge status={item.status} label={item.displayState.label} />
                 </div>
 
-                {/* 행 2: programTitle + meta(category・storeName・hh:mm) */}
+                {/* 행 2: programTitle + meta(storeName・hh:mm) */}
                 <div className="flex flex-col gap-1">
                     <p className="text-sm font-semibold text-foreground">{item.programTitle}</p>
                     <p className="text-xs text-foreground-tertiary">
-                        {item.category}・{item.storeName}・{time}
+                        {item.storeName}・{time}
                     </p>
                 </div>
             </div>

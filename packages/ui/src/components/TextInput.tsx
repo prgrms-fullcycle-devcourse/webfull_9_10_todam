@@ -2,7 +2,8 @@ import type { InputHTMLAttributes, ReactElement, ReactNode } from "react";
 
 export type TextInputProps = {
   label?: string;
-  required?: boolean;
+  // 기본은 필수. 선택 필드만 표시(라벨에 " (선택)").
+  optional?: boolean;
   helperText?: ReactNode;
   error?: boolean;
   icon?: ReactElement<{ size?: number }>;
@@ -10,7 +11,7 @@ export type TextInputProps = {
 
 export function TextInput({
   label,
-  required,
+  optional,
   helperText,
   error,
   icon,
@@ -27,7 +28,7 @@ export function TextInput({
           className="text-sm font-semibold text-foreground-tertiary"
         >
           {label}
-          {required && <span className="text-danger"> *</span>}
+          {optional && <span className="font-normal"> (선택)</span>}
         </label>
       )}
       <div className="relative">

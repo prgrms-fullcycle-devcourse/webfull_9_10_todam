@@ -14,7 +14,7 @@ export function GoogleLoginButton({ onClick, disabled }: GoogleLoginButtonProps)
             type="button"
             onClick={onClick}
             disabled={disabled}
-            className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl border-2 border-border-subtle bg-surface text-base font-semibold text-foreground transition-colors hover:border-primary disabled:opacity-50"
+            className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-surface text-base font-semibold text-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
         >
             <GoogleIcon size={20} />
             Google로 시작하기

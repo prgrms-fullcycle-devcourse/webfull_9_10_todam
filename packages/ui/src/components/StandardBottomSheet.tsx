@@ -25,7 +25,7 @@ export function StandardBottomSheet({
   // dim 배경 + slide/drag 애니메이션은 시트 렌더러(AppSheet)가 담당. 패널만 렌더.
   return (
     <div className="mx-2 mb-10 flex flex-col items-center gap-8 rounded-3xl bg-surface p-4 shadow-[0_0_10px_rgba(0,0,0,0.10)]">
-      <div className="h-4 w-9 pt-[5px]">
+      <div className="h-4 w-9 cursor-pointer pt-[5px]">
         <div className="h-1 w-9 rounded-full bg-border" />
       </div>
 

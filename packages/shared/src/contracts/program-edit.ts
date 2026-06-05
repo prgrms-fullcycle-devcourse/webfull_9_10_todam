@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import { ProgramDeliveryOption } from '../enums/program-delivery-option';
 import { ProgramDifficulty } from '../enums/program-difficulty';
 import { ProgramStatus } from '../enums/program-status';
 
@@ -16,10 +15,10 @@ export type ProgramEditErrorCode = (typeof ProgramEditErrorCode)[keyof typeof Pr
 
 // ─── program_images ──────────────────────────────────────────────
 export const programImageSchema = z.object({
-    programImageId: z.string(),
+    programImageId: z.string().optional(),
     imageUrl: z.string(),
-    thumbnailUrl: z.string(),
-    isThumbnail: z.boolean(),
+    thumbnailUrl: z.string().nullable(),
+    isThumbnail: z.boolean().optional(),
 });
 export type ProgramImage = z.infer<typeof programImageSchema>;
 
@@ -32,12 +31,10 @@ export const programDetailSchema = z.object({
     materials: z.string().nullable().optional(),
     price: z.number(),
     durationMinutes: z.number(),
-    capacity: z.number(),
     leadTimeDays: z.number(),
     difficulty: z.nativeEnum(ProgramDifficulty).optional(),
-    deliveryOption: z.nativeEnum(ProgramDeliveryOption),
-    childrenAllowed: z.boolean().optional(),
-    deliveryAvailable: z.boolean().optional(),
+    childFriendly: z.boolean(),
+    deliverable: z.boolean(),
     status: z.nativeEnum(ProgramStatus),
     images: z.array(programImageSchema),
 });
@@ -52,14 +49,14 @@ export type ProgramDetailResult = z.infer<typeof programDetailResultSchema>;
 export const programEditRequestSchema = z.object({
     title: z.string().min(2).max(60).optional(),
     description: z.string().max(1000).nullable().optional(),
+    materials: z.string().nullable().optional(),
+    caution: z.string().nullable().optional(),
     difficulty: z.nativeEnum(ProgramDifficulty).optional(),
     price: z.number().int().positive().optional(),
-    capacity: z.number().int().min(1).optional(),
     leadTimeDays: z.number().int().min(0).optional(),
-    durationMinutes: z.number().int().multipleOf(30).optional(),
-    deliveryOption: z.nativeEnum(ProgramDeliveryOption).optional(),
-    childrenAllowed: z.boolean().optional(),
-    deliveryAvailable: z.boolean().optional(),
+    durationMinutes: z.number().int().positive().optional(),
+    childFriendly: z.boolean().optional(),
+    deliverable: z.boolean().optional(),
 });
 export type ProgramEditRequest = z.infer<typeof programEditRequestSchema>;
 

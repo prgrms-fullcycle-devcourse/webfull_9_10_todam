@@ -1,84 +1,86 @@
 'use client';
 
 import { phoneSchema, slugSchema } from '@todam/shared';
-import { useRef } from 'react';
+import { useEffect, useState } from 'react';
 
-import { useToast } from '../../../../shared/model';
-import { StoreInfoFields, type StoreImageItem } from '../../shared/ui';
-import { MAX_STORE_IMAGES } from '../../shared/model';
+import { StoreInfoFields } from '@/features/store/shared/ui';
 import { useStoreEditStore } from '../model/store';
-import { useAddStoreImage, useDeleteStoreImage } from '../queries';
+import { useSlugAvailability } from '../queries';
 
 const isSlug = (v: string) => slugSchema.safeParse(v).success;
 const isPhone = (v: string) => phoneSchema.safeParse(v).success;
 
-export function InfoEditSection() {
-    const form = useStoreEditStore((s) => s.form);
-    const slugDuplicated = useStoreEditStore((s) => s.slugDuplicated);
-    const patchStore = useStoreEditStore((s) => s.patchStore);
-    const addImage = useStoreEditStore((s) => s.addImage);
-    const removeImage = useStoreEditStore((s) => s.removeImage);
-    const { push } = useToast();
+type InfoEditSectionProps = {
+    storeId: string;
+};
 
-    const storeId = form?.storeId ?? '';
-    const addImageMutation = useAddStoreImage(storeId);
-    const deleteImageMutation = useDeleteStoreImage(storeId);
-    const imgRef = useRef<HTMLInputElement>(null);
+export function InfoEditSection({ storeId }: InfoEditSectionProps) {
+    const form = useStoreEditStore((s) => s.form);
+    const initial = useStoreEditStore((s) => s.initial);
+    const slugDuplicated = useStoreEditStore((s) => s.slugDuplicated);
+    const pendingImages = useStoreEditStore((s) => s.pendingImages);
+    const patchStore = useStoreEditStore((s) => s.patchStore);
+    const addImageFiles = useStoreEditStore((s) => s.addImageFiles);
+    const removeExistingImage = useStoreEditStore((s) => s.removeExistingImage);
+    const removePendingImage = useStoreEditStore((s) => s.removePendingImage);
+    const setSlugDuplicated = useStoreEditStore((s) => s.setSlugDuplicated);
+
+    const slug = form?.store.slug ?? '';
+    const initialSlug = initial?.store.slug ?? '';
+
+    // 공방 URL 실시간(debounce) 사전 중복확인 → TanStack Query
+    const [debouncedSlug, setDebouncedSlug] = useState(slug);
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSlug(slug), 500);
+        return () => clearTimeout(t);
+    }, [slug]);
+
+    // 형식 유효 + 변경된 slug 일 때만 조회
+    const slugChanged = debouncedSlug !== initialSlug;
+    const slugQuery = useSlugAvailability(
+        storeId,
+        debouncedSlug,
+        isSlug(debouncedSlug) && slugChanged,
+    );
+    const slugChecking = slugQuery.isFetching;
+
+    // 조회 결과 → 중복 상태 동기화 (저장 가능 여부·문구 판단용).
+    useEffect(() => {
+        if (slugQuery.data && slugQuery.data.slug === slug && slug !== initialSlug) {
+            setSlugDuplicated(!slugQuery.data.available);
+        }
+    }, [slugQuery.data, slug, initialSlug, setSlugDuplicated]);
 
     if (!form) return null;
     const store = form.store;
-
-    const handleImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files ?? []);
-        e.target.value = '';
-        for (const file of files) {
-            if (store.images.length >= MAX_STORE_IMAGES) {
-                push({ message: `대표 이미지는 최대 ${MAX_STORE_IMAGES}장까지 등록할 수 있어요.` });
-                break;
-            }
-            try {
-                const isThumbnail = store.images.length === 0;
-                const result = await addImageMutation.mutateAsync({ file, isThumbnail });
-                addImage({ id: result.id, imageUrl: result.imageUrl, isThumbnail });
-            } catch {
-                push({ message: '이미지 업로드에 실패했어요.' });
-            }
-        }
-    };
-
-    const handleRemove = (id: string) => {
-        removeImage(id);
-        // X 클릭 시 DELETE 호출 (최종 반영은 PATCH images[] 기준)
-        deleteImageMutation.mutate(id);
-    };
 
     const nameError =
         store.name.length > 0 && (store.name.trim().length < 2 || store.name.trim().length > 40)
             ? '2~40자로 입력해 주세요'
             : undefined;
     const slugFormatError =
-        store.slug.length > 0 && !isSlug(store.slug) ? '영문 소문자·숫자·-·_ 3~30자' : undefined;
+        store.slug.length > 0 && !isSlug(store.slug) ? '영문 소문자·숫자·- 4~40자' : undefined;
     const phoneError =
         store.phone.length > 0 && !isPhone(store.phone) ? '02-1234-5678 형식' : undefined;
     const slugHasError = !!slugFormatError || slugDuplicated;
     const slugHelper = slugFormatError
         ? slugFormatError
-        : slugDuplicated
-          ? '이미 사용 중인 URL입니다.'
-          : '공방 주소로 사용돼요.';
+        : slugChecking
+          ? '확인 중...'
+          : slugDuplicated
+            ? '이미 사용 중인 URL입니다.'
+            : '공방 주소로 사용돼요.';
 
-    const images: StoreImageItem[] = store.images.map((img) => ({
-        key: img.id,
-        src: img.imageUrl,
-        onRemove: () => handleRemove(img.id),
-    }));
+    // 서버 이미지(existing) → {id, src}. 삭제·업로드는 저장 시 일괄 처리.
+    const existingImages = store.images.map((img) => ({ id: img.id, src: img.imageUrl }));
 
     return (
         <StoreInfoFields
-            images={images}
-            fileInputRef={imgRef}
-            onPickFiles={handleImages}
-            addImageDisabled={addImageMutation.isPending}
+            existingImages={existingImages}
+            pendingImages={pendingImages}
+            onAddImages={addImageFiles}
+            onRemoveExisting={removeExistingImage}
+            onRemovePending={removePendingImage}
             name={store.name}
             onChangeName={(v) => patchStore({ name: v })}
             nameError={nameError}

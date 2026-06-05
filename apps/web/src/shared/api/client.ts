@@ -4,9 +4,19 @@ import { ApiError, type ApiErrorResponse, type ApiSuccessResponse } from './type
 // MSW 가 가로채는 동안에는 상대경로면 충분. 실제 API 연동 시 NEXT_PUBLIC_API_URL 로 교체.
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
+// dev 모바일 테스트: /dev-login 이 주입한 런타임 API base 우선.
+// (cloudflare tunnel URL 은 매 실행 랜덤 → localStorage 로 받으면 web 재빌드 없이 적용)
+function resolveBaseUrl(): string {
+    if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
+        const devBase = window.localStorage.getItem('todam_dev_api_base');
+        if (devBase) return devBase;
+    }
+    return BASE_URL;
+}
+
 function resolveUrl(path: string): string {
     if (path.startsWith('http')) return path;
-    return `${BASE_URL}${path}`;
+    return `${resolveBaseUrl()}${path}`;
 }
 
 type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };

@@ -4,6 +4,7 @@ import type { StoreUpdateRequest } from '@todam/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
+    checkSlug,
     confirmImageUpload,
     deleteImage,
     getStoreDetail,
@@ -20,6 +21,16 @@ export function useStoreDetail(storeId: string) {
         queryKey: [...KEY, storeId],
         queryFn: () => getStoreDetail(storeId),
         enabled: !!storeId,
+        staleTime: 0,
+    });
+}
+
+// 공방 URL 사전 중복확인 (debounced slug 를 enabled 로 제어, 본인 store 제외)
+export function useSlugAvailability(storeId: string, slug: string, enabled: boolean) {
+    return useQuery({
+        queryKey: [...KEY, storeId, 'slug', slug],
+        queryFn: () => checkSlug(slug, storeId),
+        enabled: enabled && !!storeId,
         staleTime: 0,
     });
 }

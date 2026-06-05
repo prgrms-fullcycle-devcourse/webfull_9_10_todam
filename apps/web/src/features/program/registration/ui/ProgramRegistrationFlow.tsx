@@ -1,23 +1,26 @@
 'use client';
 
-import { BottomBar, Button, CloseIcon, LeftIcon } from '@todam/ui';
+import { BottomBar, Button, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { useToast } from '../../../../shared/model';
-import { ProgressBarWrapper } from '../../../../shared/ui';
-import { isStepValid, useProgramRegistrationStore } from '../model/store';
+import { useModal, useToast } from '@/shared/model';
+import { ProgressBarWrapper } from '@/shared/ui';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { useSubmitProgramRegistration } from '../queries';
+import { isDirty, isStepValid, useProgramRegistrationStore } from '../model/store';
 import { ProgramRegistrationStep, STEP_TITLES, TOTAL_STEPS } from '../model/types';
 
 import { BasicInfoStep } from './BasicInfoStep';
 import { OperatingStep } from './OperatingStep';
 
 export type ProgramRegistrationFlowProps = {
-    // 닫기/첫 단계 뒤로가기 시 복귀 경로 (기본: 클래스 관리 목록)
+    storeId: string;
     returnTo?: string;
 };
 
 export function ProgramRegistrationFlow({
+    storeId,
     returnTo = '/partner/classes',
 }: ProgramRegistrationFlowProps) {
     const router = useRouter();
@@ -27,6 +30,10 @@ export function ProgramRegistrationFlow({
     const prev = useProgramRegistrationStore((s) => s.prev);
     const reset = useProgramRegistrationStore((s) => s.reset);
     const { push } = useToast();
+    const { open: openModal, close: closeModal } = useModal();
+    const { mutateAsync: submitRegistration, isPending } = useSubmitProgramRegistration(storeId);
+
+    const dirty = isDirty(form);
 
     // 플로우 이탈 시 전역 store 초기화
     useEffect(() => () => reset(), [reset]);
@@ -36,13 +43,44 @@ export function ProgramRegistrationFlow({
         router.push(returnTo);
     };
 
-    // TODO(연동 후행): POST /partner/stores/{storeId}/programs 호출 (ACTIVE 직접 생성).
-    // 현재 BE 미구현 → 등록 성공 처리만(토스트 + 목록 복귀).
-    const handleSubmit = () => {
-        if (!stepValid) return;
-        reset();
-        router.push(returnTo);
-        push({ message: '새로운 클래스가 등록되었어요' });
+    // 작성 중이면 확인 모달, 아니면 즉시 이탈.
+    const guardedExit = () => {
+        if (!dirty) {
+            exit();
+            return;
+        }
+        openModal(
+            <Modal
+                title="작성을 취소하고 나가시겠어요?"
+                description="작성한 내용은 저장되지 않아요."
+                confirmLabel="나가기"
+                cancelLabel="계속 작성"
+                danger
+                onConfirm={() => {
+                    closeModal();
+                    exit();
+                }}
+                onCancel={closeModal}
+            />,
+        );
+    };
+
+    // ① POST /programs → ② POST .../images presigned → ③ S3 PUT → ④ PATCH .../confirm.
+    // 프로그램 생성 실패만 "등록 실패"로 처리. 프로그램은 됐으나 이미지만 실패하면 부분성공
+    const handleSubmit = async () => {
+        if (!stepValid || isPending) return;
+        try {
+            const { imageFailed } = await submitRegistration(form);
+            reset();
+            router.push(returnTo);
+            push({
+                message: imageFailed
+                    ? '클래스 썸네일 등록에 실패했어요. 이미지를 다시 등록해 주세요.'
+                    : '새로운 클래스가 등록되었어요',
+            });
+        } catch {
+            push({ message: '클래스 등록에 실패했어요. 잠시 후 다시 시도해주세요.' });
+        }
     };
 
     const isLast = step === ProgramRegistrationStep.Operating;
@@ -50,37 +88,19 @@ export function ProgramRegistrationFlow({
     const progress = ((step + 1) / TOTAL_STEPS) * 100;
 
     const handleBack = () => {
-        if (step === ProgramRegistrationStep.BasicInfo) exit();
+        if (step === ProgramRegistrationStep.BasicInfo) guardedExit();
         else prev();
     };
 
+    useHeaderOverride({
+        title: '클래스 등록',
+        onBack: handleBack,
+        onClose: guardedExit,
+        guardDirty: dirty,
+    });
+
     return (
         <div className="flex flex-1 flex-col overflow-hidden">
-            {/* Header (back + title + close) */}
-            <header className="flex h-15 shrink-0 items-center bg-transparent pt-safe">
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<LeftIcon />}
-                    aria-label="뒤로가기"
-                    onClick={handleBack}
-                    className="hover:!bg-transparent hover:!text-foreground"
-                />
-                <span className="flex-1 truncate text-lg font-medium leading-6 text-foreground">
-                    클래스 등록
-                </span>
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<CloseIcon />}
-                    aria-label="닫기"
-                    onClick={exit}
-                    className="hover:!bg-transparent hover:!text-foreground"
-                />
-            </header>
-
             {/* Container */}
             <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-16">
                 <div className="py-2">
@@ -103,7 +123,7 @@ export function ProgramRegistrationFlow({
             <BottomBar>
                 <Button
                     className="w-full"
-                    disabled={!stepValid}
+                    disabled={!stepValid || (isLast && isPending)}
                     onClick={isLast ? handleSubmit : next}
                 >
                     {isLast ? '저장' : '다음'}

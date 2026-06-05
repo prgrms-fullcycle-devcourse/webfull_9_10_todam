@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import type { Response } from 'express';
 import type { JwtPayload } from '../../../common/types/jwt-payload.type';
-import { PrismaService } from '../../../database/prisma.service';
+import { RefreshTokenRepository } from '../domain/repositories/refresh-token.repository';
 
 const BCRYPT_ROUNDS = 10;
 const REFRESH_TOKEN_EXPIRES_DAYS = 14;
@@ -13,7 +13,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 @Injectable()
 export class TokenService {
     constructor(
-        private readonly prisma: PrismaService,
+        private readonly refreshTokens: RefreshTokenRepository,
         private readonly jwtService: JwtService,
     ) {}
 
@@ -27,10 +27,7 @@ export class TokenService {
         const tokenHash = await bcrypt.hash(token, BCRYPT_ROUNDS);
         const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_DAYS * MS_PER_DAY);
 
-        const { id } = await this.prisma.refreshToken.create({
-            data: { userId, tokenHash, expiresAt },
-            select: { id: true },
-        });
+        const { id } = await this.refreshTokens.create({ userId, tokenHash, expiresAt });
 
         // 쿠키 값: "<dbId>.<rawToken>" → refresh 시 id로 DB 바로 조회, rawToken만 bcrypt 비교
         res.cookie('refresh_token', `${id}.${token}`, {

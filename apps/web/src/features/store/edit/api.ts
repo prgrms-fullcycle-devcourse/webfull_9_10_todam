@@ -1,5 +1,6 @@
 import type {
     PartnerStoreDetailResult,
+    SlugAvailabilityResult,
     StoreImageConfirmResult,
     StoreImageUploadRequest,
     StoreImageUploadResult,
@@ -7,9 +8,19 @@ import type {
     StoreUpdateResult,
 } from '@todam/shared';
 
-import { apiFetch } from '../../../shared/api';
+import { apiFetch } from '@/shared/api';
 
-const BASE = '/api/v1/partner';
+// store/detail·business-edit 과 동일 패턴. 동일 엔드포인트·계약
+const BASE = '/partner';
+
+// GET /stores/slug-availability — slug 사전 중복확인
+// 수정 화면은 excludeStoreId 로 본인 store 의 현재 slug 를 충돌에서 제외(본인 slug → available:true).
+export function checkSlug(slug: string, excludeStoreId: string) {
+    return apiFetch<SlugAvailabilityResult>(
+        `/stores/slug-availability?slug=${encodeURIComponent(slug)}&excludeStoreId=${encodeURIComponent(excludeStoreId)}`,
+        { method: 'GET' },
+    );
+}
 
 // GET /partner/stores/{storeId} — 내 공방 상세 (수정 화면 preload)
 export function getStoreDetail(storeId: string) {

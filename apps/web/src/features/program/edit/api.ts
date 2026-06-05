@@ -1,31 +1,23 @@
 import type {
-    ProgramDetailResult,
+    ConfirmProgramImageResult,
     ProgramEditRequest,
     ProgramEditResult,
     ProgramImageUploadRequest,
     ProgramImageUploadResult,
 } from '@todam/shared';
 
-import { apiFetch } from '../../../shared/api';
+import { apiFetch } from '@/shared/api';
 
-const BASE = '/api/v1';
-
-// ─── 프로그램 상세 조회 (preload용) ─────────────────────────────
-// GET /stores/{slug}/programs/{programId}
-export function getProgramDetail(slug: string, programId: string) {
-    return apiFetch<ProgramDetailResult>(
-        `${BASE}/stores/${encodeURIComponent(slug)}/programs/${encodeURIComponent(programId)}`,
-        { method: 'GET' },
-    );
-}
+// 실 BE 루트 경로(global prefix 없음). store 도메인 컨벤션(features/program/detail) 동일.
+const BASE = '/partner';
 
 // ─── 프로그램 수정 ───────────────────────────────────────────────
 // PATCH /partner/stores/{storeId}/programs/{programId}
 export function patchProgram(storeId: string, programId: string, body: ProgramEditRequest) {
-    return apiFetch<ProgramEditResult>(`${BASE}/partner/stores/${storeId}/programs/${programId}`, {
-        method: 'PATCH',
-        body,
-    });
+    return apiFetch<ProgramEditResult>(
+        `${BASE}/stores/${encodeURIComponent(storeId)}/programs/${encodeURIComponent(programId)}`,
+        { method: 'PATCH', body },
+    );
 }
 
 // ─── 이미지 Pre-signed URL 발급 ──────────────────────────────────
@@ -36,7 +28,7 @@ export function postProgramImage(
     body: ProgramImageUploadRequest,
 ) {
     return apiFetch<ProgramImageUploadResult>(
-        `${BASE}/partner/stores/${storeId}/programs/${programId}/images`,
+        `${BASE}/stores/${encodeURIComponent(storeId)}/programs/${encodeURIComponent(programId)}/images`,
         { method: 'POST', body },
     );
 }
@@ -45,20 +37,16 @@ export function postProgramImage(
 // DELETE /partner/stores/{storeId}/programs/{programId}/images/{imageId}
 export function deleteProgramImage(storeId: string, programId: string, imageId: string) {
     return apiFetch<null>(
-        `${BASE}/partner/stores/${storeId}/programs/${programId}/images/${imageId}`,
+        `${BASE}/stores/${encodeURIComponent(storeId)}/programs/${encodeURIComponent(programId)}/images/${encodeURIComponent(imageId)}`,
         { method: 'DELETE' },
     );
 }
 
-// ─── S3 직접 업로드 ──────────────────────────────────────────────
-// Pre-signed URL로 PUT (Authorization 헤더 제외 필요)
-export async function uploadToS3(uploadUrl: string, file: File): Promise<void> {
-    const res = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type },
-        body: file,
-    });
-    if (!res.ok) {
-        throw new Error(`S3 업로드 실패: ${res.status}`);
-    }
+// ─── 이미지 업로드 확인 (PENDING → UPLOADED) ─────────────────────
+// PATCH /partner/stores/{storeId}/programs/{programId}/images/{imageId}/confirm
+export function confirmProgramImage(storeId: string, programId: string, imageId: string) {
+    return apiFetch<ConfirmProgramImageResult>(
+        `${BASE}/stores/${encodeURIComponent(storeId)}/programs/${encodeURIComponent(programId)}/images/${encodeURIComponent(imageId)}/confirm`,
+        { method: 'PATCH' },
+    );
 }

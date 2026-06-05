@@ -1,6 +1,6 @@
 'use client';
 
-import { OperatingFields } from '../../shared/ui';
+import { OperatingFields } from '@/features/store/shared/ui';
 import { useStoreRegistrationStore } from '../model/store';
 
 export function OperatingStep() {

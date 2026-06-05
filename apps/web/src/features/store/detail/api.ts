@@ -1,8 +1,8 @@
 import { type PartnerProgramListResult, type PartnerStoreDetailResult } from '@todam/shared';
 
-import { apiFetch } from '../../../shared/api';
+import { apiFetch } from '@/shared/api';
 
-const BASE = '/api/v1/partner';
+const BASE = '/partner';
 
 // 내 공방 상세 조회 (파트너센터). 수정화면 preload와 동일 엔드포인트·계약(PartnerStoreDetail).
 export function getPartnerStoreDetail(storeId: string) {

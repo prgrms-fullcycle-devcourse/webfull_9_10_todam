@@ -4,46 +4,86 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { Button, TextInput, Logo, Divider, CloseIcon } from '@todam/ui';
+import { Button, TextInput, Logo, Divider, InformationIcon } from '@todam/ui';
 
+import { ApiError } from '@/shared/api';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { useToast } from '@/shared/model';
+import { emailLogin } from '../api';
+import { useAuthStore } from '../model/authStore';
+import { buildKakaoAuthUrl, buildGoogleAuthUrl } from '../oauth';
 import { KakaoLoginButton } from './KakaoLoginButton';
 import { GoogleLoginButton } from './GoogleLoginButton';
 
+// 에러 코드별 사용자 피드백 메시지.
+// contract: 400 INVALID_REQUEST / 401 UNAUTHORIZED / 403 EMAIL_UNVERIFIED / 500 INTERNAL_SERVER_ERROR
+const EMAIL_LOGIN_ERROR_MESSAGES: Record<string, string> = {
+    INVALID_REQUEST: '이메일 형식이 올바르지 않거나 필수 항목이 누락됐어요.',
+    UNAUTHORIZED: '이메일 또는 비밀번호가 일치하지 않아요.',
+    EMAIL_UNVERIFIED: '이메일 인증을 완료한 후 로그인해 주세요.',
+    INTERNAL_SERVER_ERROR: '서버에 일시적인 오류가 발생했어요. 잠시 후 다시 시도해 주세요.',
+};
+
+function getEmailLoginErrorMessage(err: unknown): string {
+    if (err instanceof ApiError) {
+        return (
+            EMAIL_LOGIN_ERROR_MESSAGES[err.code] ??
+            '로그인 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.'
+        );
+    }
+    return '로그인 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.';
+}
+
 export function LoginForm() {
     const router = useRouter();
+    const { push } = useToast();
+    const setAuth = useAuthStore((s) => s.setAuth);
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [pending, setPending] = useState(false);
+
+    // 전역 Header override: 닫기(X)만 있는 popup 헤더.
+    useHeaderOverride({ type: 'popup', onClose: () => router.back() });
 
     // 이메일/비밀번호가 모두 입력되면 로그인 버튼 활성화(클라이언트 로컬 상태).
     const canSubmit = email.trim().length > 0 && password.trim().length > 0;
 
-    const handleSubmit = () => {
-        // TODO(다음 단계): POST /auth/login 연동 (API Contract 참조)
+    // POST /auth/login — 이메일 로그인.
+    // 성공: accessToken 보관 + 인증 상태 전이 + 메인 이동.
+    // 실패: 에러 코드별 토스트.
+    const handleSubmit = async () => {
+        if (pending || !canSubmit) return;
+        setPending(true);
+        try {
+            const result = await emailLogin({ email, password });
+            setAuth(result.accessToken, result.user);
+            router.replace('/');
+        } catch (err) {
+            push({
+                type: 'icon',
+                icon: <InformationIcon />,
+                message: getEmailLoginErrorMessage(err),
+            });
+        } finally {
+            setPending(false);
+        }
     };
 
+    // 카카오 OAuth: 인가코드 획득을 위해 카카오 인가 URL로 리다이렉트.
+    // 콜백 라우트(/oauth/kakao)에서 code를 받아 POST /auth/oauth/kakao 전송.
     const handleKakao = () => {
-        // TODO(다음 단계): 카카오 OAuth 인가코드 획득 → POST /auth/oauth/kakao
+        window.location.href = buildKakaoAuthUrl();
     };
 
+    // 구글 OAuth: 인가코드 획득을 위해 구글 인가 URL로 리다이렉트.
+    // 콜백 라우트(/oauth/google)에서 code를 받아 POST /auth/oauth/google 전송.
     const handleGoogle = () => {
-        // TODO(다음 단계): 구글 OAuth 인가코드 획득 → POST /auth/oauth/google
+        window.location.href = buildGoogleAuthUrl();
     };
 
     return (
         <div className="flex h-full flex-col bg-background">
-            <header className="flex h-15 items-center justify-end px-4 pt-safe">
-                <Button
-                    variant="ghost"
-                    layout="onlyIcon"
-                    size="lg"
-                    icon={<CloseIcon />}
-                    aria-label="닫기"
-                    onClick={() => router.back()}
-                    className="hover:!bg-transparent hover:!text-foreground"
-                />
-            </header>
-
             <main className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-8 pt-2">
                 <div className="flex flex-col gap-3">
                     <Logo color="brand" height={40} />
@@ -89,8 +129,8 @@ export function LoginForm() {
                         variant="filled"
                         size="lg"
                         className="w-full"
-                        disabled={!canSubmit}
-                        onClick={handleSubmit}
+                        disabled={!canSubmit || pending}
+                        onClick={() => void handleSubmit()}
                     >
                         로그인
                     </Button>
