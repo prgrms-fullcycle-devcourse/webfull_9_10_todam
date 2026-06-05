@@ -6,9 +6,10 @@ import { useRouter } from 'next/navigation';
 import { Button, TextInput, BottomBar, InformationIcon } from '@todam/ui';
 import { CODE_LENGTH, emailSchema, passwordSchema, verifyCodeSchema } from '@todam/shared';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
-import { useToast } from '@/shared/model';
+import { useToast, useSheet } from '@/shared/model';
 import { ApiError } from '@/shared/api';
 import { sendEmailCode, verifyEmailCode, signup } from '@/features/auth/signup/api';
+import { TermsAgreementSheet } from '@/features/auth/terms';
 
 type Step = 'email' | 'code' | 'password';
 
@@ -30,6 +31,7 @@ function formatTimer(seconds: number) {
 export default function SignupPage() {
     const router = useRouter();
     const { push } = useToast();
+    const { open: openSheet, close: closeSheet } = useSheet();
 
     const [step, setStep] = useState<Step>('email');
     const [email, setEmail] = useState('');
@@ -43,6 +45,21 @@ export default function SignupPage() {
     const emailValid = emailSchema.safeParse(email).success;
     const codeValid = verifyCodeSchema.safeParse(code).success;
     const passwordValid = passwordSchema.safeParse(password).success;
+
+    // 회원가입 진입 시 약관 동의 게이트. 동의값은 BE SignupDto 미수용(forbidNonWhitelisted)
+    // → 전송 안 하고 FE 진행 게이트로만 사용. 필수 미동의 닫기 시 로그인으로 복귀.
+    useEffect(() => {
+        openSheet(
+            <TermsAgreementSheet
+                onConfirm={closeSheet}
+                onClose={() => {
+                    closeSheet();
+                    router.back();
+                }}
+            />,
+        );
+        // 마운트 시 1회만.
+    }, []);
 
     // 인증번호 단계 타이머
     useEffect(() => {
