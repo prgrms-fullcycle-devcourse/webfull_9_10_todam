@@ -17,7 +17,7 @@
 
 ### 범위 1: 월간 조회
 - [ ] BE: `GET /partner/stores/{storeId}/reservations/calendar` — 월별 집계 API 구현 (Notion 스펙 미등록)
-- [ ] FE: 월별 캘린더 UI (예약있음/예약불가/신규제한 마커)
+- [x] FE: 월별 캘린더 UI (예약있음/예약불가/신규제한 마커)
 - [ ] API 연동: 캘린더 API 바인딩
 
 ### 범위 2: 예약 상세 조회
@@ -401,8 +401,17 @@
   - `GET /partner/stores/:storeId/reservations/calendar`
   - `GET /partner/reservations/:reservationId`
   - `PATCH /partner/reservations/:reservationId/reject`
-- UI: <!-- 구현된 화면, 컴포넌트 -->
-- 연동: <!-- 연결 지점, 검증 결과 -->
+- UI (범위 1 퍼블리싱 완료 — mock 연동):
+  - `apps/web/src/features/reservation/calendar/ui/MonthCalendar.tsx` — 월 그리드(date-fns), 요일 헤더(일=danger/토=info), YearMonthPicker 드롭다운, 범례 체크박스 2종(예약 불가/신규 예약 제한, 필터 dim 처리)
+  - `apps/web/src/features/reservation/calendar/ui/ReservationListCard.tsx` — 예약 카드 1건. 시각(HH:mm)/프로그램명/예약자(N명 표기)/상태 Tag. 상태→라벨: CONFIRMED=확정(success-subtle), PENDING=대기(warning-subtle), CANCELED=취소(muted), COMPLETED=체험완료(muted), REJECTED=거절(danger-subtle).
+  - `apps/web/src/features/reservation/calendar/ui/ReservationCalendarView.tsx` — 컨테이너. MonthCalendar + 일별 헤더(날짜·건수·신규예약 버튼) + 예약 목록/빈상태 + 예약 제한 버튼(미래만 활성, 과거=disabled+"미래 날짜만 예약을 제한할 수 있어요").
+  - `apps/web/src/app/partner/reservations/page.tsx` — page. useSearchParams storeId guard(없으면 toast+replace) → ReservationCalendarView.
+- CalendarItem state→데이터 매핑: isToday→'today', isUnavailable||hasRestriction→'partiallyBlocked', 슬롯 없음(정기휴무, API 연동 시)→'holiday' 주석 처리, 그 외→'available'. hasReservation=true이면 dot.
+- mock shape: CalendarData.days[] + getMockReservationsByDate(YYYY-MM-DD) — mock은 2026-06 고정, API 연동 시 fetch로 교체.
+- date-fns 도입: startOfMonth/endOfMonth/eachDayOfInterval/getDay/isToday/format/isBefore/startOfDay/ko locale.
+- 예약 제한 버튼 노출 규칙: 미래 날짜만 활성, 과거=disabled+안내문, 휴무일=hidden(API 연동 시 holiday CalendarItem state와 연계).
+- navigate stub: 카드 클릭→`/partner/reservations/{id}`, 신규 예약→`/partner/reservations/new?storeId=`, 예약 제한→`/partner/reservations/restrict?storeId=`.
+- 연동: <!-- API 연동(범위 1 API 연동 태스크) 완료 후 기록 -->
 
 ---
 
