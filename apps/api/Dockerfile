@@ -14,6 +14,8 @@ RUN pnpm install --frozen-lockfile
 COPY apps/api ./apps/api
 
 RUN DATABASE_URL="postgresql://user:password@localhost:5432/todam" pnpm --filter @todam/api exec prisma generate
+# api는 @todam/shared 를 require→dist 로 해석(빌드·런타임 모두 dist 필요).
+RUN pnpm --filter @todam/shared build
 RUN pnpm --filter @todam/api build
 
 EXPOSE 4000
