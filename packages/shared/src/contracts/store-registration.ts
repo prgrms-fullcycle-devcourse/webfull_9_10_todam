@@ -143,7 +143,7 @@ export const createStoreBusinessDocumentSchema = z.object({
         .min(1)
         .max(500)
         .meta({ example: '서울특별시 성동구 둑섬로 273(성수동)' }),
-    email: emailSchema.meta({ example: 'leadem@studio.com' }).nullable().optional(),
+    email: emailSchema.max(255).meta({ example: 'leadem@studio.com' }).nullable().optional(),
     // 사업자등록증 파일 S3 URL. POST /partner/business-documents/images 발급 URL. 미첨부 시 null.
     documentUrl: z
         .string()
@@ -158,7 +158,11 @@ export const createStoreBusinessDocumentSchema = z.object({
 });
 
 export const createStoreRequestSchema = z.object({
-    name: z.string().min(2).max(40).meta({ example: '토담 공방' }),
+    name: z
+        .string()
+        .min(2, '공방명은 2자 이상이어야 합니다.')
+        .max(40, '공방명은 40자 이하여야 합니다.')
+        .meta({ example: '토담 공방' }),
     slug: slugSchema
         .meta({
             example: 'todam-studio',
@@ -167,7 +171,7 @@ export const createStoreRequestSchema = z.object({
         .optional(),
     description: z
         .string()
-        .max(1000)
+        .max(1000, '공방 소개는 1000자 이하여야 합니다.')
         .meta({ example: '흙과 함께하는 도자기 체험 공방입니다.' })
         .nullable()
         .optional(),
@@ -179,8 +183,12 @@ export const createStoreRequestSchema = z.object({
     autoConfirm: z.boolean().meta({ example: false }),
     cancelDeadlineDays: z.number().int().min(0).meta({ example: 1 }),
     reservationIntervalMinutes: z
-        .union([z.literal(60), z.literal(90), z.literal(120), z.literal(180)])
-        .meta({ description: '타임슬롯 생성 기준 간격(분). 1/1.5/2/3시간' }),
+        .union([z.literal(60), z.literal(90), z.literal(120), z.literal(180)], {
+            error: '예약 시간 간격은 60, 90, 120, 180분 중 하나여야 합니다.',
+        })
+        .meta({
+            description: '타임슬롯 생성 기준 간격(분). 1/1.5/2/3시간',
+        }),
     // BE CreateStoreDto 필수. (contract 본문 예시엔 누락되어 있으나 DTO 기준 필수 — Decision Log 참조)
     maxCapacityPerSlot: z
         .number()

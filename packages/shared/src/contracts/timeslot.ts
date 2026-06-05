@@ -18,18 +18,24 @@ export type TimeSlotErrorCode = (typeof TimeSlotErrorCode)[keyof typeof TimeSlot
 // ─── 자동 생성 요청 (POST /partner/stores/{storeId}/time-slots/generate) ─────
 // 날짜 범위만. 시간/간격/정원은 공방 설정에서 BE 가 자동 조회. 단일 날짜는 startDate == endDate.
 export const generateTimeSlotsRequestSchema = z.object({
-    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    startDate: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/, 'startDate는 YYYY-MM-DD 형식이어야 합니다.')
+        .meta({ example: '2026-06-01' }),
+    endDate: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/, 'endDate는 YYYY-MM-DD 형식이어야 합니다.')
+        .meta({ example: '2026-06-07' }),
 });
 export type GenerateTimeSlotsRequest = z.infer<typeof generateTimeSlotsRequestSchema>;
 
 // ─── 생성된 슬롯 항목 ────────────────────────────────────────────
 export const generatedTimeSlotSchema = z.object({
-    slotId: z.string(),
-    startAt: z.string(),
-    endAt: z.string(),
-    status: z.nativeEnum(StoreTimeSlotStatus),
-    reservedCount: z.number(),
+    slotId: z.string().meta({ example: 'slot-uuid-001' }),
+    startAt: z.string().meta({ example: '2026-06-01T10:00:00.000Z' }),
+    endAt: z.string().meta({ example: '2026-06-01T11:00:00.000Z' }),
+    status: z.nativeEnum(StoreTimeSlotStatus).meta({ example: StoreTimeSlotStatus.OPEN }),
+    reservedCount: z.number().meta({ example: 0 }),
 });
 export type GeneratedTimeSlot = z.infer<typeof generatedTimeSlotSchema>;
 
@@ -37,33 +43,55 @@ export type GeneratedTimeSlot = z.infer<typeof generatedTimeSlotSchema>;
 // createdCount: 신규 생성 슬롯 수, skippedCount: 멱등 스킵(이미 존재) + 과거 시각 스킵 합산,
 // removedCount: 영업시간/요일/interval 변경으로 새 격자에서 사라진 예약없는 미래 슬롯 삭제 수.
 export const generateTimeSlotsResultSchema = z.object({
-    createdCount: z.number(),
-    removedCount: z.number(),
-    skippedCount: z.number(),
-    createdSlots: z.array(generatedTimeSlotSchema),
+    createdCount: z.number().meta({ example: 28 }),
+    removedCount: z.number().meta({
+        example: 2,
+        description: '영업시간/요일/interval 변경으로 삭제된 미래 빈 슬롯 수',
+    }),
+    skippedCount: z.number().meta({ example: 4 }),
+    createdSlots: z
+        .array(generatedTimeSlotSchema)
+        .meta({ description: '신규 생성된 타임슬롯 목록' }),
 });
 export type GenerateTimeSlotsResult = z.infer<typeof generateTimeSlotsResultSchema>;
 
 // ─── 타임슬롯 상태 변경 (PATCH .../time-slots/{timeSlotId}/status) ─────
 export const updateTimeSlotStatusRequestSchema = z.object({
-    status: z.nativeEnum(StoreTimeSlotStatus),
+    status: z
+        .nativeEnum(StoreTimeSlotStatus, {
+            error: 'status는 OPEN, CLOSED, CANCELED 중 하나여야 합니다.',
+        })
+        .meta({ example: StoreTimeSlotStatus.CLOSED }),
 });
 export type UpdateTimeSlotStatusRequest = z.infer<typeof updateTimeSlotStatusRequestSchema>;
 
 // ─── 예약 제한 시간 범위 (ISO 8601, offset 포함) ──────────────────
 export const reservationRestrictionTimeRangeSchema = z.object({
-    startAt: z.string().datetime({ offset: true }),
-    endAt: z.string().datetime({ offset: true }),
+    startAt: z.string().datetime({ offset: true }).meta({ example: '2026-06-10T10:00:00+09:00' }),
+    endAt: z.string().datetime({ offset: true }).meta({ example: '2026-06-10T12:00:00+09:00' }),
 });
 export type ReservationRestrictionTimeRange = z.infer<typeof reservationRestrictionTimeRangeSchema>;
 
 // ─── 예약 제한 생성 (POST /partner/stores/{storeId}/reservation-restrictions) ─────
 // scope=ALL_DAY 종일 막기 / TIME_SLOTS 부분 막기(timeRanges). programIds 최소 1개.
 export const createReservationRestrictionsRequestSchema = z.object({
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    scope: z.enum(['ALL_DAY', 'TIME_SLOTS']),
-    timeRanges: z.array(reservationRestrictionTimeRangeSchema).optional(),
-    programIds: z.array(z.string().uuid()).min(1),
+    date: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/, 'date는 YYYY-MM-DD 형식이어야 합니다.')
+        .meta({ example: '2026-06-10' }),
+    scope: z
+        .enum(['ALL_DAY', 'TIME_SLOTS'], {
+            error: 'scope는 ALL_DAY, TIME_SLOTS 중 하나여야 합니다.',
+        })
+        .meta({ example: 'TIME_SLOTS' }),
+    timeRanges: z
+        .array(reservationRestrictionTimeRangeSchema)
+        .meta({ description: 'scope=TIME_SLOTS일 때 막을 시간 범위 목록' })
+        .optional(),
+    programIds: z
+        .array(z.string().uuid())
+        .min(1, 'programIds는 최소 1개 이상이어야 합니다.')
+        .meta({ example: ['11111111-1111-1111-1111-111111111111'] }),
 });
 export type CreateReservationRestrictionsRequest = z.infer<
     typeof createReservationRestrictionsRequestSchema
@@ -74,11 +102,18 @@ export type CreateReservationRestrictionsRequest = z.infer<
 export const deleteReservationRestrictionsRequestSchema = z.object({
     date: z
         .string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .regex(/^\d{4}-\d{2}-\d{2}$/, 'date는 YYYY-MM-DD 형식이어야 합니다.')
+        .meta({ example: '2026-06-10' })
         .optional(),
     timeRanges: z.array(reservationRestrictionTimeRangeSchema).optional(),
-    programIds: z.array(z.string().uuid()).optional(),
-    restrictionIds: z.array(z.string().uuid()).optional(),
+    programIds: z
+        .array(z.string().uuid())
+        .meta({ example: ['11111111-1111-1111-1111-111111111111'] })
+        .optional(),
+    restrictionIds: z
+        .array(z.string().uuid())
+        .meta({ example: ['22222222-2222-2222-2222-222222222222'] })
+        .optional(),
 });
 export type DeleteReservationRestrictionsRequest = z.infer<
     typeof deleteReservationRestrictionsRequestSchema
