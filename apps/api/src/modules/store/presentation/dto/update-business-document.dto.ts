@@ -9,7 +9,7 @@ import {
     ValidateIf,
 } from 'class-validator';
 
-// contract: businessNumberSchema = 하이픈 포함 형식(000-00-00000). DB 저장 시 use-case에서 하이픈 strip.
+// shared runtime import는 API Jest ESM 변환 설정 정비 전까지 사용할 수 없다.
 const BUSINESS_NUMBER_PATTERN = /^\d{3}-\d{2}-\d{5}$/;
 
 export class UpdateBusinessDocumentDto {

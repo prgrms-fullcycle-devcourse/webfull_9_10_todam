@@ -1,30 +1,20 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../database/prisma.service';
+import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
+import { StoreRepository } from '../../domain/repositories/store.repository';
 import type { SubmitStoreResponseDto } from '../../presentation/dto/submit-store.dto';
 
 @Injectable()
 export class SubmitStoreUseCase {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly ownership: StoreOwnershipService,
+        private readonly stores: StoreRepository,
+    ) {}
 
     async execute(userId: string, storeId: string): Promise<SubmitStoreResponseDto> {
-        const store = await this.prisma.store.findUnique({
-            where: { id: storeId },
-            select: {
-                id: true,
-                status: true,
-                name: true,
-                address: true,
-                updatedAt: true,
-                partner: { select: { userId: true } },
-                images: {
-                    where: { isThumbnail: true, status: 'UPLOADED' },
-                    select: { id: true },
-                    take: 1,
-                },
-            },
-        });
+        await this.ownership.verify(userId, storeId, { notFound: 'NOT_FOUND' });
 
+        const store = await this.stores.findSubmission(storeId);
         if (!store) {
             throw new BusinessException(
                 'NOT_FOUND',
@@ -33,15 +23,7 @@ export class SubmitStoreUseCase {
             );
         }
 
-        if (store.partner.userId !== userId) {
-            throw new BusinessException(
-                'FORBIDDEN',
-                '공방 소유 권한이 없습니다.',
-                HttpStatus.FORBIDDEN,
-            );
-        }
-
-        if (store.status !== 'DRAFT' && store.status !== 'REJECTED') {
+        if (!store.isSubmittable()) {
             throw new BusinessException(
                 'INVALID_STORE_STATUS',
                 'DRAFT 또는 REJECTED 상태의 공방만 제출할 수 있습니다.',
@@ -49,11 +31,7 @@ export class SubmitStoreUseCase {
             );
         }
 
-        const missingFields: string[] = [];
-        if (!store.name) missingFields.push('name');
-        if (!store.address) missingFields.push('address');
-        if (store.images.length === 0) missingFields.push('thumbnail image');
-
+        const missingFields = store.missingRequiredFields();
         if (missingFields.length > 0) {
             throw new BusinessException(
                 'MISSING_REQUIRED_FIELDS',
@@ -62,12 +40,7 @@ export class SubmitStoreUseCase {
             );
         }
 
-        const updated = await this.prisma.store.update({
-            where: { id: storeId },
-            data: { status: 'PENDING' },
-            select: { id: true, status: true, updatedAt: true },
-        });
-
+        const updated = await this.stores.markPending(storeId);
         return {
             store: {
                 id: updated.id,

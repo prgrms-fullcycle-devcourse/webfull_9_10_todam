@@ -1,44 +1,21 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../database/prisma.service';
-import { S3Service } from '../../../../common/s3/s3.service';
+import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
+import { S3Service } from '../../../../common/s3/s3.service';
+import { StoreImageRepository } from '../../domain/repositories/store-image.repository';
 
 @Injectable()
 export class DeleteStoreImageUseCase {
     constructor(
-        private readonly prisma: PrismaService,
+        private readonly ownership: StoreOwnershipService,
+        private readonly images: StoreImageRepository,
         private readonly s3: S3Service,
     ) {}
 
     async execute(userId: string, storeId: string, imageId: string): Promise<void> {
-        const store = await this.prisma.store.findUnique({
-            where: { id: storeId },
-            select: { id: true, partner: { select: { userId: true } } },
-        });
+        await this.ownership.verify(userId, storeId, { notFound: 'STORE_NOT_FOUND' });
 
-        if (!store) {
-            throw new BusinessException(
-                'STORE_NOT_FOUND',
-                '공방을 찾을 수 없습니다.',
-                HttpStatus.NOT_FOUND,
-            );
-        }
-
-        // 소유권 검증
-        if (store.partner.userId !== userId) {
-            throw new BusinessException(
-                'FORBIDDEN',
-                '공방 소유 권한이 없습니다.',
-                HttpStatus.FORBIDDEN,
-            );
-        }
-
-        // 이미지가 해당 공방 소속인지 확인
-        const image = await this.prisma.storeImage.findFirst({
-            where: { id: imageId, storeId },
-            select: { id: true, imageUrl: true, thumbnailUrl: true },
-        });
-
+        const image = await this.images.findByStoreAndId(storeId, imageId);
         if (!image) {
             throw new BusinessException(
                 'IMAGE_NOT_FOUND',
@@ -47,9 +24,7 @@ export class DeleteStoreImageUseCase {
             );
         }
 
-        // S3 원본·썸네일 삭제 → 실패해도 row 삭제는 진행(고아 row 방지).
         await this.s3.deleteImageObjects([image.imageUrl, image.thumbnailUrl]);
-
-        await this.prisma.storeImage.delete({ where: { id: imageId } });
+        await this.images.delete(imageId);
     }
 }
