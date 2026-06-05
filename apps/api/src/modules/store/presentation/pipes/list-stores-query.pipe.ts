@@ -1,36 +1,10 @@
-import { HttpStatus, ValidationPipe } from '@nestjs/common';
-import type { ValidationError } from '@nestjs/common';
-import { BusinessException } from '../../../../common/exceptions/business.exception';
+import { BusinessValidationPipe } from '../../../../common/pipes/business-validation.pipe';
 
-// GET /stores 쿼리 검증 전용 파이프.
-// contract: 위도/경도 등 쿼리 형식 오류 시 400 INVALID_QUERY_PARAMETERS.
-export class ListStoresQueryPipe extends ValidationPipe {
+export class ListStoresQueryPipe extends BusinessValidationPipe {
     constructor() {
         super({
-            whitelist: true,
-            forbidNonWhitelisted: true,
-            transform: true,
-            transformOptions: { enableImplicitConversion: false },
-            exceptionFactory: (errors: ValidationError[]) => {
-                const message = ListStoresQueryPipe.firstMessage(errors);
-                return new BusinessException(
-                    'INVALID_QUERY_PARAMETERS',
-                    message,
-                    HttpStatus.BAD_REQUEST,
-                );
-            },
+            errorCode: 'INVALID_QUERY_PARAMETERS',
+            fallbackMessage: '잘못된 쿼리 파라미터입니다.',
         });
-    }
-
-    private static firstMessage(errors: ValidationError[]): string {
-        for (const error of errors) {
-            if (error.constraints) {
-                const first = Object.values(error.constraints)[0];
-                if (first) {
-                    return first;
-                }
-            }
-        }
-        return '잘못된 쿼리 파라미터입니다.';
     }
 }

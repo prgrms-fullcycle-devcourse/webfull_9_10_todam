@@ -15,6 +15,11 @@ export interface OwnedStore {
     reservationIntervalMinutes: number | null;
 }
 
+export interface StoreOwnershipErrorCodes {
+    notFound?: string;
+    forbidden?: string;
+}
+
 /**
  * 공방 존재 + 소유권(파트너=요청자) 검증 cross-cutting 서비스.
  * 인가성 관심사이므로 PartnerGuard 와 동일 결로 PrismaService 를 직접 사용한다(도메인 포트로 감싸지 않음).
@@ -23,7 +28,11 @@ export interface OwnedStore {
 export class StoreOwnershipService {
     constructor(private readonly prisma: PrismaService) {}
 
-    async verify(userId: string, storeId: string): Promise<OwnedStore> {
+    async verify(
+        userId: string,
+        storeId: string,
+        errorCodes: StoreOwnershipErrorCodes = {},
+    ): Promise<OwnedStore> {
         const store = await this.prisma.store.findUnique({
             where: { id: storeId },
             select: {
@@ -37,7 +46,7 @@ export class StoreOwnershipService {
 
         if (!store) {
             throw new BusinessException(
-                'RESOURCE_NOT_FOUND',
+                errorCodes.notFound ?? 'RESOURCE_NOT_FOUND',
                 '공방을 찾을 수 없습니다.',
                 HttpStatus.NOT_FOUND,
             );
@@ -45,7 +54,7 @@ export class StoreOwnershipService {
 
         if (store.partner.userId !== userId) {
             throw new BusinessException(
-                'FORBIDDEN',
+                errorCodes.forbidden ?? 'FORBIDDEN',
                 '공방 소유 권한이 없습니다.',
                 HttpStatus.FORBIDDEN,
             );
