@@ -20,6 +20,8 @@ export class ProgramDetailDto {
     @ApiProperty({ type: String, nullable: true }) caution!: string | null;
     @ApiProperty() price!: number;
     @ApiProperty() durationMinutes!: number;
+    // 퍼블릭 상세에서만 포함(정원 = Store.maxCapacityPerSlot, 공방 단위). 파트너 상세는 생략.
+    @ApiProperty({ type: Number, required: false, nullable: true }) capacity?: number | null;
     @ApiProperty() leadTimeDays!: number;
     @ApiProperty() deliverable!: boolean;
     @ApiProperty() childFriendly!: boolean;
