@@ -1,3 +1,8 @@
+import {
+    decodeOpaqueCursor,
+    encodeOpaqueCursor,
+} from '../../../../common/pagination/opaque-cursor.util';
+
 // GET /stores 커서 인코딩/디코딩 (opaque, base64url).
 // 정렬키 분기:
 //  - lat/lng 있으면 { distance, id } (거리순 + id tie-break)
@@ -17,26 +22,21 @@ export interface PublishedAtCursor {
 export type StoreCursorPayload = DistanceCursor | PublishedAtCursor;
 
 export function encodeCursor(payload: StoreCursorPayload): string {
-    return Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+    return encodeOpaqueCursor(payload);
 }
 
 export function decodeCursor(cursor: string): StoreCursorPayload | null {
-    try {
-        const json = Buffer.from(cursor, 'base64url').toString('utf8');
-        const parsed = JSON.parse(json) as Record<string, unknown>;
-        if (typeof parsed.id !== 'string') {
-            return null;
-        }
-        if (typeof parsed.distance === 'number') {
-            return { distance: parsed.distance, id: parsed.id };
-        }
-        if (typeof parsed.publishedAt === 'string') {
-            return { publishedAt: parsed.publishedAt, id: parsed.id };
-        }
-        return null;
-    } catch {
+    const parsed = decodeOpaqueCursor(cursor);
+    if (!parsed || typeof parsed.id !== 'string') {
         return null;
     }
+    if (typeof parsed.distance === 'number') {
+        return { distance: parsed.distance, id: parsed.id };
+    }
+    if (typeof parsed.publishedAt === 'string') {
+        return { publishedAt: parsed.publishedAt, id: parsed.id };
+    }
+    return null;
 }
 
 export function isDistanceCursor(payload: StoreCursorPayload): payload is DistanceCursor {

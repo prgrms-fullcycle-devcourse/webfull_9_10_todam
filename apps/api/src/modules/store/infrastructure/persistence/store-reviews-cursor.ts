@@ -1,3 +1,8 @@
+import {
+    decodeOpaqueCursor,
+    encodeOpaqueCursor,
+} from '../../../../common/pagination/opaque-cursor.util';
+
 // GET /stores/:slug/reviews 커서 인코딩/디코딩 (opaque, base64url).
 // 정렬키 분기:
 //  - latest:      { createdAt, id }            (createdAt desc, id desc)
@@ -18,23 +23,18 @@ export interface RatingHighReviewCursor {
 export type ReviewCursorPayload = LatestReviewCursor | RatingHighReviewCursor;
 
 export function encodeReviewCursor(payload: ReviewCursorPayload): string {
-    return Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+    return encodeOpaqueCursor(payload);
 }
 
 export function decodeReviewCursor(cursor: string): ReviewCursorPayload | null {
-    try {
-        const json = Buffer.from(cursor, 'base64url').toString('utf8');
-        const parsed = JSON.parse(json) as Record<string, unknown>;
-        if (typeof parsed.id !== 'string' || typeof parsed.createdAt !== 'string') {
-            return null;
-        }
-        if (typeof parsed.rating === 'number') {
-            return { rating: parsed.rating, createdAt: parsed.createdAt, id: parsed.id };
-        }
-        return { createdAt: parsed.createdAt, id: parsed.id };
-    } catch {
+    const parsed = decodeOpaqueCursor(cursor);
+    if (!parsed || typeof parsed.id !== 'string' || typeof parsed.createdAt !== 'string') {
         return null;
     }
+    if (typeof parsed.rating === 'number') {
+        return { rating: parsed.rating, createdAt: parsed.createdAt, id: parsed.id };
+    }
+    return { createdAt: parsed.createdAt, id: parsed.id };
 }
 
 export function isRatingHighCursor(
