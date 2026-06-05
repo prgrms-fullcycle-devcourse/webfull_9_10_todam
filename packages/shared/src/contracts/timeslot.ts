@@ -127,24 +127,60 @@ const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 // GET /partner/stores/:storeId/time-slots
 export const listTimeSlotsQuerySchema = z.object({
-    date: z.string().regex(dateRegex, 'date는 YYYY-MM-DD 형식이어야 합니다.').optional(),
-    startDate: z.string().regex(dateRegex, 'startDate는 YYYY-MM-DD 형식이어야 합니다.').optional(),
-    endDate: z.string().regex(dateRegex, 'endDate는 YYYY-MM-DD 형식이어야 합니다.').optional(),
-    status: z.nativeEnum(StoreTimeSlotStatus).optional(),
+    date: z
+        .string()
+        .regex(dateRegex, 'date는 YYYY-MM-DD 형식이어야 합니다.')
+        .meta({ example: '2026-06-10' })
+        .optional(),
+    startDate: z
+        .string()
+        .regex(dateRegex, 'startDate는 YYYY-MM-DD 형식이어야 합니다.')
+        .meta({ example: '2026-06-01' })
+        .optional(),
+    endDate: z
+        .string()
+        .regex(dateRegex, 'endDate는 YYYY-MM-DD 형식이어야 합니다.')
+        .meta({ example: '2026-06-07' })
+        .optional(),
+    status: z
+        .nativeEnum(StoreTimeSlotStatus, {
+            error: 'status는 OPEN, CLOSED, CANCELED 중 하나여야 합니다.',
+        })
+        .meta({ example: StoreTimeSlotStatus.OPEN })
+        .optional(),
 });
 export type ListTimeSlotsQuery = z.infer<typeof listTimeSlotsQuerySchema>;
 
 // GET /partner/stores/:storeId/programs/reservation-counts
 export const programReservationCountsQuerySchema = z.object({
-    date: z.string().regex(dateRegex, 'date는 YYYY-MM-DD 형식이어야 합니다.'),
+    date: z
+        .string()
+        .regex(dateRegex, 'date는 YYYY-MM-DD 형식이어야 합니다.')
+        .meta({ example: '2026-06-10' }),
     // 콤마 구분 슬롯 id 목록(옵션). 미지정 시 date 전체 슬롯.
-    timeSlotIds: z.string().optional(),
+    timeSlotIds: z
+        .string()
+        .meta({
+            description: '콤마 구분 슬롯 id 목록. 미지정 시 date 전체 슬롯.',
+            example: 'slot-1,slot-2',
+        })
+        .optional(),
 });
 export type ProgramReservationCountsQuery = z.infer<typeof programReservationCountsQuerySchema>;
 
 // GET /programs/:programId/available-slots
 export const availableSlotsQuerySchema = z.object({
-    year: z.coerce.number().int().min(2000).max(2100),
-    month: z.coerce.number().int().min(1).max(12),
+    year: z.coerce
+        .number()
+        .int('year는 정수여야 합니다.')
+        .min(2000, 'year가 올바르지 않습니다.')
+        .max(2100, 'year가 올바르지 않습니다.')
+        .meta({ example: 2026 }),
+    month: z.coerce
+        .number()
+        .int('month는 정수여야 합니다.')
+        .min(1, 'month는 1~12 사이여야 합니다.')
+        .max(12, 'month는 1~12 사이여야 합니다.')
+        .meta({ example: 6 }),
 });
 export type AvailableSlotsQuery = z.infer<typeof availableSlotsQuerySchema>;
