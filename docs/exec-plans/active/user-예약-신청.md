@@ -16,7 +16,7 @@
 - API 연동: **실 API** 요청/응답이 contract 스키마로 연결. MSW mock 바인딩만 한 상태는 미체크(연동 아님).
 -->
 
-- [ ] API 구현
+- [x] API 구현
 - [ ] UI 구현
 - [ ] API 연동
 
@@ -231,18 +231,18 @@ Accept: application/json
 **시스템 처리 (DB 기준 정합)**
 1. 인증 토큰으로 userId 식별
 2. `programId`로 `ACTIVE` 프로그램 조회 (storeId 확보)
-3. 공방 `PUBLISHED` 상태 검증
-4. `slotId`(StoreTimeSlot)로 슬롯 조회 — `storeId` 일치 확인
-5. `StoreTimeSlot.status = OPEN` 검증
+3. 공방 `PUBLISHED` 상태 검증 — 미게시면 노출하지 않음(미존재 취급 → `PROGRAM_NOT_FOUND` 404)
+4. `slotId`(StoreTimeSlot)로 슬롯 조회 — `storeId` 일치 확인. 미존재 → `RESOURCE_NOT_FOUND(404)`
+5. `StoreTimeSlot.status = OPEN` 검증 — OPEN 아니면(CLOSED/CANCELED) `SLOT_BLOCKED(409)`
 6. `ReservationRestriction`(storeId + startAt + programId) 존재 시 `SLOT_BLOCKED(409)`
-7. 자기거래 차단: `Store.partner.userId === token.userId` → `SELF_RESERVATION_NOT_ALLOWED(403)`
+7. 자기거래 차단: `Store.partner.userId === token.userId` → `SELF_RESERVATION_NOT_ALLOWED(403)` (구현은 효율상 program 조회 직후 early-fail로 검사 — 결과 동일)
 8. 잔여 정원 검증: `maxCapacityPerSlot - reservedCount >= participantCount` (동시성 안전 처리 — Open Decision 3번)
 9. `ProgramSnapshot` 생성 (programId, price, leadTimeDays)
 10. `Reservation` 생성 (`status=PENDING`, `source=CUSTOMER`, `userId=token.userId`)
 11. `StoreTimeSlot.reservedCount += participantCount` (8번과 합쳐 조건부 원자 update로 동시성 안전 — Open Decision 3 해소)
 12. 배송 주소는 생성 시 받지 않음(`Delivery` row 생성은 본 plan 범위 밖, 별도 PATCH)
 13. `Store.autoConfirm=true`이면 즉시 `CONFIRMED` 전이 → `Artwork` 생성 + `QrToken` 발급. 기본(false)은 `PENDING`(Artwork 미생성)
-14. 알림 큐 등록 (고객 접수 알림, 파트너 신규 예약 알림)
+14. ~~알림 큐 등록~~ **[보류]** notification/worker 인프라 미구축(빈 모듈, worker 앱 없음, #187 파트너도 미구현) → 인프라 구축 후 별도 처리. 본 PR 범위 제외.
 
 **Response 201 Created**
 
@@ -282,8 +282,9 @@ Accept: application/json
 | 401 | `UNAUTHORIZED` | 미인증 |
 | 403 | `SELF_RESERVATION_NOT_ALLOWED` | 본인 공방 예약 시도 |
 | 403 | `FORBIDDEN` | 기타 권한 없음 |
-| 404 | `PROGRAM_NOT_FOUND` | 프로그램 없음 또는 비활성 |
-| 409 | `SLOT_BLOCKED` | ReservationRestriction 존재 (차단된 시간대) |
+| 404 | `PROGRAM_NOT_FOUND` | 프로그램 없음/비활성 또는 공방 비PUBLISHED |
+| 404 | `RESOURCE_NOT_FOUND` | 슬롯 미존재 |
+| 409 | `SLOT_BLOCKED` | ReservationRestriction 존재, 또는 슬롯 status가 OPEN 아님(CLOSED/CANCELED) |
 | 500 | `INTERNAL_SERVER_ERROR` | 서버 오류 |
 
 ---
@@ -414,8 +415,24 @@ Accept: application/json
   - 동시성: 조건부 원자 update(`updateMany` where 정원조건) → 0건 시 `INSUFFICIENT_CAPACITY`.
   - available-slots(엔드포인트1): 이미 머지(#188). 응답에 `isAvailable`/`CANCELED` 포함으로 정합. FE는 isAvailable로 회색 처리.
   - 구현 경로: `createManual`은 PARTNER_MANUAL·즉시확정·Artwork생성이라 직접 재사용 불가 → **신규 `CreateUserReservationUseCase` + `createCustomer` repo 메서드**(PENDING·Artwork 미생성·검증/조건부 increment). 파트너 `confirm()`이 Artwork 없으면 생성하므로 PENDING→confirm 흐름 정상 동작.
+- 2026-06-05: **구현 후 /review 반영.** PUBLISHED 검증 추가(미게시→`PROGRAM_NOT_FOUND`), 슬롯 미존재 코드 `RESOURCE_NOT_FOUND`로 수정. `SLOT_BLOCKED` 정의를 ReservationRestriction + 슬롯 non-OPEN(CLOSED/CANCELED)으로 확장. 알림 큐(처리 14)는 notification/worker 인프라 미구축으로 **보류**(#187도 동일). `estimatedCompletedAt`(=slot.startAt+leadTimeDays) 미설정은 파트너 `createManual`·`confirm`도 동일한 횡단 누락 → **후속 과제**(reservation/artwork 도메인 일괄).
 
 ## Outcome
 
 - Status: **Open Decisions 전부 해소, contract 확정. 구현 착수 가능.**
 - Follow-up: `/issue` → 브랜치/plan 커밋/PR → `/impl be`.
+
+## Out (BE 구현물)
+
+- **신규 파일**
+  - `apps/api/src/modules/reservation/domain/display-state.util.ts` — ReservationStatus → DisplayState 헬퍼 (requirements.md §1 기준)
+  - `apps/api/src/modules/reservation/domain/repositories/user-reservation.repository.ts` — UserReservationRepository 추상 포트
+  - `apps/api/src/modules/reservation/infrastructure/persistence/prisma-user-reservation.repository.ts` — createCustomer 트랜잭션 구현 (정원 조건부 원자 increment, autoConfirm 분기, Artwork/QrToken 조건부 생성)
+  - `apps/api/src/modules/reservation/presentation/dto/user-reservation.dto.ts` — CreateUserReservationDto, CreateUserReservationResponseDto
+  - `apps/api/src/modules/reservation/application/use-cases/create-user-reservation.use-case.ts` — CreateUserReservationUseCase
+  - `apps/api/src/modules/reservation/presentation/controllers/user-reservation.controller.ts` — POST /reservations (AuthGuard)
+  - `apps/api/src/modules/reservation/application/use-cases/create-user-reservation.use-case.spec.ts` — 단위 테스트 (6케이스)
+- **수정 파일**
+  - `apps/api/src/modules/reservation/reservation.module.ts` — UserReservationController·CreateUserReservationUseCase·UserReservationRepository(→PrismaUserReservationRepository) 등록
+  - `apps/api/src/modules/api-routes.snapshot.spec.ts` — UserReservationController 추가, POST /reservations 라우트 엔트리 추가
+- **검증 결과**: typecheck 0 errors · test 42 passed · build 성공 · lint 0 new warnings

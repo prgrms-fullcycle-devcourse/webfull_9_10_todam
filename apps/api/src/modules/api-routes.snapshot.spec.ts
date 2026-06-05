@@ -42,6 +42,9 @@ function controllers(): ControllerClass[] {
     const { PartnerReservationController } = jest.requireActual<
         typeof import('./reservation/presentation/controllers/partner-reservation.controller')
     >('./reservation/presentation/controllers/partner-reservation.controller');
+    const { UserReservationController } = jest.requireActual<
+        typeof import('./reservation/presentation/controllers/user-reservation.controller')
+    >('./reservation/presentation/controllers/user-reservation.controller');
 
     return [
         AuthController,
@@ -50,6 +53,7 @@ function controllers(): ControllerClass[] {
         ProgramController,
         TimeslotController,
         PartnerReservationController,
+        UserReservationController,
     ];
 }
 
@@ -490,6 +494,13 @@ describe('API route baseline', () => {
                 method: 'PATCH',
                 path: '/partner/reservations/:reservationId/complete',
                 guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'UserReservationController',
+                handler: 'create',
+                method: 'POST',
+                path: '/reservations',
+                guards: ['AuthGuard'],
             },
         ]);
     });
