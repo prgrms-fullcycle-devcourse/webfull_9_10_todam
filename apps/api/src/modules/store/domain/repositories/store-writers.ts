@@ -31,7 +31,7 @@ export interface CreateStoreInput {
         businessName: string;
         ownerName: string;
         businessAddress: string;
-        email?: string;
+        email?: string | null;
         documentUrl?: string | null;
     };
 }

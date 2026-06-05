@@ -110,7 +110,11 @@ export type StoreRegistrationSubmitResult = z.infer<typeof storeRegistrationSubm
 
 // 1) POST /stores — 공방 초안 생성
 export const createStoreBusinessDocumentSchema = z.object({
-    businessNumber: businessNumberSchema,
+    // createStore wire format은 하이픈 없는 숫자 10자리(FE가 전송 시 하이픈 제거).
+    // 하이픈 형식(000-00-00000)은 businessNumberSchema(수정 화면) 별도.
+    businessNumber: z
+        .string()
+        .regex(/^\d{10}$/, '사업자등록번호는 하이픈 없이 숫자 10자리여야 합니다.'),
     businessName: z.string().min(1).max(200),
     ownerName: z.string().min(1).max(100),
     businessAddress: z.string().min(1).max(500),

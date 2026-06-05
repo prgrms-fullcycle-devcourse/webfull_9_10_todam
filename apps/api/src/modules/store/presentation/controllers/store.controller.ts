@@ -23,6 +23,7 @@ import {
     businessDocumentImageRequestSchema,
     businessDocumentUpdateRequestSchema,
     createStoreImageRequestSchema,
+    createStoreRequestSchema,
     storeUpdateRequestSchema,
     updatePartnerCurrentStoreRequestSchema,
 } from '@todam/shared';
@@ -30,6 +31,7 @@ import type {
     BusinessDocumentImageRequest,
     BusinessDocumentUpdateRequest,
     CreateStoreImageRequest,
+    CreateStoreRequest,
     StoreUpdateRequest,
     UpdatePartnerCurrentStoreRequest,
 } from '@todam/shared';
@@ -324,10 +326,11 @@ export class StoreController {
     @Post('stores')
     @UseGuards(AuthGuard)
     @ResponseMessage('공방이 성공적으로 등록되었습니다. 제출 후 검수를 진행해주세요.')
+    @ApiBody({ type: CreateStoreDto })
     @ApiCreatedResponse({ description: '공방 초안 생성 성공', type: CreateStoreResponseDto })
     async createStore(
         @CurrentUser() user: RequestUser,
-        @Body() dto: CreateStoreDto,
+        @Body(new ZodValidationPipe(createStoreRequestSchema)) dto: CreateStoreRequest,
     ): Promise<CreateStoreResponseDto> {
         return this.createStoreUseCase.execute(user.id, dto);
     }
