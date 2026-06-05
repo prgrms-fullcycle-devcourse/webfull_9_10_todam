@@ -10,7 +10,24 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiBody,
+    ApiCreatedResponse,
+    ApiOkResponse,
+    ApiTags,
+} from '@nestjs/swagger';
+import {
+    cancelPartnerReservationRequestSchema,
+    createPartnerReservationRequestSchema,
+    rejectPartnerReservationRequestSchema,
+} from '@todam/shared';
+import type {
+    CancelPartnerReservationRequest,
+    CreatePartnerReservationRequest,
+    RejectPartnerReservationRequest,
+} from '@todam/shared';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { PartnerGuard } from '../../../../common/guards/partner.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
@@ -82,10 +99,12 @@ export class PartnerReservationController {
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('Partner reservation created.')
     @ApiCreatedResponse({ type: CreatePartnerReservationResponseDto })
+    @ApiBody({ type: CreatePartnerReservationDto })
     async createManual(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Body() dto: CreatePartnerReservationDto,
+        @Body(new ZodValidationPipe(createPartnerReservationRequestSchema))
+        dto: CreatePartnerReservationRequest,
     ): Promise<CreatePartnerReservationResponseDto> {
         return this.createUseCase.execute(user.id, storeId, dto);
     }
@@ -119,10 +138,12 @@ export class PartnerReservationController {
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('Reservation rejected.')
     @ApiOkResponse({ type: PartnerReservationStatusResponseDto })
+    @ApiBody({ type: RejectPartnerReservationDto })
     async reject(
         @CurrentUser() user: RequestUser,
         @Param('reservationId') reservationId: string,
-        @Body() dto: RejectPartnerReservationDto,
+        @Body(new ZodValidationPipe(rejectPartnerReservationRequestSchema))
+        dto: RejectPartnerReservationRequest,
     ): Promise<PartnerReservationStatusResponseDto> {
         return this.rejectUseCase.execute(user.id, reservationId, dto);
     }
@@ -132,10 +153,12 @@ export class PartnerReservationController {
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('Reservation canceled.')
     @ApiOkResponse({ type: PartnerReservationStatusResponseDto })
+    @ApiBody({ type: CancelPartnerReservationDto })
     async cancel(
         @CurrentUser() user: RequestUser,
         @Param('reservationId') reservationId: string,
-        @Body() dto: CancelPartnerReservationDto,
+        @Body(new ZodValidationPipe(cancelPartnerReservationRequestSchema))
+        dto: CancelPartnerReservationRequest,
     ): Promise<PartnerReservationStatusResponseDto> {
         return this.cancelUseCase.execute(user.id, reservationId, dto);
     }

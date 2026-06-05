@@ -1,6 +1,8 @@
 /// <reference types="jest" />
 import { HttpStatus } from '@nestjs/common';
-import { ReservationDeliveryMethod, ReservationStatus } from '@prisma/client';
+import { ReservationStatus } from '@prisma/client';
+// dto 입력 타입은 shared(zod) enum 기준 — 컨트롤러 ZodValidationPipe 와 동일 SSOT.
+import { ReservationDeliveryMethod } from '@todam/shared';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { CreateUserReservationUseCase } from './create-user-reservation.use-case';
 

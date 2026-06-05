@@ -8,7 +8,16 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiBody,
+    ApiCreatedResponse,
+    ApiOkResponse,
+    ApiTags,
+} from '@nestjs/swagger';
+import { createUserReservationRequestSchema } from '@todam/shared';
+import type { CreateUserReservationRequest } from '@todam/shared';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../../../common/decorators/response-message.decorator';
@@ -48,9 +57,11 @@ export class UserReservationController {
     @UseGuards(AuthGuard)
     @ResponseMessage('예약이 성공적으로 접수되었습니다.')
     @ApiCreatedResponse({ type: CreateUserReservationResponseDto })
+    @ApiBody({ type: CreateUserReservationDto })
     async create(
         @CurrentUser() user: RequestUser,
-        @Body() dto: CreateUserReservationDto,
+        @Body(new ZodValidationPipe(createUserReservationRequestSchema))
+        dto: CreateUserReservationRequest,
     ): Promise<CreateUserReservationResponseDto> {
         return this.createUseCase.execute(user.id, dto);
     }
