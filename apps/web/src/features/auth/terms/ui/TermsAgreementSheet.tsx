@@ -107,7 +107,7 @@ export function TermsAgreementSheet({ onConfirm, onClose }: TermsAgreementSheetP
             <div className="flex flex-col gap-2">
                 <CheckboxInput
                     bordered
-                    label="필수 항목 모두 체크하기"
+                    label="전체 동의 (선택 포함)"
                     checked={allChecked}
                     onCheckedChange={handleToggleAll}
                 />
@@ -116,7 +116,7 @@ export function TermsAgreementSheet({ onConfirm, onClose }: TermsAgreementSheetP
                     {TERMS.map((term) => (
                         <li key={term.key}>
                             <CheckboxInput
-                                label={term.label}
+                                label={`${term.required ? '[필수]' : '[선택]'} ${term.label}`}
                                 checked={agreement[term.key]}
                                 onCheckedChange={(checked) => handleToggle(term.key, checked)}
                                 action={

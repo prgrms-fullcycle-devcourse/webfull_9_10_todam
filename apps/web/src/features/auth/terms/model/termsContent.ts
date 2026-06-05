@@ -16,10 +16,13 @@ export type TermsItem = {
 // PolicyType enum도 PRIVACY_POLICY | TERMS_OF_SERVICE | MARKETING 뿐이라
 // "위치기반 서비스 이용약관(location)"에 대응하는 필드/타입이 없다.
 // → UI는 디자인대로 3종 유지. 연동 전 contract 보완(재plan) 필요. (plan Risks 참고)
+//
+// 위치정보법 제18조: 위치정보 수집 동의는 다른 필수 동의와 분리된 선택 동의여야 함.
+// location을 required: true로 두면 서비스 이용 자체를 위치 동의와 묶는 것이 되어 법 위반.
 export const TERMS: readonly TermsItem[] = [
     { key: 'service', label: '서비스 이용약관', required: true },
-    { key: 'location', label: '위치기반 서비스 이용약관', required: true },
     { key: 'privacy', label: '개인정보 수집 · 이용 동의', required: true },
+    { key: 'location', label: '위치기반 서비스 이용약관', required: false },
 ] as const;
 
 export type TermsSection = {
