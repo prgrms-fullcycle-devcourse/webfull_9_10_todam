@@ -11,7 +11,16 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiBody,
+    ApiCreatedResponse,
+    ApiOkResponse,
+    ApiTags,
+} from '@nestjs/swagger';
+import { generateTimeSlotsRequestSchema } from '@todam/shared';
+import type { GenerateTimeSlotsRequest } from '@todam/shared';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { PartnerGuard } from '../../../../common/guards/partner.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
@@ -61,6 +70,7 @@ export class TimeslotController {
     @Post('partner/stores/:storeId/time-slots/generate')
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('타임슬롯이 성공적으로 생성되었습니다.')
+    @ApiBody({ type: GenerateTimeSlotsDto })
     @ApiCreatedResponse({
         description: '타임슬롯 자동 생성 성공',
         type: GenerateTimeSlotsResponseDto,
@@ -68,7 +78,7 @@ export class TimeslotController {
     async generateTimeSlots(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Body() dto: GenerateTimeSlotsDto,
+        @Body(new ZodValidationPipe(generateTimeSlotsRequestSchema)) dto: GenerateTimeSlotsRequest,
     ): Promise<GenerateTimeSlotsResponseDto> {
         return this.generateTimeSlotsUseCase.execute(user.id, storeId, dto);
     }
