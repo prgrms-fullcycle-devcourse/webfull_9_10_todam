@@ -1,7 +1,7 @@
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString, Matches } from 'class-validator';
-
-const SLOT_STATUS_VALUES = ['OPEN', 'CLOSED', 'CANCELED'] as const;
+import { TIME_SLOT_STATUS_VALUES } from '../../domain/entities/store-time-slot.entity';
+import type { TimeSlotStatus } from '../../domain/entities/store-time-slot.entity';
 
 export class ListTimeSlotsQueryDto {
     @ApiPropertyOptional({ example: '2026-06-10' })
@@ -22,10 +22,12 @@ export class ListTimeSlotsQueryDto {
     @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'endDate는 YYYY-MM-DD 형식이어야 합니다.' })
     endDate?: string;
 
-    @ApiPropertyOptional({ enum: SLOT_STATUS_VALUES })
+    @ApiPropertyOptional({ enum: TIME_SLOT_STATUS_VALUES })
     @IsOptional()
-    @IsIn(SLOT_STATUS_VALUES, { message: 'status는 OPEN, CLOSED, CANCELED 중 하나여야 합니다.' })
-    status?: (typeof SLOT_STATUS_VALUES)[number];
+    @IsIn(TIME_SLOT_STATUS_VALUES, {
+        message: 'status는 OPEN, CLOSED, CANCELED 중 하나여야 합니다.',
+    })
+    status?: TimeSlotStatus;
 }
 
 export class TimeSlotItemDto {

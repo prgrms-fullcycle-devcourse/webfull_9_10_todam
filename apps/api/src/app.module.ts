@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from './database/database.module';
+import { AccessModule } from './common/access/access.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { StoreModule } from './modules/store/store.module';
@@ -11,6 +12,7 @@ import { RedisModule } from './redis/redis.module';
 @Module({
     imports: [
         DatabaseModule,
+        AccessModule,
         RedisModule,
         AuthModule,
         HealthModule,
