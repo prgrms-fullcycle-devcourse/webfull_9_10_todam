@@ -1,62 +1,33 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../database/prisma.service';
+import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
+import { ProgramRepository } from '../../domain/repositories/program.repository';
+import { PartnerStoreProgramsReader } from '../../domain/repositories/program-readers';
 import type { ReorderPartnerStoreProgramsDto } from '../../presentation/dto/reorder-partner-store-programs.dto';
 import type { ListPartnerStoreProgramsResponseDto } from '../../presentation/dto/list-partner-store-programs.dto';
 
 @Injectable()
 export class ReorderPartnerStoreProgramsUseCase {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly ownership: StoreOwnershipService,
+        private readonly programs: ProgramRepository,
+        private readonly reader: PartnerStoreProgramsReader,
+    ) {}
 
     async execute(
         userId: string,
         storeId: string,
         dto: ReorderPartnerStoreProgramsDto,
     ): Promise<ListPartnerStoreProgramsResponseDto> {
-        // PartnerGuard 통과 시 승인된 파트너가 보장되지만, partnerId 식별을 위해 조회한다.
-        const partner = await this.prisma.partner.findUnique({
-            where: { userId },
-            select: { id: true },
+        // 공방 존재(404) + 소유 권한(403) 검증. 파트너센터 문구는 공방 단위 접근 권한 기준.
+        await this.ownership.verify(userId, storeId, {
+            notFound: 'STORE_NOT_FOUND',
+            forbiddenMessage: '해당 공방에 대한 접근 권한이 없습니다.',
         });
-
-        if (!partner) {
-            throw new BusinessException(
-                'FORBIDDEN',
-                '해당 공방에 대한 접근 권한이 없습니다.',
-                HttpStatus.FORBIDDEN,
-            );
-        }
-
-        const store = await this.prisma.store.findUnique({
-            where: { id: storeId },
-            select: { id: true, partnerId: true },
-        });
-
-        // 미존재·삭제 공방 → 404
-        if (!store) {
-            throw new BusinessException(
-                'STORE_NOT_FOUND',
-                '공방을 찾을 수 없습니다.',
-                HttpStatus.NOT_FOUND,
-            );
-        }
-
-        // 소유 권한 검증: 토큰 파트너와 공방 partner_id 불일치 → 403
-        if (store.partnerId !== partner.id) {
-            throw new BusinessException(
-                'FORBIDDEN',
-                '해당 공방에 대한 접근 권한이 없습니다.',
-                HttpStatus.FORBIDDEN,
-            );
-        }
 
         // 검증: 요청 id 집합이 해당 공방 전체 program 집합과 정확히 일치해야 한다.
         // (누락·중복·타 공방 ID 섞임 → 400 INVALID_PROGRAM_ORDER)
-        const existing = await this.prisma.program.findMany({
-            where: { storeId: store.id },
-            select: { id: true },
-        });
-        const existingIds = new Set(existing.map((p) => p.id));
+        const existingIds = new Set(await this.programs.listIds(storeId));
 
         const requestedIds = dto.programs.map((p) => p.id);
         const requestedIdSet = new Set(requestedIds);
@@ -73,41 +44,11 @@ export class ReorderPartnerStoreProgramsUseCase {
             );
         }
 
-        // 트랜잭션: sortOrder 일괄 갱신, 실패 시 전체 rollback.
-        await this.prisma.$transaction(
-            dto.programs.map((program) =>
-                this.prisma.program.update({
-                    where: { id: program.id },
-                    data: { sortOrder: program.sortOrder },
-                }),
-            ),
+        await this.programs.reorder(
+            dto.programs.map((program) => ({ id: program.id, sortOrder: program.sortOrder })),
         );
 
         // 재정렬된 전체 목록을 GET use-case 와 동일하게 재조회하여 반환한다.
-        const programs = await this.prisma.program.findMany({
-            where: { storeId: store.id },
-            orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-            select: {
-                id: true,
-                title: true,
-                price: true,
-                durationMinutes: true,
-                difficulty: true,
-                leadTimeDays: true,
-                status: true,
-            },
-        });
-
-        return {
-            programs: programs.map((program) => ({
-                id: program.id,
-                title: program.title,
-                price: program.price,
-                durationMinutes: program.durationMinutes,
-                difficulty: program.difficulty,
-                leadTimeDays: program.leadTimeDays,
-                status: program.status,
-            })),
-        };
+        return this.reader.execute(storeId);
     }
 }

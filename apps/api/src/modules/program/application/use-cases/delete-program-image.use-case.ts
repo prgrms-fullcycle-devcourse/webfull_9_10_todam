@@ -1,12 +1,14 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../database/prisma.service';
 import { S3Service } from '../../../../common/s3/s3.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
+import { ProgramRepository } from '../../domain/repositories/program.repository';
+import { ProgramImageRepository } from '../../domain/repositories/program-image.repository';
 
 @Injectable()
 export class DeleteProgramImageUseCase {
     constructor(
-        private readonly prisma: PrismaService,
+        private readonly programs: ProgramRepository,
+        private readonly images: ProgramImageRepository,
         private readonly s3: S3Service,
     ) {}
 
@@ -17,14 +19,7 @@ export class DeleteProgramImageUseCase {
         imageId: string,
     ): Promise<void> {
         // 소유권 검증: program → store → partner.userId.
-        const program = await this.prisma.program.findUnique({
-            where: { id: programId },
-            select: {
-                id: true,
-                storeId: true,
-                store: { select: { partner: { select: { userId: true } } } },
-            },
-        });
+        const program = await this.programs.findOwnership(programId);
 
         if (!program || program.storeId !== storeId) {
             throw new BusinessException(
@@ -34,7 +29,7 @@ export class DeleteProgramImageUseCase {
             );
         }
 
-        if (program.store.partner.userId !== userId) {
+        if (program.ownerUserId !== userId) {
             throw new BusinessException(
                 'FORBIDDEN',
                 '공방 소유 권한이 없습니다.',
@@ -43,10 +38,7 @@ export class DeleteProgramImageUseCase {
         }
 
         // 이미지가 해당 프로그램 소속인지 확인.
-        const image = await this.prisma.programImage.findFirst({
-            where: { id: imageId, programId },
-            select: { id: true, imageUrl: true, thumbnailUrl: true },
-        });
+        const image = await this.images.findByProgramAndId(programId, imageId);
 
         if (!image) {
             throw new BusinessException(
@@ -59,6 +51,6 @@ export class DeleteProgramImageUseCase {
         // S3 원본·썸네일 삭제 → 실패해도 row 삭제는 진행(고아 row 방지).
         await this.s3.deleteImageObjects([image.imageUrl, image.thumbnailUrl]);
 
-        await this.prisma.programImage.delete({ where: { id: imageId } });
+        await this.images.delete(imageId);
     }
 }
