@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import { ProgramStatus } from '@todam/shared';
 import { Button } from '@todam/ui';
@@ -10,13 +10,14 @@ import {
     PartnerClassListItem,
     usePartnerPrograms,
 } from '@/features/program/list';
+import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { EmptyState } from '@/shared/ui';
 
 // GET /partner/stores/:storeId/programs 연동 완료
 export default function PartnerClassesPage() {
     const router = useRouter();
-    const storeId = useSearchParams().get('storeId') ?? '';
+    const storeId = useCurrentStoreId();
     const { data, isLoading, isError } = usePartnerPrograms(storeId);
 
     // DRAFT(작성 중)는 목록 미표기. BE가 sortOrder asc로 선정렬 → filter는 순서 보존하므로 클라 재정렬 불필요.
@@ -24,8 +25,10 @@ export default function PartnerClassesPage() {
 
     // 라우트 헤더(클래스 관리) 우측 슬롯에 메뉴 주입.
     useHeaderOverride({
-        rightAction: <ClassListHeaderMenu programCount={programs.length} storeId={storeId} />,
+        rightAction: <ClassListHeaderMenu programCount={programs.length} />,
     });
+
+    if (!storeId) return null;
 
     return (
         <main className="flex-1 overflow-y-auto px-4 pb-16">
@@ -49,7 +52,7 @@ export default function PartnerClassesPage() {
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push(`/partner/classes/new?storeId=${storeId}`)}
+                            onClick={() => router.push('/partner/classes/new')}
                         >
                             클래스 등록하기
                         </Button>
@@ -60,11 +63,7 @@ export default function PartnerClassesPage() {
             {!isLoading && !isError && programs.length > 0 && (
                 <section className="flex flex-col gap-3 py-2">
                     {programs.map((program) => (
-                        <PartnerClassListItem
-                            key={program.id}
-                            program={program}
-                            storeId={storeId}
-                        />
+                        <PartnerClassListItem key={program.id} program={program} />
                     ))}
                 </section>
             )}

@@ -1,13 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import { ProgramStatus, formatPrice } from '@todam/shared';
 import { Button, BottomBar, Modal } from '@todam/ui';
 
 import { usePartnerPrograms, type PartnerProgramListItemView } from '@/features/program/list';
 import { ClassOrderCardItem, useReorderPrograms } from '@/features/program/order';
+import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
 import { useLeaveGuard } from '@/shared/lib/useLeaveGuard';
 import { useModal, useToast } from '@/shared/model';
 
@@ -31,7 +32,7 @@ function sameOrder(a: PartnerProgramListItemView[], b: PartnerProgramListItemVie
 // 로컬 헤더로 구현 (routeConfig 미등록 → 전역 Header 는 visible:false 로 숨김).
 export default function PartnerClassOrderPage() {
     const router = useRouter();
-    const storeId = useSearchParams().get('storeId') ?? '';
+    const storeId = useCurrentStoreId();
     const { push } = useToast();
     const { open, close } = useModal();
 
@@ -56,7 +57,7 @@ export default function PartnerClassOrderPage() {
     // dirty = 현재 편집 순서가 초기 로드 순서와 다른지.
     const dirty = order.length > 0 && !sameOrder(order, initial);
 
-    const goList = () => router.push(`/partner/classes?storeId=${storeId}`);
+    const goList = () => router.push('/partner/classes');
 
     // dirty 이탈 가드: 취소/브라우저 뒤로가기 시 변경 손실 확인 모달
     const openLeaveConfirm = () => {
@@ -97,6 +98,8 @@ export default function PartnerClassOrderPage() {
             },
         });
     };
+
+    if (!storeId) return null;
 
     return (
         <div className="flex flex-1 flex-col overflow-hidden bg-background">
