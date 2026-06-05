@@ -53,13 +53,15 @@ export function MyPageHub() {
         router.push('/login');
     };
 
-    // 내 정보 섹션 메뉴 rows — 파트너 여부로 분기 (D6/D8): 파트너=센터 이동, 비파트너=공방 등록
+    // 내 정보 섹션 메뉴 rows — 라벨만 isPartner로 분기(D6/D8). 목적지는 /partner 단일,
+    // 비/미승인 파트너 redirect는 AppShell 온보딩 게이트가 처리(리뷰 #190 반영).
     const myInfoRows = [
         { label: '개인 정보 수정', onClick: () => router.push('/my/profile') },
         { label: '찜한 공방 목록', onClick: () => router.push('/my/favorites') },
-        isPartner
-            ? { label: '파트너 센터 이동하기', onClick: () => router.push('/partner') }
-            : { label: '공방 등록하기', onClick: () => router.push('/apply') },
+        {
+            label: isPartner ? '파트너 센터 이동하기' : '공방 등록하기',
+            onClick: () => router.push('/partner'),
+        },
     ];
 
     return (
