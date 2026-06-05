@@ -15,16 +15,22 @@ import {
     ApiBody,
     ApiCreatedResponse,
     ApiOkResponse,
+    ApiQuery,
     ApiTags,
 } from '@nestjs/swagger';
+import { ReservationStatus } from '@prisma/client';
 import {
     cancelPartnerReservationRequestSchema,
     createPartnerReservationRequestSchema,
+    listPartnerReservationsQuerySchema,
+    partnerReservationCalendarQuerySchema,
     rejectPartnerReservationRequestSchema,
 } from '@todam/shared';
 import type {
     CancelPartnerReservationRequest,
     CreatePartnerReservationRequest,
+    ListPartnerReservationsQuery,
+    PartnerReservationCalendarQuery,
     RejectPartnerReservationRequest,
 } from '@todam/shared';
 import { ZodValidationPipe } from 'nestjs-zod';
@@ -46,9 +52,7 @@ import {
     CreatePartnerReservationDto,
     CreatePartnerReservationResponseDto,
     GetPartnerReservationDetailResponseDto,
-    ListPartnerReservationsQueryDto,
     ListPartnerReservationsResponseDto,
-    PartnerReservationCalendarQueryDto,
     PartnerReservationCalendarResponseDto,
     PartnerReservationStatusResponseDto,
     RejectPartnerReservationDto,
@@ -74,10 +78,13 @@ export class PartnerReservationController {
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('Partner reservation calendar loaded.')
     @ApiOkResponse({ type: PartnerReservationCalendarResponseDto })
+    @ApiQuery({ name: 'year', type: Number, example: 2026 })
+    @ApiQuery({ name: 'month', type: Number, example: 6 })
     async calendar(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Query() query: PartnerReservationCalendarQueryDto,
+        @Query(new ZodValidationPipe(partnerReservationCalendarQuerySchema))
+        query: PartnerReservationCalendarQuery,
     ): Promise<PartnerReservationCalendarResponseDto> {
         return this.getCalendarUseCase.execute(user.id, storeId, query);
     }
@@ -87,10 +94,16 @@ export class PartnerReservationController {
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('Partner reservations loaded.')
     @ApiOkResponse({ type: ListPartnerReservationsResponseDto })
+    @ApiQuery({ name: 'date', type: String, example: '2026-06-01' })
+    @ApiQuery({ name: 'status', enum: ReservationStatus, required: false })
+    @ApiQuery({ name: 'programId', type: String, required: false })
+    @ApiQuery({ name: 'cursor', type: String, required: false })
+    @ApiQuery({ name: 'limit', type: Number, required: false, example: 20 })
     async list(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Query() query: ListPartnerReservationsQueryDto,
+        @Query(new ZodValidationPipe(listPartnerReservationsQuerySchema))
+        query: ListPartnerReservationsQuery,
     ): Promise<ListPartnerReservationsResponseDto> {
         return this.listUseCase.execute(user.id, storeId, query);
     }

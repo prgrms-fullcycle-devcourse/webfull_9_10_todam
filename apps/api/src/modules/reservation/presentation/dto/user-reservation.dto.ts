@@ -1,8 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { ReservationStatus } from '@prisma/client';
-import { createUserReservationRequestSchema } from '@todam/shared';
+import { createUserReservationRequestSchema, getMyReservationsQuerySchema } from '@todam/shared';
 import { createZodDto } from 'nestjs-zod';
 
 // 요청 SSOT = @todam/shared(zod). 검증은 컨트롤러 param ZodValidationPipe.
@@ -34,27 +32,8 @@ export class CreateUserReservationResponseDto {
 
 const RESERVATION_STATUS_VALUES = Object.values(ReservationStatus);
 
-export class GetMyReservationsQueryDto {
-    @ApiPropertyOptional({
-        enum: RESERVATION_STATUS_VALUES,
-        description: 'ReservationStatus 필터',
-    })
-    @IsOptional()
-    @IsIn(RESERVATION_STATUS_VALUES)
-    status?: ReservationStatus;
-
-    @ApiPropertyOptional({ description: '이전 응답의 nextCursor (예약 id)' })
-    @IsOptional()
-    @IsString()
-    cursor?: string;
-
-    @ApiPropertyOptional({ description: '한 번에 가져올 항목 수 (기본 20)', minimum: 1 })
-    @IsOptional()
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    limit?: number;
-}
+// 요청 SSOT = @todam/shared(zod). 검증은 컨트롤러 param ZodValidationPipe.
+export class GetMyReservationsQueryDto extends createZodDto(getMyReservationsQuerySchema) {}
 
 export class MyReservationItemDto {
     @ApiProperty() id!: string;

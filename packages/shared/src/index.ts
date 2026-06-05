@@ -52,6 +52,7 @@ export * from './contracts/reservation-list';
 export * from './contracts/reservation-calendar';
 export * from './contracts/reservation-detail';
 export * from './contracts/reservation-create';
+export * from './contracts/reservation-query';
 export * from './contracts/review-write';
 export * from './contracts/review-actions';
 export * from './contracts/delivery-edit';

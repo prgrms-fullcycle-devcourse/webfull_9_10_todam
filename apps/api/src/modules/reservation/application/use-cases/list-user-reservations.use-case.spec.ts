@@ -1,5 +1,7 @@
 /// <reference types="jest" />
 import { ArtworkStatus, ReservationStatus } from '@prisma/client';
+// 쿼리 입력 status 는 shared(zod) enum 기준 — 컨트롤러 ZodValidationPipe 와 동일 SSOT.
+import { ReservationStatus as SharedReservationStatus } from '@todam/shared';
 import { ListUserReservationsUseCase } from './list-user-reservations.use-case';
 import { calcDisplayState } from '../../domain/display-state.util';
 import type { UserReservationListRow } from '../../domain/repositories/user-reservation.repository';
@@ -67,7 +69,10 @@ describe('ListUserReservationsUseCase', () => {
     it('passes status filter to repository', async () => {
         findMyList.mockResolvedValue([]);
 
-        await useCase.execute(USER_ID, { status: ReservationStatus.IN_PROGRESS, limit: 20 });
+        await useCase.execute(USER_ID, {
+            status: SharedReservationStatus.IN_PROGRESS,
+            limit: 20,
+        });
 
         expect(findMyList).toHaveBeenCalledWith(USER_ID, {
             status: ReservationStatus.IN_PROGRESS,

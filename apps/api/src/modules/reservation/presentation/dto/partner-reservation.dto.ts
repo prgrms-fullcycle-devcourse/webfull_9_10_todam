@@ -1,32 +1,18 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Matches, Max, Min } from 'class-validator';
-import { ReservationStatus } from '@prisma/client';
+import { ApiProperty } from '@nestjs/swagger';
 import {
     cancelPartnerReservationRequestSchema,
     createPartnerReservationRequestSchema,
+    listPartnerReservationsQuerySchema,
+    partnerReservationCalendarQuerySchema,
     rejectPartnerReservationRequestSchema,
 } from '@todam/shared';
 import { createZodDto } from 'nestjs-zod';
 import type { PartnerReservationAction } from '../../domain/reservation-actions';
 
-const RESERVATION_STATUS_VALUES = Object.values(ReservationStatus);
-
-export class PartnerReservationCalendarQueryDto {
-    @ApiProperty({ example: 2026 })
-    @Type(() => Number)
-    @IsInt()
-    @Min(1900)
-    @Max(9999)
-    year!: number;
-
-    @ApiProperty({ example: 6 })
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    @Max(12)
-    month!: number;
-}
+// 요청 SSOT = @todam/shared(zod). 검증은 컨트롤러 param ZodValidationPipe.
+export class PartnerReservationCalendarQueryDto extends createZodDto(
+    partnerReservationCalendarQuerySchema,
+) {}
 
 export class PartnerReservationCalendarDayDto {
     @ApiProperty() date!: string;
@@ -43,35 +29,9 @@ export class PartnerReservationCalendarResponseDto {
     days!: PartnerReservationCalendarDayDto[];
 }
 
-export class ListPartnerReservationsQueryDto {
-    @ApiProperty({ example: '2026-06-01' })
-    @IsString()
-    @Matches(/^\d{4}-\d{2}-\d{2}$/)
-    date!: string;
-
-    @ApiPropertyOptional({ enum: RESERVATION_STATUS_VALUES })
-    @IsOptional()
-    @IsIn(RESERVATION_STATUS_VALUES)
-    status?: ReservationStatus;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    programId?: string;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    cursor?: string;
-
-    @ApiPropertyOptional({ default: 20 })
-    @IsOptional()
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    @Max(100)
-    limit?: number;
-}
+export class ListPartnerReservationsQueryDto extends createZodDto(
+    listPartnerReservationsQuerySchema,
+) {}
 
 export class PartnerReservationListItemDto {
     @ApiProperty() id!: string;
