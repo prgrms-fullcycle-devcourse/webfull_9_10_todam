@@ -118,3 +118,33 @@ export const deleteReservationRestrictionsRequestSchema = z.object({
 export type DeleteReservationRestrictionsRequest = z.infer<
     typeof deleteReservationRestrictionsRequestSchema
 >;
+
+// ─── 타임슬롯 조회 쿼리 (SSOT) ───────────────────────────────────────
+// @Query 문자열 도착 — 숫자는 z.coerce. unknown 키 strip(기본). BE 컨트롤러
+// param ZodValidationPipe 가 검증.
+
+const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+// GET /partner/stores/:storeId/time-slots
+export const listTimeSlotsQuerySchema = z.object({
+    date: z.string().regex(dateRegex, 'date는 YYYY-MM-DD 형식이어야 합니다.').optional(),
+    startDate: z.string().regex(dateRegex, 'startDate는 YYYY-MM-DD 형식이어야 합니다.').optional(),
+    endDate: z.string().regex(dateRegex, 'endDate는 YYYY-MM-DD 형식이어야 합니다.').optional(),
+    status: z.nativeEnum(StoreTimeSlotStatus).optional(),
+});
+export type ListTimeSlotsQuery = z.infer<typeof listTimeSlotsQuerySchema>;
+
+// GET /partner/stores/:storeId/programs/reservation-counts
+export const programReservationCountsQuerySchema = z.object({
+    date: z.string().regex(dateRegex, 'date는 YYYY-MM-DD 형식이어야 합니다.'),
+    // 콤마 구분 슬롯 id 목록(옵션). 미지정 시 date 전체 슬롯.
+    timeSlotIds: z.string().optional(),
+});
+export type ProgramReservationCountsQuery = z.infer<typeof programReservationCountsQuerySchema>;
+
+// GET /programs/:programId/available-slots
+export const availableSlotsQuerySchema = z.object({
+    year: z.coerce.number().int().min(2000).max(2100),
+    month: z.coerce.number().int().min(1).max(12),
+});
+export type AvailableSlotsQuery = z.infer<typeof availableSlotsQuerySchema>;
