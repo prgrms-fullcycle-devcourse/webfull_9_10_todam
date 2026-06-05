@@ -58,6 +58,14 @@ export function BusinessInfoEditScreen({ storeId }: { storeId: string }) {
         );
     }
 
+    if (!store.businessDocument) {
+        return (
+            <div className="flex flex-1 items-center justify-center py-20 text-sm text-foreground-tertiary">
+                사업자 정보가 없어 수정할 수 없어요.
+            </div>
+        );
+    }
+
     return <BusinessEditInner storeId={storeId} store={store} />;
 }
 
@@ -67,14 +75,13 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
     const doc = store.businessDocument;
 
     const baseline: BusinessForm = {
-        // BE는 하이픈 없는 10자리 저장 → 폼 검증(businessNumberSchema=000-00-00000)에 맞춰 하이픈 포맷.
         businessNumber: formatBusinessNumber(doc.businessNumber),
         businessName: doc.businessName,
         ownerName: doc.ownerName,
         businessAddress: doc.businessAddress,
         email: doc.email,
-        // 한계: GET /partner/stores/{id} 응답(businessDocument)에 documentUrl 미포함 → prefill 불가.
-        // baseline=null 유지(재업로드만). detail 응답에 documentUrl 추가는 별도 작업.
+        // 서류 이미지 prefill 보류: 사업자서류 S3 객체 비공개(403) → raw URL 표시 불가.
+        // TODO: 표시하려면 presigned GET 발급 필요(별도 작업). baseline=null → 재업로드만.
         documentUrl: null,
     };
     const { form, patch, isDirty } = useEditableForm(baseline);
@@ -87,7 +94,6 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
     // 업로드한 파일의 로컬 미리보기 URL. 이미지일 때만 썸네일(PDF 는 라벨 유지). (등록 BusinessStep 동일 패턴)
     const [docPreview, setDocPreview] = useState<{ src: string; name: string } | null>(null);
 
-    // 전역 Header override: 타이틀 + 뒤로가기(상세 복귀). 우측 액션 없음.
     useHeaderOverride({
         title: '사업자 정보 수정',
         onBack: () => router.back(),
@@ -138,7 +144,7 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
         patch({ documentUrl: null });
     };
 
-    // 이미지 파일이면 로컬 썸네일(src) 표시, PDF 등은 파일명 라벨 유지. (등록 BusinessStep 동일)
+    // 이미지 파일이면 로컬 썸네일(src) 표시, PDF 등은 파일명 라벨 유지
     const documentItems: ImageUploadGridItem[] = form.documentUrl
         ? [
               {
@@ -160,13 +166,12 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
                 ownerName: form.ownerName,
                 businessAddress: form.businessAddress,
                 email: form.email,
-                // 재첨부한 S3 documentUrl(BE 가 objectExists 검증·저장). null 이면 미변경/제거.
                 documentUrl: form.documentUrl,
             });
             push({ message: '사업자 정보가 수정되어 재심사를 요청했어요.' });
-            // 검수중 화면이 읽는 onboarding/review 쿼리를 fresh 시킨 뒤 네비 → 반려 깜빡임 차단.
+
             await refreshOnboarding();
-            router.push(`/partner/stores/${storeId}`);
+            router.push('/partner/studio');
         } catch (err) {
             push({
                 message: err instanceof ApiError ? err.message : '저장 중 오류가 발생했어요.',
