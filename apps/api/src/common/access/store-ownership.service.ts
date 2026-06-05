@@ -1,4 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { StoreStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { BusinessException } from '../exceptions/business.exception';
 
@@ -9,6 +10,7 @@ import { BusinessException } from '../exceptions/business.exception';
 export interface OwnedStore {
     id: string;
     partnerId: string;
+    status: StoreStatus;
     maxCapacityPerSlot: number | null;
     reservationIntervalMinutes: number | null;
 }
@@ -26,6 +28,7 @@ export class StoreOwnershipService {
             where: { id: storeId },
             select: {
                 id: true,
+                status: true,
                 maxCapacityPerSlot: true,
                 reservationIntervalMinutes: true,
                 partner: { select: { id: true, userId: true } },
@@ -51,6 +54,7 @@ export class StoreOwnershipService {
         return {
             id: store.id,
             partnerId: store.partner.id,
+            status: store.status,
             maxCapacityPerSlot: store.maxCapacityPerSlot,
             reservationIntervalMinutes: store.reservationIntervalMinutes,
         };
