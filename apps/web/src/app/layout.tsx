@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { AuthTokenProvider } from '@/features/auth/login';
 import { MswProvider } from '../mocks/MswProvider';
 import { AppModal, AppSheet, AppToast } from '../shared/ui';
 import { AppShell } from './AppShell';
@@ -29,12 +30,14 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 </div>
                 <MswProvider>
                     <QueryProvider>
-                        <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-background">
-                            <AppShell>{children}</AppShell>
-                            <AppModal />
-                            <AppSheet />
-                            <AppToast />
-                        </div>
+                        <AuthTokenProvider>
+                            <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-background">
+                                <AppShell>{children}</AppShell>
+                                <AppModal />
+                                <AppSheet />
+                                <AppToast />
+                            </div>
+                        </AuthTokenProvider>
                     </QueryProvider>
                 </MswProvider>
             </body>
