@@ -4,9 +4,10 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { ProgramStatus, formatPrice } from '@todam/shared';
+import type { PartnerProgramListItem } from '@todam/shared';
 import { Button, BottomBar, Modal } from '@todam/ui';
 
-import { usePartnerPrograms, type PartnerProgramListItemView } from '@/features/program/list';
+import { usePartnerPrograms } from '@/features/program/list';
 import { ClassOrderCardItem, useReorderPrograms } from '@/features/program/order';
 import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
 import { useLeaveGuard } from '@/shared/lib/useLeaveGuard';
@@ -23,7 +24,7 @@ function swap<T>(list: T[], a: number, b: number): T[] {
 }
 
 // 두 program 배열의 id 순서가 동일한지
-function sameOrder(a: PartnerProgramListItemView[], b: PartnerProgramListItemView[]): boolean {
+function sameOrder(a: PartnerProgramListItem[], b: PartnerProgramListItem[]): boolean {
     if (a.length !== b.length) return false;
     return a.every((p, i) => p.id === b[i]?.id);
 }
@@ -46,7 +47,7 @@ export default function PartnerClassOrderPage() {
     );
 
     // 로컬 편집 순서 초기 로드 시 initial 로 시드(키로 동기화)
-    const [order, setOrder] = useState<PartnerProgramListItemView[]>([]);
+    const [order, setOrder] = useState<PartnerProgramListItem[]>([]);
     const [seededKey, setSeededKey] = useState<string>('');
     const initialKey = initial.map((p) => p.id).join(',');
     if (initialKey && initialKey !== seededKey) {
