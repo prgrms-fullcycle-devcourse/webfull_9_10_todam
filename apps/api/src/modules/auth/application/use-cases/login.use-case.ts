@@ -1,8 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import type { Response } from 'express';
+import type { LoginRequest, LoginResponse } from '@todam/shared';
 import { UserRepository } from '../../domain/repositories/user.repository';
-import type { LoginDto, LoginResponseDto } from '../../presentation/dto/login.dto';
 import { TokenService } from '../token.service';
 
 // 이메일/비밀번호 오류 모두 동일한 메시지 → 어느 쪽이 틀렸는지 노출하지 않음
@@ -15,7 +15,7 @@ export class LoginUseCase {
         private readonly tokenService: TokenService,
     ) {}
 
-    async execute(dto: LoginDto, res: Response): Promise<LoginResponseDto> {
+    async execute(dto: LoginRequest, res: Response): Promise<LoginResponse> {
         const user = await this.users.findByEmail(dto.email);
 
         // 존재하지 않거나, 소셜 전용 가입(password null)이거나, 탈퇴한 경우

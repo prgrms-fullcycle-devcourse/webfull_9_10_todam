@@ -3,6 +3,6 @@ export { KakaoLoginButton } from './ui/KakaoLoginButton';
 export { GoogleLoginButton } from './ui/GoogleLoginButton';
 export { AuthProvider } from './ui/AuthProvider';
 export { useAuthStore, connectAuthTokenGetter } from './model/authStore';
-export type { LoginResult, LoginUser, EmailLoginInput } from './api';
+export type { LoginResponse, LoginUser, EmailLoginInput } from './api';
 export { emailLogin, kakaoLogin, googleLogin } from './api';
 export { buildKakaoAuthUrl, buildGoogleAuthUrl } from './oauth';

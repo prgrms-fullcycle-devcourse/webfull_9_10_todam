@@ -29,6 +29,7 @@
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "ioredis": "^5.11.0",
+    "nestjs-zod": "^5.4.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.21.0",

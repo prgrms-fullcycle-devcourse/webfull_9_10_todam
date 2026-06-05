@@ -37,8 +37,8 @@ export const loginUserSchema = z.object({
 });
 export type LoginUser = z.infer<typeof loginUserSchema>;
 
-export const loginResultSchema = z.object({
+export const loginResponseSchema = z.object({
     accessToken: z.string(),
     user: loginUserSchema,
 });
-export type LoginResult = z.infer<typeof loginResultSchema>;
+export type LoginResponse = z.infer<typeof loginResponseSchema>;

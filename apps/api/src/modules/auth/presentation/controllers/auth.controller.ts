@@ -1,6 +1,9 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { loginRequestSchema } from '@todam/shared';
+import type { LoginRequest, LoginResponse } from '@todam/shared';
 import type { Request, Response } from 'express';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import type { RequestUser } from '../../../../common/types/request-user.type';
@@ -14,7 +17,7 @@ import { ResetPasswordUseCase } from '../../application/use-cases/reset-password
 import { SendEmailCodeUseCase } from '../../application/use-cases/send-email-code.use-case';
 import { SignupUseCase } from '../../application/use-cases/signup.use-case';
 import { VerifyEmailCodeUseCase } from '../../application/use-cases/verify-email-code.use-case';
-import { LoginDto, LoginResponseDto } from '../dto/login.dto';
+import { LoginRequestDto, LoginResponseDto } from '../dto/login.dto';
 import { OAuthCodeDto } from '../dto/oauth-code.dto';
 import { OAuthResponseDto } from '../dto/oauth-response.dto';
 import { ResetPasswordRequestDto } from '../dto/reset-password-request.dto';
@@ -61,11 +64,12 @@ export class AuthController {
 
     @Post('login')
     @HttpCode(HttpStatus.OK)
+    @ApiBody({ type: LoginRequestDto })
     @ApiOkResponse({ description: '로그인 성공', type: LoginResponseDto })
     async login(
-        @Body() dto: LoginDto,
+        @Body(new ZodValidationPipe(loginRequestSchema)) dto: LoginRequest,
         @Res({ passthrough: true }) res: Response,
-    ): Promise<LoginResponseDto> {
+    ): Promise<LoginResponse> {
         return this.loginUseCase.execute(dto, res);
     }
 
@@ -95,7 +99,9 @@ export class AuthController {
 
     @Post('password/reset-request')
     @HttpCode(HttpStatus.OK)
-    @ApiOkResponse({ description: '비밀번호 재설정 이메일 발송 (이메일 존재 여부와 무관하게 200 반환)' })
+    @ApiOkResponse({
+        description: '비밀번호 재설정 이메일 발송 (이메일 존재 여부와 무관하게 200 반환)',
+    })
     async resetPasswordRequest(@Body() dto: ResetPasswordRequestDto): Promise<void> {
         await this.resetPasswordRequestUseCase.execute(dto.email);
     }
