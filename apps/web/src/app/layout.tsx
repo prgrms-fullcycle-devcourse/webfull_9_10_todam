@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 
-import { AuthProvider } from '@/features/auth/login';
 import { SuspendedStoreGate } from '@/features/store/switch';
 
 import { MswProvider } from '../mocks/MswProvider';
 import { AppModal, AppSheet, AppToast } from '../shared/ui';
 import { AppShell } from './AppShell';
+import { AuthProvider } from './providers/AuthProvider';
 import { QueryProvider } from './providers/QueryProvider';
 
 import '../styles/globals.css';

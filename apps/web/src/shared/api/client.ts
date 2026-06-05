@@ -20,6 +20,13 @@ function resolveUrl(path: string): string {
 }
 
 type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };
+type ApiErrorHandler = (error: ApiError) => void;
+
+let apiErrorHandler: ApiErrorHandler | null = null;
+
+export function setApiErrorHandler(handler: ApiErrorHandler): void {
+    apiErrorHandler = handler;
+}
 
 // 성공 시 data 만 반환, 실패 시 ApiError throw. 봉투 언래핑 단일 지점.
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -39,7 +46,9 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     const json = (await res.json()) as ApiSuccessResponse<T> | ApiErrorResponse;
 
     if (!res.ok || json.error !== null) {
-        throw new ApiError(json as ApiErrorResponse);
+        const error = new ApiError(json as ApiErrorResponse);
+        apiErrorHandler?.(error);
+        throw error;
     }
 
     return (json as ApiSuccessResponse<T>).data;
