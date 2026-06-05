@@ -35,4 +35,12 @@ export abstract class TimeslotSupportReader {
 
     /** [program] programId → title 매핑(집계 응답 이름 표시용). */
     abstract findProgramNames(programIds: string[]): Promise<Map<string, string>>;
+
+    /**
+     * [program] 공개 조회용: ACTIVE 프로그램의 소속 공방 id·정원(maxCapacityPerSlot).
+     * 미존재 또는 비ACTIVE면 null(→ 404). available-slots(비소유자 조회)에서 사용.
+     */
+    abstract findActiveProgramStore(
+        programId: string,
+    ): Promise<{ storeId: string; maxCapacityPerSlot: number | null } | null>;
 }

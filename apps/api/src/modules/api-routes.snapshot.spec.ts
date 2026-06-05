@@ -424,6 +424,13 @@ describe('API route baseline', () => {
                 path: '/partner/stores/:storeId/programs/reservation-counts',
                 guards: ['AuthGuard', 'PartnerGuard'],
             },
+            {
+                controller: 'TimeslotController',
+                handler: 'getProgramAvailableSlots',
+                method: 'GET',
+                path: '/programs/:programId/available-slots',
+                guards: ['AuthGuard'],
+            },
         ]);
     });
 });
