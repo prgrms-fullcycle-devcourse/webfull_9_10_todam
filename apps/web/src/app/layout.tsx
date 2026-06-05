@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { SuspendedStoreGate } from '@/features/store/switch';
+
 import { MswProvider } from '../mocks/MswProvider';
 import { AppModal, AppSheet, AppToast } from '../shared/ui';
 import { AppShell } from './AppShell';
@@ -34,6 +36,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
                             <AppModal />
                             <AppSheet />
                             <AppToast />
+                            <SuspendedStoreGate />
                         </div>
                     </QueryProvider>
                 </MswProvider>
