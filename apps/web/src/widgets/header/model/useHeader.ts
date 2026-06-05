@@ -23,7 +23,6 @@ const routeConfig: Record<string, HeaderConfig> = {
     '/my': { type: 'main', title: '마이' },
     '/my/reservations': { type: 'sub', title: '예약' },
     '/partner': { type: 'home' },
-    '/partner/stores': { type: 'sub', title: '공방 관리' },
     '/partner/classes': { type: 'sub', title: '클래스 관리' },
     '/partner/reservations': { type: 'sub', title: '예약' },
     '/partner/artworks': { type: 'sub', title: '작품' },
@@ -32,12 +31,10 @@ const routeConfig: Record<string, HeaderConfig> = {
 
 // 동적 경로(파라미터 포함)는 정확 일치로 못 잡으므로 패턴으로 매칭.
 const patternConfig: Array<{ test: RegExp; config: HeaderConfig }> = [
-    // `new`(등록 플로우)·`order`(순서 변경, 로컬 center 헤더)는 전역 헤더 제외. 상세(program id)만 매칭.
     {
         test: /^\/partner\/classes\/(?!new$|order$)[^/]+$/,
         config: { type: 'sub', title: '클래스 미리보기' },
     },
-    // 배송 정보 수정 — 예약 상세 하위 라우트. 정확 일치를 위해 동적 id 패턴 앞에 둠.
     {
         test: /^\/my\/reservations\/[^/]+\/delivery\/edit$/,
         config: { type: 'sub', title: '배송 정보' },
