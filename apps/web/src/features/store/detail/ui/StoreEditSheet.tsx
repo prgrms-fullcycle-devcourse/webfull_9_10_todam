@@ -39,16 +39,11 @@ const EDIT_SLOTS: EditSlot[] = [
 ];
 
 export type StoreEditSheetProps = {
-    storeId: string;
     storeName: string;
     inProgressReservationCount: number;
 };
 
-export function StoreEditSheet({
-    storeId,
-    storeName,
-    inProgressReservationCount,
-}: StoreEditSheetProps) {
+export function StoreEditSheet({ storeName, inProgressReservationCount }: StoreEditSheetProps) {
     const router = useRouter();
     const { close } = useSheet();
 
@@ -68,7 +63,7 @@ export function StoreEditSheet({
                         className="flex cursor-pointer w-full items-center gap-5 rounded-2xl border border-border-subtle bg-surface p-4 text-left hover:bg-muted"
                         onClick={() => {
                             close();
-                            router.push(`/partner/stores/${storeId}/edit/${slot.segment}`);
+                            router.push(`/partner/studio/edit/${slot.segment}`);
                         }}
                     >
                         {/* 아이콘 박스 32x32 radius8: bg #F3E7C8 → secondary-subtle(gold-100), 아이콘 #6B4C07 → secondary-darker(gold-800) */}

@@ -311,7 +311,6 @@ export default function PartnerStorePage() {
                     onClick={() =>
                         open(
                             <StoreEditSheet
-                                storeId={storeId}
                                 storeName={store.name}
                                 inProgressReservationCount={store.inProgressReservationCount}
                             />,
