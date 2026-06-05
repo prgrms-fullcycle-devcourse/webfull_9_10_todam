@@ -39,6 +39,9 @@ function controllers(): ControllerClass[] {
     const { TimeslotController } = jest.requireActual<
         typeof import('./timeslot/presentation/controllers/timeslot.controller')
     >('./timeslot/presentation/controllers/timeslot.controller');
+    const { PartnerReservationController } = jest.requireActual<
+        typeof import('./reservation/presentation/controllers/partner-reservation.controller')
+    >('./reservation/presentation/controllers/partner-reservation.controller');
 
     return [
         AuthController,
@@ -46,6 +49,7 @@ function controllers(): ControllerClass[] {
         StoreController,
         ProgramController,
         TimeslotController,
+        PartnerReservationController,
     ];
 }
 
@@ -422,6 +426,62 @@ describe('API route baseline', () => {
                 handler: 'getProgramReservationCounts',
                 method: 'GET',
                 path: '/partner/stores/:storeId/programs/reservation-counts',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerReservationController',
+                handler: 'calendar',
+                method: 'GET',
+                path: '/partner/stores/:storeId/reservations/calendar',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerReservationController',
+                handler: 'list',
+                method: 'GET',
+                path: '/partner/stores/:storeId/reservations',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerReservationController',
+                handler: 'createManual',
+                method: 'POST',
+                path: '/partner/stores/:storeId/reservations',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerReservationController',
+                handler: 'detail',
+                method: 'GET',
+                path: '/partner/reservations/:reservationId',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerReservationController',
+                handler: 'confirm',
+                method: 'PATCH',
+                path: '/partner/reservations/:reservationId/confirm',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerReservationController',
+                handler: 'reject',
+                method: 'PATCH',
+                path: '/partner/reservations/:reservationId/reject',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerReservationController',
+                handler: 'cancel',
+                method: 'PATCH',
+                path: '/partner/reservations/:reservationId/cancel',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerReservationController',
+                handler: 'complete',
+                method: 'PATCH',
+                path: '/partner/reservations/:reservationId/complete',
                 guards: ['AuthGuard', 'PartnerGuard'],
             },
         ]);
