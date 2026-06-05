@@ -1,9 +1,10 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { PrismaService } from '../../../../database/prisma.service';
 import { S3Service } from '../../../../common/s3/s3.service';
 import { CDN_BASE } from '../../../../common/s3/s3-object.util';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
+import { ProgramRepository } from '../../domain/repositories/program.repository';
+import { ProgramImageRepository } from '../../domain/repositories/program-image.repository';
 import type {
     CreateProgramImageDto,
     CreateProgramImageResponseDto,
@@ -20,7 +21,8 @@ const ALLOWED_FILE_TYPES: Record<string, string> = {
 @Injectable()
 export class CreateProgramImageUseCase {
     constructor(
-        private readonly prisma: PrismaService,
+        private readonly programs: ProgramRepository,
+        private readonly images: ProgramImageRepository,
         private readonly s3: S3Service,
     ) {}
 
@@ -39,14 +41,7 @@ export class CreateProgramImageUseCase {
             );
         }
 
-        const program = await this.prisma.program.findUnique({
-            where: { id: programId },
-            select: {
-                id: true,
-                storeId: true,
-                store: { select: { partner: { select: { userId: true } } } },
-            },
-        });
+        const program = await this.programs.findOwnership(programId);
 
         if (!program || program.storeId !== storeId) {
             throw new BusinessException(
@@ -57,7 +52,7 @@ export class CreateProgramImageUseCase {
         }
 
         // 공방 소유 권한 검증.
-        if (program.store.partner.userId !== userId) {
+        if (program.ownerUserId !== userId) {
             throw new BusinessException(
                 'FORBIDDEN',
                 '공방 소유 권한이 없습니다.',
@@ -66,30 +61,13 @@ export class CreateProgramImageUseCase {
         }
 
         const key = `programs/${programId}/images/${randomUUID()}.${ext}`;
-
         const { uploadUrl } = await this.s3.createPresignedPutUrl(key, dto.fileType, 300);
-
         const imageUrl = `${CDN_BASE}/${key}`;
 
-        // 대표 이미지(isThumbnail)는 클래스당 최대 1개 불변식. 새 대표 등록 시 기존 대표를
-        // 모두 내린 뒤 row 를 선 생성한다(트랜잭션). 상태는 PENDING(업로드 대기).
-        const image = await this.prisma.$transaction(async (tx) => {
-            if (dto.isThumbnail) {
-                await tx.programImage.updateMany({
-                    where: { programId, isThumbnail: true },
-                    data: { isThumbnail: false },
-                });
-            }
-
-            return tx.programImage.create({
-                data: {
-                    programId,
-                    imageUrl,
-                    isThumbnail: dto.isThumbnail,
-                    status: 'PENDING',
-                },
-                select: { id: true },
-            });
+        const image = await this.images.createPending({
+            programId,
+            imageUrl,
+            isThumbnail: dto.isThumbnail,
         });
 
         return {

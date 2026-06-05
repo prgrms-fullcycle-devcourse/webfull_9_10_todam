@@ -37,11 +37,11 @@ export function ReservationCard({ item, onClick }: ReservationCardProps) {
                     <ReservationStatusBadge status={item.status} label={item.displayState.label} />
                 </div>
 
-                {/* 행 2: programTitle + meta(category・storeName・hh:mm) */}
+                {/* 행 2: programTitle + meta(storeName・hh:mm) */}
                 <div className="flex flex-col gap-1">
                     <p className="text-sm font-semibold text-foreground">{item.programTitle}</p>
                     <p className="text-xs text-foreground-tertiary">
-                        {item.category}・{item.storeName}・{time}
+                        {item.storeName}・{time}
                     </p>
                 </div>
             </div>

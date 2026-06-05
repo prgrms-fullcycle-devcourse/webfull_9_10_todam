@@ -6,6 +6,7 @@ import { HealthModule } from './modules/health/health.module';
 import { StoreModule } from './modules/store/store.module';
 import { ProgramModule } from './modules/program/program.module';
 import { TimeslotModule } from './modules/timeslot/timeslot.module';
+import { ReservationModule } from './modules/reservation/reservation.module';
 import { S3Module } from './common/s3/s3.module';
 import { RedisModule } from './redis/redis.module';
 
@@ -20,6 +21,7 @@ import { RedisModule } from './redis/redis.module';
         StoreModule,
         TimeslotModule,
         ProgramModule,
+        ReservationModule,
     ],
 })
 export class AppModule {}

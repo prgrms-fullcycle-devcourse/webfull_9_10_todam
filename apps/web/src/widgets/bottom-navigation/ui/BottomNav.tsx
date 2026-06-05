@@ -1,11 +1,18 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+import { useAuthStore } from '@/features/auth/login';
 
 import { useBottomNavigation } from '../model/useBottomNavigation';
 
+const AUTH_REQUIRED_PATHS = new Set(['/my', '/my/reservations']);
+
 export function BottomNav() {
     const { visible, items } = useBottomNavigation();
+    const isAuthenticated = useAuthStore((s) => s.state === 'AUTHENTICATED');
+    const router = useRouter();
 
     if (!visible) {
         return null;
@@ -18,6 +25,12 @@ export function BottomNav() {
                     <Link
                         key={label}
                         href={href}
+                        onClick={(e) => {
+                            if (!isAuthenticated && AUTH_REQUIRED_PATHS.has(href)) {
+                                e.preventDefault();
+                                router.push('/login');
+                            }
+                        }}
                         className={`flex flex-1 flex-col items-center justify-start gap-1 self-stretch text-xs ${
                             active
                                 ? 'font-medium text-primary'

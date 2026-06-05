@@ -27,10 +27,7 @@ import type { RequestUser } from '../../../../common/types/request-user.type';
 import { CreateStoreUseCase } from '../../application/use-cases/create-store.use-case';
 import { CreateStoreImageUseCase } from '../../application/use-cases/create-store-image.use-case';
 import { CreateBusinessDocumentImageUseCase } from '../../application/use-cases/create-business-document-image.use-case';
-import {
-    ConfirmStoreImageUseCase,
-    ConfirmStoreImageResponseDto,
-} from '../../application/use-cases/confirm-store-image.use-case';
+import { ConfirmStoreImageUseCase } from '../../application/use-cases/confirm-store-image.use-case';
 import { SubmitStoreUseCase } from '../../application/use-cases/submit-store.use-case';
 import { ListPartnerStoresUseCase } from '../../application/use-cases/list-partner-stores.use-case';
 import { GetPartnerStoreDetailUseCase } from '../../application/use-cases/get-partner-store-detail.use-case';
@@ -81,6 +78,7 @@ import {
     UpdateBusinessDocumentDto,
     UpdateBusinessDocumentResponseDto,
 } from '../dto/update-business-document.dto';
+import { ConfirmStoreImageResponseDto } from '../dto/confirm-store-image.dto';
 
 @ApiTags('stores')
 @ApiBearerAuth()
@@ -353,7 +351,10 @@ export class StoreController {
     // 첫 공방 등록(partner=PENDING)도 업로드 확인 가능해야 함. 소유권은 use-case 에서 검증.
     @UseGuards(AuthGuard)
     @ResponseMessage('이미지 업로드가 확인되었습니다.')
-    @ApiOkResponse({ description: '공방 이미지 업로드 확인 성공' })
+    @ApiOkResponse({
+        description: '공방 이미지 업로드 확인 성공',
+        type: ConfirmStoreImageResponseDto,
+    })
     async confirmStoreImage(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,

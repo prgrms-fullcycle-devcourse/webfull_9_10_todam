@@ -22,6 +22,40 @@ import { GetPartnerCurrentStoreUseCase } from './application/use-cases/get-partn
 import { UpdatePartnerCurrentStoreUseCase } from './application/use-cases/update-partner-current-store.use-case';
 import { PartnerGuard } from '../../common/guards/partner.guard';
 import { OptionalAuthGuard } from '../../common/guards/optional-auth.guard';
+import { StoreImageRepository } from './domain/repositories/store-image.repository';
+import { StoreRepository } from './domain/repositories/store.repository';
+import {
+    AutocompleteStoresReader,
+    PartnerOnboardingReader,
+    PartnerStoreDetailReader,
+    PartnerStoresReader,
+    SlugAvailabilityReader,
+    StoreDetailReader,
+    StoreProgramsReader,
+    StoreReviewsReader,
+    StoresReader,
+} from './domain/repositories/store-readers';
+import {
+    CreateStoreWriter,
+    ToggleFavoriteStoreWriter,
+    UpdateBusinessDocumentWriter,
+    UpdateStoreWriter,
+} from './domain/repositories/store-writers';
+import { PrismaStoreImageRepository } from './infrastructure/persistence/prisma-store-image.repository';
+import { PrismaStoreRepository } from './infrastructure/persistence/prisma-store.repository';
+import { PrismaAutocompleteStoresReader } from './infrastructure/persistence/prisma-autocomplete-stores.reader';
+import { PrismaPartnerOnboardingReader } from './infrastructure/persistence/prisma-partner-onboarding.reader';
+import { PrismaPartnerStoreDetailReader } from './infrastructure/persistence/prisma-partner-store-detail.reader';
+import { PrismaPartnerStoresReader } from './infrastructure/persistence/prisma-partner-stores.reader';
+import { PrismaSlugAvailabilityReader } from './infrastructure/persistence/prisma-slug-availability.reader';
+import { PrismaStoreDetailReader } from './infrastructure/persistence/prisma-store-detail.reader';
+import { PrismaStoreProgramsReader } from './infrastructure/persistence/prisma-store-programs.reader';
+import { PrismaStoreReviewsReader } from './infrastructure/persistence/prisma-store-reviews.reader';
+import { PrismaStoresReader } from './infrastructure/persistence/prisma-stores.reader';
+import { PrismaCreateStoreCommand } from './infrastructure/persistence/prisma-create-store.command';
+import { PrismaToggleFavoriteStoreCommand } from './infrastructure/persistence/prisma-toggle-favorite-store.command';
+import { PrismaUpdateBusinessDocumentCommand } from './infrastructure/persistence/prisma-update-business-document.command';
+import { PrismaUpdateStoreCommand } from './infrastructure/persistence/prisma-update-store.command';
 import { StoreController } from './presentation/controllers/store.controller';
 
 @Module({
@@ -48,6 +82,24 @@ import { StoreController } from './presentation/controllers/store.controller';
         ToggleFavoriteStoreUseCase,
         GetPartnerCurrentStoreUseCase,
         UpdatePartnerCurrentStoreUseCase,
+        { provide: StoreImageRepository, useClass: PrismaStoreImageRepository },
+        { provide: StoreRepository, useClass: PrismaStoreRepository },
+        { provide: CreateStoreWriter, useClass: PrismaCreateStoreCommand },
+        { provide: ToggleFavoriteStoreWriter, useClass: PrismaToggleFavoriteStoreCommand },
+        {
+            provide: UpdateBusinessDocumentWriter,
+            useClass: PrismaUpdateBusinessDocumentCommand,
+        },
+        { provide: UpdateStoreWriter, useClass: PrismaUpdateStoreCommand },
+        { provide: AutocompleteStoresReader, useClass: PrismaAutocompleteStoresReader },
+        { provide: PartnerOnboardingReader, useClass: PrismaPartnerOnboardingReader },
+        { provide: PartnerStoreDetailReader, useClass: PrismaPartnerStoreDetailReader },
+        { provide: PartnerStoresReader, useClass: PrismaPartnerStoresReader },
+        { provide: SlugAvailabilityReader, useClass: PrismaSlugAvailabilityReader },
+        { provide: StoreDetailReader, useClass: PrismaStoreDetailReader },
+        { provide: StoreProgramsReader, useClass: PrismaStoreProgramsReader },
+        { provide: StoreReviewsReader, useClass: PrismaStoreReviewsReader },
+        { provide: StoresReader, useClass: PrismaStoresReader },
         PartnerGuard,
         OptionalAuthGuard,
     ],

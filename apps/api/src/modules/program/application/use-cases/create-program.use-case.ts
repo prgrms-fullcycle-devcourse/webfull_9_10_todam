@@ -1,8 +1,8 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ProgramDifficulty } from '@prisma/client';
-import { PrismaService } from '../../../../database/prisma.service';
+import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { ErrorCode } from '../../../../common/constants/error-code';
+import { ProgramRepository } from '../../domain/repositories/program.repository';
+import type { ProgramDifficulty } from '../../domain/repositories/program.repository';
 import type {
     CreateProgramDto,
     CreateProgramResponseDto,
@@ -10,38 +10,18 @@ import type {
 
 @Injectable()
 export class CreateProgramUseCase {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly ownership: StoreOwnershipService,
+        private readonly programs: ProgramRepository,
+    ) {}
 
     async execute(
         userId: string,
         storeId: string,
         dto: CreateProgramDto,
     ): Promise<CreateProgramResponseDto> {
-        const store = await this.prisma.store.findUnique({
-            where: { id: storeId },
-            select: {
-                id: true,
-                status: true,
-                partner: { select: { userId: true } },
-            },
-        });
-
-        if (!store) {
-            throw new BusinessException(
-                'STORE_NOT_FOUND',
-                '공방을 찾을 수 없습니다.',
-                HttpStatus.NOT_FOUND,
-            );
-        }
-
-        // 공방 소유 권한 검증.
-        if (store.partner.userId !== userId) {
-            throw new BusinessException(
-                ErrorCode.FORBIDDEN,
-                '공방 소유 권한이 없습니다.',
-                HttpStatus.FORBIDDEN,
-            );
-        }
+        // 공방 존재 + 소유 권한 검증.
+        const store = await this.ownership.verify(userId, storeId, { notFound: 'STORE_NOT_FOUND' });
 
         // 공방 PUBLISHED 상태 검증 — 아니면 403 STORE_NOT_PUBLISHED.
         if (store.status !== 'PUBLISHED') {
@@ -52,41 +32,17 @@ export class CreateProgramUseCase {
             );
         }
 
-        // programs + program_snapshots 동시 생성. 등록 시 status = ACTIVE (DRAFT 생략 결정).
-        const program = await this.prisma.$transaction(async (tx) => {
-            const created = await tx.program.create({
-                data: {
-                    storeId,
-                    title: dto.title,
-                    description: dto.description ?? null,
-                    materials: dto.materials ?? null,
-                    caution: dto.caution ?? null,
-                    price: dto.price,
-                    durationMinutes: dto.durationMinutes,
-                    difficulty: dto.difficulty as ProgramDifficulty,
-                    childFriendly: dto.childFriendly,
-                    leadTimeDays: dto.leadTimeDays,
-                    deliverable: dto.deliverable,
-                    status: 'ACTIVE',
-                },
-                select: {
-                    id: true,
-                    storeId: true,
-                    title: true,
-                    status: true,
-                    createdAt: true,
-                },
-            });
-
-            await tx.programSnapshot.create({
-                data: {
-                    programId: created.id,
-                    price: dto.price,
-                    leadTimeDays: dto.leadTimeDays,
-                },
-            });
-
-            return created;
+        const program = await this.programs.create(storeId, {
+            title: dto.title,
+            description: dto.description ?? null,
+            materials: dto.materials ?? null,
+            caution: dto.caution ?? null,
+            price: dto.price,
+            durationMinutes: dto.durationMinutes,
+            difficulty: dto.difficulty as ProgramDifficulty,
+            childFriendly: dto.childFriendly,
+            leadTimeDays: dto.leadTimeDays,
+            deliverable: dto.deliverable,
         });
 
         return {

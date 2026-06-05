@@ -37,6 +37,7 @@ export {
 
 export * from './constants/regex';
 
+export * from './contracts/auth';
 export * from './contracts/fields';
 export * from './contracts/store-registration';
 export * from './contracts/store-edit';
@@ -53,6 +54,7 @@ export * from './contracts/review-write';
 export * from './contracts/review-actions';
 export * from './contracts/delivery-edit';
 export * from './contracts/artwork-detail';
+export * from './contracts/user-me';
 
 export * from './utils/date';
 export * from './utils/format-scheduled';

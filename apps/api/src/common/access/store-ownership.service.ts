@@ -1,4 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { StoreStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { BusinessException } from '../exceptions/business.exception';
 
@@ -9,8 +10,17 @@ import { BusinessException } from '../exceptions/business.exception';
 export interface OwnedStore {
     id: string;
     partnerId: string;
+    status: StoreStatus;
     maxCapacityPerSlot: number | null;
     reservationIntervalMinutes: number | null;
+}
+
+export interface StoreOwnershipErrorCodes {
+    notFound?: string;
+    forbidden?: string;
+    // 메시지 텍스트를 호출 맥락에 맞게 덮어쓰고 싶을 때 사용(미지정 시 공방 기본 문구).
+    notFoundMessage?: string;
+    forbiddenMessage?: string;
 }
 
 /**
@@ -21,11 +31,16 @@ export interface OwnedStore {
 export class StoreOwnershipService {
     constructor(private readonly prisma: PrismaService) {}
 
-    async verify(userId: string, storeId: string): Promise<OwnedStore> {
+    async verify(
+        userId: string,
+        storeId: string,
+        errorCodes: StoreOwnershipErrorCodes = {},
+    ): Promise<OwnedStore> {
         const store = await this.prisma.store.findUnique({
             where: { id: storeId },
             select: {
                 id: true,
+                status: true,
                 maxCapacityPerSlot: true,
                 reservationIntervalMinutes: true,
                 partner: { select: { id: true, userId: true } },
@@ -34,16 +49,16 @@ export class StoreOwnershipService {
 
         if (!store) {
             throw new BusinessException(
-                'RESOURCE_NOT_FOUND',
-                '공방을 찾을 수 없습니다.',
+                errorCodes.notFound ?? 'RESOURCE_NOT_FOUND',
+                errorCodes.notFoundMessage ?? '공방을 찾을 수 없습니다.',
                 HttpStatus.NOT_FOUND,
             );
         }
 
         if (store.partner.userId !== userId) {
             throw new BusinessException(
-                'FORBIDDEN',
-                '공방 소유 권한이 없습니다.',
+                errorCodes.forbidden ?? 'FORBIDDEN',
+                errorCodes.forbiddenMessage ?? '공방 소유 권한이 없습니다.',
                 HttpStatus.FORBIDDEN,
             );
         }
@@ -51,6 +66,7 @@ export class StoreOwnershipService {
         return {
             id: store.id,
             partnerId: store.partner.id,
+            status: store.status,
             maxCapacityPerSlot: store.maxCapacityPerSlot,
             reservationIntervalMinutes: store.reservationIntervalMinutes,
         };

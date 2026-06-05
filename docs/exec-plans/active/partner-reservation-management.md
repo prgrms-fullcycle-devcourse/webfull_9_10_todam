@@ -16,17 +16,17 @@
 > **예약 BE 전부 미구현** (2026-06-04 코드 확인). `apps/api/src/modules/reservation/`는 빈 스캐폴드(.gitkeep)뿐 — 컨트롤러·유스케이스 0개. "API명세 DB 확인/미등록" 표기는 **Notion 스펙 등록 여부**일 뿐 구현 상태 아님. 구현된 BE는 `timeslot` 모듈(#161)뿐.
 
 ### 범위 1: 월간 조회
-- [ ] BE: `GET /partner/stores/{storeId}/reservations/calendar` — 월별 집계 API 구현 (Notion 스펙 미등록)
+- [x] BE: `GET /partner/stores/{storeId}/reservations/calendar` — 월별 집계 API 구현 (Notion 스펙 미등록)
 - [x] FE: 월별 캘린더 UI (예약있음/예약불가/신규제한 마커)
 - [ ] API 연동: 캘린더 API 바인딩
 
 ### 범위 2: 예약 상세 조회
-- [ ] BE: `GET /partner/reservations/{reservationId}` — 예약 상세 API (내부 메모 포함, 파트너 뷰) (Notion 스펙 미등록)
+- [x] BE: `GET /partner/reservations/{reservationId}` — 예약 상세 API (내부 메모 포함, 파트너 뷰) (Notion 스펙 미등록)
 - [ ] FE: 예약 상세 UI (상태 메시지·액션 버튼 상태별 분기)
 - [ ] API 연동
 
 ### 범위 3: 예약 생성 (파트너 수동 등록)
-- [ ] BE: `POST /partner/stores/{storeId}/reservations` — 수동 예약 등록 API (Notion 스펙 O, 구현 X)
+- [x] BE: `POST /partner/stores/{storeId}/reservations` — 수동 예약 등록 API (Notion 스펙 O, 구현 완료)
 - [ ] FE: 수동 예약 등록 UI (시간대 선택 → 클래스 선택 → 예약 정보 입력 → 상태 선택)
 - [ ] API 연동
 
@@ -34,10 +34,10 @@
 > #161 타임슬롯 관리로 일원화. BE 완료, FE는 #170(예약 제한 화면) / #169(자동생성 연동). SSOT: `partner-timeslot-management.md`.
 
 ### 공통 (예약 상태 액션) — BE 전부 미구현
-- [ ] BE: `PATCH /partner/reservations/{reservationId}/confirm` — 예약 확정 (Notion 스펙 O, 구현 X)
-- [ ] BE: `PATCH /partner/reservations/{reservationId}/reject` — 예약 거절 (Notion 스펙 X, 구현 X)
-- [ ] BE: `PATCH /partner/reservations/{reservationId}/cancel` — 예약 취소 (파트너) (Notion 스펙 O, 구현 X)
-- [ ] BE: `PATCH /partner/reservations/{reservationId}/complete` — 체험 완료 처리 (Notion 스펙 O, 구현 X)
+- [x] BE: `PATCH /partner/reservations/{reservationId}/confirm` — 예약 확정 (Notion 스펙 O, 구현 완료)
+- [x] BE: `PATCH /partner/reservations/{reservationId}/reject` — 예약 거절 (Notion 스펙 X, 구현 완료)
+- [x] BE: `PATCH /partner/reservations/{reservationId}/cancel` — 예약 취소 (파트너) (Notion 스펙 O, 구현 완료)
+- [x] BE: `PATCH /partner/reservations/{reservationId}/complete` — 체험 완료 처리 (Notion 스펙 O, 구현 완료)
 
 ---
 
@@ -76,7 +76,7 @@
 - **D-CALENDAR-API** (미해소): `GET /partner/stores/{storeId}/reservations/calendar` Notion 미등록. 시안상 마커 3종(날짜 하단 dot=예약있음, 범례 토글 `예약 불가`/`신규 예약 제한`) 확인 — 응답 필드(`hasReservation`/`isUnavailable`/`hasRestriction`/`reservationCount`)는 BE 합의 후 Notion 등록·스냅샷 갱신 필요.
 - **D-RESERVATION-DETAIL-PARTNER** (UI 확정/API 미해소): 상세 시안으로 **필드·액션 매트릭스 확정**(예약번호·날짜·시간·인원·예약자·연락처·내부메모 + 상태별 availableActions). API 응답 스키마는 Notion 등록 대기.
 - **D-REJECT** (UI 확정/API 미해소): 시안상 거절 = 확인 모달 → status 취소. **거절 사유 입력 UI 없음 → `rejectReason` 불필요** 잠정 결론. BE 확정 필요.
-- **D-DETAIL-MASK**: 취소(CANCELED) 상세에서 예약자명/연락처 마스킹(`김**`, `010-****-0000`) 표시 — BE가 마스킹해 내려줄지 FE 마스킹할지 결정 필요.
+- ~~**D-DETAIL-MASK**~~ (해소): 취소(CANCELED) 상세에서 BE가 예약자명/연락처를 마스킹해 내려줌(`김**`, `010-****-0000`).
 - ~~**D-UI-CALENDAR-MARKER**~~ (해소): 월간 조회 시안으로 마커·범례 확정. DESIGN.md 토큰 매핑만 FE 착수 시.
 - ~~**D-UI-RESERVATION-CARD**~~ (해소): 상세/월간 시안으로 상태 태그 4종(확정/대기/취소/체험완료) 확정.
 
@@ -391,13 +391,13 @@
   - `GET /partner/stores/:storeId/programs/reservation-counts`
   - `POST /partner/stores/:storeId/reservation-restrictions`
   - `DELETE /partner/stores/:storeId/reservation-restrictions`
-- BE (API명세 DB 확인, 구현 상태 점검):
+- BE (API명세 DB 확인, 구현 완료):
   - `POST /partner/stores/:storeId/reservations`
   - `GET /partner/stores/:storeId/reservations`
   - `PATCH /partner/reservations/:reservationId/confirm`
   - `PATCH /partner/reservations/:reservationId/cancel`
   - `PATCH /partner/reservations/:reservationId/complete`
-- BE (미구현 — 신규):
+- BE (신규 구현 완료 — Notion/API명세 DB 등록 후 스냅샷 재확인 필요):
   - `GET /partner/stores/:storeId/reservations/calendar`
   - `GET /partner/reservations/:reservationId`
   - `PATCH /partner/reservations/:reservationId/reject`
@@ -405,13 +405,13 @@
   - `apps/web/src/features/reservation/calendar/ui/MonthCalendar.tsx` — 월 그리드(date-fns), 요일 헤더(일=danger/토=info), YearMonthPicker 드롭다운, 범례 체크박스 2종(예약 불가/신규 예약 제한, 필터 dim 처리)
   - `apps/web/src/features/reservation/calendar/ui/ReservationListCard.tsx` — 예약 카드 1건. 시각(HH:mm)/프로그램명/예약자(N명 표기)/상태 Tag. 상태→라벨: CONFIRMED=확정(success-subtle), PENDING=대기(warning-subtle), CANCELED=취소(muted), COMPLETED=체험완료(muted), REJECTED=거절(danger-subtle).
   - `apps/web/src/features/reservation/calendar/ui/ReservationCalendarView.tsx` — 컨테이너. MonthCalendar + 일별 헤더(날짜·건수·신규예약 버튼) + 예약 목록/빈상태 + 예약 제한 버튼(미래만 활성, 과거=disabled+"미래 날짜만 예약을 제한할 수 있어요").
-  - `apps/web/src/app/partner/reservations/page.tsx` — page. useSearchParams storeId guard(없으면 toast+replace) → ReservationCalendarView.
+  - `apps/web/src/app/partner/reservations/page.tsx` — page. 전역 currentStore(useCurrentStoreId) → ReservationCalendarView.
 - CalendarItem state→데이터 매핑: isToday→'today', isUnavailable||hasRestriction→'partiallyBlocked', 슬롯 없음(정기휴무, API 연동 시)→'holiday' 주석 처리, 그 외→'available'. hasReservation=true이면 dot.
 - mock shape: CalendarData.days[] + getMockReservationsByDate(YYYY-MM-DD) — mock은 2026-06 고정, API 연동 시 fetch로 교체.
 - date-fns 도입: startOfMonth/endOfMonth/eachDayOfInterval/getDay/isToday/format/isBefore/startOfDay/ko locale.
 - 예약 제한 버튼 노출 규칙: 미래 날짜만 활성, 과거=disabled+안내문, 휴무일=hidden(API 연동 시 holiday CalendarItem state와 연계).
-- navigate stub: 카드 클릭→`/partner/reservations/{id}`, 신규 예약→`/partner/reservations/new?storeId=`, 예약 제한→`/partner/reservations/restrict?storeId=`.
-- 연동: <!-- API 연동(범위 1 API 연동 태스크) 완료 후 기록 -->
+- navigate stub: 카드 클릭→`/partner/reservations/{id}`, 신규 예약→`/partner/reservations/new`, 예약 제한→`/partner/reservations/restrict` (storeId는 전역 currentStore).
+- 연동(BE): `ReservationModule`을 `AppModule`에 등록하고 route snapshot에 파트너 예약 라우트 8개 추가. 검증: `corepack pnpm --filter @todam/api typecheck`, `corepack pnpm --filter @todam/api test -- api-routes.snapshot.spec.ts`.
 
 ---
 
@@ -451,12 +451,13 @@
 - **예약 제한(ReservationRestriction)은 #161 타임슬롯 관리로 일원화** — 클래스별 막기 FE가 #161 작업목록(슬롯 막기 UI)과 중복이라 본 문서에서 제외. FE = #170(예약 제한 화면)/#169(자동생성 연동). 2026-06-04.
 - **타임슬롯 BE(생성·조회·막기·ReservationRestriction)는 partner-timeslot-management.md 완료 상태로 인계** — 본 문서는 예약 CRUD + 현황 화면 FE 담당. 2026-06-04.
 - **수동 예약 등록 API slotId = storeTimeSlotId** — API명세 DB에는 구버전 `programTimeSlotId` 기재되어 있으나 타임슬롯 전환 이후 `storeTimeSlotId` 참조가 올바름. 구현 시 확인 필수. 2026-06-04.
+- **취소 예약 상세 개인정보 마스킹은 BE 처리** — 파트너 상세 응답에서 `status=CANCELED`이면 예약자명/연락처를 서버에서 마스킹해 반환한다. 2026-06-05.
 
 ---
 
 ## Outcome
 
-- Status: plan 확정. **예약 BE 전부 미구현** (reservation 모듈 빈 스캐폴드). Notion 스펙도 3개(calendar/detail/reject) 미등록. 예약관리는 BE·FE 모두 신규 작업.
+- Status: plan 확정. **예약 BE 구현 완료** (`ReservationModule` 신규 추가). Notion 스펙 3개(calendar/detail/reject)는 여전히 미등록이라 API명세 DB 반영 필요. FE/API 연동은 후속 작업.
 - 착수 가능 범위:
   - **즉시 착수 가능**: 범위 3 FE (BE API명세 확인됨), 범위 2 FE(confirm/cancel/complete 액션 부분)
   - **Open decision 해소 후 착수**: 범위 1 FE + 캘린더 API(D-CALENDAR-API), 범위 2 상세 조회 API(D-RESERVATION-DETAIL-PARTNER), 거절 API(D-REJECT)

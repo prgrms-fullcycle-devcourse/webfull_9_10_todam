@@ -1,8 +1,9 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../database/prisma.service';
 import { S3Service } from '../../../../common/s3/s3.service';
 import { keyFromImageUrl } from '../../../../common/s3/s3-object.util';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
+import { ProgramRepository } from '../../domain/repositories/program.repository';
+import { ProgramImageRepository } from '../../domain/repositories/program-image.repository';
 
 export interface ConfirmProgramImageResponseDto {
     image: {
@@ -14,7 +15,8 @@ export interface ConfirmProgramImageResponseDto {
 @Injectable()
 export class ConfirmProgramImageUseCase {
     constructor(
-        private readonly prisma: PrismaService,
+        private readonly programs: ProgramRepository,
+        private readonly images: ProgramImageRepository,
         private readonly s3: S3Service,
     ) {}
 
@@ -25,14 +27,7 @@ export class ConfirmProgramImageUseCase {
         imageId: string,
     ): Promise<ConfirmProgramImageResponseDto> {
         // 소유권 검증: program → store → partner.userId.
-        const program = await this.prisma.program.findUnique({
-            where: { id: programId },
-            select: {
-                id: true,
-                storeId: true,
-                store: { select: { partner: { select: { userId: true } } } },
-            },
-        });
+        const program = await this.programs.findOwnership(programId);
 
         if (!program || program.storeId !== storeId) {
             throw new BusinessException(
@@ -42,7 +37,7 @@ export class ConfirmProgramImageUseCase {
             );
         }
 
-        if (program.store.partner.userId !== userId) {
+        if (program.ownerUserId !== userId) {
             throw new BusinessException(
                 'FORBIDDEN',
                 '클래스 소유 권한이 없습니다.',
@@ -50,12 +45,9 @@ export class ConfirmProgramImageUseCase {
             );
         }
 
-        const image = await this.prisma.programImage.findUnique({
-            where: { id: imageId },
-            select: { id: true, status: true, imageUrl: true, programId: true },
-        });
+        const image = await this.images.findByProgramAndId(programId, imageId);
 
-        if (!image || image.programId !== programId) {
+        if (!image) {
             throw new BusinessException(
                 'PROGRAM_IMAGE_NOT_FOUND',
                 '이미지를 찾을 수 없습니다.',
@@ -80,11 +72,7 @@ export class ConfirmProgramImageUseCase {
             );
         }
 
-        const updated = await this.prisma.programImage.update({
-            where: { id: imageId },
-            data: { status: 'UPLOADED' },
-            select: { id: true, status: true },
-        });
+        const updated = await this.images.markUploaded(imageId);
 
         return {
             image: {

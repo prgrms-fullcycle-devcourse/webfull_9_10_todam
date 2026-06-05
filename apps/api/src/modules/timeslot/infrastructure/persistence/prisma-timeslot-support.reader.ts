@@ -96,4 +96,19 @@ export class PrismaTimeslotSupportReader extends TimeslotSupportReader {
         }
         return result;
     }
+
+    async findActiveProgramStore(
+        programId: string,
+    ): Promise<{ storeId: string; maxCapacityPerSlot: number | null } | null> {
+        // 비ACTIVE(DRAFT/INACTIVE)는 미존재 취급 — 공개 상세와 동일 정책.
+        const program = await this.prisma.program.findFirst({
+            where: { id: programId, status: 'ACTIVE' },
+            select: { storeId: true, store: { select: { maxCapacityPerSlot: true } } },
+        });
+        if (!program) return null;
+        return {
+            storeId: program.storeId,
+            maxCapacityPerSlot: program.store.maxCapacityPerSlot,
+        };
+    }
 }

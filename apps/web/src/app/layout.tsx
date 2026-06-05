@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { AuthTokenProvider } from '@/features/auth/login';
 import { SuspendedStoreGate } from '@/features/store/switch';
 
 import { MswProvider } from '../mocks/MswProvider';
@@ -31,13 +32,16 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 </div>
                 <MswProvider>
                     <QueryProvider>
-                        <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-background">
-                            <AppShell>{children}</AppShell>
-                            <AppModal />
-                            <AppSheet />
-                            <AppToast />
-                            <SuspendedStoreGate />
-                        </div>
+                        <AuthTokenProvider>
+                            <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-background">
+                                <AppShell>{children}</AppShell>
+                                <AppModal />
+                                <AppSheet />
+                                <AppToast />
+                                {/* 작업 공방 게시중단 시 전체 takeover 오버레이(파트너 영역, 자체 가드). */}
+                                <SuspendedStoreGate />
+                            </div>
+                        </AuthTokenProvider>
                     </QueryProvider>
                 </MswProvider>
             </body>
