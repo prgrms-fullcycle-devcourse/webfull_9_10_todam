@@ -8,6 +8,7 @@ import { MenuTable } from '@/shared/ui';
 import { useSheet } from '@/shared/model';
 import { TERMS_CONTENT } from '@/features/auth/terms/model/termsContent';
 import type { TermsKey } from '@/features/auth/terms/model/termsContent';
+import { logout } from '@/features/auth/logout';
 import { usePartnerOnboarding } from '@/features/store/registration';
 import {
     useNotificationSettings,
@@ -45,12 +46,18 @@ export function MyPageHub() {
         openSheet(<TermsViewSheet title={doc.title} sections={doc.sections} />);
     };
 
-    const handleLogout = () => {
-        // 로그아웃: localStorage 토큰 제거 후 로그인 페이지로 이동
-        if (typeof window !== 'undefined') {
-            window.localStorage.removeItem('accessToken');
+    const handleLogout = async () => {
+        // 서버 세션/쿠키 제거 시도. 401(이미 만료) 등 실패해도 클라이언트 정리는 무조건 진행(plan D-2).
+        try {
+            await logout();
+        } catch (err) {
+            console.warn('[logout] 서버 로그아웃 실패, 클라이언트 토큰만 제거', err);
+        } finally {
+            if (typeof window !== 'undefined') {
+                window.localStorage.removeItem('accessToken');
+            }
+            router.push('/login');
         }
-        router.push('/login');
     };
 
     // 내 정보 섹션 메뉴 rows — 라벨만 isPartner로 분기(D6/D8). 목적지는 /partner 단일,
