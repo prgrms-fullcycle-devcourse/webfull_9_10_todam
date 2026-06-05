@@ -13,11 +13,27 @@ import {
 } from '@nestjs/common';
 import {
     ApiBearerAuth,
+    ApiBody,
     ApiCreatedResponse,
     ApiOkResponse,
     ApiQuery,
     ApiTags,
 } from '@nestjs/swagger';
+import {
+    businessDocumentImageRequestSchema,
+    businessDocumentUpdateRequestSchema,
+    createStoreImageRequestSchema,
+    storeUpdateRequestSchema,
+    updatePartnerCurrentStoreRequestSchema,
+} from '@todam/shared';
+import type {
+    BusinessDocumentImageRequest,
+    BusinessDocumentUpdateRequest,
+    CreateStoreImageRequest,
+    StoreUpdateRequest,
+    UpdatePartnerCurrentStoreRequest,
+} from '@todam/shared';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { OptionalAuthGuard } from '../../../../common/guards/optional-auth.guard';
 import { PartnerGuard } from '../../../../common/guards/partner.guard';
@@ -217,13 +233,15 @@ export class StoreController {
     @HttpCode(HttpStatus.OK)
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('접속 공방이 전환되었습니다.')
+    @ApiBody({ type: UpdatePartnerCurrentStoreDto })
     @ApiOkResponse({
         description: '마지막 접속 공방 갱신 성공',
         type: UpdatePartnerCurrentStoreResponseDto,
     })
     async updatePartnerCurrentStore(
         @CurrentUser() user: RequestUser,
-        @Body() dto: UpdatePartnerCurrentStoreDto,
+        @Body(new ZodValidationPipe(updatePartnerCurrentStoreRequestSchema))
+        dto: UpdatePartnerCurrentStoreRequest,
     ): Promise<UpdatePartnerCurrentStoreResponseDto> {
         return this.updatePartnerCurrentStoreUseCase.execute(user.id, dto.storeId);
     }
@@ -274,11 +292,12 @@ export class StoreController {
     @HttpCode(HttpStatus.OK)
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('공방 정보가 성공적으로 수정되었습니다.')
+    @ApiBody({ type: UpdateStoreDto })
     @ApiOkResponse({ description: '공방 정보 수정 성공', type: UpdateStoreResponseDto })
     async updateStore(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Body() dto: UpdateStoreDto,
+        @Body(new ZodValidationPipe(storeUpdateRequestSchema)) dto: StoreUpdateRequest,
     ): Promise<UpdateStoreResponseDto> {
         return this.updateStoreUseCase.execute(user.id, storeId, dto);
     }
@@ -292,10 +311,12 @@ export class StoreController {
         description: '사업자 정보 수정 및 재심사 전이 성공',
         type: UpdateBusinessDocumentResponseDto,
     })
+    @ApiBody({ type: UpdateBusinessDocumentDto })
     async updateBusinessDocument(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Body() dto: UpdateBusinessDocumentDto,
+        @Body(new ZodValidationPipe(businessDocumentUpdateRequestSchema))
+        dto: BusinessDocumentUpdateRequest,
     ): Promise<UpdateBusinessDocumentResponseDto> {
         return this.updateBusinessDocumentUseCase.execute(user.id, storeId, dto);
     }
@@ -321,9 +342,11 @@ export class StoreController {
         description: '사업자등록증 presigned URL 발급 성공',
         type: CreateBusinessDocumentImageResponseDto,
     })
+    @ApiBody({ type: CreateBusinessDocumentImageDto })
     async createBusinessDocumentImage(
         @CurrentUser() user: RequestUser,
-        @Body() dto: CreateBusinessDocumentImageDto,
+        @Body(new ZodValidationPipe(businessDocumentImageRequestSchema))
+        dto: BusinessDocumentImageRequest,
     ): Promise<CreateBusinessDocumentImageResponseDto> {
         return this.createBusinessDocumentImageUseCase.execute(user.id, dto);
     }
@@ -338,10 +361,11 @@ export class StoreController {
         description: '공방 이미지 presigned URL 발급 성공',
         type: CreateStoreImageResponseDto,
     })
+    @ApiBody({ type: CreateStoreImageDto })
     async createStoreImage(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Body() dto: CreateStoreImageDto,
+        @Body(new ZodValidationPipe(createStoreImageRequestSchema)) dto: CreateStoreImageRequest,
     ): Promise<CreateStoreImageResponseDto> {
         return this.createStoreImageUseCase.execute(user.id, storeId, dto);
     }
