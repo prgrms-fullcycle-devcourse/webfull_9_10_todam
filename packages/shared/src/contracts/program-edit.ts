@@ -54,7 +54,8 @@ export const programEditRequestSchema = z.object({
     difficulty: z.nativeEnum(ProgramDifficulty).optional(),
     price: z.number().int().positive().optional(),
     leadTimeDays: z.number().int().min(0).optional(),
-    durationMinutes: z.number().int().positive().optional(),
+    // 30~480분 (createProgramRequestSchema 와 동일 바운드).
+    durationMinutes: z.number().int().min(30).max(480).optional(),
     childFriendly: z.boolean().optional(),
     deliverable: z.boolean().optional(),
 });

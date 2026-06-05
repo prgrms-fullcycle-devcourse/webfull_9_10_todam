@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import { ProgramStatus as ProgramStatusEnum } from '@todam/shared';
 import { UpdateProgramStatusUseCase } from './update-program-status.use-case';
 import type {
     ProgramOwnership,
@@ -49,7 +50,9 @@ describe('UpdateProgramStatusUseCase', () => {
             const { repository, updateStatus } = createRepositoryMock(ownershipWith(from));
             const useCase = new UpdateProgramStatusUseCase(repository);
 
-            const result = await useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, { status: to });
+            const result = await useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, {
+                status: to as ProgramStatusEnum,
+            });
 
             expect(updateStatus).toHaveBeenCalledWith(PROGRAM_ID, to);
             expect(result.program.status).toBe(to);
@@ -68,7 +71,9 @@ describe('UpdateProgramStatusUseCase', () => {
             const useCase = new UpdateProgramStatusUseCase(repository);
 
             await expect(
-                useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, { status: to }),
+                useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, {
+                    status: to as ProgramStatusEnum,
+                }),
             ).rejects.toMatchObject({
                 errorCode: 'INVALID_STATUS_TRANSITION',
                 status: HttpStatus.BAD_REQUEST,
@@ -83,7 +88,9 @@ describe('UpdateProgramStatusUseCase', () => {
                 const useCase = new UpdateProgramStatusUseCase(repository);
 
                 await expect(
-                    useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, { status }),
+                    useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, {
+                        status: status as ProgramStatusEnum,
+                    }),
                 ).rejects.toMatchObject({ errorCode: 'INVALID_STATUS_TRANSITION' });
                 expect(updateStatus).not.toHaveBeenCalled();
             },
@@ -98,7 +105,9 @@ describe('UpdateProgramStatusUseCase', () => {
             const useCase = new UpdateProgramStatusUseCase(repository);
 
             await expect(
-                useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, { status: 'ACTIVE' }),
+                useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, {
+                    status: ProgramStatusEnum.ACTIVE,
+                }),
             ).rejects.toMatchObject({
                 errorCode: 'FORBIDDEN',
                 status: HttpStatus.FORBIDDEN,
@@ -111,7 +120,9 @@ describe('UpdateProgramStatusUseCase', () => {
             const useCase = new UpdateProgramStatusUseCase(repository);
 
             await expect(
-                useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, { status: 'ACTIVE' }),
+                useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, {
+                    status: ProgramStatusEnum.ACTIVE,
+                }),
             ).rejects.toMatchObject({
                 errorCode: 'PROGRAM_NOT_FOUND',
                 status: HttpStatus.NOT_FOUND,
@@ -124,7 +135,9 @@ describe('UpdateProgramStatusUseCase', () => {
             const useCase = new UpdateProgramStatusUseCase(repository);
 
             await expect(
-                useCase.execute(OWNER_ID, 'store-other', PROGRAM_ID, { status: 'ACTIVE' }),
+                useCase.execute(OWNER_ID, 'store-other', PROGRAM_ID, {
+                    status: ProgramStatusEnum.ACTIVE,
+                }),
             ).rejects.toMatchObject({
                 errorCode: 'PROGRAM_NOT_FOUND',
                 status: HttpStatus.NOT_FOUND,
