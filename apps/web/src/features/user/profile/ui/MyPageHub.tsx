@@ -50,13 +50,13 @@ export function MyPageHub() {
         router.push('/login');
     };
 
-    // 내 정보 섹션 메뉴 rows — 파트너센터는 isPartner 조건부 노출 (D8)
+    // 내 정보 섹션 메뉴 rows — 파트너 여부로 분기 (D6/D8): 파트너=센터 이동, 비파트너=공방 등록
     const myInfoRows = [
         { label: '개인 정보 수정', onClick: () => router.push('/my/profile') },
         { label: '찜한 공방 목록', onClick: () => router.push('/my/favorites') },
-        ...(isPartner
-            ? [{ label: '파트너 센터 이동하기', onClick: () => router.push('/partner') }]
-            : []),
+        isPartner
+            ? { label: '파트너 센터 이동하기', onClick: () => router.push('/partner') }
+            : { label: '공방 등록하기', onClick: () => router.push('/apply') },
     ];
 
     return (
