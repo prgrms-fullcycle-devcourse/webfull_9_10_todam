@@ -17,6 +17,10 @@ import { SignupUseCase } from './application/use-cases/signup.use-case';
 import { VerifyEmailCodeUseCase } from './application/use-cases/verify-email-code.use-case';
 import { EmailService } from './infrastructure/email/email.service';
 import { JwtAccessStrategy } from './infrastructure/strategies/jwt-access.strategy';
+import { UserRepository } from './domain/repositories/user.repository';
+import { RefreshTokenRepository } from './domain/repositories/refresh-token.repository';
+import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.repository';
+import { PrismaRefreshTokenRepository } from './infrastructure/persistence/prisma-refresh-token.repository';
 import { AuthController } from './presentation/controllers/auth.controller';
 
 @Module({
@@ -47,6 +51,9 @@ import { AuthController } from './presentation/controllers/auth.controller';
         OAuthService,
         KakaoOAuthUseCase,
         GoogleOAuthUseCase,
+        // 포트 → Prisma 어댑터 바인딩(추상 클래스 토큰).
+        { provide: UserRepository, useClass: PrismaUserRepository },
+        { provide: RefreshTokenRepository, useClass: PrismaRefreshTokenRepository },
     ],
     exports: [JwtModule, AuthGuard, PartnerGuard],
 })
