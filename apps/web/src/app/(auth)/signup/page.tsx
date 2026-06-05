@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 
 import { Button, TextInput, BottomBar, InformationIcon } from '@todam/ui';
 import { CODE_LENGTH, emailSchema, passwordSchema, verifyCodeSchema } from '@todam/shared';
+import { OnboardingSheet } from '@/features/onboarding';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
-import { useToast } from '@/shared/model';
+import { useSheet, useToast } from '@/shared/model';
 
 type Step = 'email' | 'code' | 'password';
 
@@ -28,6 +29,7 @@ function formatTimer(seconds: number) {
 export default function SignupPage() {
     const router = useRouter();
     const { push } = useToast();
+    const { open } = useSheet();
 
     const [step, setStep] = useState<Step>('email');
     const [email, setEmail] = useState('');
@@ -106,11 +108,17 @@ export default function SignupPage() {
                 }),
             });
             const body = await res.json();
+            if (res.ok) {
+                // 회원가입 성공 → 메인 이동 후 온보딩 1회 노출(서버 저장 안 함, 회원가입 직후만).
+                // 공방 등록 선택 = 파트너 신청(/apply). 예약/건너뛰기는 시트 기본 동작.
+                router.replace('/');
+                open(<OnboardingSheet onSelectRegister={() => router.push('/apply')} />);
+                return;
+            }
             push({ type: 'icon', icon: <InformationIcon />, message: body.message });
             if (res.status === 409) {
                 setStep('email');
             }
-            // TODO: 201 시 이메일 인증 단계로 전이
         } catch {
             push({
                 type: 'icon',
