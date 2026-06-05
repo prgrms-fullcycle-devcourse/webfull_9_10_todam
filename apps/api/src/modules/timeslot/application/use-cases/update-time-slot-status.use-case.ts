@@ -1,8 +1,9 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { StoreTimeSlotStatus } from '@prisma/client';
-import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { StoreAccessService } from '../services/store-access.service';
+import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
+import { TimeSlotStatus } from '../../domain/entities/store-time-slot.entity';
+import { StoreTimeSlotRepository } from '../../domain/repositories/store-time-slot.repository';
+import { TimeslotSupportReader } from '../../domain/repositories/timeslot-support.reader';
 import type {
     UpdateTimeSlotStatusDto,
     UpdateTimeSlotStatusResponseDto,
@@ -13,8 +14,9 @@ export class UpdateTimeSlotStatusUseCase {
     private readonly logger = new Logger(UpdateTimeSlotStatusUseCase.name);
 
     constructor(
-        private readonly prisma: PrismaService,
-        private readonly storeAccess: StoreAccessService,
+        private readonly ownership: StoreOwnershipService,
+        private readonly slots: StoreTimeSlotRepository,
+        private readonly support: TimeslotSupportReader,
     ) {}
 
     async execute(
@@ -23,13 +25,9 @@ export class UpdateTimeSlotStatusUseCase {
         timeSlotId: string,
         dto: UpdateTimeSlotStatusDto,
     ): Promise<UpdateTimeSlotStatusResponseDto> {
-        await this.storeAccess.verifyOwnership(userId, storeId);
+        await this.ownership.verify(userId, storeId);
 
-        const slot = await this.prisma.storeTimeSlot.findUnique({
-            where: { id: timeSlotId },
-            select: { id: true, storeId: true, status: true },
-        });
-
+        const slot = await this.slots.findById(timeSlotId);
         if (!slot || slot.storeId !== storeId) {
             throw new BusinessException(
                 'SLOT_NOT_FOUND',
@@ -38,16 +36,11 @@ export class UpdateTimeSlotStatusUseCase {
             );
         }
 
-        const next = dto.status as StoreTimeSlotStatus;
+        const next = dto.status as TimeSlotStatus;
 
         // CANCELED 전환 시에만 유효 예약(PENDING|CONFIRMED) 가드.
         if (next === 'CANCELED') {
-            const activeCount = await this.prisma.reservation.count({
-                where: {
-                    storeTimeSlotId: timeSlotId,
-                    status: { in: ['PENDING', 'CONFIRMED'] },
-                },
-            });
+            const activeCount = await this.support.countActiveReservations(timeSlotId);
             if (activeCount > 0) {
                 throw new BusinessException(
                     'ACTIVE_RESERVATIONS_EXIST',
@@ -58,11 +51,7 @@ export class UpdateTimeSlotStatusUseCase {
         }
         // CLOSED(막기)/OPEN(재오픈)은 예약 존재 여부와 무관하게 허용.
 
-        const updated = await this.prisma.storeTimeSlot.update({
-            where: { id: timeSlotId },
-            data: { status: next },
-            select: { id: true, status: true, updatedAt: true },
-        });
+        const updated = await this.slots.updateStatus(timeSlotId, next);
 
         this.logger.log(`[slot-status] store=${storeId} slot=${timeSlotId} status=${next}`);
 

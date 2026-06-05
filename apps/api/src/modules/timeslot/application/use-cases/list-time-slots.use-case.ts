@@ -1,19 +1,23 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { Prisma, StoreTimeSlotStatus } from '@prisma/client';
-import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { StoreAccessService } from '../services/store-access.service';
+import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
+import { TimeSlotStatus } from '../../domain/entities/store-time-slot.entity';
+import { StoreTimeSlotRepository } from '../../domain/repositories/store-time-slot.repository';
+import { ReservationRestrictionRepository } from '../../domain/repositories/reservation-restriction.repository';
+import { TimeslotSupportReader } from '../../domain/repositories/timeslot-support.reader';
+import { kstDayRange, parseDateOnly } from '../../domain/time.util';
 import type {
     ListTimeSlotsQueryDto,
     ListTimeSlotsResponseDto,
 } from '../../presentation/dto/list-time-slots.dto';
-import { kstDayRange, parseDateOnly } from '../time.util';
 
 @Injectable()
 export class ListTimeSlotsUseCase {
     constructor(
-        private readonly prisma: PrismaService,
-        private readonly storeAccess: StoreAccessService,
+        private readonly ownership: StoreOwnershipService,
+        private readonly slots: StoreTimeSlotRepository,
+        private readonly restrictions: ReservationRestrictionRepository,
+        private readonly support: TimeslotSupportReader,
     ) {}
 
     async execute(
@@ -21,59 +25,26 @@ export class ListTimeSlotsUseCase {
         storeId: string,
         query: ListTimeSlotsQueryDto,
     ): Promise<ListTimeSlotsResponseDto> {
-        const store = await this.storeAccess.verifyOwnership(userId, storeId);
+        const store = await this.ownership.verify(userId, storeId);
 
-        const where: Prisma.StoreTimeSlotWhereInput = { storeId };
-
-        // 날짜 필터 → 절대 시각 범위로 변환(KST 기준).
         const range = this.resolveRange(query);
-        if (range) {
-            where.startAt = { gte: range.start, lt: range.end };
-        }
-
-        if (query.status) {
-            where.status = query.status as StoreTimeSlotStatus;
-        }
-
-        const slots = await this.prisma.storeTimeSlot.findMany({
-            where,
-            orderBy: { startAt: 'asc' },
-            select: {
-                id: true,
-                startAt: true,
-                endAt: true,
-                reservedCount: true,
-                status: true,
-                createdAt: true,
-            },
+        const slots = await this.slots.findByStore(storeId, {
+            range: range ?? undefined,
+            status: query.status ? (query.status as TimeSlotStatus) : undefined,
         });
 
         if (slots.length === 0) {
             return { slots: [] };
         }
 
+        const slotIds = slots.map((s) => s.id);
         const slotStartAts = slots.map((s) => s.startAt);
 
         // 슬롯별 CONFIRMED 예약 수.
-        const confirmedGroups = await this.prisma.reservation.groupBy({
-            by: ['storeTimeSlotId'],
-            where: {
-                storeId,
-                status: 'CONFIRMED',
-                storeTimeSlot: { startAt: { in: slotStartAts } },
-            },
-            _count: { _all: true },
-        });
-        const confirmedBySlot = new Map<string, number>();
-        for (const g of confirmedGroups) {
-            confirmedBySlot.set(g.storeTimeSlotId, g._count._all);
-        }
+        const confirmedBySlot = await this.support.countConfirmedBySlotIds(storeId, slotIds);
 
         // 제한(ReservationRestriction)은 시각 매칭 — 슬롯 startAt 기준.
-        const restrictions = await this.prisma.reservationRestriction.findMany({
-            where: { storeId, startAt: { in: slotStartAts } },
-            select: { startAt: true, programId: true },
-        });
+        const restrictions = await this.restrictions.findByStartAts(storeId, slotStartAts);
         const restrictedByStartAt = new Map<number, string[]>();
         for (const r of restrictions) {
             const key = r.startAt.getTime();
@@ -92,7 +63,7 @@ export class ListTimeSlotsUseCase {
                     startAt: s.startAt.toISOString(),
                     endAt: s.endAt.toISOString(),
                     reservedCount: s.reservedCount,
-                    remainingCount: maxCapacity - s.reservedCount,
+                    remainingCount: s.remainingCount(maxCapacity),
                     status: s.status,
                     confirmedReservationCount: confirmedBySlot.get(s.id) ?? 0,
                     isRestricted: restrictedProgramIds.length > 0,

@@ -1,4 +1,4 @@
-// 타임슬롯/제한의 절대 시각 계산 유틸.
+// 타임슬롯/제한의 절대 시각 계산 유틸 (순수 — DB/Nest 비의존, 도메인 계층).
 //
 // 영업시간(StoreOperatingHour)의 openTime/closeTime/breakStart/breakEnd 는
 // @db.Time(6) 컬럼이며 CreateStoreUseCase 에서 setUTCHours 로 저장된다 →

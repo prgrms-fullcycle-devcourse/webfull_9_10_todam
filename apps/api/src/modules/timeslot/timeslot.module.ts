@@ -7,7 +7,12 @@ import { UpdateTimeSlotStatusUseCase } from './application/use-cases/update-time
 import { CreateReservationRestrictionsUseCase } from './application/use-cases/create-reservation-restrictions.use-case';
 import { DeleteReservationRestrictionsUseCase } from './application/use-cases/delete-reservation-restrictions.use-case';
 import { GetProgramReservationCountsUseCase } from './application/use-cases/get-program-reservation-counts.use-case';
-import { StoreAccessService } from './application/services/store-access.service';
+import { StoreTimeSlotRepository } from './domain/repositories/store-time-slot.repository';
+import { ReservationRestrictionRepository } from './domain/repositories/reservation-restriction.repository';
+import { TimeslotSupportReader } from './domain/repositories/timeslot-support.reader';
+import { PrismaStoreTimeSlotRepository } from './infrastructure/persistence/prisma-store-time-slot.repository';
+import { PrismaReservationRestrictionRepository } from './infrastructure/persistence/prisma-reservation-restriction.repository';
+import { PrismaTimeslotSupportReader } from './infrastructure/persistence/prisma-timeslot-support.reader';
 import { TimeslotController } from './presentation/controllers/timeslot.controller';
 
 @Module({
@@ -20,7 +25,13 @@ import { TimeslotController } from './presentation/controllers/timeslot.controll
         CreateReservationRestrictionsUseCase,
         DeleteReservationRestrictionsUseCase,
         GetProgramReservationCountsUseCase,
-        StoreAccessService,
+        // 포트 → Prisma 어댑터 바인딩(추상 클래스 토큰).
+        { provide: StoreTimeSlotRepository, useClass: PrismaStoreTimeSlotRepository },
+        {
+            provide: ReservationRestrictionRepository,
+            useClass: PrismaReservationRestrictionRepository,
+        },
+        { provide: TimeslotSupportReader, useClass: PrismaTimeslotSupportReader },
         PartnerGuard,
     ],
 })
