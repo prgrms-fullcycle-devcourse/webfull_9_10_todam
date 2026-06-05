@@ -6,9 +6,10 @@ import { useRouter } from 'next/navigation';
 import { Button, TextInput, BottomBar, InformationIcon } from '@todam/ui';
 import { CODE_LENGTH, emailSchema, passwordSchema, verifyCodeSchema } from '@todam/shared';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
-import { useToast } from '@/shared/model';
+import { useToast, useSheet } from '@/shared/model';
 import { ApiError } from '@/shared/api';
 import { sendEmailCode, verifyEmailCode, signup } from '@/features/auth/signup/api';
+import { TermsAgreementSheet } from '@/features/auth/terms';
 
 type Step = 'email' | 'code' | 'password';
 
@@ -30,6 +31,7 @@ function formatTimer(seconds: number) {
 export default function SignupPage() {
     const router = useRouter();
     const { push } = useToast();
+    const { open: openSheet, close: closeSheet } = useSheet();
 
     const [step, setStep] = useState<Step>('email');
     const [email, setEmail] = useState('');
@@ -101,23 +103,39 @@ export default function SignupPage() {
                 return;
             }
 
-            // step === 'password' → 회원가입 요청
+            // step === 'password' → 약관 동의 게이트(FE 전용) 후 회원가입
             if (!passwordValid) {
                 setPasswordError(true);
                 return;
             }
-            try {
-                await signup({ email, password });
-                toast('회원가입이 완료되었습니다. 로그인해주세요.');
-                router.replace('/login');
-            } catch (err) {
-                if (err instanceof ApiError && err.statusCode === 409) {
-                    toast(err.message);
-                    setStep('email');
-                    return;
-                }
-                toast(errMessage(err, '회원가입 처리 중 오류가 발생했습니다.'));
+            // 약관 동의값은 BE SignupDto 미수용(forbidNonWhitelisted) → 전송 안 함, FE 게이트로만 사용.
+            openSheet(
+                <TermsAgreementSheet
+                    onConfirm={() => {
+                        closeSheet();
+                        void submitSignup();
+                    }}
+                    onClose={closeSheet}
+                />,
+            );
+        } finally {
+            setPending(false);
+        }
+    };
+
+    const submitSignup = async () => {
+        setPending(true);
+        try {
+            await signup({ email, password });
+            toast('회원가입이 완료되었습니다. 로그인해주세요.');
+            router.replace('/login');
+        } catch (err) {
+            if (err instanceof ApiError && err.statusCode === 409) {
+                toast(err.message);
+                setStep('email');
+                return;
             }
+            toast(errMessage(err, '회원가입 처리 중 오류가 발생했습니다.'));
         } finally {
             setPending(false);
         }
