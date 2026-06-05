@@ -71,6 +71,14 @@ export function kstDayRange(parts: { year: number; month: number; day: number })
     return { start, end };
 }
 
+/** year/month(KST) 의 해당 월 [1일 00:00, 다음달 1일 00:00) 절대 시각 범위. */
+export function kstMonthRange(year: number, month: number): { start: Date; end: Date } {
+    const start = kstWallClockToInstant({ year, month, day: 1 }, 0);
+    const next = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
+    const end = kstWallClockToInstant({ year: next.year, month: next.month, day: 1 }, 0);
+    return { start, end };
+}
+
 /** 두 날짜(YYYY-MM-DD) 사이의 모든 날짜 parts 를 포함(양끝 포함)해 반환. */
 export function eachDateInclusive(
     startParts: { year: number; month: number; day: number },

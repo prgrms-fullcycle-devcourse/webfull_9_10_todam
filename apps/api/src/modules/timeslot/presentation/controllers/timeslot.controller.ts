@@ -23,7 +23,9 @@ import { UpdateTimeSlotStatusUseCase } from '../../application/use-cases/update-
 import { CreateReservationRestrictionsUseCase } from '../../application/use-cases/create-reservation-restrictions.use-case';
 import { DeleteReservationRestrictionsUseCase } from '../../application/use-cases/delete-reservation-restrictions.use-case';
 import { GetProgramReservationCountsUseCase } from '../../application/use-cases/get-program-reservation-counts.use-case';
+import { GetProgramAvailableSlotsUseCase } from '../../application/use-cases/get-program-available-slots.use-case';
 import { GenerateTimeSlotsDto, GenerateTimeSlotsResponseDto } from '../dto/generate-time-slots.dto';
+import { AvailableSlotsQueryDto, AvailableSlotsResponseDto } from '../dto/available-slots.dto';
 import { ListTimeSlotsQueryDto, ListTimeSlotsResponseDto } from '../dto/list-time-slots.dto';
 import {
     UpdateTimeSlotStatusDto,
@@ -53,6 +55,7 @@ export class TimeslotController {
         private readonly createReservationRestrictionsUseCase: CreateReservationRestrictionsUseCase,
         private readonly deleteReservationRestrictionsUseCase: DeleteReservationRestrictionsUseCase,
         private readonly getProgramReservationCountsUseCase: GetProgramReservationCountsUseCase,
+        private readonly getProgramAvailableSlotsUseCase: GetProgramAvailableSlotsUseCase,
     ) {}
 
     @Post('partner/stores/:storeId/time-slots/generate')
@@ -145,5 +148,17 @@ export class TimeslotController {
         @Query() query: ProgramReservationCountsQueryDto,
     ): Promise<ProgramReservationCountsResponseDto> {
         return this.getProgramReservationCountsUseCase.execute(user.id, storeId, query);
+    }
+
+    @Get('programs/:programId/available-slots')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ResponseMessage('예약 가능 시간 목록이 성공적으로 조회되었습니다.')
+    @ApiOkResponse({ description: '예약 가능 시간 조회 성공', type: AvailableSlotsResponseDto })
+    async getProgramAvailableSlots(
+        @Param('programId') programId: string,
+        @Query() query: AvailableSlotsQueryDto,
+    ): Promise<AvailableSlotsResponseDto> {
+        return this.getProgramAvailableSlotsUseCase.execute(programId, query);
     }
 }

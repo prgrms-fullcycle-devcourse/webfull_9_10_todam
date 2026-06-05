@@ -429,6 +429,13 @@ describe('API route baseline', () => {
                 guards: ['AuthGuard', 'PartnerGuard'],
             },
             {
+                controller: 'TimeslotController',
+                handler: 'getProgramAvailableSlots',
+                method: 'GET',
+                path: '/programs/:programId/available-slots',
+                guards: ['AuthGuard'],
+            },
+            {
                 controller: 'PartnerReservationController',
                 handler: 'calendar',
                 method: 'GET',
