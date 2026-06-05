@@ -117,7 +117,7 @@ export class PrismaUpdateStoreCommand {
                 const keepIds = dto.images.filter((id) => ownedIds.has(id));
 
                 await tx.storeImage.deleteMany({
-                    where: { storeId, id: { notIn: keepIds.length > 0 ? keepIds : ['__none__'] } },
+                    where: keepIds.length > 0 ? { storeId, id: { notIn: keepIds } } : { storeId },
                 });
 
                 for (let i = 0; i < keepIds.length; i += 1) {
