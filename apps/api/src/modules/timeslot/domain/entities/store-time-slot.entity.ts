@@ -3,7 +3,7 @@
 
 // 슬롯 상태의 단일 진실원천(SSOT)은 FE 와 공유하는 @todam/shared 의 StoreTimeSlotStatus.
 // 타입만 import → 컴파일 후 소멸하므로 런타임 의존 없음(도메인은 런타임 패키지 비의존 유지).
-import type { StoreTimeSlotStatus } from '@todam/shared/src/enums/store-time-slot-status';
+import type { StoreTimeSlotStatus } from '@todam/shared';
 
 export type TimeSlotStatus = `${StoreTimeSlotStatus}`;
 

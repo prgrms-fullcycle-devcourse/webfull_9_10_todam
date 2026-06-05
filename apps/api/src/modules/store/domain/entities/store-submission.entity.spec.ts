@@ -1,5 +1,5 @@
 import { StoreSubmission } from './store-submission.entity';
-import type { StoreStatus } from '@todam/shared/src/enums/store-status';
+import type { StoreStatus } from '@todam/shared';
 
 describe('StoreSubmission', () => {
     it.each(['DRAFT', 'REJECTED'] as `${StoreStatus}`[])(
