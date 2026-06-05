@@ -7,6 +7,8 @@ import { Button, TextInput, BottomBar, InformationIcon } from '@todam/ui';
 import { CODE_LENGTH, emailSchema, passwordSchema, verifyCodeSchema } from '@todam/shared';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useToast } from '@/shared/model';
+import { ApiError } from '@/shared/api';
+import { sendEmailCode, verifyEmailCode, signup } from '@/features/auth/signup/api';
 
 type Step = 'email' | 'code' | 'password';
 
@@ -36,6 +38,7 @@ export default function SignupPage() {
     const [codeError, setCodeError] = useState(false);
     const [passwordError, setPasswordError] = useState(false);
     const [secondsLeft, setSecondsLeft] = useState(VERIFY_SECONDS);
+    const [pending, setPending] = useState(false);
 
     const emailValid = emailSchema.safeParse(email).success;
     const codeValid = verifyCodeSchema.safeParse(code).success;
@@ -54,73 +57,74 @@ export default function SignupPage() {
         else router.back();
     };
 
-    // TODO: 인증번호 전송 API 연동 (엔드포인트 미제공)
-    const sendCode = () => {
-        setCode('');
-        setCodeError(false);
-        setSecondsLeft(VERIFY_SECONDS);
-        push({
-            type: 'icon',
-            icon: <InformationIcon />,
-            message: '입력하신 이메일로 인증번호를 전송했어요.',
-        });
+    const toast = (message: string) => push({ type: 'icon', icon: <InformationIcon />, message });
+
+    const errMessage = (err: unknown, fallback: string) =>
+        err instanceof ApiError ? err.message : fallback;
+
+    const sendCode = async (): Promise<boolean> => {
+        try {
+            await sendEmailCode(email);
+            setCode('');
+            setCodeError(false);
+            setSecondsLeft(VERIFY_SECONDS);
+            toast('입력하신 이메일로 인증번호를 전송했어요.');
+            return true;
+        } catch (err) {
+            toast(errMessage(err, '인증번호 전송 중 오류가 발생했습니다.'));
+            return false;
+        }
     };
 
     const handlePrimary = async () => {
-        if (step === 'email') {
-            sendCode();
-            setStep('code');
-            return;
-        }
-
-        if (step === 'code') {
-            // TODO: 인증번호 확인 API 연동 (엔드포인트 미제공) — 임시로 6자리면 통과
-            if (!codeValid) {
-                setCodeError(true);
-                push({
-                    type: 'icon',
-                    icon: <InformationIcon />,
-                    message: '인증번호가 일치하지 않습니다.',
-                });
+        if (pending) return;
+        setPending(true);
+        try {
+            if (step === 'email') {
+                if (await sendCode()) setStep('code');
                 return;
             }
-            setStep('password');
-            return;
-        }
 
-        // step === 'password' → 회원가입 요청
-        if (!passwordValid) {
-            setPasswordError(true);
-            return;
-        }
-        try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/signup`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                body: JSON.stringify({
-                    email,
-                    password,
-                    // TODO: 약관 동의 UI(동의 시트) 디자인 확정 후 실제 동의값 반영
-                    termsAgreed: true,
-                    privacyAgreed: true,
-                }),
-            });
-            const body = await res.json();
-            push({ type: 'icon', icon: <InformationIcon />, message: body.message });
-            if (res.status === 409) {
-                setStep('email');
+            if (step === 'code') {
+                if (!codeValid) {
+                    setCodeError(true);
+                    toast('인증번호가 일치하지 않습니다.');
+                    return;
+                }
+                try {
+                    await verifyEmailCode(email, code);
+                    setStep('password');
+                } catch (err) {
+                    setCodeError(true);
+                    toast(errMessage(err, '인증번호 확인 중 오류가 발생했습니다.'));
+                }
+                return;
             }
-            // TODO: 201 시 이메일 인증 단계로 전이
-        } catch {
-            push({
-                type: 'icon',
-                icon: <InformationIcon />,
-                message: '회원가입 처리 중 오류가 발생했습니다.',
-            });
+
+            // step === 'password' → 회원가입 요청
+            if (!passwordValid) {
+                setPasswordError(true);
+                return;
+            }
+            try {
+                await signup({ email, password });
+                toast('회원가입이 완료되었습니다. 로그인해주세요.');
+                router.replace('/login');
+            } catch (err) {
+                if (err instanceof ApiError && err.statusCode === 409) {
+                    toast(err.message);
+                    setStep('email');
+                    return;
+                }
+                toast(errMessage(err, '회원가입 처리 중 오류가 발생했습니다.'));
+            }
+        } finally {
+            setPending(false);
         }
     };
 
     const primaryDisabled =
+        pending ||
         (step === 'email' && !emailValid) ||
         (step === 'code' && !codeValid) ||
         (step === 'password' && !passwordValid);
@@ -171,8 +175,9 @@ export default function SignupPage() {
                                 </span>
                                 <button
                                     type="button"
-                                    onClick={sendCode}
-                                    className="text-xs font-semibold text-foreground-secondary"
+                                    onClick={() => void sendCode()}
+                                    disabled={pending}
+                                    className="text-xs font-semibold text-foreground-secondary disabled:opacity-50"
                                 >
                                     인증번호 재전송
                                 </button>
