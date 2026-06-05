@@ -20,7 +20,8 @@ type HeaderConfig = {
 
 const routeConfig: Record<string, HeaderConfig> = {
     '/': { type: 'home' },
-    '/my': { type: 'main', title: '마이' },
+    '/my': { type: 'main', title: '마이페이지' },
+    '/my/profile': { type: 'sub', title: '개인 정보 수정' },
     '/my/reservations': { type: 'sub', title: '예약' },
     '/partner': { type: 'home' },
     '/partner/stores': { type: 'sub', title: '공방 관리' },
