@@ -1,13 +1,3 @@
-'use client';
-
-import { ReservationCalendarView } from '@/features/reservation/calendar/ui/ReservationCalendarView';
-import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
-
 export default function PartnerReservationsPage() {
-    const storeId = useCurrentStoreId();
-
-    // storeId 없을 때 guard는 AppShell bootstrap이 처리(공방 선택 화면 redirect).
-    if (!storeId) return null;
-
-    return <ReservationCalendarView />;
+    return <div>파트너 예약 관리 캘린더</div>;
 }
