@@ -16,18 +16,26 @@ import {
     ApiBody,
     ApiCreatedResponse,
     ApiOkResponse,
+    ApiQuery,
     ApiTags,
 } from '@nestjs/swagger';
 import {
+    availableSlotsQuerySchema,
     createReservationRestrictionsRequestSchema,
     deleteReservationRestrictionsRequestSchema,
     generateTimeSlotsRequestSchema,
+    listTimeSlotsQuerySchema,
+    programReservationCountsQuerySchema,
+    StoreTimeSlotStatus,
     updateTimeSlotStatusRequestSchema,
 } from '@todam/shared';
 import type {
+    AvailableSlotsQuery,
     CreateReservationRestrictionsRequest,
     DeleteReservationRestrictionsRequest,
     GenerateTimeSlotsRequest,
+    ListTimeSlotsQuery,
+    ProgramReservationCountsQuery,
     UpdateTimeSlotStatusRequest,
 } from '@todam/shared';
 import { ZodValidationPipe } from 'nestjs-zod';
@@ -44,8 +52,8 @@ import { DeleteReservationRestrictionsUseCase } from '../../application/use-case
 import { GetProgramReservationCountsUseCase } from '../../application/use-cases/get-program-reservation-counts.use-case';
 import { GetProgramAvailableSlotsUseCase } from '../../application/use-cases/get-program-available-slots.use-case';
 import { GenerateTimeSlotsDto, GenerateTimeSlotsResponseDto } from '../dto/generate-time-slots.dto';
-import { AvailableSlotsQueryDto, AvailableSlotsResponseDto } from '../dto/available-slots.dto';
-import { ListTimeSlotsQueryDto, ListTimeSlotsResponseDto } from '../dto/list-time-slots.dto';
+import { AvailableSlotsResponseDto } from '../dto/available-slots.dto';
+import { ListTimeSlotsResponseDto } from '../dto/list-time-slots.dto';
 import {
     UpdateTimeSlotStatusDto,
     UpdateTimeSlotStatusResponseDto,
@@ -58,10 +66,7 @@ import {
     DeleteReservationRestrictionsDto,
     DeleteReservationRestrictionsResponseDto,
 } from '../dto/delete-reservation-restrictions.dto';
-import {
-    ProgramReservationCountsQueryDto,
-    ProgramReservationCountsResponseDto,
-} from '../dto/program-reservation-counts.dto';
+import { ProgramReservationCountsResponseDto } from '../dto/program-reservation-counts.dto';
 
 @ApiTags('partner-time-slots')
 @ApiBearerAuth()
@@ -98,10 +103,14 @@ export class TimeslotController {
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('타임슬롯 목록이 성공적으로 조회되었습니다.')
     @ApiOkResponse({ description: '타임슬롯 목록 조회 성공', type: ListTimeSlotsResponseDto })
+    @ApiQuery({ name: 'date', type: String, required: false, example: '2026-06-10' })
+    @ApiQuery({ name: 'startDate', type: String, required: false, example: '2026-06-01' })
+    @ApiQuery({ name: 'endDate', type: String, required: false, example: '2026-06-07' })
+    @ApiQuery({ name: 'status', enum: StoreTimeSlotStatus, required: false })
     async listTimeSlots(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Query() query: ListTimeSlotsQueryDto,
+        @Query(new ZodValidationPipe(listTimeSlotsQuerySchema)) query: ListTimeSlotsQuery,
     ): Promise<ListTimeSlotsResponseDto> {
         return this.listTimeSlotsUseCase.execute(user.id, storeId, query);
     }
@@ -168,10 +177,13 @@ export class TimeslotController {
         description: '프로그램별 확정 예약 건수 조회 성공',
         type: ProgramReservationCountsResponseDto,
     })
+    @ApiQuery({ name: 'date', type: String, example: '2026-06-10' })
+    @ApiQuery({ name: 'timeSlotIds', type: String, required: false, example: 'slot-1,slot-2' })
     async getProgramReservationCounts(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Query() query: ProgramReservationCountsQueryDto,
+        @Query(new ZodValidationPipe(programReservationCountsQuerySchema))
+        query: ProgramReservationCountsQuery,
     ): Promise<ProgramReservationCountsResponseDto> {
         return this.getProgramReservationCountsUseCase.execute(user.id, storeId, query);
     }
@@ -181,9 +193,11 @@ export class TimeslotController {
     @UseGuards(AuthGuard)
     @ResponseMessage('예약 가능 시간 목록이 성공적으로 조회되었습니다.')
     @ApiOkResponse({ description: '예약 가능 시간 조회 성공', type: AvailableSlotsResponseDto })
+    @ApiQuery({ name: 'year', type: Number, example: 2026 })
+    @ApiQuery({ name: 'month', type: Number, example: 6 })
     async getProgramAvailableSlots(
         @Param('programId') programId: string,
-        @Query() query: AvailableSlotsQueryDto,
+        @Query(new ZodValidationPipe(availableSlotsQuerySchema)) query: AvailableSlotsQuery,
     ): Promise<AvailableSlotsResponseDto> {
         return this.getProgramAvailableSlotsUseCase.execute(programId, query);
     }
