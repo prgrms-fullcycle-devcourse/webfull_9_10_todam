@@ -497,6 +497,13 @@ describe('API route baseline', () => {
             },
             {
                 controller: 'UserReservationController',
+                handler: 'listMyReservations',
+                method: 'GET',
+                path: '/reservations/me',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'UserReservationController',
                 handler: 'create',
                 method: 'POST',
                 path: '/reservations',
