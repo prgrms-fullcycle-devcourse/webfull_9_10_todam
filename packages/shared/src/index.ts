@@ -36,6 +36,7 @@ export {
 
 export * from './constants/regex';
 
+export * from './contracts/auth';
 export * from './contracts/fields';
 export * from './contracts/store-registration';
 export * from './contracts/store-edit';
