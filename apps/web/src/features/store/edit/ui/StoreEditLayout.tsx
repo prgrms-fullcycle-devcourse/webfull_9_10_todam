@@ -54,7 +54,8 @@ export function StoreEditLayout({ storeId, section, returnTo }: StoreEditLayoutP
     const { push } = useToast();
     const { open, close } = useModal();
 
-    const backPath = returnTo ?? `/partner/stores/${storeId}`;
+    // 공방 상세는 전역 currentStore 기반 단수 라우트(/partner/store). storeId 파라미터 경로 제거됨.
+    const backPath = returnTo ?? '/partner/studio';
 
     // GET preload → 폼 기본값 주입.
     useEffect(() => {

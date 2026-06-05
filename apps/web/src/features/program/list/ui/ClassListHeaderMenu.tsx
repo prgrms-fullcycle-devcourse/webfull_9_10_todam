@@ -7,10 +7,9 @@ import { Button, Menu, MoreIcon, PlusIcon, SwapIcon } from '@todam/ui';
 
 type ClassListHeaderMenuProps = {
     programCount: number;
-    storeId: string;
 };
 
-export function ClassListHeaderMenu({ programCount, storeId }: ClassListHeaderMenuProps) {
+export function ClassListHeaderMenu({ programCount }: ClassListHeaderMenuProps) {
     const router = useRouter();
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
@@ -54,13 +53,13 @@ export function ClassListHeaderMenu({ programCount, storeId }: ClassListHeaderMe
                         onItemSelect={(index) => {
                             if (index === 0) {
                                 setOpen(false);
-                                router.push(`/partner/classes/new?storeId=${storeId}`);
+                                router.push('/partner/classes/new');
                                 return;
                             }
                             if (index === 1) {
                                 if (reorderDisabled) return;
                                 setOpen(false);
-                                router.push(`/partner/classes/order?storeId=${storeId}`);
+                                router.push('/partner/classes/order');
                             }
                         }}
                     />

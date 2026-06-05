@@ -1,6 +1,5 @@
 'use client';
 
-import { use } from 'react';
 import { useRouter } from 'next/navigation';
 
 import {
@@ -28,8 +27,10 @@ import {
     StoreInfoSummary,
     StoreLocation,
 } from '@/entities/store';
+import { useReviewStore } from '@/entities/store';
 import { PartnerClassListItem } from '@/features/program/list';
 import { ApiError } from '@/shared/api';
+import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useSheet, useToast } from '@/shared/model';
 import { EmptyState } from '@/shared/ui';
@@ -52,7 +53,6 @@ function errorMessage(error: unknown): string {
 }
 
 // 평점 행 우측 액션(문의하기/공유하기). 아이콘 + 라벨만 배치.
-// 디자인: 평점 행 gap 4px 안에서 "・" 구분자 2개(문의 앞 / 문의·공유 사이)와 함께 정렬.
 // 문의하기 = 공방 전화번호로 tel: 다이얼. 공유하기 = 고객용 공개 페이지(/stores/{slug}) 링크 공유.
 function StoreInfoActions({
     phone,
@@ -64,10 +64,8 @@ function StoreInfoActions({
     storeName: string;
 }) {
     const { push } = useToast();
-    // tel: 스킴은 하이픈 허용하나 일부 다이얼러 호환 위해 숫자·+ 만 남김.
     const telHref = `tel:${phone.replace(/[^0-9+]/g, '')}`;
 
-    // PWA·모바일: Web Share API(OS 공유 시트). 미지원(데스크탑 일부)·실패: 링크 클립보드 복사 fallback.
     async function handleShare() {
         const url = `${window.location.origin}/stores/${slug}`;
         if (typeof navigator.share === 'function') {
@@ -75,7 +73,6 @@ function StoreInfoActions({
                 await navigator.share({ title: storeName, url });
                 return;
             } catch (e) {
-                // 사용자 취소(AbortError)는 조용히 종료. 그 외 오류는 복사 fallback 으로.
                 if (e instanceof Error && e.name === 'AbortError') return;
             }
         }
@@ -110,25 +107,43 @@ function StoreInfoActions({
     );
 }
 
-export default function PartnerStoreDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params);
+/**
+ * 현재 공방 상세 — storeId는 전역 currentStore(useCurrentStoreId). URL 파라미터 없음.
+ * 진입: 파트너홈 전환시트(심사중·반려) / 설정 > 공방관리(게시중).
+ * 상태별: 심사중·반려 → 검수 결과 화면, 게시중 → 일반 상세.
+ */
+export default function PartnerStorePage() {
     const router = useRouter();
     const { open } = useSheet();
+    const currentStoreId = useCurrentStoreId();
+    const { reviewStoreId, setReviewStoreId } = useReviewStore();
+    // 미승인 공방 "보기"(reviewStoreId) 우선, 없으면 현재 작업 공방(currentStore).
+    // reviewStoreId는 진입점이 명시 설정(심사중 선택=id, 설정>공방관리=null). 언마운트 clear는
+    // StrictMode(dev) mount 시 cleanup이 먼저 돌아 값을 날리므로 쓰지 않는다.
+    const storeId = reviewStoreId ?? currentStoreId;
 
-    const detail = usePartnerStoreDetail(id);
-    const programs = usePartnerStorePrograms(id);
+    const detail = usePartnerStoreDetail(storeId);
+    const programs = usePartnerStorePrograms(storeId);
 
-    // 전역 Header override: 뒤로가기(→공방 관리) + 타이틀. 우측 액션 없음.
-    // 심사중·반려는 검수 결과 화면(헤더 없음)이므로 override 비활성.
     const detailStatus = detail.data?.store.status;
+    // 헤더 없는 전체 안내 화면(검수 결과·게시중단) → override 비활성 → 헤더 숨김.
     const isReviewScreen =
-        detailStatus === StoreStatus.PENDING || detailStatus === StoreStatus.REJECTED;
+        detailStatus === StoreStatus.PENDING ||
+        detailStatus === StoreStatus.REJECTED ||
+        detailStatus === StoreStatus.SUSPENDED;
+    const goHome = () => {
+        setReviewStoreId(null);
+        router.push('/partner');
+    };
     useHeaderOverride({
         title: '공방 미리보기',
-        onBack: () => router.push('/partner/stores'),
+        onBack: goHome,
         hideRightAction: true,
         enabled: !isReviewScreen,
     });
+
+    // storeId 미확정(bootstrap 전)엔 렌더 보류.
+    if (!storeId) return null;
 
     if (detail.isLoading) {
         return (
@@ -154,7 +169,7 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
 
     const store = detail.data.store;
 
-    // 심사중·반려 공방은 일반 상세 대신 검수 결과 화면. (심사 결과 = 스토어 단위 store.status)
+    // 심사중·반려 공방은 일반 상세 대신 검수 결과 화면.
     if (store.status === StoreStatus.PENDING || store.status === StoreStatus.REJECTED) {
         return (
             <StoreReviewResult
@@ -165,26 +180,48 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                 businessNumber={store.businessDocument?.businessNumber}
                 email={store.businessDocument?.email}
                 createdAt={store.createdAt}
-                onEditInfo={() => router.push(`/partner/stores/${id}/business`)}
-                onBack={() => router.push('/partner/stores')}
+                onEditInfo={() => router.push(`/partner/studio/${storeId}/business`)}
+                onBack={goHome}
             />
+        );
+    }
+
+    // 게시중단 공방 보기 = 중단 안내(탈출 가능 — 홈으로). 작업 공방 lockout(SuspendedStoreGate)과 별개.
+    if (store.status === StoreStatus.SUSPENDED) {
+        return (
+            <div className="flex h-full flex-col bg-background">
+                <main className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+                    <p className="text-base font-semibold text-foreground">
+                        이용이 중단되었습니다.
+                    </p>
+                    <p className="text-sm text-foreground-secondary">고객센터로 문의해주세요.</p>
+                    <a
+                        href="mailto:support.todam@gmail.com"
+                        className="text-sm font-medium text-primary"
+                    >
+                        support.todam@gmail.com
+                    </a>
+                </main>
+                <BottomBar>
+                    <Button className="w-full" onClick={goHome}>
+                        홈으로
+                    </Button>
+                </BottomBar>
+            </div>
         );
     }
 
     const programList = programs.data?.programs ?? [];
     const hasPrograms = programList.length > 0;
-    // day는 program 필드가 아니라 store.operatingHours에서 도출(한글 요일 "·" join). 모든 클래스 공통.
 
     return (
         <div className="flex h-full flex-col bg-background">
             <main className="flex-1 overflow-y-auto pb-28">
-                {/* 대표 이미지 carousel */}
                 <StoreImageCarousel images={store.images} />
 
                 <div className="flex flex-col px-4">
                     <SpaceBlock size={8} />
 
-                    {/* 기본 정보: 편의 태그 / 공방명 / 상태 배지 / 평점 / 리뷰 수 / 문의·공유 / 소개. 찜 버튼 미노출. */}
                     <div className="py-2">
                         <StoreInfoSummary
                             name={store.name}
@@ -204,7 +241,6 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
 
                     <Divider />
 
-                    {/* 운영 중인 클래스. 진행 중 예약 건수는 수정 바텀시트 헤더로 이동(별도 섹션 제거). */}
                     <SectionTitle
                         title="운영 클래스"
                         size="lg"
@@ -221,7 +257,6 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                                 클래스 목록을 불러오지 못했습니다.
                             </p>
                         )}
-                        {/* 등록된 클래스 없음 → 안내 + 클래스 관리 진입 (관리 페이지서 등록·순서변경) */}
                         {!programs.isLoading && !programs.isError && !hasPrograms && (
                             <div className="flex flex-col gap-3">
                                 <DescriptionBlock title="공방 안내">
@@ -231,27 +266,22 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                                     variant="outline"
                                     size="sm"
                                     className="w-full"
-                                    onClick={() => router.push(`/partner/classes?storeId=${id}`)}
+                                    onClick={() => router.push('/partner/classes')}
                                 >
                                     클래스 관리
                                 </Button>
                             </div>
                         )}
-                        {/* 클래스 있음 → 목록 + 하단 클래스 관리 진입 (현재 공방 스코프) */}
                         {!programs.isLoading && !programs.isError && hasPrograms && (
                             <div className="flex flex-col gap-2">
                                 {programList.map((program) => (
-                                    <PartnerClassListItem
-                                        key={program.id}
-                                        program={program}
-                                        storeId={id}
-                                    />
+                                    <PartnerClassListItem key={program.id} program={program} />
                                 ))}
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     className="mt-1 w-full"
-                                    onClick={() => router.push(`/partner/classes?storeId=${id}`)}
+                                    onClick={() => router.push('/partner/classes')}
                                 >
                                     클래스 관리
                                 </Button>
@@ -261,7 +291,6 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
 
                     <Divider />
 
-                    {/* 위치 — 지도 placeholder + 주소 (실 지도 SDK 연동은 follow-up) */}
                     <SectionTitle title="위치" size="lg" />
                     <section className="py-2">
                         <StoreLocation
@@ -274,7 +303,6 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                 </div>
             </main>
 
-            {/* 공방 정보 수정하기 → 수정 항목 선택 바텀시트 (하단 고정 BottomBar) */}
             <BottomBar>
                 <Button
                     variant="filled"
@@ -283,7 +311,6 @@ export default function PartnerStoreDetailPage({ params }: { params: Promise<{ i
                     onClick={() =>
                         open(
                             <StoreEditSheet
-                                storeId={id}
                                 storeName={store.name}
                                 inProgressReservationCount={store.inProgressReservationCount}
                             />,

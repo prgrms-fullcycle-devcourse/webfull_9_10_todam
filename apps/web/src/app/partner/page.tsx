@@ -1,3 +1,5 @@
+import { CurrentStoreSection } from '@/features/store/switch';
+
 const sections = [
     { title: '대기 중인 예약', count: 4 },
     { title: '오늘의 일정', count: 4 },
@@ -10,13 +12,11 @@ export default function PartnerHomePage() {
     return (
         <>
             <main className="flex-1 overflow-y-auto">
-                {/* hero: 메인 비주얼 콘텐츠 배치 영역 */}
-                <section className="flex h-56 items-center justify-center bg-primary-subtle text-primary">
-                    Hero 콘텐츠 배치
-                </section>
-
                 {/* Container: 좌/우 패딩 + 섹션 간 gap */}
                 <div className="flex flex-col gap-6 px-4 py-6">
+                    {/* 현재 선택된 공방 + 전환 진입 */}
+                    <CurrentStoreSection />
+
                     {sections.map(({ title, count }) => (
                         <section key={title} className="flex flex-col gap-3 py-2">
                             <h2 className="text-base font-semibold text-foreground">{title}</h2>

@@ -4,11 +4,11 @@ import { use } from 'react';
 
 import { Button, Tag, RightIcon, BottomBar } from '@todam/ui';
 import { ProgramDifficulty, ProgramStatus } from '@todam/shared';
-import { useSearchParams } from 'next/navigation';
 
 import { ApiError } from '@/shared/api';
 import { useSheet, useToast } from '@/shared/model';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
 import { getDifficultyLabel } from '@/entities/program';
 import {
     ClassDescription,
@@ -22,7 +22,7 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default function PartnerClassDetailPage({ params }: PageProps) {
     const { id: programId } = use(params);
-    const storeId = useSearchParams().get('storeId') ?? '';
+    const storeId = useCurrentStoreId();
     const { data, isLoading } = usePartnerProgramDetail(storeId, programId);
     const program = data?.program;
     const { open: openSheet, close: closeSheet } = useSheet();

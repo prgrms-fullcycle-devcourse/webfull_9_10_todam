@@ -20,3 +20,25 @@ export const signupResultSchema = z.object({
     user: signupUserSchema,
 });
 export type SignupResult = z.infer<typeof signupResultSchema>;
+
+// 로그인 요청 (POST /auth/login). 소셜(oauth) 응답도 동일 result 스키마.
+export const loginRequestSchema = z.object({
+    email: z.string().email(),
+    password: z.string(),
+});
+export type LoginRequest = z.infer<typeof loginRequestSchema>;
+
+// 로그인 응답.
+export const loginUserSchema = z.object({
+    userId: z.string(),
+    email: z.string(),
+    nickname: z.string(),
+    isPartner: z.boolean(),
+});
+export type LoginUser = z.infer<typeof loginUserSchema>;
+
+export const loginResultSchema = z.object({
+    accessToken: z.string(),
+    user: loginUserSchema,
+});
+export type LoginResult = z.infer<typeof loginResultSchema>;

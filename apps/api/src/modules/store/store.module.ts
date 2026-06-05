@@ -18,6 +18,8 @@ import { GetStoreDetailUseCase } from './application/use-cases/get-store-detail.
 import { ListStoreProgramsUseCase } from './application/use-cases/list-store-programs.use-case';
 import { ListStoreReviewsUseCase } from './application/use-cases/list-store-reviews.use-case';
 import { ToggleFavoriteStoreUseCase } from './application/use-cases/toggle-favorite-store.use-case';
+import { GetPartnerCurrentStoreUseCase } from './application/use-cases/get-partner-current-store.use-case';
+import { UpdatePartnerCurrentStoreUseCase } from './application/use-cases/update-partner-current-store.use-case';
 import { PartnerGuard } from '../../common/guards/partner.guard';
 import { OptionalAuthGuard } from '../../common/guards/optional-auth.guard';
 import { StoreImageRepository } from './domain/repositories/store-image.repository';
@@ -78,6 +80,8 @@ import { StoreController } from './presentation/controllers/store.controller';
         ListStoreProgramsUseCase,
         ListStoreReviewsUseCase,
         ToggleFavoriteStoreUseCase,
+        GetPartnerCurrentStoreUseCase,
+        UpdatePartnerCurrentStoreUseCase,
         { provide: StoreImageRepository, useClass: PrismaStoreImageRepository },
         { provide: StoreRepository, useClass: PrismaStoreRepository },
         { provide: CreateStoreWriter, useClass: PrismaCreateStoreCommand },

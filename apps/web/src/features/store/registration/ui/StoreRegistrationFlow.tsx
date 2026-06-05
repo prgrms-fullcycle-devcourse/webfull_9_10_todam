@@ -4,14 +4,14 @@ import { BottomBar, Button, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { StoreRegistrationApiErrorCode } from '@todam/shared';
+import { PartnerStatus, StoreRegistrationApiErrorCode } from '@todam/shared';
 
 import { ApiError } from '@/shared/api';
 import { useModal, useToast } from '@/shared/model';
 import { ProgressBarWrapper } from '@/shared/ui';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { isAllValid, isDirty, isStepValid, useStoreRegistrationStore } from '../model/store';
-import { useSubmitStoreRegistration } from '../queries';
+import { usePartnerOnboarding, useSubmitStoreRegistration } from '../queries';
 import { StoreRegistrationStep, STEP_TITLES, TOTAL_STEPS } from '../model/types';
 
 import { BusinessStep } from './BusinessStep';
@@ -21,7 +21,7 @@ import { ReservationStep } from './ReservationStep';
 import { StoreInfoStep } from './StoreInfoStep';
 
 export type StoreRegistrationFlowProps = {
-    // 닫기/첫 단계 뒤로가기 시 돌아갈 경로. 진입점별로 다르다. (예: /apply→/my, /partner/stores/new→/partner/stores)
+    // 닫기/첫 단계 뒤로가기 시 돌아갈 경로. 진입점별로 다르다. (예: /apply→/my, /partner/studio/new→/partner)
     returnTo?: string;
 };
 
@@ -39,12 +39,15 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
 
     const submitMutation = useSubmitStoreRegistration();
     const submitting = submitMutation.isPending;
+    // 공방 등록 완료 후 승인된 파트너 여부에 따라 '홈으로' 목적지 분기
+    const { data: onboarding } = usePartnerOnboarding(true);
+    const isApprovedPartner = onboarding?.partnerStatus === PartnerStatus.APPROVED;
     const [submittedStoreId, setSubmittedStoreId] = useState<string | null>(null);
     const submitted = submittedStoreId !== null;
 
     const dirty = isDirty(form);
 
-    // 진입점 2개(/apply, /partner/stores/new)가 전역 store 공유 → 플로우 이탈 시 초기화
+    // 진입점 2개(/apply, /partner/studio/new)가 전역 store 공유 → 플로우 이탈 시 초기화
     useEffect(() => () => reset(), [reset]);
 
     const exit = () => {
@@ -52,7 +55,6 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
         router.push(returnTo);
     };
 
-    // 작성 중이면 확인 모달, 아니면 즉시 이탈.
     const guardedExit = () => {
         if (!dirty) {
             exit();
@@ -79,7 +81,6 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
         else prev();
     };
 
-    // 전역 Header override: 뒤로가기(첫 단계는 이탈 가드) + 닫기(X). 완료 화면(submitted)은 헤더 없음.
     useHeaderOverride({
         title: '공방 등록하기',
         onBack: handleBack,
@@ -94,12 +95,11 @@ export function StoreRegistrationFlow({ returnTo = '/my' }: StoreRegistrationFlo
                 storeId={submittedStoreId}
                 onClose={() => {
                     reset();
-                    router.push('/');
+                    router.push(isApprovedPartner ? '/partner' : '/');
                 }}
                 onEditInfo={() => {
-                    // 반려 → 정보 수정: 폼 유지한 채 1단계로 복귀 (링크 연동 추후)
-                    setSubmittedStoreId(null);
-                    setStep(StoreRegistrationStep.Business);
+                    reset();
+                    router.push(`/partner/studio/${submittedStoreId}/business`);
                 }}
             />
         );

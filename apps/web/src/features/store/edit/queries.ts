@@ -41,7 +41,12 @@ export function useUpdateStore(storeId: string) {
     return useMutation({
         mutationFn: (body: StoreUpdateRequest) => updateStore(storeId, body),
         onSuccess: () => {
+            // edit 전용 preload 키.
             qc.invalidateQueries({ queryKey: [...KEY, storeId] });
+            // 공방 상세(detail feature: ['partner','stores',storeId]) + 운영 클래스 등 파생.
+            qc.invalidateQueries({ queryKey: ['partner', 'stores'] });
+            // 전환시트·홈 카드가 읽는 소유 공방 목록(이름 변경 반영).
+            qc.invalidateQueries({ queryKey: ['partner', 'current-store'] });
         },
     });
 }

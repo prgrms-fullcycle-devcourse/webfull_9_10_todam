@@ -8,7 +8,7 @@ import { useEffect, type ReactNode } from 'react';
 
 import { connectAuthTokenGetter } from '../model/authStore';
 
-export function AuthTokenProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         connectAuthTokenGetter();
     }, []);

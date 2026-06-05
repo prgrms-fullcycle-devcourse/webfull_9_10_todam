@@ -2,15 +2,14 @@
 
 import { use } from 'react';
 
-import { useSearchParams } from 'next/navigation';
-
+import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
 import { ProgramInfoEditScreen, useProgramEditPreload } from '@/features/program/edit';
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default function PartnerClassEditInfoPage({ params }: PageProps) {
     const { id } = use(params);
-    const storeId = useSearchParams().get('storeId') ?? '';
+    const storeId = useCurrentStoreId();
     const { programId, program, isLoading } = useProgramEditPreload(storeId, id);
 
     if (isLoading || !program) {

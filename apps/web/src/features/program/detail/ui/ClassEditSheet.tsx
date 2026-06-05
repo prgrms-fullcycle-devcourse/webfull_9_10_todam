@@ -28,7 +28,7 @@ type Action = {
 
 const ICON_SIZE = 16;
 
-// 클래스 수정 액션 바텀시트 (게시 ACTIVE 상태에서 노출). 액션·라우팅을 자체 보유.
+// 클래스 수정 액션 바텀시트
 export function ClassEditSheet({ programId, storeId, title, reservationCount, onClose }: Props) {
     const router = useRouter();
     const { push: pushToast } = useToast();
@@ -56,9 +56,6 @@ export function ClassEditSheet({ programId, storeId, title, reservationCount, on
         );
     };
 
-    // edit 화면 preload·mutation 이 storeId 를 요구 → ?storeId= 쿼리로 운반(detail/list 컨벤션).
-    const storeQuery = `?storeId=${encodeURIComponent(storeId)}`;
-
     const actions: Action[] = [
         {
             key: 'info',
@@ -67,7 +64,7 @@ export function ClassEditSheet({ programId, storeId, title, reservationCount, on
             description: '기존 예약에도 즉시 반영돼요',
             onClick: () => {
                 onClose();
-                router.push(`/partner/classes/${programId}/edit/info${storeQuery}`);
+                router.push(`/partner/classes/${programId}/edit/info`);
             },
         },
         {
@@ -77,7 +74,7 @@ export function ClassEditSheet({ programId, storeId, title, reservationCount, on
             description: '신규 예약부터 반영돼요',
             onClick: () => {
                 onClose();
-                router.push(`/partner/classes/${programId}/edit/operations${storeQuery}`);
+                router.push(`/partner/classes/${programId}/edit/operations`);
             },
         },
         {
