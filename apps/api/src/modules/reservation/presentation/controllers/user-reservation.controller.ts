@@ -8,7 +8,18 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiBody,
+    ApiCreatedResponse,
+    ApiOkResponse,
+    ApiQuery,
+    ApiTags,
+} from '@nestjs/swagger';
+import { ReservationStatus } from '@prisma/client';
+import { createUserReservationRequestSchema, getMyReservationsQuerySchema } from '@todam/shared';
+import type { CreateUserReservationRequest, GetMyReservationsQuery } from '@todam/shared';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../../../common/decorators/response-message.decorator';
@@ -18,7 +29,6 @@ import { ListUserReservationsUseCase } from '../../application/use-cases/list-us
 import {
     CreateUserReservationDto,
     CreateUserReservationResponseDto,
-    GetMyReservationsQueryDto,
     MyReservationsResponseDto,
 } from '../dto/user-reservation.dto';
 
@@ -36,9 +46,13 @@ export class UserReservationController {
     @UseGuards(AuthGuard)
     @ResponseMessage('예약 목록이 성공적으로 조회되었습니다.')
     @ApiOkResponse({ type: MyReservationsResponseDto })
+    @ApiQuery({ name: 'status', enum: ReservationStatus, required: false })
+    @ApiQuery({ name: 'cursor', type: String, required: false })
+    @ApiQuery({ name: 'limit', type: Number, required: false, example: 20 })
     async listMyReservations(
         @CurrentUser() user: RequestUser,
-        @Query() query: GetMyReservationsQueryDto,
+        @Query(new ZodValidationPipe(getMyReservationsQuerySchema))
+        query: GetMyReservationsQuery,
     ): Promise<MyReservationsResponseDto> {
         return this.listUseCase.execute(user.id, query);
     }
@@ -48,9 +62,11 @@ export class UserReservationController {
     @UseGuards(AuthGuard)
     @ResponseMessage('예약이 성공적으로 접수되었습니다.')
     @ApiCreatedResponse({ type: CreateUserReservationResponseDto })
+    @ApiBody({ type: CreateUserReservationDto })
     async create(
         @CurrentUser() user: RequestUser,
-        @Body() dto: CreateUserReservationDto,
+        @Body(new ZodValidationPipe(createUserReservationRequestSchema))
+        dto: CreateUserReservationRequest,
     ): Promise<CreateUserReservationResponseDto> {
         return this.createUseCase.execute(user.id, dto);
     }

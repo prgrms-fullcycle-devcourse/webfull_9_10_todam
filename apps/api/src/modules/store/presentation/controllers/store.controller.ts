@@ -13,11 +13,37 @@ import {
 } from '@nestjs/common';
 import {
     ApiBearerAuth,
+    ApiBody,
     ApiCreatedResponse,
     ApiOkResponse,
     ApiQuery,
     ApiTags,
 } from '@nestjs/swagger';
+import {
+    businessDocumentImageRequestSchema,
+    businessDocumentUpdateRequestSchema,
+    createStoreImageRequestSchema,
+    createStoreRequestSchema,
+    listStoreReviewsQuerySchema,
+    listStoresQuerySchema,
+    slugAvailabilityQuerySchema,
+    storeReviewSortSchema,
+    storeUpdateRequestSchema,
+    updatePartnerCurrentStoreRequestSchema,
+} from '@todam/shared';
+import type {
+    BusinessDocumentImageRequest,
+    BusinessDocumentUpdateRequest,
+    CreateStoreImageRequest,
+    CreateStoreRequest,
+    ListStoreReviewsQuery,
+    ListStoresQuery,
+    SlugAvailabilityQuery,
+    StoreUpdateRequest,
+    UpdatePartnerCurrentStoreRequest,
+} from '@todam/shared';
+import { ZodValidationPipe } from 'nestjs-zod';
+import { QueryZodValidationPipe } from '../../../../common/pipes/query-zod-validation.pipe';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { OptionalAuthGuard } from '../../../../common/guards/optional-auth.guard';
 import { PartnerGuard } from '../../../../common/guards/partner.guard';
@@ -44,17 +70,10 @@ import { ListStoreReviewsUseCase } from '../../application/use-cases/list-store-
 import { ToggleFavoriteStoreUseCase } from '../../application/use-cases/toggle-favorite-store.use-case';
 import { GetPartnerCurrentStoreUseCase } from '../../application/use-cases/get-partner-current-store.use-case';
 import { UpdatePartnerCurrentStoreUseCase } from '../../application/use-cases/update-partner-current-store.use-case';
-import { ListStoresQueryDto } from '../dto/list-stores.dto';
 import { ListStoresResponseDto } from '../dto/list-stores-response.dto';
-import { ListStoreReviewsQueryDto } from '../dto/list-store-reviews.dto';
 import { ListStoreReviewsResponseDto } from '../dto/list-store-reviews-response.dto';
 import { AutocompleteStoresResponseDto } from '../dto/autocomplete-stores-response.dto';
-import {
-    SlugAvailabilityQueryDto,
-    SlugAvailabilityResponseDto,
-} from '../dto/slug-availability.dto';
-import { ListStoresQueryPipe } from '../pipes/list-stores-query.pipe';
-import { ListStoreReviewsQueryPipe } from '../pipes/list-store-reviews-query.pipe';
+import { SlugAvailabilityResponseDto } from '../dto/slug-availability.dto';
 import { CreateStoreDto, CreateStoreResponseDto } from '../dto/create-store.dto';
 import { CreateStoreImageDto, CreateStoreImageResponseDto } from '../dto/store-image.dto';
 import {
@@ -111,8 +130,13 @@ export class StoreController {
     @HttpCode(HttpStatus.OK)
     @ResponseMessage('공방 목록이 성공적으로 탐색되었습니다.')
     @ApiOkResponse({ description: '공방 목록 탐색 성공', type: ListStoresResponseDto })
+    @ApiQuery({ name: 'lat', type: Number, required: false, example: 37.5665 })
+    @ApiQuery({ name: 'lng', type: Number, required: false, example: 126.978 })
+    @ApiQuery({ name: 'keyword', type: String, required: false, example: '도자기' })
+    @ApiQuery({ name: 'cursor', type: String, required: false })
+    @ApiQuery({ name: 'limit', type: Number, required: false, example: 20 })
     async listStores(
-        @Query(ListStoresQueryPipe) query: ListStoresQueryDto,
+        @Query(new QueryZodValidationPipe(listStoresQuerySchema)) query: ListStoresQuery,
     ): Promise<ListStoresResponseDto> {
         return this.listStoresUseCase.execute(query);
     }
@@ -157,7 +181,7 @@ export class StoreController {
     })
     async getSlugAvailability(
         @CurrentUser() user: RequestUser,
-        @Query() query: SlugAvailabilityQueryDto,
+        @Query(new ZodValidationPipe(slugAvailabilityQuerySchema)) query: SlugAvailabilityQuery,
     ): Promise<SlugAvailabilityResponseDto> {
         return this.getSlugAvailabilityUseCase.execute(user.id, query.slug, query.excludeStoreId);
     }
@@ -192,9 +216,13 @@ export class StoreController {
     // 퍼블릭(Guest·User 공통). PUBLISHED 공방의 노출(is_visible=true) 리뷰 목록. 커서 기반.
     @ResponseMessage('공방 리뷰 목록이 성공적으로 조회되었습니다.')
     @ApiOkResponse({ description: '공방 리뷰 목록 조회 성공', type: ListStoreReviewsResponseDto })
+    @ApiQuery({ name: 'cursor', type: String, required: false })
+    @ApiQuery({ name: 'limit', type: Number, required: false, example: 10 })
+    @ApiQuery({ name: 'sort', enum: storeReviewSortSchema.options, required: false })
     async listStoreReviews(
         @Param('slug') slug: string,
-        @Query(ListStoreReviewsQueryPipe) query: ListStoreReviewsQueryDto,
+        @Query(new QueryZodValidationPipe(listStoreReviewsQuerySchema))
+        query: ListStoreReviewsQuery,
     ): Promise<ListStoreReviewsResponseDto> {
         return this.listStoreReviewsUseCase.execute(slug, query);
     }
@@ -217,13 +245,15 @@ export class StoreController {
     @HttpCode(HttpStatus.OK)
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('접속 공방이 전환되었습니다.')
+    @ApiBody({ type: UpdatePartnerCurrentStoreDto })
     @ApiOkResponse({
         description: '마지막 접속 공방 갱신 성공',
         type: UpdatePartnerCurrentStoreResponseDto,
     })
     async updatePartnerCurrentStore(
         @CurrentUser() user: RequestUser,
-        @Body() dto: UpdatePartnerCurrentStoreDto,
+        @Body(new ZodValidationPipe(updatePartnerCurrentStoreRequestSchema))
+        dto: UpdatePartnerCurrentStoreRequest,
     ): Promise<UpdatePartnerCurrentStoreResponseDto> {
         return this.updatePartnerCurrentStoreUseCase.execute(user.id, dto.storeId);
     }
@@ -274,11 +304,12 @@ export class StoreController {
     @HttpCode(HttpStatus.OK)
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('공방 정보가 성공적으로 수정되었습니다.')
+    @ApiBody({ type: UpdateStoreDto })
     @ApiOkResponse({ description: '공방 정보 수정 성공', type: UpdateStoreResponseDto })
     async updateStore(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Body() dto: UpdateStoreDto,
+        @Body(new ZodValidationPipe(storeUpdateRequestSchema)) dto: StoreUpdateRequest,
     ): Promise<UpdateStoreResponseDto> {
         return this.updateStoreUseCase.execute(user.id, storeId, dto);
     }
@@ -292,10 +323,12 @@ export class StoreController {
         description: '사업자 정보 수정 및 재심사 전이 성공',
         type: UpdateBusinessDocumentResponseDto,
     })
+    @ApiBody({ type: UpdateBusinessDocumentDto })
     async updateBusinessDocument(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Body() dto: UpdateBusinessDocumentDto,
+        @Body(new ZodValidationPipe(businessDocumentUpdateRequestSchema))
+        dto: BusinessDocumentUpdateRequest,
     ): Promise<UpdateBusinessDocumentResponseDto> {
         return this.updateBusinessDocumentUseCase.execute(user.id, storeId, dto);
     }
@@ -303,10 +336,11 @@ export class StoreController {
     @Post('stores')
     @UseGuards(AuthGuard)
     @ResponseMessage('공방이 성공적으로 등록되었습니다. 제출 후 검수를 진행해주세요.')
+    @ApiBody({ type: CreateStoreDto })
     @ApiCreatedResponse({ description: '공방 초안 생성 성공', type: CreateStoreResponseDto })
     async createStore(
         @CurrentUser() user: RequestUser,
-        @Body() dto: CreateStoreDto,
+        @Body(new ZodValidationPipe(createStoreRequestSchema)) dto: CreateStoreRequest,
     ): Promise<CreateStoreResponseDto> {
         return this.createStoreUseCase.execute(user.id, dto);
     }
@@ -321,9 +355,11 @@ export class StoreController {
         description: '사업자등록증 presigned URL 발급 성공',
         type: CreateBusinessDocumentImageResponseDto,
     })
+    @ApiBody({ type: CreateBusinessDocumentImageDto })
     async createBusinessDocumentImage(
         @CurrentUser() user: RequestUser,
-        @Body() dto: CreateBusinessDocumentImageDto,
+        @Body(new ZodValidationPipe(businessDocumentImageRequestSchema))
+        dto: BusinessDocumentImageRequest,
     ): Promise<CreateBusinessDocumentImageResponseDto> {
         return this.createBusinessDocumentImageUseCase.execute(user.id, dto);
     }
@@ -338,10 +374,11 @@ export class StoreController {
         description: '공방 이미지 presigned URL 발급 성공',
         type: CreateStoreImageResponseDto,
     })
+    @ApiBody({ type: CreateStoreImageDto })
     async createStoreImage(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Body() dto: CreateStoreImageDto,
+        @Body(new ZodValidationPipe(createStoreImageRequestSchema)) dto: CreateStoreImageRequest,
     ): Promise<CreateStoreImageResponseDto> {
         return this.createStoreImageUseCase.execute(user.id, storeId, dto);
     }

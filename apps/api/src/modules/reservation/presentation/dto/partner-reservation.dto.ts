@@ -1,29 +1,18 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Matches, Max, Min, MaxLength } from 'class-validator';
-import { ReservationDeliveryMethod, ReservationStatus } from '@prisma/client';
+import { ApiProperty } from '@nestjs/swagger';
+import {
+    cancelPartnerReservationRequestSchema,
+    createPartnerReservationRequestSchema,
+    listPartnerReservationsQuerySchema,
+    partnerReservationCalendarQuerySchema,
+    rejectPartnerReservationRequestSchema,
+} from '@todam/shared';
+import { createZodDto } from 'nestjs-zod';
 import type { PartnerReservationAction } from '../../domain/reservation-actions';
 
-const RESERVATION_STATUS_VALUES = Object.values(ReservationStatus);
-const DELIVERY_METHOD_VALUES = Object.values(ReservationDeliveryMethod);
-const MANUAL_INITIAL_STATUS_VALUES = ['CONFIRMED', 'IN_PROGRESS'] as const;
-type ManualInitialStatus = (typeof MANUAL_INITIAL_STATUS_VALUES)[number];
-
-export class PartnerReservationCalendarQueryDto {
-    @ApiProperty({ example: 2026 })
-    @Type(() => Number)
-    @IsInt()
-    @Min(1900)
-    @Max(9999)
-    year!: number;
-
-    @ApiProperty({ example: 6 })
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    @Max(12)
-    month!: number;
-}
+// 요청 SSOT = @todam/shared(zod). 검증은 컨트롤러 param ZodValidationPipe.
+export class PartnerReservationCalendarQueryDto extends createZodDto(
+    partnerReservationCalendarQuerySchema,
+) {}
 
 export class PartnerReservationCalendarDayDto {
     @ApiProperty() date!: string;
@@ -40,35 +29,9 @@ export class PartnerReservationCalendarResponseDto {
     days!: PartnerReservationCalendarDayDto[];
 }
 
-export class ListPartnerReservationsQueryDto {
-    @ApiProperty({ example: '2026-06-01' })
-    @IsString()
-    @Matches(/^\d{4}-\d{2}-\d{2}$/)
-    date!: string;
-
-    @ApiPropertyOptional({ enum: RESERVATION_STATUS_VALUES })
-    @IsOptional()
-    @IsIn(RESERVATION_STATUS_VALUES)
-    status?: ReservationStatus;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    programId?: string;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    cursor?: string;
-
-    @ApiPropertyOptional({ default: 20 })
-    @IsOptional()
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    @Max(100)
-    limit?: number;
-}
+export class ListPartnerReservationsQueryDto extends createZodDto(
+    listPartnerReservationsQuerySchema,
+) {}
 
 export class PartnerReservationListItemDto {
     @ApiProperty() id!: string;
@@ -119,64 +82,18 @@ export class PartnerReservationStatusResponseDto {
     reservation!: Record<string, unknown>;
 }
 
-export class CancelPartnerReservationDto {
-    @ApiProperty()
-    @IsString()
-    @MaxLength(500)
-    cancelReason!: string;
-}
+// 요청 SSOT = @todam/shared(zod). 검증은 컨트롤러 param ZodValidationPipe.
+export class CancelPartnerReservationDto extends createZodDto(
+    cancelPartnerReservationRequestSchema,
+) {}
 
-export class RejectPartnerReservationDto {
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    @MaxLength(500)
-    rejectReason?: string;
-}
+export class RejectPartnerReservationDto extends createZodDto(
+    rejectPartnerReservationRequestSchema,
+) {}
 
-export class CreatePartnerReservationDto {
-    @ApiProperty()
-    @IsString()
-    programId!: string;
-
-    @ApiProperty()
-    @IsString()
-    slotId!: string;
-
-    @ApiProperty()
-    @IsString()
-    @MaxLength(100)
-    reserverName!: string;
-
-    @ApiProperty()
-    @IsString()
-    @MaxLength(20)
-    reserverPhone!: string;
-
-    @ApiProperty()
-    @Type(() => Number)
-    @IsInt()
-    @Min(1)
-    participantCount!: number;
-
-    @ApiPropertyOptional({ enum: DELIVERY_METHOD_VALUES })
-    @IsOptional()
-    @IsIn(DELIVERY_METHOD_VALUES)
-    deliveryMethod?: ReservationDeliveryMethod;
-
-    @ApiProperty({ enum: MANUAL_INITIAL_STATUS_VALUES })
-    @IsIn(MANUAL_INITIAL_STATUS_VALUES)
-    initialStatus!: ManualInitialStatus;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    @MaxLength(200)
-    @Transform(({ value }) =>
-        typeof value === 'string' && value.trim() === '' ? undefined : value,
-    )
-    internalMemo?: string;
-}
+export class CreatePartnerReservationDto extends createZodDto(
+    createPartnerReservationRequestSchema,
+) {}
 
 export class CreatePartnerReservationResponseDto {
     @ApiProperty({

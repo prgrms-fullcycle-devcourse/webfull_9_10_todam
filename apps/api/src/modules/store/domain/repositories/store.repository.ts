@@ -1,5 +1,5 @@
 import { StoreSubmission } from '../entities/store-submission.entity';
-import type { StoreStatus } from '@todam/shared/src/enums/store-status';
+import type { StoreStatus } from '@todam/shared';
 
 export interface StoreStatusUpdate {
     id: string;

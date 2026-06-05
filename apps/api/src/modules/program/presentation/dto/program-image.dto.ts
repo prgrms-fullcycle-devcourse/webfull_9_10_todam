@@ -1,19 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsString } from 'class-validator';
+import { programImageUploadRequestSchema } from '@todam/shared';
+import { createZodDto } from 'nestjs-zod';
 
-export class CreateProgramImageDto {
-    @ApiProperty({ example: 'program_01.png' })
-    @IsString()
-    fileName!: string;
-
-    @ApiProperty({ example: 'image/png', description: '지원 형식: JPG, PNG, HEIC' })
-    @IsString()
-    fileType!: string;
-
-    @ApiProperty({ example: true })
-    @IsBoolean()
-    isThumbnail!: boolean;
-}
+// 요청 SSOT = @todam/shared(zod). 검증은 컨트롤러 param ZodValidationPipe.
+export class CreateProgramImageDto extends createZodDto(programImageUploadRequestSchema) {}
 
 export class CreateProgramImageResponseDto {
     @ApiProperty() programImageId!: string;

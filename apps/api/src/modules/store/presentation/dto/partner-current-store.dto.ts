@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { StoreStatus } from '@prisma/client';
-import { IsUUID } from 'class-validator';
+import { updatePartnerCurrentStoreRequestSchema } from '@todam/shared';
+import { createZodDto } from 'nestjs-zod';
 
 export class StoreIdItemDto {
     @ApiProperty({ description: '공방 ID', example: 'store-uuid' })
@@ -29,11 +30,10 @@ export class GetPartnerCurrentStoreResponseDto {
     stores!: StoreIdItemDto[];
 }
 
-export class UpdatePartnerCurrentStoreDto {
-    @ApiProperty({ description: '전환할 공방 ID', example: 'store-uuid' })
-    @IsUUID()
-    storeId!: string;
-}
+// 요청 SSOT = @todam/shared(zod). 검증은 컨트롤러 param ZodValidationPipe.
+export class UpdatePartnerCurrentStoreDto extends createZodDto(
+    updatePartnerCurrentStoreRequestSchema,
+) {}
 
 export class UpdatePartnerCurrentStoreResponseDto {
     @ApiProperty({ description: '갱신된 lastAccessedStoreId', example: 'store-uuid' })

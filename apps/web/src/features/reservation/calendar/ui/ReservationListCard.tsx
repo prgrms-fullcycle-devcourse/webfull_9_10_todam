@@ -1,32 +1,32 @@
 'use client';
 
+import { ReservationStatus } from '@todam/shared';
+import type { ReservationItem } from '@todam/shared';
 import { format } from 'date-fns';
 import { Tag } from '@todam/ui';
 
-import type { ReservationItem, ReservationStatus } from '../mock';
-
 // ─── 상태 라벨·색상 매핑 ───────────────────────────────────────────────────
+// status는 BE `ReservationStatus` enum 기준. 거절은 CANCELED로 통합(D-REJECT 잠정),
+// 체험완료는 IN_PROGRESS로 표현(complete 잠정). 미매핑 enum은 DEFAULT fallback.
 
-const STATUS_CONFIG: Record<ReservationStatus, { label: string; className: string }> = {
-    CONFIRMED: {
+const DEFAULT_STATUS = { label: '확인', className: 'bg-muted text-foreground-tertiary' };
+
+const STATUS_CONFIG: Partial<Record<ReservationStatus, { label: string; className: string }>> = {
+    [ReservationStatus.CONFIRMED]: {
         label: '확정',
         className: 'bg-success-subtle text-success-darker',
     },
-    PENDING: {
+    [ReservationStatus.PENDING]: {
         label: '대기',
         className: 'bg-warning-subtle text-warning-darker',
     },
-    CANCELED: {
+    [ReservationStatus.CANCELED]: {
         label: '취소',
         className: 'bg-muted text-foreground-tertiary',
     },
-    COMPLETED: {
+    [ReservationStatus.IN_PROGRESS]: {
         label: '체험완료',
         className: 'bg-muted text-foreground-tertiary',
-    },
-    REJECTED: {
-        label: '거절',
-        className: 'bg-danger-subtle text-danger-darker',
     },
 };
 
@@ -44,7 +44,7 @@ export function ReservationListCard({ reservation, onClick }: ReservationListCar
     const participantLabel =
         participantCount > 1 ? `${reserverName} 외 ${participantCount - 1}명` : reserverName;
 
-    const statusConfig = STATUS_CONFIG[status];
+    const statusConfig = STATUS_CONFIG[status] ?? DEFAULT_STATUS;
 
     return (
         <button

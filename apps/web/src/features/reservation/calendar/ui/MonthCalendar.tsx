@@ -1,10 +1,10 @@
 'use client';
 
+import type { CalendarData, CalendarDay } from '@todam/shared';
 import { startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday, format } from 'date-fns';
 import { useState } from 'react';
 import { Checkbox } from '@todam/ui';
 
-import type { CalendarData, CalendarDay } from '../mock';
 import { CalendarItem } from './CalendarItem';
 import type { CalendarItemState } from './CalendarItem';
 

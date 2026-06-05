@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import type { LoginUser } from '@todam/shared';
 import { OAuthProvider, User } from '../domain/entities/user.entity';
 import { UserRepository } from '../domain/repositories/user.repository';
-import type { OAuthUserDto } from '../presentation/dto/oauth-response.dto';
 
 @Injectable()
 export class OAuthService {
@@ -12,7 +12,7 @@ export class OAuthService {
         providerId: string,
         email: string,
         nickname: string,
-    ): Promise<OAuthUserDto> {
+    ): Promise<LoginUser> {
         // 1. 이미 연동된 OAuthAccount가 있으면 그 유저 사용
         const linked = await this.users.findByOAuth(provider, providerId);
         if (linked) return this.toDto(linked);
@@ -29,7 +29,7 @@ export class OAuthService {
         return this.toDto(created);
     }
 
-    private toDto(user: User): OAuthUserDto {
+    private toDto(user: User): LoginUser {
         return {
             userId: user.id,
             email: user.email,

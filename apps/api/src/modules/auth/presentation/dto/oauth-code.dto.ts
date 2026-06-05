@@ -1,8 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { oauthCodeRequestSchema } from '@todam/shared';
+import { createZodDto } from 'nestjs-zod';
 
-export class OAuthCodeDto {
-    @ApiProperty({ description: '프론트에서 OAuth 제공자로부터 받은 인가 코드' })
-    @IsString()
-    code!: string;
-}
+// SSOT = @todam/shared(zod). 요청 검증은 컨트롤러 param ZodValidationPipe가 수행.
+export class OAuthCodeRequestDto extends createZodDto(oauthCodeRequestSchema) {}

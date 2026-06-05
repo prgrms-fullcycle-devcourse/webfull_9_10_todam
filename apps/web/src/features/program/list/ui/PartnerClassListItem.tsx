@@ -1,12 +1,12 @@
 'use client';
 
 import { ProgramStatus, formatDuration, formatPrice } from '@todam/shared';
+import type { PartnerProgramListItem } from '@todam/shared';
 import { useRouter } from 'next/navigation';
 
 import { ClassItem, getDifficultyLabel } from '@/entities/program';
-import type { PartnerProgramListItemView } from '../api';
 
-export function buildProgramMetaItems(program: PartnerProgramListItemView): string[] {
+export function buildProgramMetaItems(program: PartnerProgramListItem): string[] {
     return [
         getDifficultyLabel(program.difficulty),
         formatDuration(program.durationMinutes),
@@ -15,7 +15,7 @@ export function buildProgramMetaItems(program: PartnerProgramListItemView): stri
 }
 
 type Props = {
-    program: PartnerProgramListItemView;
+    program: PartnerProgramListItem;
 };
 
 // 파트너 클래스 목록 아이템

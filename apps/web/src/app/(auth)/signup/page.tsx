@@ -47,7 +47,7 @@ export default function SignupPage() {
     const codeValid = verifyCodeSchema.safeParse(code).success;
     const passwordValid = passwordSchema.safeParse(password).success;
 
-    // 회원가입 진입 시 약관 동의 게이트. 동의값은 BE SignupDto 미수용(forbidNonWhitelisted)
+    // 회원가입 진입 시 약관 동의 게이트. 동의값은 signupRequestSchema(shared, .strict) 미수용
     // → 전송 안 하고 FE 진행 게이트로만 사용. 필수 미동의 닫기 시 로그인으로 복귀.
     useEffect(() => {
         openSheet(

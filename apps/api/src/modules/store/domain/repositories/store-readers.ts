@@ -213,8 +213,10 @@ export abstract class StoreReviewsReader {
 export abstract class StoresReader {
     abstract execute(query: ListStoresQuery): Promise<ListStoresResult>;
 }
-import type { OcrStatus } from '@todam/shared/src/enums/ocr-status';
-import type { PartnerStatus } from '@todam/shared/src/enums/partner-status';
-import type { ProgramDifficulty } from '@todam/shared/src/enums/program-difficulty';
-import type { ProgramStatus } from '@todam/shared/src/enums/program-status';
-import type { StoreStatus } from '@todam/shared/src/enums/store-status';
+import type {
+    OcrStatus,
+    PartnerStatus,
+    ProgramDifficulty,
+    ProgramStatus,
+    StoreStatus,
+} from '@todam/shared';

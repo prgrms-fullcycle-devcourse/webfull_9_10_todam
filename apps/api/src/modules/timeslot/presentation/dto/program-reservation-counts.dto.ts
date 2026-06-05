@@ -1,18 +1,11 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, Matches } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { programReservationCountsQuerySchema } from '@todam/shared';
+import { createZodDto } from 'nestjs-zod';
 
-export class ProgramReservationCountsQueryDto {
-    @ApiProperty({ example: '2026-06-10' })
-    @IsString()
-    @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'date는 YYYY-MM-DD 형식이어야 합니다.' })
-    date!: string;
-
-    // 콤마 구분 슬롯 id 목록(옵션). 미지정 시 date 전체 슬롯.
-    @ApiPropertyOptional({ example: 'slot-1,slot-2' })
-    @IsOptional()
-    @IsString()
-    timeSlotIds?: string;
-}
+// 요청 SSOT = @todam/shared(zod). 검증은 컨트롤러 param ZodValidationPipe.
+export class ProgramReservationCountsQueryDto extends createZodDto(
+    programReservationCountsQuerySchema,
+) {}
 
 export class ProgramReservationCountItemDto {
     @ApiProperty() programId!: string;

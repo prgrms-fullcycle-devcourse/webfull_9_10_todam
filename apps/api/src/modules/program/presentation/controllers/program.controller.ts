@@ -10,7 +10,28 @@ import {
     HttpStatus,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiBody,
+    ApiCreatedResponse,
+    ApiOkResponse,
+    ApiTags,
+} from '@nestjs/swagger';
+import {
+    createProgramRequestSchema,
+    partnerProgramReorderRequestSchema,
+    programEditRequestSchema,
+    programImageUploadRequestSchema,
+    updateProgramStatusRequestSchema,
+} from '@todam/shared';
+import type {
+    CreateProgramRequest,
+    PartnerProgramReorderRequest,
+    ProgramEditRequest,
+    ProgramImageUploadRequest,
+    UpdateProgramStatusRequest,
+} from '@todam/shared';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { PartnerGuard } from '../../../../common/guards/partner.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
@@ -60,11 +81,12 @@ export class ProgramController {
     @Post('partner/stores/:storeId/programs')
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('프로그램이 성공적으로 등록되었습니다.')
+    @ApiBody({ type: CreateProgramDto })
     @ApiCreatedResponse({ description: '클래스 등록 성공', type: CreateProgramResponseDto })
     async createProgram(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Body() dto: CreateProgramDto,
+        @Body(new ZodValidationPipe(createProgramRequestSchema)) dto: CreateProgramRequest,
     ): Promise<CreateProgramResponseDto> {
         return this.createProgramUseCase.execute(user.id, storeId, dto);
     }
@@ -92,10 +114,12 @@ export class ProgramController {
         description: '클래스 순서 변경 성공',
         type: ListPartnerStoreProgramsResponseDto,
     })
+    @ApiBody({ type: ReorderPartnerStoreProgramsDto })
     async reorderPartnerStorePrograms(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Body() dto: ReorderPartnerStoreProgramsDto,
+        @Body(new ZodValidationPipe(partnerProgramReorderRequestSchema))
+        dto: PartnerProgramReorderRequest,
     ): Promise<ListPartnerStoreProgramsResponseDto> {
         return this.reorderPartnerStoreProgramsUseCase.execute(user.id, storeId, dto);
     }
@@ -138,11 +162,12 @@ export class ProgramController {
         description: '클래스 정보 수정 성공',
         type: UpdateProgramResponseDto,
     })
+    @ApiBody({ type: UpdateProgramDto })
     async updateProgram(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
         @Param('programId') programId: string,
-        @Body() dto: UpdateProgramDto,
+        @Body(new ZodValidationPipe(programEditRequestSchema)) dto: ProgramEditRequest,
     ): Promise<UpdateProgramResponseDto> {
         return this.updateProgramUseCase.execute(user.id, storeId, programId, dto);
     }
@@ -154,11 +179,13 @@ export class ProgramController {
         description: '클래스 이미지 presigned URL 발급 성공',
         type: CreateProgramImageResponseDto,
     })
+    @ApiBody({ type: CreateProgramImageDto })
     async createProgramImage(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
         @Param('programId') programId: string,
-        @Body() dto: CreateProgramImageDto,
+        @Body(new ZodValidationPipe(programImageUploadRequestSchema))
+        dto: ProgramImageUploadRequest,
     ): Promise<CreateProgramImageResponseDto> {
         return this.createProgramImageUseCase.execute(user.id, storeId, programId, dto);
     }
@@ -171,11 +198,13 @@ export class ProgramController {
         description: '클래스 상태 변경 성공',
         type: UpdateProgramStatusResponseDto,
     })
+    @ApiBody({ type: UpdateProgramStatusDto })
     async updateProgramStatus(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
         @Param('programId') programId: string,
-        @Body() dto: UpdateProgramStatusDto,
+        @Body(new ZodValidationPipe(updateProgramStatusRequestSchema))
+        dto: UpdateProgramStatusRequest,
     ): Promise<UpdateProgramStatusResponseDto> {
         return this.updateProgramStatusUseCase.execute(user.id, storeId, programId, dto);
     }

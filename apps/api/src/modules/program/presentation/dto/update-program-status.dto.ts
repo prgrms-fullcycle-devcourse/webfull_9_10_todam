@@ -1,15 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn } from 'class-validator';
+import { updateProgramStatusRequestSchema } from '@todam/shared';
+import { createZodDto } from 'nestjs-zod';
 
-const PROGRAM_STATUS_VALUES = ['DRAFT', 'ACTIVE', 'INACTIVE'] as const;
-
-export class UpdateProgramStatusDto {
-    @ApiProperty({ enum: PROGRAM_STATUS_VALUES, example: 'ACTIVE' })
-    @IsIn(PROGRAM_STATUS_VALUES, {
-        message: '상태는 DRAFT, ACTIVE, INACTIVE 중 하나여야 합니다.',
-    })
-    status!: (typeof PROGRAM_STATUS_VALUES)[number];
-}
+// 요청 SSOT = @todam/shared(zod). 검증은 컨트롤러 param ZodValidationPipe.
+export class UpdateProgramStatusDto extends createZodDto(updateProgramStatusRequestSchema) {}
 
 export class UpdateProgramStatusResponseProgramDto {
     @ApiProperty() id!: string;

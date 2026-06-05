@@ -1,4 +1,4 @@
-import type { StoreStatus } from '@todam/shared/src/enums/store-status';
+import type { StoreStatus } from '@todam/shared';
 
 export class StoreSubmission {
     constructor(

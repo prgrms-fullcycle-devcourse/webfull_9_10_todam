@@ -1,19 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsString } from 'class-validator';
+import { createStoreImageRequestSchema } from '@todam/shared';
+import { createZodDto } from 'nestjs-zod';
 
-export class CreateStoreImageDto {
-    @ApiProperty({ example: 'workshop_main.jpg' })
-    @IsString()
-    fileName!: string;
-
-    @ApiProperty({ example: 'image/jpeg' })
-    @IsString()
-    fileType!: string;
-
-    @ApiProperty({ example: true })
-    @IsBoolean()
-    isThumbnail!: boolean;
-}
+// 요청 SSOT = @todam/shared(zod). 검증은 컨트롤러 param ZodValidationPipe.
+export class CreateStoreImageDto extends createZodDto(createStoreImageRequestSchema) {}
 
 export class CreateStoreImageResponseDto {
     @ApiProperty() imageId!: string;
