@@ -1,32 +1,19 @@
 // API Contract 바인딩: docs/exec-plans/active/login.md ## API Contract (스냅샷)
 // 엔드포인트/스키마/필드명은 contract 그대로. 임의 변경 금지.
 
+import type { LoginRequest, LoginResult } from '@todam/shared';
+
 import { apiFetch } from '@/shared/api';
 
-// ---------- 응답 데이터 타입 ----------
-
-export interface LoginUser {
-    userId: string;
-    email: string;
-    nickname: string;
-    isPartner: boolean;
-}
-
-export interface LoginResult {
-    accessToken: string;
-    user: LoginUser;
-}
+// 응답/요청 타입 = @todam/shared contract(SSOT). 소비자 호환 위해 re-export.
+export type { LoginResult, LoginUser } from '@todam/shared';
+export type EmailLoginInput = LoginRequest;
 
 // ---------- 이메일 로그인 ----------
 // POST /auth/login
 // req:  { email, password }
 // res 200: { data: { accessToken, user } }
 // err:  400 INVALID_REQUEST / 401 UNAUTHORIZED / 403 EMAIL_UNVERIFIED / 500 INTERNAL_SERVER_ERROR
-
-export interface EmailLoginInput {
-    email: string;
-    password: string;
-}
 
 export function emailLogin(input: EmailLoginInput): Promise<LoginResult> {
     return apiFetch<LoginResult>('/auth/login', {
