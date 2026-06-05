@@ -1,49 +1,13 @@
 /**
- * Mock 데이터 — API Contract 스냅샷(partner-reservation-management.md) 기준 shape 그대로.
- * API 연동 시 이 파일만 교체하면 된다.
+ * Mock 데이터 — 타입은 @todam/shared contract(reservation-calendar) SSOT.
+ * shape 정의는 contract, 본 파일은 mock 데이터만. API 연동 시 이 파일만 교체.
  *
  * GET /partner/stores/{storeId}/reservations/calendar
- *   data.days[]: { date, hasReservation, isUnavailable, hasRestriction, reservationCount }
- *
  * GET /partner/stores/{storeId}/reservations?date=
- *   data.reservations[]: { id, programTitle, scheduledAt(ISO), reserverName, participantCount, status, source, createdAt }
- *   data.nextCursor, data.hasMore
  */
 
-export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELED' | 'COMPLETED' | 'REJECTED';
-
-export type ReservationSource = 'CUSTOMER' | 'PARTNER_MANUAL';
-
-export interface CalendarDay {
-    date: string; // YYYY-MM-DD
-    hasReservation: boolean;
-    isUnavailable: boolean;
-    hasRestriction: boolean;
-    reservationCount: number;
-}
-
-export interface CalendarData {
-    year: number;
-    month: number;
-    days: CalendarDay[];
-}
-
-export interface ReservationItem {
-    id: string;
-    programTitle: string;
-    scheduledAt: string; // ISO 8601
-    reserverName: string;
-    participantCount: number;
-    status: ReservationStatus;
-    source: ReservationSource;
-    createdAt: string;
-}
-
-export interface ReservationListData {
-    reservations: ReservationItem[];
-    nextCursor: string | null;
-    hasMore: boolean;
-}
+import { ReservationStatus } from '@todam/shared';
+import type { CalendarData, ReservationListData } from '@todam/shared';
 
 // ─── 2026년 6월 캘린더 mock ────────────────────────────────────────────────
 
@@ -275,7 +239,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
                 scheduledAt: '2026-06-01T10:00:00.000Z',
                 reserverName: '김지은',
                 participantCount: 2,
-                status: 'CONFIRMED',
+                status: ReservationStatus.CONFIRMED,
                 source: 'CUSTOMER',
                 createdAt: '2026-05-25T19:35:00.000Z',
             },
@@ -285,7 +249,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
                 scheduledAt: '2026-06-01T14:00:00.000Z',
                 reserverName: '박민준',
                 participantCount: 1,
-                status: 'PENDING',
+                status: ReservationStatus.PENDING,
                 source: 'CUSTOMER',
                 createdAt: '2026-05-26T09:10:00.000Z',
             },
@@ -295,7 +259,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
                 scheduledAt: '2026-06-01T16:00:00.000Z',
                 reserverName: '이수현',
                 participantCount: 3,
-                status: 'CANCELED',
+                status: ReservationStatus.CANCELED,
                 source: 'CUSTOMER',
                 createdAt: '2026-05-24T11:00:00.000Z',
             },
@@ -311,7 +275,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
                 scheduledAt: '2026-06-05T10:00:00.000Z',
                 reserverName: '최예진',
                 participantCount: 2,
-                status: 'CONFIRMED',
+                status: ReservationStatus.CONFIRMED,
                 source: 'CUSTOMER',
                 createdAt: '2026-05-30T15:20:00.000Z',
             },
@@ -321,7 +285,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
                 scheduledAt: '2026-06-05T13:00:00.000Z',
                 reserverName: '정하늘',
                 participantCount: 1,
-                status: 'PENDING',
+                status: ReservationStatus.PENDING,
                 source: 'PARTNER_MANUAL',
                 createdAt: '2026-06-01T08:00:00.000Z',
             },
@@ -337,7 +301,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
                 scheduledAt: '2026-06-08T10:00:00.000Z',
                 reserverName: '강동욱',
                 participantCount: 4,
-                status: 'COMPLETED',
+                status: ReservationStatus.IN_PROGRESS, // 체험완료 처리 → BE status IN_PROGRESS (complete 잠정)
                 source: 'CUSTOMER',
                 createdAt: '2026-06-01T12:00:00.000Z',
             },
@@ -347,7 +311,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
                 scheduledAt: '2026-06-08T13:00:00.000Z',
                 reserverName: '윤지혜',
                 participantCount: 2,
-                status: 'CONFIRMED',
+                status: ReservationStatus.CONFIRMED,
                 source: 'CUSTOMER',
                 createdAt: '2026-06-02T10:30:00.000Z',
             },
@@ -357,7 +321,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
                 scheduledAt: '2026-06-08T15:00:00.000Z',
                 reserverName: '임서준',
                 participantCount: 1,
-                status: 'REJECTED',
+                status: ReservationStatus.CANCELED, // 거절 → BE status CANCELED 통합 (D-REJECT 잠정)
                 source: 'CUSTOMER',
                 createdAt: '2026-06-03T09:00:00.000Z',
             },
@@ -367,7 +331,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
                 scheduledAt: '2026-06-08T17:00:00.000Z',
                 reserverName: '한소희',
                 participantCount: 2,
-                status: 'PENDING',
+                status: ReservationStatus.PENDING,
                 source: 'CUSTOMER',
                 createdAt: '2026-06-04T14:00:00.000Z',
             },
@@ -383,7 +347,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
                 scheduledAt: '2026-06-15T10:00:00.000Z',
                 reserverName: '조민서',
                 participantCount: 5,
-                status: 'CONFIRMED',
+                status: ReservationStatus.CONFIRMED,
                 source: 'CUSTOMER',
                 createdAt: '2026-06-08T10:00:00.000Z',
             },
@@ -399,7 +363,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
                 scheduledAt: '2026-06-25T11:00:00.000Z',
                 reserverName: '신은비',
                 participantCount: 2,
-                status: 'CONFIRMED',
+                status: ReservationStatus.CONFIRMED,
                 source: 'CUSTOMER',
                 createdAt: '2026-06-18T09:00:00.000Z',
             },
@@ -409,7 +373,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
                 scheduledAt: '2026-06-25T14:00:00.000Z',
                 reserverName: '오준혁',
                 participantCount: 1,
-                status: 'PENDING',
+                status: ReservationStatus.PENDING,
                 source: 'CUSTOMER',
                 createdAt: '2026-06-20T16:00:00.000Z',
             },
