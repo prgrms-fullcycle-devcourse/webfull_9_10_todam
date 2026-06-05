@@ -13,7 +13,7 @@ export default function PartnerSettingsPage() {
     // 공방관리 = 현재 작업 공방(currentStore) 상세. review 보기 상태 해제 후 진입.
     const goStore = () => {
         setReviewStoreId(null);
-        router.push('/partner/store');
+        router.push('/partner/studio');
     };
 
     return (
