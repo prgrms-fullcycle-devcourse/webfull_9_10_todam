@@ -1,7 +1,10 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { Prisma, ProgramDifficulty } from '@prisma/client';
-import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
+import { ProgramRepository } from '../../domain/repositories/program.repository';
+import type {
+    ProgramDifficulty,
+    UpdateProgramFields,
+} from '../../domain/repositories/program.repository';
 import type {
     UpdateProgramDto,
     UpdateProgramResponseDto,
@@ -9,7 +12,7 @@ import type {
 
 @Injectable()
 export class UpdateProgramUseCase {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly programs: ProgramRepository) {}
 
     async execute(
         userId: string,
@@ -17,16 +20,7 @@ export class UpdateProgramUseCase {
         programId: string,
         dto: UpdateProgramDto,
     ): Promise<UpdateProgramResponseDto> {
-        const program = await this.prisma.program.findUnique({
-            where: { id: programId },
-            select: {
-                id: true,
-                storeId: true,
-                price: true,
-                leadTimeDays: true,
-                store: { select: { partner: { select: { userId: true } } } },
-            },
-        });
+        const program = await this.programs.findOwnership(programId);
 
         if (!program || program.storeId !== storeId) {
             throw new BusinessException(
@@ -37,7 +31,7 @@ export class UpdateProgramUseCase {
         }
 
         // 공방 소유 권한 검증.
-        if (program.store.partner.userId !== userId) {
+        if (program.ownerUserId !== userId) {
             throw new BusinessException(
                 'FORBIDDEN',
                 '공방 소유 권한이 없습니다.',
@@ -45,50 +39,29 @@ export class UpdateProgramUseCase {
             );
         }
 
-        // partial update — 전송된 필드만 data에 반영.
-        const data: Prisma.ProgramUpdateInput = {};
-        if (dto.title !== undefined) data.title = dto.title;
-        if (dto.description !== undefined) data.description = dto.description;
-        if (dto.materials !== undefined) data.materials = dto.materials;
-        if (dto.caution !== undefined) data.caution = dto.caution;
-        if (dto.price !== undefined) data.price = dto.price;
-        if (dto.leadTimeDays !== undefined) data.leadTimeDays = dto.leadTimeDays;
-        if (dto.durationMinutes !== undefined) data.durationMinutes = dto.durationMinutes;
-        if (dto.difficulty !== undefined) data.difficulty = dto.difficulty as ProgramDifficulty;
-        if (dto.childFriendly !== undefined) data.childFriendly = dto.childFriendly;
-        if (dto.deliverable !== undefined) data.deliverable = dto.deliverable;
+        // partial update — 전송된 필드만 반영.
+        const fields: UpdateProgramFields = {};
+        if (dto.title !== undefined) fields.title = dto.title;
+        if (dto.description !== undefined) fields.description = dto.description;
+        if (dto.materials !== undefined) fields.materials = dto.materials;
+        if (dto.caution !== undefined) fields.caution = dto.caution;
+        if (dto.price !== undefined) fields.price = dto.price;
+        if (dto.leadTimeDays !== undefined) fields.leadTimeDays = dto.leadTimeDays;
+        if (dto.durationMinutes !== undefined) fields.durationMinutes = dto.durationMinutes;
+        if (dto.difficulty !== undefined) fields.difficulty = dto.difficulty as ProgramDifficulty;
+        if (dto.childFriendly !== undefined) fields.childFriendly = dto.childFriendly;
+        if (dto.deliverable !== undefined) fields.deliverable = dto.deliverable;
 
-        // 가격 또는 리드타임이 "실제로" 바뀌고, 기존 예약이 1건 이상이면 스냅샷 신규 row 생성.
+        // 가격 또는 리드타임이 "실제로" 바뀌면 스냅샷 신규 row 대상(실제 생성/값 계산은 repository 트랜잭션 내부에서).
         const priceChanged = dto.price !== undefined && dto.price !== program.price;
         const leadTimeChanged =
             dto.leadTimeDays !== undefined && dto.leadTimeDays !== program.leadTimeDays;
-        const snapshotTrigger = priceChanged || leadTimeChanged;
 
-        const updated = await this.prisma.$transaction(async (tx) => {
-            const result = await tx.program.update({
-                where: { id: programId },
-                data,
-                select: { id: true, title: true, price: true, status: true, updatedAt: true },
-            });
-
-            if (snapshotTrigger) {
-                const reservationCount = await tx.reservation.count({ where: { programId } });
-                if (reservationCount > 0) {
-                    await tx.programSnapshot.create({
-                        data: {
-                            programId,
-                            price: result.price,
-                            leadTimeDays:
-                                dto.leadTimeDays !== undefined
-                                    ? dto.leadTimeDays
-                                    : program.leadTimeDays,
-                        },
-                    });
-                }
-            }
-
-            return result;
-        });
+        const updated = await this.programs.update(
+            programId,
+            fields,
+            priceChanged || leadTimeChanged,
+        );
 
         return {
             program: {

@@ -18,6 +18,9 @@ export interface OwnedStore {
 export interface StoreOwnershipErrorCodes {
     notFound?: string;
     forbidden?: string;
+    // 메시지 텍스트를 호출 맥락에 맞게 덮어쓰고 싶을 때 사용(미지정 시 공방 기본 문구).
+    notFoundMessage?: string;
+    forbiddenMessage?: string;
 }
 
 /**
@@ -47,7 +50,7 @@ export class StoreOwnershipService {
         if (!store) {
             throw new BusinessException(
                 errorCodes.notFound ?? 'RESOURCE_NOT_FOUND',
-                '공방을 찾을 수 없습니다.',
+                errorCodes.notFoundMessage ?? '공방을 찾을 수 없습니다.',
                 HttpStatus.NOT_FOUND,
             );
         }
@@ -55,7 +58,7 @@ export class StoreOwnershipService {
         if (store.partner.userId !== userId) {
             throw new BusinessException(
                 errorCodes.forbidden ?? 'FORBIDDEN',
-                '공방 소유 권한이 없습니다.',
+                errorCodes.forbiddenMessage ?? '공방 소유 권한이 없습니다.',
                 HttpStatus.FORBIDDEN,
             );
         }
