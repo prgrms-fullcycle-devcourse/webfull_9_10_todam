@@ -21,41 +21,71 @@ export type ProgramRegistrationErrorCode =
 
 // ─── POST /partner/stores/{storeId}/programs — 클래스 등록 ────────
 export const createProgramRequestSchema = z.object({
-    title: z.string().min(2).max(60),
-    description: z.string().max(1000).nullable().optional(),
-    materials: z.string().nullable().optional(),
-    caution: z.string().nullable().optional(),
-    price: z.number().int().positive(),
-    durationMinutes: z.number().int().min(30).max(480),
-    difficulty: z.nativeEnum(ProgramDifficulty),
-    childFriendly: z.boolean(),
-    leadTimeDays: z.number().int().min(0),
-    deliverable: z.boolean(),
+    title: z
+        .string()
+        .min(2, '클래스명은 2자 이상이어야 합니다.')
+        .max(60, '클래스명은 60자 이하여야 합니다.')
+        .meta({ example: '물레 체험 기초반' }),
+    description: z
+        .string()
+        .max(1000, '상세 설명은 1000자 이하여야 합니다.')
+        .meta({ example: '처음 도자기를 접하는 분들을 위한 물레 체험입니다.' })
+        .nullable()
+        .optional(),
+    materials: z.string().meta({ example: '앞치마 (공방 제공), 편한 복장' }).nullable().optional(),
+    caution: z.string().meta({ example: '체험 당일 취소는 불가합니다.' }).nullable().optional(),
+    price: z
+        .number()
+        .int('가격은 정수여야 합니다.')
+        .positive('가격은 양의 정수여야 합니다.')
+        .meta({ example: 45000, description: '양의 정수 (원 단위)' }),
+    durationMinutes: z
+        .number()
+        .int('소요시간은 정수여야 합니다.')
+        .min(30, '소요시간은 30분 이상이어야 합니다.')
+        .max(480, '소요시간은 480분 이하여야 합니다.')
+        .meta({ example: 120, description: '30~480분' }),
+    difficulty: z
+        .nativeEnum(ProgramDifficulty, {
+            error: '난이도는 BASIC, INTERMEDIATE, ADVANCED 중 하나여야 합니다.',
+        })
+        .meta({ example: ProgramDifficulty.BASIC }),
+    childFriendly: z.boolean().meta({ example: false, description: '어린이 동반 가능 여부' }),
+    leadTimeDays: z
+        .number()
+        .int('리드타임은 정수여야 합니다.')
+        .min(0, '리드타임은 0일 이상이어야 합니다.')
+        .meta({ example: 30, description: '0일 이상' }),
+    deliverable: z.boolean().meta({ example: true, description: '택배 가능 여부' }),
 });
 export type CreateProgramRequest = z.infer<typeof createProgramRequestSchema>;
 
 export const createProgramResultSchema = z.object({
     program: z.object({
-        id: z.string(),
-        storeId: z.string(),
-        title: z.string(),
-        status: z.nativeEnum(ProgramStatus),
-        createdAt: z.string(),
+        id: z.string().meta({ example: 'program-uuid-001' }),
+        storeId: z.string().meta({ example: 'store-uuid-001' }),
+        title: z.string().meta({ example: '물레 체험 기초반' }),
+        status: z.nativeEnum(ProgramStatus).meta({ example: ProgramStatus.DRAFT }),
+        createdAt: z.string().meta({ example: '2026-06-05T13:00:00.000Z' }),
     }),
 });
 export type CreateProgramResult = z.infer<typeof createProgramResultSchema>;
 
 // ─── PATCH /partner/stores/{storeId}/programs/{programId}/status ──
 export const updateProgramStatusRequestSchema = z.object({
-    status: z.nativeEnum(ProgramStatus),
+    status: z
+        .nativeEnum(ProgramStatus, {
+            error: '상태는 DRAFT, ACTIVE, INACTIVE 중 하나여야 합니다.',
+        })
+        .meta({ example: ProgramStatus.ACTIVE }),
 });
 export type UpdateProgramStatusRequest = z.infer<typeof updateProgramStatusRequestSchema>;
 
 export const updateProgramStatusResultSchema = z.object({
     program: z.object({
-        id: z.string(),
-        status: z.nativeEnum(ProgramStatus),
-        updatedAt: z.string(),
+        id: z.string().meta({ example: 'program-uuid-001' }),
+        status: z.nativeEnum(ProgramStatus).meta({ example: ProgramStatus.ACTIVE }),
+        updatedAt: z.string().meta({ example: '2026-06-05T14:00:00.000Z' }),
     }),
 });
 export type UpdateProgramStatusResult = z.infer<typeof updateProgramStatusResultSchema>;
@@ -63,8 +93,8 @@ export type UpdateProgramStatusResult = z.infer<typeof updateProgramStatusResult
 // ─── PATCH .../images/{imageId}/confirm — 업로드 완료 확인 ────────
 export const confirmProgramImageResultSchema = z.object({
     image: z.object({
-        id: z.string(),
-        status: z.string(),
+        id: z.string().meta({ example: 'program-image-uuid-001' }),
+        status: z.string().meta({ example: 'UPLOADED' }),
     }),
 });
 export type ConfirmProgramImageResult = z.infer<typeof confirmProgramImageResultSchema>;

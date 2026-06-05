@@ -4,6 +4,8 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { uploadToPresignedUrl } from '@/shared/api';
 
+import { generateTimeSlots, rollingGenerateRange } from '../timeslot/api';
+
 import {
     checkSlug,
     confirmStoreImage,
@@ -70,6 +72,14 @@ export function useSubmitStoreRegistration() {
 
             // 3) 심사 제출 (DRAFT → PENDING)
             await submitStore(storeId);
+
+            // 4) 타임슬롯 자동 생성 (#169 — 영업시간·interval 기반, 향후 30일 롤링).
+            // best-effort: 생성 실패가 등록 완료를 막지 않는다(공방은 이미 제출됨).
+            try {
+                await generateTimeSlots(storeId, rollingGenerateRange());
+            } catch (err) {
+                console.warn('[registration] 타임슬롯 자동 생성 실패', err);
+            }
 
             return { storeId };
         },

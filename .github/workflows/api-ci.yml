@@ -23,6 +23,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # api는 @todam/shared 를 require→dist 로 해석(NodeNext/CJS). typecheck 전 빌드 필수.
+      - run: pnpm --filter @todam/shared build
       - run: pnpm --filter @todam/api exec prisma generate
       - run: pnpm --filter @todam/api typecheck
       - run: pnpm --filter @todam/api lint

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import type { OAuthResponse } from '@todam/shared';
 import type { Response } from 'express';
-import type { OAuthResponseDto } from '../../presentation/dto/oauth-response.dto';
 import { OAuthService } from '../oauth.service';
 import { TokenService } from '../token.service';
 
@@ -25,7 +25,7 @@ export class KakaoOAuthUseCase {
         private readonly tokenService: TokenService,
     ) {}
 
-    async execute(code: string, res: Response): Promise<OAuthResponseDto> {
+    async execute(code: string, res: Response): Promise<OAuthResponse> {
         const kakaoAccessToken = await this.getKakaoToken(code);
         const kakaoUser = await this.getKakaoUser(kakaoAccessToken);
 
@@ -61,7 +61,9 @@ export class KakaoOAuthUseCase {
         });
 
         if (!res.ok) {
-            throw new BadRequestException('유효하지 않은 인가 코드이거나 카카오 인증에 실패했습니다.');
+            throw new BadRequestException(
+                '유효하지 않은 인가 코드이거나 카카오 인증에 실패했습니다.',
+            );
         }
 
         const data = (await res.json()) as KakaoTokenResponse;

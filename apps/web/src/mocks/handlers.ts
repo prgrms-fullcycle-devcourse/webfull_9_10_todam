@@ -21,6 +21,10 @@ import {
     type FavoriteStoreListResult,
     type ProgramDetailResult,
     type ProgramEditResult,
+    type GetMyProfileResponse,
+    type UpdateMyProfileResponse,
+    type GetNotificationSettingsResponse,
+    type PatchNotificationSettingsResponse,
 } from '@todam/shared';
 import { http, HttpResponse } from 'msw';
 
@@ -147,10 +151,10 @@ export const handlers = [
 
     // 공방 찜 등록/해제 (토글). Request body 없음 — path param storeId 만.
     // plan: docs/exec-plans/active/유저 마이 - 찜한 공방 목록 조회, 공방 찜 등록_해제.md
-    // 시뮬: ?unauth=1 → 401.
-    http.post(`${API}/stores/:storeId/favorite`, ({ params, request }) => {
+    // 실 BE 연동: 토글은 root 경로(/stores/...)로 실연동 → mock 핸들러도 prefix 없이 매칭. 시뮬: ?unauth=1 → 401.
+    http.post(`*/stores/:storeId/favorite`, ({ params, request }) => {
         const storeId = String(params.storeId);
-        const path = `/api/v1/stores/${storeId}/favorite`;
+        const path = `/stores/${storeId}/favorite`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -611,5 +615,152 @@ export const handlers = [
 
         const result: ArtworkDetailResult = { artwork };
         return ok(path, result, '작품 제작 단계가 성공적으로 조회되었습니다.');
+    }),
+
+    // ─── 내 프로필 조회 (GET /api/v1/users/me) ───────────────────────────────
+    // contract: docs/exec-plans/active/마이페이지.md
+    // 시뮬: ?unauth=1 → 401, ?simulate=404 → 404 USER_NOT_FOUND, ?simulate=500 → 500
+    http.get(`${API}/users/me`, ({ request }) => {
+        const path = '/api/v1/users/me';
+        const url = new URL(request.url);
+
+        // notification-settings 경로가 먼저 매칭되도록 별도 핸들러로 분리.
+        // 이 핸들러는 /users/me 정확 매칭.
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '인증 정보가 유효하지 않거나 만료되었습니다.');
+        }
+        const simulate = url.searchParams.get('simulate');
+        if (simulate === '404') {
+            return fail(path, 404, 'USER_NOT_FOUND', '존재하지 않거나 탈퇴 처리된 회원입니다.');
+        }
+        if (simulate === '500') {
+            return fail(
+                path,
+                500,
+                'INTERNAL_SERVER_ERROR',
+                '프로필 조회 처리 중 서버 내부 오류가 발생했습니다.',
+            );
+        }
+
+        const result: GetMyProfileResponse = {
+            user: {
+                userId: 'eb50a73f-785f-49ce-887b-5f0bba67a1e3',
+                email: 'user@example.com',
+                nickname: '토담이',
+                isPartner: false,
+                createdAt: '2026-05-24T16:55:00.000Z',
+            },
+        };
+        return ok(path, result, '프로필이 성공적으로 조회되었습니다.');
+    }),
+
+    // ─── 내 프로필 수정 (PATCH /api/v1/users/me) ─────────────────────────────
+    // contract: docs/exec-plans/active/마이페이지.md
+    // 시뮬: ?unauth=1 → 401, ?simulate=409 → 409 NICKNAME_ALREADY_EXISTS, ?simulate=400 → 400 INVALID_REQUEST
+    http.patch(`${API}/users/me`, async ({ request }) => {
+        const path = '/api/v1/users/me';
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '인증 정보가 유효하지 않거나 만료되었습니다.');
+        }
+        const simulate = url.searchParams.get('simulate');
+        if (simulate === '409') {
+            return fail(
+                path,
+                409,
+                'NICKNAME_ALREADY_EXISTS',
+                '이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.',
+            );
+        }
+        if (simulate === '400') {
+            return fail(
+                path,
+                400,
+                'INVALID_REQUEST',
+                '닉네임은 특수문자를 제외한 2자 이상 10자 이내여야 합니다.',
+            );
+        }
+
+        const body = (await request.json()) as { nickname?: string };
+        const nickname = body.nickname ?? '새닉네임';
+        const result: UpdateMyProfileResponse = {
+            user: {
+                userId: 'eb50a73f-785f-49ce-887b-5f0bba67a1e3',
+                email: 'user@example.com',
+                nickname,
+                isPartner: false,
+                updatedAt: new Date().toISOString(),
+            },
+        };
+        return ok(path, result, '프로필이 성공적으로 수정되었습니다.');
+    }),
+
+    // ─── 알림 설정 조회 (GET /api/v1/users/me/notification-settings) ──────────
+    // contract: docs/exec-plans/active/마이페이지.md
+    // 시뮬: ?unauth=1 → 401, ?simulate=500 → 500
+    http.get(`${API}/users/me/notification-settings`, ({ request }) => {
+        const path = '/api/v1/users/me/notification-settings';
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '인증 정보가 유효하지 않거나 만료되었습니다.');
+        }
+        if (url.searchParams.get('simulate') === '500') {
+            return fail(
+                path,
+                500,
+                'INTERNAL_SERVER_ERROR',
+                '알림 설정 조회 중 서버 오류가 발생했습니다.',
+            );
+        }
+
+        const result: GetNotificationSettingsResponse = {
+            notificationSettings: {
+                id: 'ns-mock-001',
+                userId: 'eb50a73f-785f-49ce-887b-5f0bba67a1e3',
+                inAppEnabled: true,
+                emailEnabled: true,
+                kakaoEnabled: true,
+                reservationEnabled: true,
+                artworkEnabled: true,
+                shippingEnabled: true,
+                marketingEnabled: false,
+                updatedAt: '2026-05-25T16:00:00.000Z',
+            },
+        };
+        return ok(path, result, '알림 설정이 성공적으로 조회되었습니다.');
+    }),
+
+    // ─── 알림 설정 수정 (PATCH /api/v1/users/me/notification-settings) ────────
+    // contract: docs/exec-plans/active/마이페이지.md
+    // 시뮬: ?unauth=1 → 401
+    http.patch(`${API}/users/me/notification-settings`, async ({ request }) => {
+        const path = '/api/v1/users/me/notification-settings';
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(path, 401, 'UNAUTHORIZED', '인증 정보가 유효하지 않거나 만료되었습니다.');
+        }
+
+        const body = (await request.json()) as Record<string, unknown>;
+        const result: PatchNotificationSettingsResponse = {
+            notificationSettings: {
+                id: 'ns-mock-001',
+                userId: 'eb50a73f-785f-49ce-887b-5f0bba67a1e3',
+                inAppEnabled: true,
+                emailEnabled: true,
+                kakaoEnabled: true,
+                reservationEnabled: true,
+                artworkEnabled:
+                    typeof body.artworkEnabled === 'boolean' ? body.artworkEnabled : true,
+                shippingEnabled: true,
+                marketingEnabled:
+                    typeof body.marketingEnabled === 'boolean' ? body.marketingEnabled : false,
+                updatedAt: new Date().toISOString(),
+            },
+        };
+        return ok(path, result, '알림 설정이 성공적으로 수정되었습니다.');
     }),
 ];

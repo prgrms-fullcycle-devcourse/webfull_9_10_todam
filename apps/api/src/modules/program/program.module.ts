@@ -11,6 +11,18 @@ import { UpdateProgramStatusUseCase } from './application/use-cases/update-progr
 import { ConfirmProgramImageUseCase } from './application/use-cases/confirm-program-image.use-case';
 import { ListPartnerStoreProgramsUseCase } from './application/use-cases/list-partner-store-programs.use-case';
 import { ReorderPartnerStoreProgramsUseCase } from './application/use-cases/reorder-partner-store-programs.use-case';
+import { ProgramRepository } from './domain/repositories/program.repository';
+import { ProgramImageRepository } from './domain/repositories/program-image.repository';
+import {
+    PartnerProgramDetailReader,
+    PartnerStoreProgramsReader,
+    PublicProgramDetailReader,
+} from './domain/repositories/program-readers';
+import { PrismaProgramRepository } from './infrastructure/persistence/prisma-program.repository';
+import { PrismaProgramImageRepository } from './infrastructure/persistence/prisma-program-image.repository';
+import { PrismaPartnerProgramDetailReader } from './infrastructure/persistence/prisma-partner-program-detail.reader';
+import { PrismaPublicProgramDetailReader } from './infrastructure/persistence/prisma-public-program-detail.reader';
+import { PrismaPartnerStoreProgramsReader } from './infrastructure/persistence/prisma-partner-store-programs.reader';
 import { ProgramController } from './presentation/controllers/program.controller';
 
 @Module({
@@ -27,6 +39,11 @@ import { ProgramController } from './presentation/controllers/program.controller
         ConfirmProgramImageUseCase,
         ListPartnerStoreProgramsUseCase,
         ReorderPartnerStoreProgramsUseCase,
+        { provide: ProgramRepository, useClass: PrismaProgramRepository },
+        { provide: ProgramImageRepository, useClass: PrismaProgramImageRepository },
+        { provide: PartnerProgramDetailReader, useClass: PrismaPartnerProgramDetailReader },
+        { provide: PublicProgramDetailReader, useClass: PrismaPublicProgramDetailReader },
+        { provide: PartnerStoreProgramsReader, useClass: PrismaPartnerStoreProgramsReader },
         PartnerGuard,
     ],
 })

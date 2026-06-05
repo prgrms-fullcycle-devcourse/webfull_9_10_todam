@@ -132,7 +132,7 @@ export function StoreReviewResult({
 
             <BottomBar>
                 <Button className="w-full" onClick={onBack}>
-                    목록으로
+                    홈으로
                 </Button>
             </BottomBar>
         </div>

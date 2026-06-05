@@ -83,19 +83,21 @@ model RefreshToken {
 }
 
 model Partner {
-  id              String             @id @default(uuid()) @db.Uuid
-  userId          String             @unique @map("user_id") @db.Uuid
-  status          PartnerStatus      @default(PENDING)
-  rejectedReason  String?            @map("rejected_reason")
-  suspendedReason String?            @map("suspended_reason")
-  approvedAt      DateTime?          @map("approved_at") @db.Timestamptz(6)
-  suspendedAt     DateTime?          @map("suspended_at") @db.Timestamptz(6) // [S-9]
-  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
-  terminatedAt    DateTime?          @map("terminated_at") @db.Timestamptz(6)
-  businessDocs    BusinessDocument[]
-  user            User               @relation(fields: [userId], references: [id])
-  stores          Store[]
+  id                    String             @id @default(uuid()) @db.Uuid
+  userId                String             @unique @map("user_id") @db.Uuid
+  status                PartnerStatus      @default(PENDING)
+  rejectedReason        String?            @map("rejected_reason")
+  suspendedReason       String?            @map("suspended_reason")
+  approvedAt            DateTime?          @map("approved_at") @db.Timestamptz(6)
+  suspendedAt           DateTime?          @map("suspended_at") @db.Timestamptz(6) // [S-9]
+  createdAt             DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  terminatedAt          DateTime?          @map("terminated_at") @db.Timestamptz(6)
+  lastAccessedStoreId   String?            @map("last_accessed_store_id") @db.Uuid
+  businessDocs          BusinessDocument[]
+  user                  User               @relation(fields: [userId], references: [id])
+  stores                Store[]            @relation("PartnerOwnedStores")
+  lastAccessedStore     Store?             @relation("PartnerLastAccessedStore", fields: [lastAccessedStoreId], references: [id])
 
   @@map("partners")
 }
@@ -151,8 +153,9 @@ model Store {
   reviews            Review[]
   images             StoreImage[]
   operatingHours     StoreOperatingHour[]
-  partner            Partner              @relation(fields: [partnerId], references: [id])
-  favoriteStores     FavoriteStore[] // [S-6]
+  partner                  Partner              @relation("PartnerOwnedStores", fields: [partnerId], references: [id])
+  lastAccessedByPartners   Partner[]            @relation("PartnerLastAccessedStore")
+  favoriteStores           FavoriteStore[] // [S-6]
   reservationRestrictions ReservationRestriction[]
 
   @@index([slug])

@@ -1,12 +1,12 @@
 'use client';
 
 import { ProgramStatus, formatDuration, formatPrice } from '@todam/shared';
+import type { PartnerProgramListItem } from '@todam/shared';
 import { useRouter } from 'next/navigation';
 
 import { ClassItem, getDifficultyLabel } from '@/entities/program';
-import type { PartnerProgramListItemView } from '../api';
 
-export function buildProgramMetaItems(program: PartnerProgramListItemView): string[] {
+export function buildProgramMetaItems(program: PartnerProgramListItem): string[] {
     return [
         getDifficultyLabel(program.difficulty),
         formatDuration(program.durationMinutes),
@@ -15,12 +15,11 @@ export function buildProgramMetaItems(program: PartnerProgramListItemView): stri
 }
 
 type Props = {
-    program: PartnerProgramListItemView;
-    storeId: string;
+    program: PartnerProgramListItem;
 };
 
 // 파트너 클래스 목록 아이템
-export function PartnerClassListItem({ program, storeId }: Props) {
+export function PartnerClassListItem({ program }: Props) {
     const router = useRouter();
     return (
         <ClassItem
@@ -30,7 +29,7 @@ export function PartnerClassListItem({ program, storeId }: Props) {
             isClosed={program.status === ProgramStatus.INACTIVE}
             role="button"
             tabIndex={0}
-            onClick={() => router.push(`/partner/classes/${program.id}?storeId=${storeId}`)}
+            onClick={() => router.push(`/partner/classes/${program.id}`)}
             className="cursor-pointer text-left"
         />
     );

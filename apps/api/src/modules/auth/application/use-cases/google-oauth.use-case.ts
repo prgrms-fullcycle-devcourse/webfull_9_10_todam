@@ -4,8 +4,8 @@ import {
     Injectable,
     InternalServerErrorException,
 } from '@nestjs/common';
+import type { OAuthResponse } from '@todam/shared';
 import type { Response } from 'express';
-import type { OAuthResponseDto } from '../../presentation/dto/oauth-response.dto';
 import { OAuthService } from '../oauth.service';
 import { TokenService } from '../token.service';
 
@@ -27,7 +27,7 @@ export class GoogleOAuthUseCase {
         private readonly tokenService: TokenService,
     ) {}
 
-    async execute(code: string, res: Response): Promise<OAuthResponseDto> {
+    async execute(code: string, res: Response): Promise<OAuthResponse> {
         const googleAccessToken = await this.getGoogleToken(code);
         const googleUser = await this.getGoogleUser(googleAccessToken);
 

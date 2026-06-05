@@ -4,6 +4,7 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { createApiEnv } from '@todam/config';
 import cookieParser from 'cookie-parser';
+import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -49,7 +50,8 @@ async function bootstrap(): Promise<void> {
         .setVersion('0.1.0')
         .addBearerAuth()
         .build();
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    // nestjs-zod createZodDto 스키마를 OpenAPI 문서에 반영(zod → swagger).
+    const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, swaggerConfig));
     SwaggerModule.setup('docs', app, document);
 
     await app.listen(env.PORT);

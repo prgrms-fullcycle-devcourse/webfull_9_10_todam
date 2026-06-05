@@ -1,32 +1,9 @@
-import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString, Matches } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { listTimeSlotsQuerySchema } from '@todam/shared';
+import { createZodDto } from 'nestjs-zod';
 
-const SLOT_STATUS_VALUES = ['OPEN', 'CLOSED', 'CANCELED'] as const;
-
-export class ListTimeSlotsQueryDto {
-    @ApiPropertyOptional({ example: '2026-06-10' })
-    @IsOptional()
-    @IsString()
-    @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'date는 YYYY-MM-DD 형식이어야 합니다.' })
-    date?: string;
-
-    @ApiPropertyOptional({ example: '2026-06-01' })
-    @IsOptional()
-    @IsString()
-    @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'startDate는 YYYY-MM-DD 형식이어야 합니다.' })
-    startDate?: string;
-
-    @ApiPropertyOptional({ example: '2026-06-07' })
-    @IsOptional()
-    @IsString()
-    @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'endDate는 YYYY-MM-DD 형식이어야 합니다.' })
-    endDate?: string;
-
-    @ApiPropertyOptional({ enum: SLOT_STATUS_VALUES })
-    @IsOptional()
-    @IsIn(SLOT_STATUS_VALUES, { message: 'status는 OPEN, CLOSED, CANCELED 중 하나여야 합니다.' })
-    status?: (typeof SLOT_STATUS_VALUES)[number];
-}
+// 요청 SSOT = @todam/shared(zod). 검증은 컨트롤러 param ZodValidationPipe.
+export class ListTimeSlotsQueryDto extends createZodDto(listTimeSlotsQuerySchema) {}
 
 export class TimeSlotItemDto {
     @ApiProperty() slotId!: string;

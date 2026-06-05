@@ -1,13 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, Length } from 'class-validator';
+import { verifyCodeRequestSchema } from '@todam/shared';
+import { createZodDto } from 'nestjs-zod';
 
-export class VerifyCodeDto {
-    @ApiProperty({ example: 'user@example.com' })
-    @IsEmail({}, { message: '유효한 이메일을 입력해주세요.' })
-    email!: string;
-
-    @ApiProperty({ example: '482917' })
-    @IsString()
-    @Length(6, 6, { message: '인증코드는 6자리입니다.' })
-    code!: string;
-}
+// SSOT = @todam/shared(zod). 요청 검증은 컨트롤러 param ZodValidationPipe가 수행.
+export class VerifyCodeRequestDto extends createZodDto(verifyCodeRequestSchema) {}

@@ -247,7 +247,9 @@ export function buildPatchBody(
         const r = form.reservation;
         const i = initial.reservation;
         if (r.intervalMinutes !== i.intervalMinutes) {
-            body.reservationIntervalMinutes = r.intervalMinutes;
+            // UI는 60/90/120/180만 설정 — contract literal union으로 좁힘.
+            body.reservationIntervalMinutes =
+                r.intervalMinutes as StoreUpdateRequest['reservationIntervalMinutes'];
         }
         if (r.cancelDeadlineDays !== i.cancelDeadlineDays) {
             body.cancelDeadlineDays = r.cancelDeadlineDays;

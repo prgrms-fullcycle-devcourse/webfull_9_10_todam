@@ -5,3 +5,4 @@ export * from './ui/StoreInfoSummary';
 export * from './ui/ConvenienceChips';
 export * from './ui/StoreLocation';
 export * from './ui/FavoriteStoreCard';
+export * from './model/currentStore';

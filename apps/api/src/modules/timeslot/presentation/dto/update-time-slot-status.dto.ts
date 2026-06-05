@@ -1,13 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn } from 'class-validator';
+import { updateTimeSlotStatusRequestSchema } from '@todam/shared';
+import { createZodDto } from 'nestjs-zod';
 
-const SLOT_STATUS_VALUES = ['OPEN', 'CLOSED', 'CANCELED'] as const;
-
-export class UpdateTimeSlotStatusDto {
-    @ApiProperty({ enum: SLOT_STATUS_VALUES, example: 'CLOSED' })
-    @IsIn(SLOT_STATUS_VALUES, { message: 'status는 OPEN, CLOSED, CANCELED 중 하나여야 합니다.' })
-    status!: (typeof SLOT_STATUS_VALUES)[number];
-}
+// 요청 SSOT = @todam/shared(zod). 검증은 컨트롤러 param ZodValidationPipe.
+export class UpdateTimeSlotStatusDto extends createZodDto(updateTimeSlotStatusRequestSchema) {}
 
 export class UpdateTimeSlotStatusResponseDto {
     @ApiProperty() slotId!: string;

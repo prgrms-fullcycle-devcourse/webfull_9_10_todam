@@ -1,29 +1,27 @@
 import { HttpStatus } from '@nestjs/common';
+import { ProgramStatus as ProgramStatusEnum } from '@todam/shared';
 import { UpdateProgramStatusUseCase } from './update-program-status.use-case';
-import type { PrismaService } from '../../../../database/prisma.service';
+import type {
+    ProgramOwnership,
+    ProgramRepository,
+    ProgramStatus,
+} from '../../domain/repositories/program.repository';
 
-// PrismaService 최소 목: program.findUnique / program.update만 사용.
-type ProgramRow = {
-    id: string;
-    storeId: string;
-    status: 'DRAFT' | 'ACTIVE' | 'INACTIVE';
-    store: { partner: { userId: string } };
-};
-
-function createPrismaMock(program: ProgramRow | null) {
-    const update = jest.fn().mockImplementation(async ({ data }: { data: { status: string } }) => ({
-        id: program?.id ?? 'prog-uuid-001',
-        status: data.status,
-        updatedAt: new Date('2026-05-25T19:10:00.000Z'),
-    }));
+// ProgramRepository 최소 목: findOwnership / updateStatus 만 사용.
+function createRepositoryMock(ownership: ProgramOwnership | null) {
+    const updateStatus = jest
+        .fn()
+        .mockImplementation(async (programId: string, status: ProgramStatus) => ({
+            id: programId,
+            status,
+            updatedAt: new Date('2026-05-25T19:10:00.000Z'),
+        }));
     return {
-        prisma: {
-            program: {
-                findUnique: jest.fn().mockResolvedValue(program),
-                update,
-            },
-        } as unknown as PrismaService,
-        update,
+        repository: {
+            findOwnership: jest.fn().mockResolvedValue(ownership),
+            updateStatus,
+        } as unknown as ProgramRepository,
+        updateStatus,
     };
 }
 
@@ -31,12 +29,14 @@ const OWNER_ID = 'user-owner';
 const STORE_ID = 'store-uuid-001';
 const PROGRAM_ID = 'prog-uuid-001';
 
-function programWith(status: ProgramRow['status'], ownerId = OWNER_ID): ProgramRow {
+function ownershipWith(status: ProgramStatus, ownerUserId = OWNER_ID): ProgramOwnership {
     return {
         id: PROGRAM_ID,
         storeId: STORE_ID,
+        ownerUserId,
         status,
-        store: { partner: { userId: ownerId } },
+        price: 45000,
+        leadTimeDays: 30,
     };
 }
 
@@ -47,17 +47,14 @@ describe('UpdateProgramStatusUseCase', () => {
             ['ACTIVE', 'INACTIVE'],
             ['INACTIVE', 'ACTIVE'],
         ] as const)('%s → %s 전이를 허용한다', async (from, to) => {
-            const { prisma, update } = createPrismaMock(programWith(from));
-            const useCase = new UpdateProgramStatusUseCase(prisma);
+            const { repository, updateStatus } = createRepositoryMock(ownershipWith(from));
+            const useCase = new UpdateProgramStatusUseCase(repository);
 
-            const result = await useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, { status: to });
+            const result = await useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, {
+                status: to as ProgramStatusEnum,
+            });
 
-            expect(update).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    where: { id: PROGRAM_ID },
-                    data: { status: to },
-                }),
-            );
+            expect(updateStatus).toHaveBeenCalledWith(PROGRAM_ID, to);
             expect(result.program.status).toBe(to);
             expect(result.program.id).toBe(PROGRAM_ID);
             expect(result.program.updatedAt).toBe('2026-05-25T19:10:00.000Z');
@@ -70,65 +67,77 @@ describe('UpdateProgramStatusUseCase', () => {
             ['ACTIVE', 'DRAFT'],
             ['INACTIVE', 'DRAFT'],
         ] as const)('%s → %s 전이는 INVALID_STATUS_TRANSITION 으로 차단한다', async (from, to) => {
-            const { prisma, update } = createPrismaMock(programWith(from));
-            const useCase = new UpdateProgramStatusUseCase(prisma);
+            const { repository, updateStatus } = createRepositoryMock(ownershipWith(from));
+            const useCase = new UpdateProgramStatusUseCase(repository);
 
             await expect(
-                useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, { status: to }),
+                useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, {
+                    status: to as ProgramStatusEnum,
+                }),
             ).rejects.toMatchObject({
                 errorCode: 'INVALID_STATUS_TRANSITION',
                 status: HttpStatus.BAD_REQUEST,
             });
-            expect(update).not.toHaveBeenCalled();
+            expect(updateStatus).not.toHaveBeenCalled();
         });
 
         it.each(['DRAFT', 'ACTIVE', 'INACTIVE'] as const)(
             '동일 상태(%s)로의 변경은 INVALID_STATUS_TRANSITION 으로 차단한다',
             async (status) => {
-                const { prisma, update } = createPrismaMock(programWith(status));
-                const useCase = new UpdateProgramStatusUseCase(prisma);
+                const { repository, updateStatus } = createRepositoryMock(ownershipWith(status));
+                const useCase = new UpdateProgramStatusUseCase(repository);
 
                 await expect(
-                    useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, { status }),
+                    useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, {
+                        status: status as ProgramStatusEnum,
+                    }),
                 ).rejects.toMatchObject({ errorCode: 'INVALID_STATUS_TRANSITION' });
-                expect(update).not.toHaveBeenCalled();
+                expect(updateStatus).not.toHaveBeenCalled();
             },
         );
     });
 
     describe('권한 및 존재 검증', () => {
         it('타 파트너 소유 클래스는 FORBIDDEN(403)으로 차단한다', async () => {
-            const { prisma, update } = createPrismaMock(programWith('DRAFT', 'user-other'));
-            const useCase = new UpdateProgramStatusUseCase(prisma);
+            const { repository, updateStatus } = createRepositoryMock(
+                ownershipWith('DRAFT', 'user-other'),
+            );
+            const useCase = new UpdateProgramStatusUseCase(repository);
 
             await expect(
-                useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, { status: 'ACTIVE' }),
+                useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, {
+                    status: ProgramStatusEnum.ACTIVE,
+                }),
             ).rejects.toMatchObject({
                 errorCode: 'FORBIDDEN',
                 status: HttpStatus.FORBIDDEN,
             });
-            expect(update).not.toHaveBeenCalled();
+            expect(updateStatus).not.toHaveBeenCalled();
         });
 
         it('존재하지 않는 프로그램은 PROGRAM_NOT_FOUND(404)로 차단한다', async () => {
-            const { prisma, update } = createPrismaMock(null);
-            const useCase = new UpdateProgramStatusUseCase(prisma);
+            const { repository, updateStatus } = createRepositoryMock(null);
+            const useCase = new UpdateProgramStatusUseCase(repository);
 
             await expect(
-                useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, { status: 'ACTIVE' }),
+                useCase.execute(OWNER_ID, STORE_ID, PROGRAM_ID, {
+                    status: ProgramStatusEnum.ACTIVE,
+                }),
             ).rejects.toMatchObject({
                 errorCode: 'PROGRAM_NOT_FOUND',
                 status: HttpStatus.NOT_FOUND,
             });
-            expect(update).not.toHaveBeenCalled();
+            expect(updateStatus).not.toHaveBeenCalled();
         });
 
         it('storeId 불일치는 PROGRAM_NOT_FOUND(404)로 차단한다', async () => {
-            const { prisma } = createPrismaMock(programWith('DRAFT'));
-            const useCase = new UpdateProgramStatusUseCase(prisma);
+            const { repository } = createRepositoryMock(ownershipWith('DRAFT'));
+            const useCase = new UpdateProgramStatusUseCase(repository);
 
             await expect(
-                useCase.execute(OWNER_ID, 'store-other', PROGRAM_ID, { status: 'ACTIVE' }),
+                useCase.execute(OWNER_ID, 'store-other', PROGRAM_ID, {
+                    status: ProgramStatusEnum.ACTIVE,
+                }),
             ).rejects.toMatchObject({
                 errorCode: 'PROGRAM_NOT_FOUND',
                 status: HttpStatus.NOT_FOUND,

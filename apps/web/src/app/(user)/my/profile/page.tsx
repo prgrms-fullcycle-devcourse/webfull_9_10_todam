@@ -1,3 +1,5 @@
-export default function ProfilePage() {
-    return <div>내 정보 수정</div>;
+import { ProfileEditScreen } from '@/features/user/profile';
+
+export default function ProfileEditPage() {
+    return <ProfileEditScreen />;
 }

@@ -5,7 +5,7 @@
 - Goal: 파트너가 **공방의** 예약 타임슬롯을 (1) 영업시간 기반으로 서버 자동 생성하고, (2) 날짜/상태로 목록 조회하며, (3) 개별 슬롯을 막기(CLOSED)/취소(CANCELED)/재오픈(OPEN)하고, (4) **클래스(프로그램)별로 신규 예약을 막기/해제**하는 파트너용 타임슬롯·예약 막기 관리 기능.
 - 핵심: 타임슬롯을 **프로그램별이 아닌 공방별**로 운영한다(2026-06-04 사용자 확정). 같은 공방-슬롯에 여러 프로그램 예약이 붙을 수 있고, 정원은 공방 단위 합산 한도(`Store.maxCapacityPerSlot`)로 관리한다. 막기는 두 단위로 제공: **슬롯 전체 막기(CLOSED)** 와 **클래스별 막기(ReservationRestriction — 슬롯×프로그램 단위)**.
 - **범위 한정(2026-06-04 사용자 확정, 정정)**: 본 문서 범위 = **타임슬롯 생성 + (막기 지원용 최소) 조회 + 슬롯 막기(CLOSED)/취소(CANCELED)/재오픈(OPEN) + 클래스별 예약 막기/해제(ReservationRestriction)**. 제외 대상은 **예약 자체 CRUD**(수동 예약 등록·개별 예약 취소·상태 전이)와 **현황 화면**(월별 캘린더·일별 예약 목록)이며 이는 **별도 예약 관리 문서** 소관. 조회는 막기 UI 지원에 꼭 필요한 것(슬롯별/프로그램별 확정건수·제한 상태)만 포함.
-- Owner: taesong
+- Owner: nogglee (FE) / taesong (BE)
 - Date: 2026-06-04 (정정 갱신 — 클래스별 예약 막기 복원, 조회는 막기 지원용 최소)
 
 ## Status
@@ -145,15 +145,17 @@ model ReservationRestriction {
 - 생성 로직 — 범위 내 각 날짜에 대해:
   1. 해당 요일의 `StoreOperatingHour`(openTime/closeTime/breakStart?/breakEnd?) 조회. **요일 운영시간 미설정이면 그 날짜 스킵(= 정기휴무).**
   2. `[openTime, closeTime)` 구간을 `Store.reservationIntervalMinutes` 간격으로 분할. **슬롯 길이 = interval (back-to-back)**: 각 슬롯 `endAt = startAt + interval`. `endAt <= closeTime`인 슬롯만 생성.
-  3. `breakStart~breakEnd` 구간과 겹치는 슬롯은 제외.
+  3. **break는 하루를 구간으로 분할** — `[openTime, breakStart]` + `[breakEnd, closeTime]`(break 없으면 `[openTime, closeTime]` 단일 구간). **각 구간은 그 구간 시작점부터 back-to-back 격자** 생성(`slotStart=segStart`, `slotEnd<=segEnd`). break 직후 슬롯이 break 끝(breakEnd)부터 시작하도록 — openTime 단일 격자에서 겹침만 제외하면 break~다음격자 사이가 버려지고 시작이 밀리는 버그 방지. 구간이 interval보다 짧으면 그 구간 슬롯 없음.
   4. **과거 시각 스킵: `startAt <= now`인 슬롯은 생성하지 않음.** skippedCount에 합산.
   5. 각 슬롯 `status=OPEN`, `reservedCount=0` 생성.
-- 멱등성: `@@unique([storeId, startAt])` 활용 — 이미 존재하는 startAt은 스킵. 트랜잭션 처리.
+  6. **prune**: 생성 범위 윈도우(`[startDate 00:00, endDate 24:00)` KST) 내 **미래 OPEN 슬롯** 중 새 격자 시각에 **없는** 슬롯을 삭제 — 단 **활성 예약(status≠CANCELED) 걸린 슬롯·과거 슬롯·CLOSED/CANCELED 슬롯은 보존**. 영업시간 단축/요일삭제/interval 변경 시 옛 격자 잔존 슬롯을 정리(줄이는 변경 반영). `removedCount`에 집계.
+- 멱등성: `@@unique([storeId, startAt])` 활용 — 이미 존재하는 startAt은 스킵. prune + 생성 모두 한 트랜잭션.
 - res `201`:
   ```json
   {
     "data": {
       "createdCount": 18,
+      "removedCount": 3,
       "skippedCount": 2,
       "createdSlots": [
         { "slotId": "...", "startAt": "...", "endAt": "...", "status": "OPEN", "reservedCount": 0 }
@@ -161,6 +163,7 @@ model ReservationRestriction {
     }
   }
   ```
+  - `removedCount`: prune으로 삭제된 미래 빈 슬롯 수.
 - errors: `400 INVALID_DATE_RANGE`, `401 UNAUTHORIZED`, `403 FORBIDDEN`(소유권), `404 RESOURCE_NOT_FOUND`(store), `409 OPERATING_HOURS_NOT_SET`(범위 내 전 요일 운영시간 미설정), `422 INTERVAL_NOT_CONFIGURED`(reservationIntervalMinutes null), `500 INTERNAL_SERVER_ERROR`
 - 비고: 정기휴무는 운영시간 미설정 요일로 자동 처리. 특정 날짜 임시휴무는 슬롯 CANCELED로 대응 — 별도 휴무 데이터/테이블 없음.
 
@@ -277,7 +280,12 @@ model ReservationRestriction {
   - 가드: AuthGuard + PartnerGuard + 공방 소유권(verifyStoreOwnership). 응답은 공통 envelope.
   - 검증: `tsc --noEmit` PASS, `eslint src/modules/timeslot/**` PASS, `nest build` PASS, `jest`(기존 12 tests) PASS.
 - UI: <!-- 구현된 화면, 컴포넌트 -->
-- 연동: <!-- 연결 지점, 검증 결과 -->
+- 연동 (#169 — 타임슬롯 자동생성 연동, 2026-06-04):
+  - 계약: `packages/shared/src/contracts/timeslot.ts`(generateTimeSlotsRequest/Result, TimeSlotErrorCode), `packages/shared/src/enums/store-time-slot-status.ts`(StoreTimeSlotStatus = OPEN/CLOSED/CANCELED). index.ts export.
+  - API/헬퍼: `apps/web/src/features/store/timeslot/api.ts` — `generateTimeSlots(storeId, body)`(POST .../time-slots/generate), `rollingGenerateRange()`(KST 오늘~+30일), `TIMESLOT_GENERATE_ROLLING_DAYS=30`.
+  - 연결 지점: (1) 공방 등록 `registration/queries.ts` `useSubmitStoreRegistration` — submitStore 직후 best-effort 호출. (2) 공방 수정 `edit/ui/StoreEditLayout.tsx` `handleSave` — `section==='operating' || section==='reservation'` 저장 직후 best-effort 호출(영업시간/요일 + interval 둘 다). 모두 실패해도 등록/저장 완료 유지(try/catch + console.warn).
+  - BE 보강: `generate` use-case에 **prune** 추가 — 생성 범위 윈도우 내 미래 OPEN 슬롯 중 새 격자에 없는 것을 삭제(예약없는 것만, CLOSED/CANCELED/과거/예약걸린 슬롯 보존). 영업시간 단축·요일삭제·interval 변경이 모두 정상 반영(줄이는 변경도 옛 슬롯 제거). 응답에 `removedCount` 추가.
+  - 검증: `tsc --noEmit`(api·shared·web) PASS, `eslint` PASS.
 
 ## Risks
 
@@ -287,7 +295,8 @@ model ReservationRestriction {
 - StoreTimeSlot 전환이 **예약 생성/available-slots 등 미구현 기능(예약 관리 문서)의 설계 전제를 변경** → 해당 문서는 본 문서의 슬롯 모델·`storeTimeSlotId` FK를 전제로 정원/제한 검증을 구현.
 - 자동 생성 시 `reservationIntervalMinutes`/운영시간 미설정 공방 호출 → 422/409 정책 의존.
 - 특정 날짜 임시휴무/공휴일은 슬롯이 일단 생성됨 → 파트너가 슬롯 CANCELED로 차단. 자동 휴무 처리 없음 → 운영 가이드 필요.
-- **interval 변경 시 시각 격자 변동으로 기존 ReservationRestriction이 새 슬롯과 불일치 가능** — 운영 가이드/재설정 필요.
+- **interval 변경 시 시각 격자 변동으로 기존 ReservationRestriction이 새 슬롯과 불일치 가능** — 운영 가이드/재설정 필요. (슬롯 자체는 generate prune으로 정리되나, 시각 기반 ReservationRestriction은 prune 대상 아님 → 옛 격자 시각 제한이 남을 수 있음.)
+- **prune은 예약 걸린 옛 격자 슬롯은 삭제 못 함** — interval/영업시간 축소 변경 시 예약 있는 옛 슬롯은 새 격자와 무관하게 잔존(데이터 정합 우선). 운영상 혼재 가능 → 필요 시 파트너가 수동 CANCELED.
 
 ## Validation
 
@@ -313,6 +322,9 @@ model ReservationRestriction {
 - **휴무일 표현 = 요일 운영시간 기반 정기휴무** — 사용자 확정 2026-06-04. 미설정 요일은 슬롯 생성 제외. `store_closed_days` 테이블 신설 안 함. 특정 날짜 임시휴무는 슬롯 CANCELED로 대응.
 - **과거 날짜 정책 = 과거 슬롯 스킵** — 사용자 확정 2026-06-04. `startAt <= now` 슬롯 스킵, `startDate`가 과거여도 에러 아님.
 - 네이밍 `program` 사용(`class` 아님) — 백엔드 결정.
+- **(#169) generate 트리거 = 저장 시 자동 호출** — 사용자 확정 2026-06-04. 공방 등록 submit 직후 + 영업정보(operating) 수정 저장 직후 자동 호출. 별도 "슬롯 생성" 버튼 없음.
+- **(#169) 생성 날짜 범위 = 향후 30일 롤링** — 사용자 확정 2026-06-04. 호출 시점 KST 오늘~+30일. 과거 슬롯은 BE 자동 스킵, 멱등이라 재호출 안전.
+- **(#169) generate에 prune 추가 — 새 엔드포인트 없이 기존 generate 동작만 보강** — 사용자 확정 2026-06-04. generate는 인자로 변경 종류를 안 받고 늘 현재 공방 설정(영업시간/요일/interval)을 읽어 격자 생성 → 거기에 "생성 범위 내 미래 OPEN 슬롯 중 새 격자에 없는, 예약없는 슬롯 삭제"를 추가. 영업시간 연장/요일추가(=추가만)·단축/요일삭제·interval 변경(=옛 격자 제거 후 재생성)이 모두 한 경로로 처리. 예약 걸린 슬롯·CLOSED/CANCELED·과거 슬롯은 보존.
 
 ## Outcome
 

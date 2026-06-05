@@ -1,34 +1,37 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { verifyStoreOwnership } from '../verify-store-ownership';
+import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
+import {
+    DeleteRestrictionConditions,
+    ReservationRestrictionRepository,
+} from '../../domain/repositories/reservation-restriction.repository';
+import { kstDayRange, parseDateOnly } from '../../domain/time.util';
 import type {
     DeleteReservationRestrictionsDto,
     DeleteReservationRestrictionsResponseDto,
 } from '../../presentation/dto/delete-reservation-restrictions.dto';
-import { kstDayRange, parseDateOnly } from '../time.util';
 
 @Injectable()
 export class DeleteReservationRestrictionsUseCase {
     private readonly logger = new Logger(DeleteReservationRestrictionsUseCase.name);
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly ownership: StoreOwnershipService,
+        private readonly restrictions: ReservationRestrictionRepository,
+    ) {}
 
     async execute(
         userId: string,
         storeId: string,
         dto: DeleteReservationRestrictionsDto,
     ): Promise<DeleteReservationRestrictionsResponseDto> {
-        await verifyStoreOwnership(this.prisma, userId, storeId);
+        await this.ownership.verify(userId, storeId);
 
         // (1) 개별 restrictionIds 우선 — 해당 공방 소속만 삭제.
         if (dto.restrictionIds && dto.restrictionIds.length > 0) {
-            const result = await this.prisma.reservationRestriction.deleteMany({
-                where: { id: { in: dto.restrictionIds }, storeId },
-            });
-            this.logger.log(`[restriction-remove] store=${storeId} byIds removed=${result.count}`);
-            return { removedCount: result.count };
+            const removedCount = await this.restrictions.deleteByIds(storeId, dto.restrictionIds);
+            this.logger.log(`[restriction-remove] store=${storeId} byIds removed=${removedCount}`);
+            return { removedCount };
         }
 
         // (2) 조건 매칭(시각 기반): date + (timeRanges?) + programIds?.
@@ -49,39 +52,36 @@ export class DeleteReservationRestrictionsUseCase {
             );
         }
 
-        const where: Prisma.ReservationRestrictionWhereInput = { storeId };
+        const conditions: DeleteRestrictionConditions = {};
 
         if (dto.timeRanges && dto.timeRanges.length > 0) {
             // 지정 시각대의 startAt 들과 매칭.
-            where.startAt = {
-                in: dto.timeRanges.map((r) => {
-                    const startAt = new Date(r.startAt);
-                    if (Number.isNaN(startAt.getTime())) {
-                        throw new BusinessException(
-                            'INVALID_RESTRICTION_REQUEST',
-                            'timeRanges 시각 형식이 올바르지 않습니다.',
-                            HttpStatus.BAD_REQUEST,
-                        );
-                    }
-                    return startAt;
-                }),
-            };
+            conditions.startAts = dto.timeRanges.map((r) => {
+                const startAt = new Date(r.startAt);
+                if (Number.isNaN(startAt.getTime())) {
+                    throw new BusinessException(
+                        'INVALID_RESTRICTION_REQUEST',
+                        'timeRanges 시각 형식이 올바르지 않습니다.',
+                        HttpStatus.BAD_REQUEST,
+                    );
+                }
+                return startAt;
+            });
         } else {
             // timeRanges 미지정 → 그 날짜 전체 시각대.
-            const { start, end } = kstDayRange(dateParts);
-            where.startAt = { gte: start, lt: end };
+            conditions.range = kstDayRange(dateParts);
         }
 
         if (dto.programIds && dto.programIds.length > 0) {
-            where.programId = { in: dto.programIds };
+            conditions.programIds = dto.programIds;
         }
 
-        const result = await this.prisma.reservationRestriction.deleteMany({ where });
+        const removedCount = await this.restrictions.deleteByConditions(storeId, conditions);
 
         this.logger.log(
-            `[restriction-remove] store=${storeId} date=${dto.date} removed=${result.count}`,
+            `[restriction-remove] store=${storeId} date=${dto.date} removed=${removedCount}`,
         );
 
-        return { removedCount: result.count };
+        return { removedCount };
     }
 }

@@ -33,8 +33,8 @@
 - Relevant design docs: DESIGN.md 작업 시작 조건 확인 필요 (UI 규칙 섹션 참고)
 - Open decisions:
   - [Q1] `/programs/{programId}/available-slots`는 `Authorization: Bearer {accessToken}` 필수다. Guest는 예약 버튼 CTA만 보여주고 슬롯 조회는 로그인 후 진행하는지, 아니면 비인증 상태에서도 달력을 미리 보여줄지 결정 필요.
-  - [Q2] `deliveryOption` enum 값이 API 응답에 `CUSTOMER_SELECT`로 내려오는데, 화면 표시 라벨 매핑(`배송`, `직접 수령`, `고객 선택`) 기준을 확정해야 한다.
-  - [Q3] 클래스 상태 `INACTIVE`(파트너 게시 중단)인 경우 퍼블릭 URL 접근 시 404 처리인지, 별도 "예약 불가" 메시지 처리인지 확인 필요 (요구사항에는 `ACTIVE` 상태만 조회 가능으로 명시됨).
+  - [Q2·해소 2026-06-05] `deliveryOption`(3값 enum) 폐기 — DB엔 `deliverable: boolean`만 존재. 화면 "작품 수령 방법"은 deliverable로 렌더(true→"택배·직접수령", false→"직접 수령"). 화면 확인 완료.
+  - [Q3·해소 2026-06-05] 비ACTIVE(DRAFT/INACTIVE) 클래스 퍼블릭 접근 → 현 구현은 `status:'ACTIVE'` 필터로 미존재 취급 → 404 `PROGRAM_NOT_FOUND`. (확정)
   - [Q4] 리뷰 목록 화면에 사진 썸네일이 있을 때 원본 이미지 라이트박스 기능 포함 범위 확인 필요.
 
 ## API Contract (스냅샷)
@@ -50,20 +50,23 @@
   id: string;              // UUID
   storeId: string;         // UUID
   title: string;           // 클래스명
-  description: string;     // 클래스 소개
-  materials: string;       // 준비물
-  caution: string;         // 유의사항
+  description: string | null;  // 클래스 소개 (DB nullable)
+  materials: string | null;    // 준비물 (DB nullable)
+  caution: string | null;      // 유의사항 (DB nullable)
   price: number;           // 가격 (원 단위, 양의 정수)
   durationMinutes: number; // 소요시간 (분)
-  capacity: number;        // 정원
+  capacity: number | null; // 정원 — 출처: Store.maxCapacityPerSlot (공방 슬롯 정원, Int? nullable). 화면 "정원 최대 N명". 퍼블릭 상세에만 포함
   leadTimeDays: number;    // 평균 제작 기간 (일)
-  deliveryOption: "DELIVERY" | "PICKUP" | "CUSTOMER_SELECT";
+  difficulty: "BASIC" | "INTERMEDIATE" | "ADVANCED";  // 난이도 태그 ("기본"/"중급"/"고급")
+  childFriendly: boolean;  // "어린이 가능" 태그
+  deliverable: boolean;    // "배송 가능" 태그 — 수령방법 true→"택배·직접수령" / false→"직접 수령"
   status: "ACTIVE";        // 퍼블릭 조회 시 ACTIVE만 반환
   images: Array<{
     imageUrl: string;
-    thumbnailUrl: string;
+    thumbnailUrl: string | null;
   }>;
 }
+// deliveryOption(3값 enum) 폐기 → deliverable(boolean)로 대체 (화면이 boolean으로 충분)
 ```
 
 **Review**
@@ -84,14 +87,15 @@
 **TimeSlot (예약 가능 시간)**
 ```typescript
 {
-  slotId: string;          // UUID
+  slotId: string;          // UUID (StoreTimeSlot.id)
   startAt: string;         // ISO 8601
   endAt: string;           // ISO 8601
-  capacity: number;        // 정원
   reservedCount: number;   // 예약된 인원
-  remainingCount: number;  // 잔여 정원
-  status: "OPEN" | "CLOSED";
+  remainingCount: number;  // 잔여 정원 = Store.maxCapacityPerSlot - reservedCount
+  status: "OPEN" | "CLOSED" | "CANCELED";   // CANCELED 추가
+  isAvailable: boolean;    // 이 프로그램으로 예약 가능 = OPEN && !ReservationRestriction(programId) && remainingCount>0
 }
+// capacity(슬롯 정원) 폐기 — 슬롯엔 정원 없음(공방 단위 maxCapacityPerSlot). 슬롯 = 파트너가 미리 생성한 StoreTimeSlot row
 ```
 
 ---
@@ -118,7 +122,7 @@ Path Parameters:
   "statusCode": 200,
   "timestamp": "2026-05-25T18:50:00.000Z",
   "path": "/stores/todam-studio/programs/prog-uuid-001",
-  "message": "프로그램 상세 정보가 성공적으로 조회되었습니다.",
+  "message": "클래스 상세 정보가 성공적으로 조회되었습니다.",
   "data": {
     "program": {
       "id": "prog-uuid-001",
@@ -129,9 +133,11 @@ Path Parameters:
       "caution": "체험 당일 취소는 불가합니다.",
       "price": 45000,
       "durationMinutes": 120,
-      "capacity": 6,
+      "capacity": 4,
       "leadTimeDays": 30,
-      "deliveryOption": "CUSTOMER_SELECT",
+      "difficulty": "BASIC",
+      "childFriendly": true,
+      "deliverable": true,
       "status": "ACTIVE",
       "images": [
         {
@@ -151,7 +157,7 @@ Path Parameters:
   "statusCode": 404,
   "timestamp": "2026-05-25T18:50:03.000Z",
   "path": "/stores/todam-studio/programs/prog-uuid-001",
-  "message": "프로그램을 찾을 수 없습니다.",
+  "message": "클래스를 찾을 수 없습니다.",
   "data": null,
   "error": "PROGRAM_NOT_FOUND"
 }
@@ -270,19 +276,19 @@ Query Parameters:
         "slotId": "slot-uuid-001",
         "startAt": "2026-06-01T10:00:00.000Z",
         "endAt": "2026-06-01T12:00:00.000Z",
-        "capacity": 6,
         "reservedCount": 2,
-        "remainingCount": 4,
-        "status": "OPEN"
+        "remainingCount": 2,
+        "status": "OPEN",
+        "isAvailable": true
       },
       {
         "slotId": "slot-uuid-002",
         "startAt": "2026-06-01T14:00:00.000Z",
         "endAt": "2026-06-01T16:00:00.000Z",
-        "capacity": 6,
-        "reservedCount": 6,
+        "reservedCount": 4,
         "remainingCount": 0,
-        "status": "CLOSED"
+        "status": "OPEN",
+        "isAvailable": false
       }
     ]
   },
@@ -314,7 +320,7 @@ Query Parameters:
   - 클래스 이미지 (캐러셀 또는 단일 이미지)
   - 클래스 기본 정보 (클래스명, 가격, 소요시간, 정원, 평균 제작 기간)
   - 카테고리 정보 태그 (기본 / 개인 가능 / 배송 가능)
-  - 작품 수령 방법 표시 (`deliveryOption` → 화면 라벨 매핑)
+  - 작품 수령 방법 표시 (`deliverable` boolean → true "택배·직접수령" / false "직접 수령")
   - 클래스 소개, 체험 안내 (준비물, 유의사항)
   - 리뷰 요약 (평균 별점, 리뷰 수) + 리뷰 목록 미리보기 (최대 3건)
   - "리뷰 전체보기" 링크 (클래스 리뷰 전체보기 화면으로 이동)
@@ -350,10 +356,12 @@ Query Parameters:
 
 3. **`GET /programs/{programId}/available-slots` 구현**
    - `AuthGuard` 적용 (User 이상)
-   - `year`, `month` 파라미터로 해당 월 슬롯 계산
-   - 공방 운영시간 + 휴게시간 + 예약 시간 간격 + `BlockedSlot` 존재 여부 종합
-   - 각 슬롯의 `reservedCount` 조회 → `remainingCount = capacity - reservedCount` 계산
-   - `status`: `remainingCount > 0` 이고 `BlockedSlot` 없으면 `OPEN`, 그 외 `CLOSED`
+   - `programId`로 소속 store 해석 + 프로그램 ACTIVE 검증 (미존재/비ACTIVE → 404 `PROGRAM_NOT_FOUND`)
+   - `year`, `month` → KST 일범위 변환(`kstDayRange` 재사용) → 해당 store의 `StoreTimeSlot` 조회 (파트너 사전생성 row 읽기, 즉석 계산 아님)
+   - `ReservationRestriction(storeId, startAt, programId)` 대조로 프로그램별 제한 판별
+   - `remainingCount = Store.maxCapacityPerSlot - reservedCount`
+   - `isAvailable = status==OPEN && !restricted && remainingCount>0` (restricted/CANCELED/full → false, FE 회색 처리)
+   - 구현: timeslot DDD 포트 재사용(`StoreTimeSlotRepository.findByStore`, `ReservationRestrictionRepository.findByStartAts`) — **#180 머지 후**. 단 program→store 공개 read는 추가 필요(taesong 조율)
 
 ### FE
 
@@ -402,8 +410,8 @@ Query Parameters:
 ## Risks
 
 - **슬롯 조회 인증 정책(Q1)**: Guest 상태에서 달력/슬롯 노출 범위 미결정. CTA 버튼 활성화 여부에 직접 영향.
-- **deliveryOption 라벨 매핑(Q2)**: `CUSTOMER_SELECT` 등 enum → 화면 표시 문구 매핑 기준 미확정 시 UI 구현 중단 가능.
-- **INACTIVE 클래스 접근 처리(Q3)**: 404 vs. 예약 불가 메시지 처리 방식이 API와 UI 양측에 영향.
+- **정원(capacity) 출처 변경**: 정원이 Program이 아닌 `Store.maxCapacityPerSlot`로 이동(타임슬롯 마이그레이션). 상세 엔드포인트가 현재 이 값을 미반환 → 구현 추가 필요(cross-lane, program 모듈).
+- **available-slots 구현 의존성(#180)**: timeslot DDD 포트 전환 머지 후 착수. program→store 공개 read 메서드는 추가 필요(taesong 조율).
 - **리뷰 사진 원본 접근**: API 응답에 `thumbnailUrl`만 포함, `imageUrl`(원본) 없음. 라이트박스 기능이 필요한 경우 API 스키마 확장 필요(Q4).
 
 ## Validation
@@ -427,6 +435,8 @@ Query Parameters:
 
 - 2026-06-02: 기능명 "게스트 및 유저 클래스 자세히보기"는 Notion 기능명세 DB의 "클래스 자세히보기" (실행주체: guest, user)와 동일 기능으로 확인. 파트너 전용 "클래스 상세 조회"와 분리하여 계획.
 - 2026-06-02: API 경로는 `/classes` 아닌 `/programs` 패턴 사용 확인 (API 명세 DB 기준).
+- 2026-06-05: §1 상세 계약을 실제 구현/DB·화면(source of truth)에 맞춰 재정합. capacity 출처=Store.maxCapacityPerSlot(★구현 추가 필요), deliveryOption enum→deliverable boolean, difficulty/childFriendly 추가, description/materials/caution/thumbnailUrl nullable, message "클래스" 기준. reviewer 대조 결과 기반. → Notion API 명세서 동일 갱신 **완료(2026-06-05)**.
+- 2026-06-05: §3 available-slots 계약을 StoreTimeSlot 모델(#164)에 맞춰 재정합. capacity 필드 폐기, status에 CANCELED 추가, isAvailable 추가, remainingCount=maxCapacityPerSlot-reservedCount, 슬롯=파트너 사전생성 row. 구현은 timeslot DDD 포트(#180) 재사용 + program→store 공개 read 추가 필요. → Notion 동일 갱신 **완료(2026-06-05)**.
 
 ## Outcome
 

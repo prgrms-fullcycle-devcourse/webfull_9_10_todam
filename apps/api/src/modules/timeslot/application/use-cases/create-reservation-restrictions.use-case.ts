@@ -1,25 +1,35 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { verifyStoreOwnership } from '../verify-store-ownership';
+import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
+import { StoreTimeSlotRepository } from '../../domain/repositories/store-time-slot.repository';
+import {
+    NewRestriction,
+    ReservationRestrictionRepository,
+} from '../../domain/repositories/reservation-restriction.repository';
+import { TimeslotSupportReader } from '../../domain/repositories/timeslot-support.reader';
+import { kstDayRange, parseDateOnly } from '../../domain/time.util';
 import type {
     CreateReservationRestrictionsDto,
     CreateReservationRestrictionsResponseDto,
 } from '../../presentation/dto/create-reservation-restrictions.dto';
-import { kstDayRange, parseDateOnly } from '../time.util';
 
 @Injectable()
 export class CreateReservationRestrictionsUseCase {
     private readonly logger = new Logger(CreateReservationRestrictionsUseCase.name);
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly ownership: StoreOwnershipService,
+        private readonly slots: StoreTimeSlotRepository,
+        private readonly restrictions: ReservationRestrictionRepository,
+        private readonly support: TimeslotSupportReader,
+    ) {}
 
     async execute(
         userId: string,
         storeId: string,
         dto: CreateReservationRestrictionsDto,
     ): Promise<CreateReservationRestrictionsResponseDto> {
-        await verifyStoreOwnership(this.prisma, userId, storeId);
+        await this.ownership.verify(userId, storeId);
 
         const dateParts = parseDateOnly(dto.date);
         if (!dateParts) {
@@ -31,11 +41,8 @@ export class CreateReservationRestrictionsUseCase {
         }
 
         // 대상 프로그램이 해당 공방 소속인지 검증.
-        const programs = await this.prisma.program.findMany({
-            where: { id: { in: dto.programIds }, storeId },
-            select: { id: true },
-        });
-        if (programs.length !== new Set(dto.programIds).size) {
+        const ownedProgramIds = await this.support.findOwnedProgramIds(storeId, dto.programIds);
+        if (ownedProgramIds.length !== new Set(dto.programIds).size) {
             throw new BusinessException(
                 'RESOURCE_NOT_FOUND',
                 '공방에 속하지 않은 프로그램이 포함되어 있습니다.',
@@ -54,52 +61,27 @@ export class CreateReservationRestrictionsUseCase {
         }
 
         // (시각대) × (프로그램) 멱등 생성.
-        const result = await this.prisma.$transaction(async (tx) => {
-            const created: {
-                id: string;
-                startAt: Date;
-                endAt: Date;
-                programId: string;
-            }[] = [];
-
-            for (const range of ranges) {
-                for (const programId of dto.programIds) {
-                    const existing = await tx.reservationRestriction.findUnique({
-                        where: {
-                            storeId_startAt_programId: {
-                                storeId,
-                                startAt: range.startAt,
-                                programId,
-                            },
-                        },
-                        select: { id: true },
-                    });
-                    if (existing) continue; // 멱등 — 이미 있으면 스킵.
-
-                    const record = await tx.reservationRestriction.create({
-                        data: {
-                            storeId,
-                            startAt: range.startAt,
-                            endAt: range.endAt,
-                            programId,
-                            createdBy: userId,
-                        },
-                        select: { id: true, startAt: true, endAt: true, programId: true },
-                    });
-                    created.push(record);
-                }
+        const items: NewRestriction[] = [];
+        for (const range of ranges) {
+            for (const programId of dto.programIds) {
+                items.push({
+                    storeId,
+                    startAt: range.startAt,
+                    endAt: range.endAt,
+                    programId,
+                    createdBy: userId,
+                });
             }
-
-            return created;
-        });
+        }
+        const created = await this.restrictions.createManyIdempotent(items);
 
         this.logger.log(
-            `[restriction-apply] store=${storeId} date=${dto.date} scope=${dto.scope} applied=${result.length}`,
+            `[restriction-apply] store=${storeId} date=${dto.date} scope=${dto.scope} applied=${created.length}`,
         );
 
         return {
-            appliedCount: result.length,
-            restrictions: result.map((r) => ({
+            appliedCount: created.length,
+            restrictions: created.map((r) => ({
                 id: r.id,
                 startAt: r.startAt.toISOString(),
                 endAt: r.endAt.toISOString(),
@@ -116,11 +98,8 @@ export class CreateReservationRestrictionsUseCase {
         dateParts: { year: number; month: number; day: number },
     ): Promise<{ startAt: Date; endAt: Date }[]> {
         if (dto.scope === 'ALL_DAY') {
-            const { start, end } = kstDayRange(dateParts);
-            const slots = await this.prisma.storeTimeSlot.findMany({
-                where: { storeId, startAt: { gte: start, lt: end } },
-                select: { startAt: true, endAt: true },
-            });
+            const range = kstDayRange(dateParts);
+            const slots = await this.slots.findByStore(storeId, { range });
             return slots.map((s) => ({ startAt: s.startAt, endAt: s.endAt }));
         }
 

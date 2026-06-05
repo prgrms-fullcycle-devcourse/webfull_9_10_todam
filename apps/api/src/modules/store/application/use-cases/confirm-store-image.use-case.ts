@@ -1,20 +1,16 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../../database/prisma.service';
+import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
+import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { S3Service } from '../../../../common/s3/s3.service';
 import { keyFromImageUrl } from '../../../../common/s3/s3-object.util';
-import { BusinessException } from '../../../../common/exceptions/business.exception';
-
-export interface ConfirmStoreImageResponseDto {
-    image: {
-        id: string;
-        status: string;
-    };
-}
+import { StoreImageRepository } from '../../domain/repositories/store-image.repository';
+import type { ConfirmStoreImageResult } from '../dto/store-application.dto';
 
 @Injectable()
 export class ConfirmStoreImageUseCase {
     constructor(
-        private readonly prisma: PrismaService,
+        private readonly ownership: StoreOwnershipService,
+        private readonly images: StoreImageRepository,
         private readonly s3: S3Service,
     ) {}
 
@@ -22,33 +18,10 @@ export class ConfirmStoreImageUseCase {
         userId: string,
         storeId: string,
         imageId: string,
-    ): Promise<ConfirmStoreImageResponseDto> {
-        const store = await this.prisma.store.findUnique({
-            where: { id: storeId },
-            select: { id: true, partner: { select: { userId: true } } },
-        });
+    ): Promise<ConfirmStoreImageResult> {
+        await this.ownership.verify(userId, storeId, { notFound: 'NOT_FOUND' });
 
-        if (!store) {
-            throw new BusinessException(
-                'NOT_FOUND',
-                '공방을 찾을 수 없습니다.',
-                HttpStatus.NOT_FOUND,
-            );
-        }
-
-        if (store.partner.userId !== userId) {
-            throw new BusinessException(
-                'FORBIDDEN',
-                '공방 소유 권한이 없습니다.',
-                HttpStatus.FORBIDDEN,
-            );
-        }
-
-        const image = await this.prisma.storeImage.findUnique({
-            where: { id: imageId },
-            select: { id: true, status: true, imageUrl: true },
-        });
-
+        const image = await this.images.findByStoreAndId(storeId, imageId);
         if (!image) {
             throw new BusinessException(
                 'NOT_FOUND',
@@ -74,17 +47,7 @@ export class ConfirmStoreImageUseCase {
             );
         }
 
-        const updated = await this.prisma.storeImage.update({
-            where: { id: imageId },
-            data: { status: 'UPLOADED' },
-            select: { id: true, status: true },
-        });
-
-        return {
-            image: {
-                id: updated.id,
-                status: updated.status,
-            },
-        };
+        const updated = await this.images.markUploaded(imageId);
+        return { image: updated };
     }
 }
