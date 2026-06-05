@@ -66,6 +66,9 @@ describe('CreateUserReservationUseCase', () => {
 
         expect(result.reservation.status).toBe(ReservationStatus.CONFIRMED);
         expect(result.reservation.displayState.label).toBe('예약확정');
+        expect(result.reservation.displayState.description).toBe(
+            '예약이 확정되었어요. 공방에서 곧 만나요!',
+        );
         expect(result.reservation.displayState.subLabel).toBeNull();
     });
 

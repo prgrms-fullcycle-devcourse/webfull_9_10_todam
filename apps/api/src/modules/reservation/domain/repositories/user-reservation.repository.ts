@@ -1,4 +1,4 @@
-import { ReservationDeliveryMethod, ReservationStatus } from '@prisma/client';
+import { ArtworkStatus, ReservationDeliveryMethod, ReservationStatus } from '@prisma/client';
 
 export interface CreateCustomerReservationInput {
     programId: string;
@@ -22,9 +22,33 @@ export interface CreateCustomerReservationResult {
     };
 }
 
+/** GET /reservations/me 목록 조회용 행 */
+export interface UserReservationListRow {
+    id: string;
+    storeName: string;
+    programTitle: string;
+    scheduledAt: Date;
+    participantCount: number;
+    status: ReservationStatus;
+    /** IN_PROGRESS 구간 displayState 계산에 사용. Artwork 없으면 null */
+    artworkStatus: ArtworkStatus | null;
+    createdAt: Date;
+}
+
+export interface UserReservationListQuery {
+    status?: ReservationStatus;
+    cursor?: string;
+    limit: number;
+}
+
 export abstract class UserReservationRepository {
     abstract createCustomer(
         userId: string,
         input: CreateCustomerReservationInput,
     ): Promise<CreateCustomerReservationResult>;
+
+    abstract findMyList(
+        userId: string,
+        query: UserReservationListQuery,
+    ): Promise<UserReservationListRow[]>;
 }

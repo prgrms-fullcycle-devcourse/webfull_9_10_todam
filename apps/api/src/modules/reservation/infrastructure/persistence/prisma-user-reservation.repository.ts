@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
     ArtworkStatus,
+    Prisma,
     ReservationDeliveryMethod,
     ReservationSource,
     ReservationStatus,
@@ -13,6 +14,8 @@ import { BusinessException } from '../../../../common/exceptions/business.except
 import {
     CreateCustomerReservationInput,
     CreateCustomerReservationResult,
+    UserReservationListQuery,
+    UserReservationListRow,
     UserReservationRepository,
 } from '../../domain/repositories/user-reservation.repository';
 
@@ -209,6 +212,45 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
 
             return { reservation };
         });
+    }
+
+    async findMyList(
+        userId: string,
+        query: UserReservationListQuery,
+    ): Promise<UserReservationListRow[]> {
+        const where: Prisma.ReservationWhereInput = {
+            userId,
+            ...(query.status ? { status: query.status } : {}),
+        };
+
+        const rows = await this.prisma.reservation.findMany({
+            where,
+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+            cursor: query.cursor ? { id: query.cursor } : undefined,
+            skip: query.cursor ? 1 : 0,
+            take: query.limit + 1,
+            select: {
+                id: true,
+                scheduledAt: true,
+                participantCount: true,
+                status: true,
+                createdAt: true,
+                store: { select: { name: true } },
+                program: { select: { title: true } },
+                artwork: { select: { status: true } },
+            },
+        });
+
+        return rows.map((row) => ({
+            id: row.id,
+            storeName: row.store.name,
+            programTitle: row.program.title,
+            scheduledAt: row.scheduledAt,
+            participantCount: row.participantCount,
+            status: row.status,
+            artworkStatus: row.artwork?.status ?? null,
+            createdAt: row.createdAt,
+        }));
     }
 
     private createQrToken(artworkId: string): string {
