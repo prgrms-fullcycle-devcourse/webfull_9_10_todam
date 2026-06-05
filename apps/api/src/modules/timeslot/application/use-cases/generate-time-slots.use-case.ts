@@ -101,26 +101,41 @@ export class GenerateTimeSlotsUseCase {
             const closeMin = timeColumnToMinutes(hour.closeTime);
             const breakStartMin = hour.breakStart ? timeColumnToMinutes(hour.breakStart) : null;
             const breakEndMin = hour.breakEnd ? timeColumnToMinutes(hour.breakEnd) : null;
-            const hasBreak = breakStartMin != null && breakEndMin != null;
+            const hasBreak =
+                breakStartMin != null &&
+                breakEndMin != null &&
+                breakStartMin < breakEndMin &&
+                breakStartMin >= openMin &&
+                breakEndMin <= closeMin;
 
-            for (let slotStart = openMin; slotStart + interval <= closeMin; slotStart += interval) {
-                const slotEnd = slotStart + interval;
+            // break 는 하루를 구간으로 분할한다. 각 구간은 그 구간 시작점부터 back-to-back 격자.
+            // (openTime 단일 격자에서 break 겹침만 제외하면, break 직후 슬롯이 구간 시작이 아닌
+            //  openTime 기준 격자 시각으로 밀려 break~다음격자 사이가 버려진다.)
+            const segments: [number, number][] = hasBreak
+                ? [
+                      [openMin, breakStartMin!],
+                      [breakEndMin!, closeMin],
+                  ]
+                : [[openMin, closeMin]];
 
-                // break 구간과 겹치면 제외.
-                if (hasBreak && slotStart < breakEndMin! && slotEnd > breakStartMin!) {
-                    continue;
+            for (const [segStart, segEnd] of segments) {
+                for (
+                    let slotStart = segStart;
+                    slotStart + interval <= segEnd;
+                    slotStart += interval
+                ) {
+                    const slotEnd = slotStart + interval;
+                    const startAt = kstWallClockToInstant(parts, slotStart);
+                    const endAt = kstWallClockToInstant(parts, slotEnd);
+
+                    // 과거 시각 스킵.
+                    if (startAt.getTime() <= now) {
+                        pastSkipped += 1;
+                        continue;
+                    }
+
+                    candidates.push({ startAt, endAt });
                 }
-
-                const startAt = kstWallClockToInstant(parts, slotStart);
-                const endAt = kstWallClockToInstant(parts, slotEnd);
-
-                // 과거 시각 스킵.
-                if (startAt.getTime() <= now) {
-                    pastSkipped += 1;
-                    continue;
-                }
-
-                candidates.push({ startAt, endAt });
             }
         }
 
@@ -135,8 +150,57 @@ export class GenerateTimeSlotsUseCase {
             );
         }
 
-        // 멱등 — 이미 존재하는 startAt 스킵. 트랜잭션 처리.
-        const created = await this.prisma.$transaction(async (tx) => {
+        // 새 격자 식별은 (startAt, endAt) 쌍으로. startAt만 비교하면 interval 변경으로
+        // 시작점이 겹치는 슬롯(예: openTime 슬롯)의 옛 endAt(길이)이 그대로 남는다.
+        const pairKey = (startAt: Date, endAt: Date) => `${startAt.getTime()}_${endAt.getTime()}`;
+        const candidatePairKeys = new Set(candidates.map((c) => pairKey(c.startAt, c.endAt)));
+
+        // 생성 범위의 절대 시각 윈도우([startDate 00:00 KST, endDate 24:00 KST)).
+        const windowStart = kstWallClockToInstant(startParts, 0);
+        const windowEnd = kstWallClockToInstant(endParts, 24 * 60);
+        const nowDate = new Date(now);
+
+        // 멱등 생성 + prune(영업시간/요일/interval 변경으로 더 이상 새 격자에 없는
+        // "예약 없는 미래 OPEN 슬롯" 삭제). 트랜잭션 처리.
+        const result = await this.prisma.$transaction(async (tx) => {
+            // ── prune: 윈도우 내 미래 OPEN 슬롯 중 새 격자에 없는 것 삭제.
+            // 과거 슬롯·CLOSED/CANCELED(파트너 수동 조치)·예약 걸린 슬롯은 보존.
+            const futureOpen = await tx.storeTimeSlot.findMany({
+                where: {
+                    storeId,
+                    status: 'OPEN',
+                    startAt: { gt: nowDate, gte: windowStart, lt: windowEnd },
+                },
+                select: { id: true, startAt: true, endAt: true },
+            });
+            // (startAt, endAt) 쌍이 새 격자에 없으면 stale — 시작점만 같고 길이가 다른 옛 슬롯 포함.
+            const staleSlots = futureOpen.filter(
+                (s) => !candidatePairKeys.has(pairKey(s.startAt, s.endAt)),
+            );
+
+            let removedCount = 0;
+            if (staleSlots.length > 0) {
+                // 활성 예약(CANCELED 외) 걸린 슬롯은 삭제 대상에서 제외.
+                const staleIds = staleSlots.map((s) => s.id);
+                const reserved = await tx.reservation.findMany({
+                    where: {
+                        storeTimeSlotId: { in: staleIds },
+                        status: { not: 'CANCELED' },
+                    },
+                    select: { storeTimeSlotId: true },
+                });
+                const reservedIds = new Set(reserved.map((r) => r.storeTimeSlotId));
+                const deletableIds = staleIds.filter((id) => !reservedIds.has(id));
+
+                if (deletableIds.length > 0) {
+                    const deleted = await tx.storeTimeSlot.deleteMany({
+                        where: { id: { in: deletableIds } },
+                    });
+                    removedCount = deleted.count;
+                }
+            }
+
+            // ── 멱등 생성: 이미 존재하는 startAt 스킵.
             const existing = await tx.storeTimeSlot.findMany({
                 where: {
                     storeId,
@@ -176,17 +240,19 @@ export class GenerateTimeSlotsUseCase {
                 createdSlots.push(slot);
             }
 
-            return { createdSlots, alreadyExisting: existingKeys.size };
+            return { createdSlots, alreadyExisting: existingKeys.size, removedCount };
         });
 
+        const created = result;
         const skippedCount = pastSkipped + created.alreadyExisting;
 
         this.logger.log(
-            `[generate] store=${storeId} range=${dto.startDate}~${dto.endDate} created=${created.createdSlots.length} skipped=${skippedCount}(past=${pastSkipped},existing=${created.alreadyExisting})`,
+            `[generate] store=${storeId} range=${dto.startDate}~${dto.endDate} created=${created.createdSlots.length} removed=${created.removedCount} skipped=${skippedCount}(past=${pastSkipped},existing=${created.alreadyExisting})`,
         );
 
         return {
             createdCount: created.createdSlots.length,
+            removedCount: created.removedCount,
             skippedCount,
             createdSlots: created.createdSlots
                 .sort((a, b) => a.startAt.getTime() - b.startAt.getTime())

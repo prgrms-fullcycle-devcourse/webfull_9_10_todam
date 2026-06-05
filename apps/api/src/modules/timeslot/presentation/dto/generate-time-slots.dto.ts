@@ -23,6 +23,8 @@ export class GeneratedSlotDto {
 
 export class GenerateTimeSlotsResponseDto {
     @ApiProperty() createdCount!: number;
+    @ApiProperty({ description: '영업시간/요일/interval 변경으로 삭제된 미래 빈 슬롯 수' })
+    removedCount!: number;
     @ApiProperty() skippedCount!: number;
     @ApiProperty({ type: [GeneratedSlotDto] }) createdSlots!: GeneratedSlotDto[];
 }
