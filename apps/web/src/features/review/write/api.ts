@@ -6,7 +6,7 @@ import type {
     ReviewWriteRequest,
 } from '@todam/shared';
 
-import { apiFetch } from '@/shared/api';
+import { clientApiFetch } from '@/shared/api';
 
 const BASE = '/api/v1';
 
@@ -14,7 +14,7 @@ const BASE = '/api/v1';
 // POST /reservations/{reservationId}/review (201) — body = ReviewWriteRequest.
 // 응답 data.review = reviewDetailSchema (GET 과 동일 shape).
 export function createReview(reservationId: string, body: ReviewWriteRequest) {
-    return apiFetch<ReviewCreateResult>(
+    return clientApiFetch<ReviewCreateResult>(
         `${BASE}/reservations/${encodeURIComponent(reservationId)}/review`,
         { method: 'POST', body },
     );
@@ -24,7 +24,7 @@ export function createReview(reservationId: string, body: ReviewWriteRequest) {
 // PATCH /reviews/{reviewId} (200) — body = ReviewWriteRequest (POST 와 동일).
 // 응답 shape 는 D15(photos URL[] + updatedAt) — FE 는 invalidate+GET 재조회로 갱신.
 export function updateReview(reviewId: string, body: ReviewWriteRequest) {
-    return apiFetch<ReviewUpdateResult>(`${BASE}/reviews/${encodeURIComponent(reviewId)}`, {
+    return clientApiFetch<ReviewUpdateResult>(`${BASE}/reviews/${encodeURIComponent(reviewId)}`, {
         method: 'PATCH',
         body,
     });
@@ -33,7 +33,7 @@ export function updateReview(reviewId: string, body: ReviewWriteRequest) {
 // ─── 리뷰 사진 presigned URL 발급 (D14) ──────────────────────────
 // POST /review/images/presigned — 응답에 S3 key 포함(POST/PATCH photos[] 에 적재).
 export function uploadReviewImage(req: ReviewImageUploadRequest) {
-    return apiFetch<ReviewImageUploadResult>(`${BASE}/review/images/presigned`, {
+    return clientApiFetch<ReviewImageUploadResult>(`${BASE}/review/images/presigned`, {
         method: 'POST',
         body: req,
     });

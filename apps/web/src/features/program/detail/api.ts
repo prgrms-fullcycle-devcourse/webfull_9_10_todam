@@ -4,13 +4,13 @@ import type {
     UpdateProgramStatusResult,
 } from '@todam/shared';
 
-import { apiFetch } from '@/shared/api';
+import { clientApiFetch } from '@/shared/api';
 
 const BASE = '/partner';
 
 // 파트너 클래스 상세 조회 (DRAFT·INACTIVE·ACTIVE 전체 상태).
 export function getPartnerProgramDetail(storeId: string, programId: string) {
-    return apiFetch<PartnerProgramDetailResult>(
+    return clientApiFetch<PartnerProgramDetailResult>(
         `${BASE}/stores/${encodeURIComponent(storeId)}/programs/${encodeURIComponent(programId)}`,
         { method: 'GET' },
     );
@@ -22,7 +22,7 @@ export function updateProgramStatus(
     programId: string,
     body: UpdateProgramStatusRequest,
 ) {
-    return apiFetch<UpdateProgramStatusResult>(
+    return clientApiFetch<UpdateProgramStatusResult>(
         `${BASE}/stores/${encodeURIComponent(storeId)}/programs/${encodeURIComponent(programId)}/status`,
         { method: 'PATCH', body },
     );
