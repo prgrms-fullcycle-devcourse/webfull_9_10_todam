@@ -8,7 +8,7 @@ import type { ReactElement } from 'react';
 
 import { ApiError } from '@/shared/api';
 import { useToast } from '@/shared/model';
-import { useUpdateProgramStatus } from '../queries';
+import { useUpdateProgramStatus } from '@/entities/program';
 
 type Props = {
     programId: string;

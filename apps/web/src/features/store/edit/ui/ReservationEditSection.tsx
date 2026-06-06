@@ -1,6 +1,6 @@
 'use client';
 
-import { ReservationFields } from '@/features/store/shared/ui';
+import { ReservationFields } from '@/entities/store';
 import { useStoreEditStore } from '../model/store';
 
 export function ReservationEditSection() {

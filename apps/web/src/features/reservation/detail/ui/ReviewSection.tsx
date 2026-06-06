@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { EditIcon, Rating, SectionTitle } from '@todam/ui';
 import type { ReservationDetail } from '@todam/shared';
 
-import { useReservationReview } from '../queries';
+import { useReservationReview } from '@/entities/reservation';
 
 // 디자인 정본 (변형 B/C) — 리뷰 섹션.
 // 빈 상태 (변형 B): "아직 작성한 리뷰가 없어요" + "리뷰 쓰기" 버튼

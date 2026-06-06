@@ -1,6 +1,6 @@
 'use client';
 
-import { usePartnerProgramDetail } from '@/features/program/detail';
+import { usePartnerProgramDetail } from '@/entities/program';
 
 // 프로그램 수정 폼 preload.
 export function useProgramEditPreload(storeId: string, programId: string) {
