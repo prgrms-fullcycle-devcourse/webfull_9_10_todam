@@ -1,6 +1,6 @@
 import type { GenerateTimeSlotsRequest, GenerateTimeSlotsResult } from '@todam/shared';
 
-import { apiFetch } from '@/shared/api';
+import { clientApiFetch } from '@/shared/api';
 
 const BASE = '/partner';
 
@@ -25,8 +25,11 @@ export function rollingGenerateRange(): GenerateTimeSlotsRequest {
 // POST /partner/stores/{storeId}/time-slots/generate — 영업시간·interval 기반 타임슬롯 자동 생성.
 // 시간/간격/정원은 BE 가 공방 설정에서 조회. 멱등(이미 존재하는 startAt 스킵).
 export function generateTimeSlots(storeId: string, body: GenerateTimeSlotsRequest) {
-    return apiFetch<GenerateTimeSlotsResult>(`${BASE}/stores/${storeId}/time-slots/generate`, {
-        method: 'POST',
-        body,
-    });
+    return clientApiFetch<GenerateTimeSlotsResult>(
+        `${BASE}/stores/${storeId}/time-slots/generate`,
+        {
+            method: 'POST',
+            body,
+        },
+    );
 }

@@ -1,6 +1,6 @@
 import { ReservationStatus, type ReservationListResult } from '@todam/shared';
 
-import { apiFetch } from '@/shared/api';
+import { clientApiFetch } from '@/shared/api';
 
 const BASE = '/api/v1';
 
@@ -19,7 +19,7 @@ export function getMyReservations({ status, cursor, limit }: GetMyReservationsPa
     if (cursor) params.set('cursor', cursor);
     if (typeof limit === 'number') params.set('limit', String(limit));
     const qs = params.toString();
-    return apiFetch<ReservationListResult>(`${BASE}/reservations/me${qs ? `?${qs}` : ''}`, {
+    return clientApiFetch<ReservationListResult>(`${BASE}/reservations/me${qs ? `?${qs}` : ''}`, {
         method: 'GET',
     });
 }

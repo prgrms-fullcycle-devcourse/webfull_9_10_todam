@@ -13,7 +13,7 @@ import {
     type SubmitStoreResult,
 } from '@todam/shared';
 
-import { apiFetch } from '@/shared/api';
+import { clientApiFetch } from '@/shared/api';
 import { geocodeAddress, type GeocodeCoords } from '@/shared/lib/kakaoGeocode';
 
 import type { StoreRegistrationForm } from './model/types';
@@ -21,7 +21,7 @@ import type { StoreRegistrationForm } from './model/types';
 // ─── slug 사전 중복확인
 // 등록은 신규 공방이므로 excludeStoreId 없음. 제출 시점 최종검증은 POST /stores 409 SLUG_CONFLICT
 export function checkSlug(slug: string) {
-    return apiFetch<SlugAvailabilityResult>(
+    return clientApiFetch<SlugAvailabilityResult>(
         `/stores/slug-availability?slug=${encodeURIComponent(slug)}`,
         { method: 'GET' },
     );
@@ -38,7 +38,7 @@ const BASE = '/partner';
 
 // 응답: { partnerStatus: PartnerStatus|null, store: {id,status,rejectedReason}|null }
 export function getPartnerOnboarding() {
-    return apiFetch<PartnerOnboardingResult>(`${BASE}/onboarding`, { method: 'GET' });
+    return clientApiFetch<PartnerOnboardingResult>(`${BASE}/onboarding`, { method: 'GET' });
 }
 
 // 폼 → POST /stores body 매핑.
@@ -82,7 +82,7 @@ function toCreateStoreBody(form: StoreRegistrationForm): CreateStoreRequest {
 
 // 1) 공방 초안 생성
 export function createStore(form: StoreRegistrationForm) {
-    return apiFetch<CreateStoreResult>('/stores', {
+    return clientApiFetch<CreateStoreResult>('/stores', {
         method: 'POST',
         body: toCreateStoreBody(form),
     });
@@ -90,7 +90,7 @@ export function createStore(form: StoreRegistrationForm) {
 
 // 1-1) 사업자등록증 presigned PUT URL 발급 (store-비종속, 루트 경로 → MSW(/api/v1) 미가로챔, 실 BE).
 export function createBusinessDocumentImage(body: BusinessDocumentImageRequest) {
-    return apiFetch<BusinessDocumentImageResult>(`${BASE}/business-documents/images`, {
+    return clientApiFetch<BusinessDocumentImageResult>(`${BASE}/business-documents/images`, {
         method: 'POST',
         body,
     });
@@ -98,7 +98,7 @@ export function createBusinessDocumentImage(body: BusinessDocumentImageRequest) 
 
 // 2) 공방 이미지 presigned PUT URL 발급
 export function createStoreImage(storeId: string, body: CreateStoreImageRequest) {
-    return apiFetch<CreateStoreImageResult>(`${BASE}/stores/${storeId}/images`, {
+    return clientApiFetch<CreateStoreImageResult>(`${BASE}/stores/${storeId}/images`, {
         method: 'POST',
         body,
     });
@@ -106,7 +106,7 @@ export function createStoreImage(storeId: string, body: CreateStoreImageRequest)
 
 // 3) 업로드 완료 확인 (PENDING → UPLOADED)
 export function confirmStoreImage(storeId: string, imageId: string) {
-    return apiFetch<ConfirmStoreImageResult>(
+    return clientApiFetch<ConfirmStoreImageResult>(
         `${BASE}/stores/${storeId}/images/${imageId}/confirm`,
         { method: 'PATCH' },
     );
@@ -114,10 +114,12 @@ export function confirmStoreImage(storeId: string, imageId: string) {
 
 // 4) 공방 심사 제출 (DRAFT/REJECTED → PENDING)
 export function submitStore(storeId: string) {
-    return apiFetch<SubmitStoreResult>(`${BASE}/stores/${storeId}/submit`, { method: 'POST' });
+    return clientApiFetch<SubmitStoreResult>(`${BASE}/stores/${storeId}/submit`, {
+        method: 'POST',
+    });
 }
 
 // 검수 상태/반려 사유 조회 = 공방 상세 조회 재사용 (GET /partner/stores/{storeId}).
 export function getStoreReviewStatus(storeId: string) {
-    return apiFetch<PartnerStoreDetailResult>(`${BASE}/stores/${storeId}`, { method: 'GET' });
+    return clientApiFetch<PartnerStoreDetailResult>(`${BASE}/stores/${storeId}`, { method: 'GET' });
 }

@@ -3,7 +3,7 @@
 
 import type { LoginRequest, LoginResponse } from '@todam/shared';
 
-import { apiFetch } from '@/shared/api';
+import { clientApiFetch } from '@/shared/api';
 
 // 응답/요청 타입 = @todam/shared contract(SSOT). 소비자 호환 위해 re-export.
 export type { LoginResponse, LoginUser } from '@todam/shared';
@@ -16,7 +16,7 @@ export type EmailLoginInput = LoginRequest;
 // err:  400 INVALID_REQUEST / 401 UNAUTHORIZED / 403 EMAIL_UNVERIFIED / 500 INTERNAL_SERVER_ERROR
 
 export function emailLogin(input: EmailLoginInput): Promise<LoginResponse> {
-    return apiFetch<LoginResponse>('/auth/login', {
+    return clientApiFetch<LoginResponse>('/auth/login', {
         method: 'POST',
         body: input,
         credentials: 'include', // Refresh Token HttpOnly Cookie 수신
@@ -30,7 +30,7 @@ export function emailLogin(input: EmailLoginInput): Promise<LoginResponse> {
 // err:  400 INVALID_REQUEST / 500 EXTERNAL_AUTH_SERVER_ERROR
 
 export function kakaoLogin(code: string): Promise<LoginResponse> {
-    return apiFetch<LoginResponse>('/auth/oauth/kakao', {
+    return clientApiFetch<LoginResponse>('/auth/oauth/kakao', {
         method: 'POST',
         body: { code },
         credentials: 'include',
@@ -44,7 +44,7 @@ export function kakaoLogin(code: string): Promise<LoginResponse> {
 // err:  400 INVALID_REQUEST / 403 GOOGLE_EMAIL_UNVERIFIED / 500 EXTERNAL_AUTH_SERVER_ERROR
 
 export function googleLogin(code: string): Promise<LoginResponse> {
-    return apiFetch<LoginResponse>('/auth/oauth/google', {
+    return clientApiFetch<LoginResponse>('/auth/oauth/google', {
         method: 'POST',
         body: { code },
         credentials: 'include',

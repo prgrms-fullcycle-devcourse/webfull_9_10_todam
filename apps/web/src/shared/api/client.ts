@@ -1,25 +1,28 @@
 import { getAuthToken } from './auth-token';
-import { ApiError, type ApiErrorResponse, type ApiSuccessResponse } from './types';
+import { parseApiResponse } from './parse';
+import { ApiError } from './types';
 
-// MSW 가 가로채는 동안에는 상대경로면 충분. 실제 API 연동 시 NEXT_PUBLIC_API_URL 로 교체.
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+const USE_MOCK_DIRECT =
+    process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_API_MOCKING !== 'disabled';
 
-// dev 모바일 테스트: /dev-login 이 주입한 런타임 API base 우선.
-// (cloudflare tunnel URL 은 매 실행 랜덤 → localStorage 로 받으면 web 재빌드 없이 적용)
-function resolveBaseUrl(): string {
+function resolveDevRuntimeBaseUrl(): string {
     if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
         const devBase = window.localStorage.getItem('todam_dev_api_base');
         if (devBase) return devBase;
     }
-    return BASE_URL;
+    return '';
 }
 
 function resolveUrl(path: string): string {
     if (path.startsWith('http')) return path;
-    return `${resolveBaseUrl()}${path}`;
+    const devRuntimeBaseUrl = resolveDevRuntimeBaseUrl();
+    if (devRuntimeBaseUrl) return `${devRuntimeBaseUrl}${path}`;
+    if (!USE_MOCK_DIRECT) return `/api/proxy${path}`;
+    return `${BASE_URL}${path}`;
 }
 
-type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };
+export type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };
 type ApiErrorHandler = (error: ApiError) => void;
 
 let apiErrorHandler: ApiErrorHandler | null = null;
@@ -28,28 +31,33 @@ export function setApiErrorHandler(handler: ApiErrorHandler): void {
     apiErrorHandler = handler;
 }
 
-// 성공 시 data 만 반환, 실패 시 ApiError throw. 봉투 언래핑 단일 지점.
-export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
+export async function clientApiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
     const { body, headers, ...rest } = options;
     const token = getAuthToken();
+    const requestHeaders = new Headers(headers);
+    const url = resolveUrl(path);
 
-    const res = await fetch(resolveUrl(path), {
-        ...rest,
-        headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...headers,
-        },
-        body: body === undefined ? undefined : JSON.stringify(body),
-    });
-
-    const json = (await res.json()) as ApiSuccessResponse<T> | ApiErrorResponse;
-
-    if (!res.ok || json.error !== null) {
-        const error = new ApiError(json as ApiErrorResponse);
-        apiErrorHandler?.(error);
-        throw error;
+    if (body !== undefined && !requestHeaders.has('Content-Type')) {
+        requestHeaders.set('Content-Type', 'application/json');
+    }
+    if (token) {
+        if (url.startsWith('/api/proxy')) {
+            requestHeaders.set('X-Todam-Access-Token', token);
+        } else if (!requestHeaders.has('Authorization')) {
+            requestHeaders.set('Authorization', `Bearer ${token}`);
+        }
     }
 
-    return (json as ApiSuccessResponse<T>).data;
+    try {
+        const res = await fetch(url, {
+            ...rest,
+            headers: requestHeaders,
+            body: body === undefined ? undefined : JSON.stringify(body),
+        });
+
+        return await parseApiResponse<T>(res);
+    } catch (error) {
+        if (error instanceof ApiError) apiErrorHandler?.(error);
+        throw error;
+    }
 }
