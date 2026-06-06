@@ -10,7 +10,7 @@ import {
     PartnerClassListItem,
     usePartnerPrograms,
 } from '@/features/program/list';
-import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
+import { useCurrentStoreId } from '@/entities/store';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { EmptyState } from '@/shared/ui';
 

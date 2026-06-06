@@ -1,23 +1,22 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Modal } from '@todam/ui';
 
-import { ReviewDetailContent } from '@/entities/review';
-import { useReservationDetail, useReservationReview } from '@/features/reservation/detail';
-import { useDeleteReviewMutation } from '@/features/review/actions';
+import { deleteReview, ReviewDetailContent } from '@/entities/review';
+import { useReservationDetail, useReservationReview } from '@/entities/reservation';
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
-import { useModal } from '@/shared/model';
+import { useModal, useToast } from '@/shared/model';
 
 import { ReviewMoreMenu } from './ReviewMoreMenu';
 
 // 리뷰 상세 클라이언트.
 // - react-query useReservationReview (상세 화면이므로 enabled=true)
 // - 작품 정보 헤더용 useReservationDetail 병행 호출
-// - 401 → /login 리다이렉트 / 403·404 → 안내 메시지
+// - 401 → 전역 인증 에러 핸들러 / 403·404 → 안내 메시지
 // - 헤더 우측 more 액션 슬롯에 토글 버튼 등록 (useHeaderActionStore)
 // - more 클릭 → ReviewMoreMenu 노출, "삭제하기" → 전역 Modal confirm
 export type ReviewDetailClientProps = {
@@ -26,17 +25,35 @@ export type ReviewDetailClientProps = {
 
 export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const { data, error, isLoading, isError } = useReservationReview(reservationId, true);
     const { data: reservationData } = useReservationDetail(reservationId);
     const { open: openModal, close: closeModal } = useModal();
-    const { mutate: deleteReviewMutate } = useDeleteReviewMutation(reservationId);
-
-    // 401 → /login 리다이렉트.
-    useEffect(() => {
-        if (isError && error instanceof ApiError && error.statusCode === 401) {
-            router.replace('/login');
-        }
-    }, [isError, error, router]);
+    const { push } = useToast();
+    const { mutate: deleteReviewMutate } = useMutation({
+        mutationFn: (reviewId: string) => deleteReview(reviewId),
+        onSuccess: () => {
+            push({ message: '리뷰가 삭제되었어요.' });
+            queryClient.invalidateQueries({ queryKey: ['reservations', 'detail', reservationId] });
+            queryClient.invalidateQueries({ queryKey: ['reservations', 'review', reservationId] });
+            router.back();
+        },
+        onError: (mutationError) => {
+            if (mutationError instanceof ApiError) {
+                if (mutationError.statusCode === 401) return;
+                if (mutationError.statusCode === 404) {
+                    push({ message: '이미 삭제된 리뷰예요.' });
+                    router.back();
+                    return;
+                }
+                if (mutationError.statusCode === 403) {
+                    push({ message: '권한이 없어요.' });
+                    return;
+                }
+            }
+            push({ message: '리뷰 삭제 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.' });
+        },
+    });
 
     const review = data?.review;
     const reservation = reservationData?.reservation;

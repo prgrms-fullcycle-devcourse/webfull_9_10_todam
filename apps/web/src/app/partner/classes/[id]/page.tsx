@@ -8,15 +8,13 @@ import { ProgramDifficulty, ProgramStatus } from '@todam/shared';
 import { ApiError } from '@/shared/api';
 import { useSheet, useToast } from '@/shared/model';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
-import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
-import { getDifficultyLabel } from '@/entities/program';
+import { useCurrentStoreId } from '@/entities/store';
 import {
-    ClassDescription,
-    ClassEditSheet,
-    ClassInfoTable,
+    getDifficultyLabel,
     usePartnerProgramDetail,
     useUpdateProgramStatus,
-} from '@/features/program/detail';
+} from '@/entities/program';
+import { ClassDescription, ClassEditSheet, ClassInfoTable } from '@/features/program/detail';
 
 type PageProps = { params: Promise<{ id: string }> };
 

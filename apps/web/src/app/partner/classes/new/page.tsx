@@ -1,7 +1,7 @@
 'use client';
 
 import { ProgramRegistrationFlow } from '@/features/program/registration';
-import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
+import { useCurrentStoreId } from '@/entities/store';
 
 export default function PartnerClassNewPage() {
     const storeId = useCurrentStoreId();

@@ -1,7 +1,7 @@
 'use client';
 
 import { ReservationCalendarView } from '@/features/reservation/calendar/ui/ReservationCalendarView';
-import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
+import { useCurrentStoreId } from '@/entities/store';
 
 export default function PartnerReservationsPage() {
     const storeId = useCurrentStoreId();

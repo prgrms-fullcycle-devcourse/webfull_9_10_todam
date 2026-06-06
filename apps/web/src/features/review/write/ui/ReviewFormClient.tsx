@@ -7,7 +7,7 @@ import { ALLOWED_IMAGE_TYPES, MAX_REVIEW_PHOTO_COUNT, formatScheduled } from '@t
 import type { ReviewDetail } from '@todam/shared';
 import { BottomBar, Button, Modal, RatingInput, SectionTitle, TextArea } from '@todam/ui';
 
-import { useReservationDetail, useReservationReview } from '@/features/reservation/detail';
+import { useReservationDetail, useReservationReview } from '@/entities/reservation';
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useModal, useToast } from '@/shared/model';

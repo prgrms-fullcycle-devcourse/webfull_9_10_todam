@@ -1,2 +1,6 @@
-export * from './api';
-export * from './queries';
+export {
+    getCurrentStore,
+    updateCurrentStore,
+    useCurrentStoreQuery,
+    useUpdateCurrentStoreMutation,
+} from '@/entities/store';

@@ -9,7 +9,7 @@ import { Button, BottomBar, Modal } from '@todam/ui';
 
 import { usePartnerPrograms } from '@/features/program/list';
 import { ClassOrderCardItem, useReorderPrograms } from '@/features/program/order';
-import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
+import { useCurrentStoreId } from '@/entities/store';
 import { useLeaveGuard } from '@/shared/lib/useLeaveGuard';
 import { useModal, useToast } from '@/shared/model';
 

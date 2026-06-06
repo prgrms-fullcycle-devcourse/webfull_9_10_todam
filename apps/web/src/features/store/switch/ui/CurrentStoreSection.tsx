@@ -4,13 +4,10 @@ import { StoreStatus } from '@todam/shared';
 import { useRouter } from 'next/navigation';
 
 import { useCurrentStore, useReviewStore } from '@/entities/store';
-import {
-    useCurrentStoreQuery,
-    useUpdateCurrentStoreMutation,
-} from '@/features/store/current-store';
-import { usePartnerStoreDetail } from '@/features/store/detail';
+import { useCurrentStoreQuery, useUpdateCurrentStoreMutation } from '@/entities/store';
+import { usePartnerStoreDetail } from '@/entities/store';
 import { useSheet, useToast } from '@/shared/model';
-import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
+import { useCurrentStoreId } from '@/entities/store';
 
 import { ChangeStoreCard } from './ChangeStoreCard';
 import { StoreSwitchSheet, type StoreSwitchSheetStore } from './StoreSwitchSheet';

@@ -3,8 +3,8 @@
 import { StoreStatus } from '@todam/shared';
 import { usePathname } from 'next/navigation';
 
-import { usePartnerStoreDetail } from '@/features/store/detail';
-import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
+import { usePartnerStoreDetail } from '@/entities/store';
+import { useCurrentStoreId } from '@/entities/store';
 
 const SUPPORT_EMAIL = 'support.todam@gmail.com';
 

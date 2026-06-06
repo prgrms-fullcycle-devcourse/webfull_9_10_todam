@@ -1,8 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-
 import type { ArtworkPhoto } from '@todam/shared';
 
 import { Stepper } from '@/entities/artwork';
@@ -30,7 +27,7 @@ function ArtworkImageView({ photo }: { photo: ArtworkPhoto }) {
 // 작품 상세 클라이언트.
 // 서버 컴포넌트(page.tsx) 가 artworkId 만 넘기고 동적 동작은 본 컴포넌트가 캡슐화.
 // - react-query useArtworkDetail
-// - 401 → /login 리다이렉트 (선행 예약 상세 패턴 일치)
+// - 401 → 전역 인증 에러 핸들러
 // - 403/404 → 안내 메시지
 // - 사진 클릭 → ImageModal 노출
 // - timeline 빈 배열 → ArtworkDetailEmpty
@@ -41,16 +38,8 @@ export type ArtworkDetailClientProps = {
 };
 
 export function ArtworkDetailClient({ artworkId }: ArtworkDetailClientProps) {
-    const router = useRouter();
     const { data, error, isLoading, isError } = useArtworkDetail(artworkId);
     const { open: openModal } = useModal();
-
-    // 401 → /login 리다이렉트 (선행 예약 상세 패턴 일치).
-    useEffect(() => {
-        if (isError && error instanceof ApiError && error.statusCode === 401) {
-            router.replace('/login');
-        }
-    }, [isError, error, router]);
 
     if (isLoading) {
         return (
@@ -63,7 +52,7 @@ export function ArtworkDetailClient({ artworkId }: ArtworkDetailClientProps) {
     }
 
     if (isError && error instanceof ApiError) {
-        // 401 은 리다이렉트 처리 — 메시지 분기에서 제외.
+        // 401은 전역 인증 에러 핸들러가 처리한다.
         if (error.statusCode === 401) return null;
         return (
             <main className="flex-1 overflow-y-auto bg-background px-4 pb-16">

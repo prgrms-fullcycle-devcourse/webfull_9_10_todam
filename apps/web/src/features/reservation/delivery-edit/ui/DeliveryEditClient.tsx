@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import {
@@ -12,11 +12,11 @@ import {
 } from '@todam/shared';
 import { BottomBar, Button } from '@todam/ui';
 
-import { useReservationDetail } from '@/features/reservation/detail';
-import { useUpdateReservationDelivery } from '../queries';
+import { useReservationDetail } from '@/entities/reservation';
 import { ApiError } from '@/shared/api';
 import { useToast } from '@/shared/model';
 
+import { useUpdateReservationDelivery } from '../queries';
 import { DeliveryForm, type DeliveryFormErrors } from './DeliveryForm';
 
 // 배송 정보 수정 페이지의 클라이언트 본체 — 데이터 페치·가드·라우팅만 담당.
@@ -34,13 +34,6 @@ export function DeliveryEditClient({ reservationId }: DeliveryEditClientProps) {
     const router = useRouter();
     const { data, error, isLoading, isError } = useReservationDetail(reservationId);
     const reservation = data?.reservation;
-
-    // 401 → /login 리다이렉트.
-    useEffect(() => {
-        if (isError && error instanceof ApiError && error.statusCode === 401) {
-            router.replace('/login');
-        }
-    }, [isError, error, router]);
 
     if (isLoading) {
         return (
@@ -215,7 +208,6 @@ function DeliveryEditForm({ reservationId, reservation }: DeliveryEditFormProps)
                 }
                 switch (mutationError.statusCode) {
                     case 401:
-                        router.replace('/login');
                         return;
                     case 403:
                         pushToast({ message: '본인 예약의 배송 정보만 수정할 수 있어요.' });
