@@ -42,3 +42,11 @@ export function formatDuration(minutes: number): string {
     if (h > 0) return `${h}시간`;
     return `${m}분`;
 }
+
+// 초 → "MM:SS" (카운트다운 타이머 등). 음수는 0으로 처리.
+export function formatMmSs(seconds: number): string {
+    const total = Math.max(0, Math.floor(seconds));
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
