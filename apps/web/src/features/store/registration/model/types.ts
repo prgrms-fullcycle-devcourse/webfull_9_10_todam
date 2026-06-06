@@ -6,7 +6,7 @@ import {
     CONVENIENCE_OPTIONS,
     type OperatingState,
     type ConvenienceState,
-} from '@/features/store/shared/model';
+} from '@/entities/store';
 
 // 공유 상수/타입은 store/shared/model 단일 소스에서 re-export (외부 import 경로 호환).
 export {

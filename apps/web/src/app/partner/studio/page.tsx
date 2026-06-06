@@ -15,12 +15,7 @@ import {
 
 import { StoreStatus } from '@todam/shared';
 
-import {
-    StoreEditSheet,
-    StoreReviewResult,
-    usePartnerStoreDetail,
-    usePartnerStorePrograms,
-} from '@/features/store/detail';
+import { usePartnerStoreDetail, usePartnerStorePrograms } from '@/entities/store';
 import {
     ConvenienceChips,
     StoreImageCarousel,
@@ -29,8 +24,9 @@ import {
 } from '@/entities/store';
 import { useReviewStore } from '@/entities/store';
 import { PartnerClassListItem } from '@/features/program/list';
+import { StoreEditSheet, StoreReviewResult } from '@/features/store/detail';
 import { ApiError } from '@/shared/api';
-import { useCurrentStoreId } from '@/shared/lib/useCurrentStoreId';
+import { useCurrentStoreId } from '@/entities/store';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useSheet, useToast } from '@/shared/model';
 import { EmptyState } from '@/shared/ui';

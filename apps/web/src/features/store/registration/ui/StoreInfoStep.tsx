@@ -3,7 +3,7 @@
 import { phoneSchema, slugSchema } from '@todam/shared';
 import { useEffect, useState } from 'react';
 
-import { StoreInfoFields } from '@/features/store/shared/ui';
+import { StoreInfoFields } from '@/entities/store';
 import { useStoreRegistrationStore } from '../model/store';
 import { useSlugAvailability } from '../queries';
 

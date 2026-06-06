@@ -1,15 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-
 import { ReservationDeliveryMethod, ReservationStatus } from '@todam/shared';
 
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useModal, useToast } from '@/shared/model';
 
-import { useReservationDetail } from '../queries';
+import { useReservationDetail } from '@/entities/reservation';
 import { ArtworkStageCard } from './ArtworkStageCard';
 import { CancelDialog } from './CancelDialog';
 import { DeliveryInfoSection } from './DeliveryInfoSection';
@@ -40,7 +37,7 @@ function isExperienceDone(status: ReservationStatus): boolean {
 // 예약 상세 클라이언트.
 // 서버 컴포넌트(page.tsx) 가 reservationId 만 넘기고 동적 동작은 본 컴포넌트가 캡슐화.
 // - react-query useReservationDetail
-// - 401 → /login 리다이렉트
+// - 401 → 전역 인증 에러 핸들러
 // - 403/404 → 안내 메시지
 // - 헤더 우측 more 액션 슬롯에 MoreMenu 토글 버튼 등록 (useHeaderActionStore)
 // - more 클릭 → MoreMenu 노출, "예약 취소하기" → Modal 표시
@@ -49,17 +46,9 @@ export type ReservationDetailClientProps = {
 };
 
 export function ReservationDetailClient({ reservationId }: ReservationDetailClientProps) {
-    const router = useRouter();
     const { data, error, isLoading, isError } = useReservationDetail(reservationId);
     const { open: openModal, close: closeModal } = useModal();
     const { push: pushToast } = useToast();
-
-    // 401 → /login 리다이렉트 (목록 화면과 동일 패턴).
-    useEffect(() => {
-        if (isError && error instanceof ApiError && error.statusCode === 401) {
-            router.replace('/login');
-        }
-    }, [isError, error, router]);
 
     const reservation = data?.reservation;
 

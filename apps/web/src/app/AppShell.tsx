@@ -5,10 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 
 import { useCurrentStore } from '@/entities/store';
-import {
-    useCurrentStoreQuery,
-    useUpdateCurrentStoreMutation,
-} from '@/features/store/current-store';
+import { useCurrentStoreQuery, useUpdateCurrentStoreMutation } from '@/entities/store';
 import { StoreRegistrationComplete, usePartnerOnboarding } from '@/features/store/registration';
 import { BottomNav } from '@/widgets/bottom-navigation';
 import { Header } from '@/widgets/header';

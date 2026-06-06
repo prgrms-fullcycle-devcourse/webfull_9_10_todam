@@ -1,0 +1,33 @@
+import type {
+    GetPartnerCurrentStoreResult,
+    PartnerProgramListResult,
+    PartnerStoreDetailResult,
+    UpdatePartnerCurrentStoreResult,
+} from '@todam/shared';
+
+import { clientApiFetch } from '@/shared/api';
+
+const BASE = '/partner';
+
+export function getCurrentStore() {
+    return clientApiFetch<GetPartnerCurrentStoreResult>(`${BASE}/me/current-store`, {
+        method: 'GET',
+    });
+}
+
+export function updateCurrentStore(storeId: string) {
+    return clientApiFetch<UpdatePartnerCurrentStoreResult>(`${BASE}/me/current-store`, {
+        method: 'PATCH',
+        body: { storeId },
+    });
+}
+
+export function getPartnerStoreDetail(storeId: string) {
+    return clientApiFetch<PartnerStoreDetailResult>(`${BASE}/stores/${storeId}`, { method: 'GET' });
+}
+
+export function getPartnerStorePrograms(storeId: string) {
+    return clientApiFetch<PartnerProgramListResult>(`${BASE}/stores/${storeId}/programs`, {
+        method: 'GET',
+    });
+}
