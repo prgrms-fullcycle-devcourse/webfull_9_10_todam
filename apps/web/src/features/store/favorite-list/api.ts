@@ -1,6 +1,6 @@
 import type { FavoriteStoreListResult } from '@todam/shared';
 
-import { apiFetch } from '@/shared/api';
+import { clientApiFetch } from '@/shared/api';
 
 const BASE = '/api/v1';
 
@@ -17,7 +17,7 @@ export function getFavoriteStores({ cursor, limit }: GetFavoriteStoresParams = {
     if (cursor) params.set('cursor', cursor);
     if (typeof limit === 'number') params.set('limit', String(limit));
     const qs = params.toString();
-    return apiFetch<FavoriteStoreListResult>(
+    return clientApiFetch<FavoriteStoreListResult>(
         `${BASE}/users/me/favorite-stores${qs ? `?${qs}` : ''}`,
         { method: 'GET' },
     );

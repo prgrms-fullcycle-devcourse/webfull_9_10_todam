@@ -1,6 +1,6 @@
 'use client';
 
-// apiFetch가 authStore의 accessToken을 자동으로 주입하도록
+// clientApiFetch가 authStore의 accessToken을 자동으로 주입하도록
 // tokenGetter와 공통 인증 에러 핸들러를 연결하는 앱 초기화 Provider.
 
 import { useEffect, type ReactNode } from 'react';

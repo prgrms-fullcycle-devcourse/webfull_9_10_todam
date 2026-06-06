@@ -3,7 +3,7 @@
 // 인증 상태 관리 스토어.
 // - accessToken: 응답 body에서 받아 메모리(zustand) + localStorage(stopgap)에 보관.
 //   Refresh Token은 HttpOnly Secure Cookie이므로 FE에서 직접 다루지 않음.
-// - shared/api/auth-token.ts 의 tokenGetter를 이 스토어와 연결해 apiFetch에 자동 주입.
+// - shared/api/auth-token.ts 의 tokenGetter를 이 스토어와 연결해 clientApiFetch에 자동 주입.
 
 import { create } from 'zustand';
 
@@ -16,9 +16,7 @@ type AuthStore = {
     state: AuthState;
     accessToken: string | null;
     user: LoginUser | null;
-    /** 로그인 성공 후 token + user 설정. 상태를 AUTHENTICATED로 전이. */
     setAuth: (accessToken: string, user: LoginUser) => void;
-    /** 로그아웃 또는 토큰 만료 시 초기화. */
     clearAuth: () => void;
 };
 
@@ -49,7 +47,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 }));
 
 // shared/api/auth-token.ts의 tokenGetter를 authStore와 연결.
-// 이 함수를 앱 초기화 시점에 한 번 호출하면 apiFetch가 자동으로 토큰을 주입함.
+// 이 함수를 앱 초기화 시점에 한 번 호출하면 clientApiFetch가 자동으로 토큰을 주입함.
 export function connectAuthTokenGetter() {
     setAuthTokenGetter(() => useAuthStore.getState().accessToken);
 }

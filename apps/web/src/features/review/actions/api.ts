@@ -1,4 +1,4 @@
-import { apiFetch } from '@/shared/api';
+import { clientApiFetch } from '@/shared/api';
 
 const BASE = '/api/v1';
 
@@ -7,5 +7,5 @@ const BASE = '/api/v1';
 // DELETE /reviews/{reviewId}
 // 응답 봉투의 data 는 null.
 export function deleteReview(reviewId: string) {
-    return apiFetch<null>(`${BASE}/reviews/${reviewId}`, { method: 'DELETE' });
+    return clientApiFetch<null>(`${BASE}/reviews/${reviewId}`, { method: 'DELETE' });
 }

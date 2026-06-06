@@ -9,7 +9,7 @@ import type {
     UpdateProgramStatusResult,
 } from '@todam/shared';
 
-import { apiFetch } from '@/shared/api';
+import { clientApiFetch } from '@/shared/api';
 
 // 클래스 등록 api 연동 완료
 const BASE = '/partner';
@@ -17,13 +17,13 @@ const BASE = '/partner';
 // 파트너 공방 목록 조회 (공방 선택용)
 // GET /partner/stores
 export function getPartnerStores() {
-    return apiFetch<PartnerStoreListResult>(`${BASE}/stores`, { method: 'GET' });
+    return clientApiFetch<PartnerStoreListResult>(`${BASE}/stores`, { method: 'GET' });
 }
 
 // ① 클래스 등록 (ACTIVE 직접 생성)
 // POST /partner/stores/{storeId}/programs
 export function createProgram(storeId: string, body: CreateProgramRequest) {
-    return apiFetch<CreateProgramResult>(`${BASE}/stores/${storeId}/programs`, {
+    return clientApiFetch<CreateProgramResult>(`${BASE}/stores/${storeId}/programs`, {
         method: 'POST',
         body,
     });
@@ -36,7 +36,7 @@ export function createProgramImage(
     programId: string,
     body: ProgramImageUploadRequest,
 ) {
-    return apiFetch<ProgramImageUploadResult>(
+    return clientApiFetch<ProgramImageUploadResult>(
         `${BASE}/stores/${storeId}/programs/${programId}/images`,
         { method: 'POST', body },
     );
@@ -45,7 +45,7 @@ export function createProgramImage(
 // ④ 업로드 완료 확인 (PENDING → UPLOADED)
 // PATCH /partner/stores/{storeId}/programs/{programId}/images/{imageId}/confirm
 export function confirmProgramImage(storeId: string, programId: string, imageId: string) {
-    return apiFetch<ConfirmProgramImageResult>(
+    return clientApiFetch<ConfirmProgramImageResult>(
         `${BASE}/stores/${storeId}/programs/${programId}/images/${imageId}/confirm`,
         { method: 'PATCH' },
     );
@@ -58,7 +58,7 @@ export function updateProgramStatus(
     programId: string,
     body: UpdateProgramStatusRequest,
 ) {
-    return apiFetch<UpdateProgramStatusResult>(
+    return clientApiFetch<UpdateProgramStatusResult>(
         `${BASE}/stores/${storeId}/programs/${programId}/status`,
         { method: 'PATCH', body },
     );

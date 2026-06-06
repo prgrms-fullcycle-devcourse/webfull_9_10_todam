@@ -1,5 +1,5 @@
 // presigned URL 로 S3 직접 PUT 업로드 (공방·클래스·사업자서류 등 전 도메인 공용).
-// apiFetch 와 별개: 절대 S3 URL 로 직접 PUT 하므로 envelope/baseURL 처리 없음.
+// clientApiFetch 와 별개: 절대 S3 URL 로 직접 PUT 하므로 envelope/baseURL 처리 없음.
 // contentType 미지정 시 file.type 사용.
 export async function uploadToPresignedUrl(
     uploadUrl: string,
