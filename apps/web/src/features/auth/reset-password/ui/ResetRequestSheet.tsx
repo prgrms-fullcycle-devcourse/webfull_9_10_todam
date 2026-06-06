@@ -1,0 +1,154 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+
+import { FormBottomSheet, TextInput, InformationIcon } from '@todam/ui';
+import { emailSchema, formatMmSs } from '@todam/shared';
+
+import { ApiError } from '@/shared/api';
+import { useSheet, useToast } from '@/shared/model';
+import { requestPasswordReset } from '../api';
+
+// 재전송 쿨다운: FE 로컬 타이머 전용 (API Contract 변경 없음, 429 없음).
+// Plan step 8, UI 규칙 "바텀시트 — 링크 전송 완료" 기준.
+const RESEND_COOLDOWN_SECONDS = 180;
+
+export type ResetRequestSheetProps = {
+    onClose?: () => void;
+};
+
+export function ResetRequestSheet({ onClose }: ResetRequestSheetProps) {
+    const { close } = useSheet();
+    const { push } = useToast();
+
+    const [email, setEmail] = useState('');
+    const [pending, setPending] = useState(false);
+    // sent: 전송 완료 후 "링크 전송 완료" 상태
+    const [sent, setSent] = useState(false);
+    // cooldown: 남은 쿨다운 초 (0이면 재전송 가능)
+    const [cooldown, setCooldown] = useState(0);
+
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // 쿨다운 타이머 시작
+    const startCooldown = () => {
+        setCooldown(RESEND_COOLDOWN_SECONDS);
+    };
+
+    useEffect(() => {
+        if (cooldown <= 0) {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
+            return;
+        }
+        if (!intervalRef.current) {
+            intervalRef.current = setInterval(() => {
+                setCooldown((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(intervalRef.current!);
+                        intervalRef.current = null;
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
+        };
+    }, [cooldown]);
+
+    const emailValid = emailSchema.safeParse(email).success;
+
+    const handleDismiss = () => {
+        close();
+        onClose?.();
+    };
+
+    const handleSend = async () => {
+        if (pending || !emailValid) return;
+        setPending(true);
+        try {
+            await requestPasswordReset(email);
+            setSent(true);
+            startCooldown();
+        } catch (err) {
+            const message =
+                err instanceof ApiError
+                    ? err.message
+                    : '메일 전송 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.';
+            push({ type: 'icon', icon: <InformationIcon />, message });
+        } finally {
+            setPending(false);
+        }
+    };
+
+    const handleResend = async () => {
+        if (pending || cooldown > 0) return;
+        setPending(true);
+        try {
+            await requestPasswordReset(email);
+            startCooldown();
+        } catch (err) {
+            const message =
+                err instanceof ApiError
+                    ? err.message
+                    : '메일 전송 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.';
+            push({ type: 'icon', icon: <InformationIcon />, message });
+        } finally {
+            setPending(false);
+        }
+    };
+
+    // ── 링크 전송 전 상태 ──
+    // Figma frame 8474:12017: 타이틀 "비밀번호를 잊으셨나요?", 설명 "가입하신 이메일 주소를 입력해 주세요."
+    if (!sent) {
+        return (
+            <FormBottomSheet
+                title="비밀번호를 잊으셨나요?"
+                subTitle="가입하신 이메일 주소를 입력해 주세요."
+                actionLabel="재설정 링크 보내기"
+                actionDisabled={!emailValid || pending}
+                onAction={() => void handleSend()}
+                subLabel="취소"
+                onSub={handleDismiss}
+            >
+                <TextInput
+                    id="reset-email"
+                    label="이메일"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="leadem@mail.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+            </FormBottomSheet>
+        );
+    }
+
+    // ── 링크 전송 완료 상태 ──
+    // Figma frame 8474:10549: 타이틀 "메일함을 확인해 주세요", 이메일 disabled, 재전송 쿨다운 버튼
+    const canResend = cooldown === 0 && !pending;
+    const primaryLabel =
+        cooldown > 0 ? `재전송 까지 ${formatMmSs(cooldown)}` : '재설정 링크 재전송';
+
+    return (
+        <FormBottomSheet
+            title="메일함을 확인해 주세요"
+            subTitle="입력하신 이메일로 링크를 전송했어요."
+            actionLabel={primaryLabel}
+            actionDisabled={!canResend}
+            onAction={() => void handleResend()}
+            subLabel="취소"
+            onSub={handleDismiss}
+        >
+            <TextInput id="reset-email-sent" label="이메일" type="email" value={email} disabled />
+        </FormBottomSheet>
+    );
+}
