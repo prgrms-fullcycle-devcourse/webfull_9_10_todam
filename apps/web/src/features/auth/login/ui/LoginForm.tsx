@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Button, TextInput, Logo, Divider, InformationIcon } from '@todam/ui';
 
 import { consumeOnboardingPending, OnboardingSheet } from '@/features/onboarding';
+import { ResetRequestSheet } from '@/features/auth/reset-password';
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useSheet, useToast } from '@/shared/model';
@@ -122,12 +123,13 @@ export function LoginForm() {
                             onChange={(e) => setPassword(e.target.value)}
                         />
                         <div className="flex justify-end">
-                            <Link
-                                href="/reset-password"
-                                className="text-sm font-medium text-foreground-secondary"
+                            <button
+                                type="button"
+                                className="text-sm font-semibold text-primary"
+                                onClick={() => open(<ResetRequestSheet />)}
                             >
                                 비밀번호를 잊으셨나요?
-                            </Link>
+                            </button>
                         </div>
                     </div>
 
