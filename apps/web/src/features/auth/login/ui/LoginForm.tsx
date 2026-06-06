@@ -6,11 +6,9 @@ import { useRouter } from 'next/navigation';
 
 import { Button, TextInput, Logo, Divider, InformationIcon } from '@todam/ui';
 
-import { consumeOnboardingPending, OnboardingSheet } from '@/features/onboarding';
-import { ResetRequestSheet } from '@/features/auth/reset-password';
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
-import { useSheet, useToast } from '@/shared/model';
+import { useToast } from '@/shared/model';
 import { emailLogin } from '../api';
 import { useAuthStore } from '../model/authStore';
 import { buildKakaoAuthUrl, buildGoogleAuthUrl } from '../oauth';
@@ -36,10 +34,14 @@ function getEmailLoginErrorMessage(err: unknown): string {
     return '로그인 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.';
 }
 
-export function LoginForm() {
+export interface LoginFormProps {
+    onForgotPassword: () => void;
+    onLoginSuccess?: () => void;
+}
+
+export function LoginForm({ onForgotPassword, onLoginSuccess }: LoginFormProps) {
     const router = useRouter();
     const { push } = useToast();
-    const { open } = useSheet();
     const setAuth = useAuthStore((s) => s.setAuth);
 
     const [email, setEmail] = useState('');
@@ -62,10 +64,7 @@ export function LoginForm() {
             const result = await emailLogin({ email, password });
             setAuth(result.accessToken, result.user);
             router.replace('/');
-            // 회원가입 직후 첫 로그인이면 온보딩 1회 노출(공방 등록 선택 = 파트너 신청 /apply).
-            if (consumeOnboardingPending()) {
-                open(<OnboardingSheet onSelectRegister={() => router.push('/apply')} />);
-            }
+            onLoginSuccess?.();
         } catch (err) {
             push({
                 type: 'icon',
@@ -126,7 +125,7 @@ export function LoginForm() {
                             <button
                                 type="button"
                                 className="text-sm font-semibold text-primary"
-                                onClick={() => open(<ResetRequestSheet />)}
+                                onClick={onForgotPassword}
                             >
                                 비밀번호를 잊으셨나요?
                             </button>
