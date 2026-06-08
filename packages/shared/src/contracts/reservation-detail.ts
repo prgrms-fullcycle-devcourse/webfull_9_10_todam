@@ -77,10 +77,12 @@ export const reservationDetailSchema = z.object({
 export type ReservationDetail = z.infer<typeof reservationDetailSchema>;
 
 /** GET /reservations/{reservationId} 의 data 페이로드. */
-export const reservationDetailResultSchema = z.object({
+export const reservationDetailResponseSchema = z.object({
     reservation: reservationDetailSchema,
 });
-export type ReservationDetailResult = z.infer<typeof reservationDetailResultSchema>;
+export type ReservationDetailResponse = z.infer<typeof reservationDetailResponseSchema>;
+export const reservationDetailResultSchema = reservationDetailResponseSchema;
+export type ReservationDetailResult = ReservationDetailResponse;
 
 // ─── 리뷰 상세 (D4 가정 endpoint) ────────────────────────────────────
 // GET /reservations/{reservationId}/review (BE 채택 패턴 결정 대기).
@@ -102,10 +104,12 @@ export const reviewDetailSchema = z.object({
 });
 export type ReviewDetail = z.infer<typeof reviewDetailSchema>;
 
-export const reviewDetailResultSchema = z.object({
+export const reviewDetailResponseSchema = z.object({
     review: reviewDetailSchema,
 });
-export type ReviewDetailResult = z.infer<typeof reviewDetailResultSchema>;
+export type ReviewDetailResponse = z.infer<typeof reviewDetailResponseSchema>;
+export const reviewDetailResultSchema = reviewDetailResponseSchema;
+export type ReviewDetailResult = ReviewDetailResponse;
 
 // 에러 코드(공통 ApiError.code 매칭용).
 export const ReservationDetailErrorCode = {
@@ -116,3 +120,38 @@ export const ReservationDetailErrorCode = {
 } as const;
 export type ReservationDetailErrorCode =
     (typeof ReservationDetailErrorCode)[keyof typeof ReservationDetailErrorCode];
+
+// ─── 파트너 예약 상세 조회 (GET /partner/reservations/{reservationId}) ─────
+
+export const partnerReservationActionSchema = z.union([
+    z.literal('CONFIRM'),
+    z.literal('REJECT'),
+    z.literal('CANCEL'),
+    z.literal('COMPLETE'),
+]);
+export type PartnerReservationAction = z.infer<typeof partnerReservationActionSchema>;
+
+export const partnerReservationDetailSchema = z.object({
+    id: z.string(),
+    reservationNumber: z.string(),
+    programTitle: z.string(),
+    status: z.nativeEnum(ReservationStatus),
+    scheduledAt: z.string(),
+    participantCount: z.number().int().min(1),
+    reserverName: z.string(),
+    reserverPhone: z.string(),
+    internalMemo: z.string().nullable(),
+    canceledAt: z.string().nullable(),
+    cancelReason: z.string().nullable(),
+    artworkId: z.string().nullable(),
+    availableActions: z.array(partnerReservationActionSchema),
+    createdAt: z.string(),
+});
+export type PartnerReservationDetail = z.infer<typeof partnerReservationDetailSchema>;
+
+export const partnerReservationDetailResponseSchema = z.object({
+    reservation: partnerReservationDetailSchema,
+});
+export type PartnerReservationDetailResponse = z.infer<
+    typeof partnerReservationDetailResponseSchema
+>;
