@@ -322,7 +322,7 @@ export const handlers = [
     // plan: docs/exec-plans/active/user-예약-신청.md API Contract (스냅샷).
     // 시뮬: slotId 에 'blocked' 포함→SLOT_BLOCKED, 'full' 포함→INSUFFICIENT_CAPACITY,
     //       'auto' 포함→CONFIRMED, 그 외 PENDING.
-    http.post('*/reservations', async ({ request }) => {
+    http.post(/^https?:\/\/[^/]+\/reservations(\?.*)?$/, async ({ request }) => {
         const path = '/reservations';
 
         const parsed = createUserReservationRequestSchema.safeParse(await request.json());
