@@ -11,7 +11,6 @@ import {
 } from '@/entities/reservation';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 
-import { getMockReservationsByDate, mockCalendarData } from '../mock';
 import { MonthCalendar } from './MonthCalendar';
 import { ReservationManagementCardItem } from './ReservationManagementCardItem';
 
@@ -56,7 +55,6 @@ export function ReservationCalendarView({ storeId }: ReservationCalendarViewProp
 
     const calendarQuery = usePartnerReservationCalendar(storeId, year, month);
     const reservationsQuery = usePartnerReservationsByDate(storeId, selectedDate);
-    const isMockMonth = year === mockCalendarData.year && month === mockCalendarData.month;
 
     const handleMonthChange = (y: number, m: number) => {
         setYear(y);
@@ -64,19 +62,13 @@ export function ReservationCalendarView({ storeId }: ReservationCalendarViewProp
         setSelectedDate(`${y}-${String(m).padStart(2, '0')}-01`);
     };
 
-    const calendarData = isMockMonth
-        ? mockCalendarData
-        : (calendarQuery.data ?? emptyCalendarData(year, month));
+    const calendarData = calendarQuery.data ?? emptyCalendarData(year, month);
 
-    const listData = isMockMonth
-        ? getMockReservationsByDate(selectedDate)
-        : (reservationsQuery.data ?? emptyReservationListData());
+    const listData = reservationsQuery.data ?? emptyReservationListData();
     const reservations = listData.reservations;
 
     const selectedDay = calendarData.days.find((day) => day.date === selectedDate);
-    const isSelectedHoliday = Boolean(
-        selectedDay?.isUnavailable && !selectedDay.hasReservation && !selectedDay.hasRestriction,
-    );
+    const isSelectedHoliday = Boolean(selectedDay?.isUnavailable && !selectedDay.hasRestriction);
     const canRestrictReservation = isFutureDateKey(selectedDate);
 
     return (
@@ -94,9 +86,7 @@ export function ReservationCalendarView({ storeId }: ReservationCalendarViewProp
                     size="md"
                     title={formatKoreanMonthDayWithWeekday(selectedDate)}
                     subText={
-                        !isMockMonth && reservationsQuery.isFetching
-                            ? '불러오는 중'
-                            : `${reservations.length}건`
+                        reservationsQuery.isFetching ? '불러오는 중' : `${reservations.length}건`
                     }
                 />
 
