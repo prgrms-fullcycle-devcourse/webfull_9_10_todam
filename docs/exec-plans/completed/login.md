@@ -118,9 +118,9 @@
 - API 연동: 실 API 요청/응답이 contract 스키마로 연결(mock 바인딩은 미체크).
 -->
 
-- [ ] API 구현
+- [x] API 구현
 - [x] UI 구현
-- [ ] API 연동
+- [x] API 연동
 
 ## Out (단계별 완료물)
 
