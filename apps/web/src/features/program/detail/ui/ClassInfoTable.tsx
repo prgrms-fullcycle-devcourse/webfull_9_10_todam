@@ -1,4 +1,4 @@
-import { CalendarIcon, ClockIcon, FlagIcon, NametagIcon } from '@todam/ui';
+import { CalendarIcon, ClockIcon, FlagIcon, NametagIcon, UserIcon } from '@todam/ui';
 import { formatDuration, formatPrice, type ProgramDetail } from '@todam/shared';
 
 import { InfoTable, type InfoTableRow } from '@/shared/ui';
@@ -6,7 +6,10 @@ import { InfoTable, type InfoTableRow } from '@/shared/ui';
 const ICON_SIZE = 16;
 
 type Props = {
-    program: Pick<ProgramDetail, 'price' | 'durationMinutes' | 'leadTimeDays' | 'deliverable'>;
+    program: Pick<
+        ProgramDetail,
+        'price' | 'durationMinutes' | 'capacity' | 'leadTimeDays' | 'deliverable'
+    >;
 };
 
 // 클래스 상세 정보 테이블 (가격·소요시간·평균제작일·작품수령).
@@ -22,6 +25,15 @@ export function ClassInfoTable({ program }: Props) {
             value: formatDuration(program.durationMinutes),
             icon: <ClockIcon size={ICON_SIZE} />,
         },
+        ...(program.capacity
+            ? [
+                  {
+                      label: '정원',
+                      value: `최대 ${program.capacity}명`,
+                      icon: <UserIcon size={ICON_SIZE} />,
+                  },
+              ]
+            : []),
         {
             label: '평균 제작일',
             value: `${program.leadTimeDays}일`,

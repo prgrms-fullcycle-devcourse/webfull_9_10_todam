@@ -17,7 +17,7 @@
 -->
 
 - [ ] API 구현
-- [ ] UI 구현
+- [x] UI 구현
 - [ ] API 연동
 
 ## Context
@@ -37,12 +37,12 @@
   - Figma JSON attachment: `/Users/a2485/.codex/attachments/4469fc36-65e4-41cc-a988-020662f5967f/pasted-text.txt`
   - Frame: `클래스 상세`, 360x930, background `#FBF8F3`
 - Open decisions:
-  - [Q1] 기능명세/Figma는 `정원` 표시가 필요하지만 Notion API명세 `GET /stores/{slug}/programs/{programId}` 응답에는 `capacity`가 없다. 기존 BE 코드에는 `capacity?: number | null` 반환 경로가 있으므로 API명세/공유계약에 포함할지 승인 필요.
-  - [Q2] 기능명세/Figma는 카테고리 태그 `기본`, `어린이 가능`, `배송 가능` 표시가 필요하지만 Notion API명세 응답에는 `difficulty`, `childFriendly`가 없다. 기존 BE 코드에는 반환 경로가 있으므로 API명세/공유계약 포함 승인 필요.
-  - [Q3] Figma 헤더는 공방명(`흙과 사람`)을 표시하지만 프로그램 상세 API 응답에는 `storeName` 또는 `store` 객체가 없다. 라우트 진입 source에서 공방명을 넘길지, 상세 API에 포함할지 결정 필요.
-  - [Q4] 현재 앱 route는 `/classes/{programId}` 형태이나 API는 `slug`를 요구한다. 상세 화면 route를 `/stores/{slug}/programs/{programId}`로 맞출지, `/classes/{programId}?store={slug}` 형태를 유지할지 결정 필요.
-  - [Q5] 상세 화면에서 “예약 가능 여부”를 버튼 활성/비활성 판단에 사용할지, 예약 신청 화면 진입 후 슬롯 조회로 판단할지 결정 필요. `GET /programs/{programId}/available-slots`는 인증 필요라 Guest 상세 화면에서 직접 조회할 수 없다.
-  - [Q6] Figma의 “클래스 리뷰 24개”는 상세 API가 아닌 리뷰 목록 API `totalCount`에서 가져와야 한다. 상세 화면에서 리뷰 목록 API를 병렬 호출할지, 상세 API에 summary를 포함할지 결정 필요.
+  - [Q1·해소 2026-06-08] `capacity`를 상세 API contract에 포함한다. 값은 `Store.maxCapacityPerSlot` 기반이며 nullable 가능.
+  - [Q2·해소 2026-06-08] `difficulty`, `childFriendly`를 상세 API contract에 포함한다.
+  - [Q3·해소 2026-06-08] `storeName`은 상세 API에 포함하지 않고 진입 source/query로 전달한다. 미전달 시 UI fallback은 `흙과 사람`.
+  - [Q4·해소 2026-06-08] 현재 route `/classes/{programId}?store={slug}`를 유지한다.
+  - [Q5·해소 2026-06-08] 상세 화면에서 `available-slots`는 조회하지 않는다. 예약 신청 화면에서 슬롯 조회한다.
+  - [Q6·해소 2026-06-08] 리뷰 수는 리뷰 목록 API `totalCount`를 병렬 호출해 표시한다.
 
 ## API Contract (스냅샷)
 
@@ -63,7 +63,10 @@ type ProgramDetail = {
   caution: string | null;
   price: number;
   durationMinutes: number;
+  capacity?: number | null;
   leadTimeDays: number;
+  difficulty?: 'BASIC' | 'INTERMEDIATE' | 'ADVANCED';
+  childFriendly: boolean;
   deliverable: boolean;
   status: 'ACTIVE';
   images: Array<{
@@ -199,10 +202,12 @@ type AvailableSlotsResult = {
   - 현재 plan 범위에서 신규 BE 구현은 Q1/Q2/Q3/Q6 승인 여부에 따름.
   - 승인된 contract drift가 있으면 `apps/api` DTO/reader 및 `packages/shared` contract 갱신.
 - UI:
-  - 사용자 클래스 상세 page/component.
-  - 클래스 정보 table, review summary, CTA 연결.
+  - `apps/web/src/app/(user)/classes/[id]/page.tsx` — 사용자 클래스 상세 화면.
+  - `apps/web/src/features/program/detail/ui/ClassInfoTable.tsx` — 정원 행 추가.
+  - `apps/web/src/entities/program/api.ts`, `queries.ts` — 상세/리뷰 query 추가.
+  - `apps/web/src/mocks/handlers.ts`, `db.ts` — 상세/리뷰 mock 정합.
 - 연동:
-  - 상세 API + 리뷰 API query 연결.
+  - 상세 API + 리뷰 API query 호출부 연결.
   - 예약 CTA가 예약 신청 route로 필요한 `title`, `price`, `deliverable` 또는 상세 데이터 source를 전달.
 
 ## Risks
@@ -234,9 +239,10 @@ type AvailableSlotsResult = {
 - 2026-06-08: 파트너 기능명세 `클래스 상세 조회`는 별도 범위로 제외.
 - 2026-06-08: API명세는 URI 단독 검색으로 조회. METHOD 포함 검색은 notion-fetch에서 매칭 실패.
 - 2026-06-08: Notion API명세 snapshot 기준으로 plan 작성, 화면 요구와 contract 차이는 Open decisions에 보류.
+- 2026-06-08: 사용자 승인으로 Q1~Q6 결정. FE 구현 완료. 리뷰 API BE 구현 여부 미확인으로 `API 연동`은 미체크.
 
 ## Outcome
 
 - Status: planning
 - Follow-up:
-  - Q1~Q6 승인 후 `/issue` 또는 `/impl fe` 진행.
+  - 리뷰 API BE 구현 확인 후 `API 구현`/`API 연동` 체크.
