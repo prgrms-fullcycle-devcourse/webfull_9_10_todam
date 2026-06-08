@@ -26,7 +26,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <body className="flex h-dvh justify-center bg-surface text-foreground">
                 <div
                     aria-hidden
-                    className="hidden w-[500px] shrink-0 items-center justify-center bg-primary text-foreground-inverse/70 lg:flex"
+                    className="hidden w-[500px] shrink-0 items-center justify-center bg-primary text-foreground-inverse/70 xl:flex"
                 >
                     graphic placeholder
                 </div>

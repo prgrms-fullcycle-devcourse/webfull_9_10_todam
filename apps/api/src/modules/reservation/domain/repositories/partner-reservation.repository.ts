@@ -4,12 +4,14 @@ import {
     ReservationSource,
     ReservationStatus,
     StoreTimeSlotStatus,
+    DayOfWeek,
 } from '@prisma/client';
 
 export interface PartnerReservationCalendarData {
     reservations: Array<{ scheduledAt: Date }>;
     slots: Array<{ startAt: Date; status: StoreTimeSlotStatus; reservedCount: number }>;
     restrictions: Array<{ startAt: Date }>;
+    operatingHours: Array<{ dayOfWeek: DayOfWeek }>;
 }
 
 export interface PartnerReservationListQuery {

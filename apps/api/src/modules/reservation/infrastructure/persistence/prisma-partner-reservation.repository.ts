@@ -33,7 +33,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
         storeId: string,
         range: { start: Date; end: Date },
     ): Promise<PartnerReservationCalendarData> {
-        const [reservations, slots, restrictions] = await Promise.all([
+        const [reservations, slots, restrictions, operatingHours] = await Promise.all([
             this.prisma.reservation.findMany({
                 where: {
                     storeId,
@@ -50,9 +50,13 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 where: { storeId, startAt: { gte: range.start, lt: range.end } },
                 select: { startAt: true },
             }),
+            this.prisma.storeOperatingHour.findMany({
+                where: { storeId },
+                select: { dayOfWeek: true },
+            }),
         ]);
 
-        return { reservations, slots, restrictions };
+        return { reservations, slots, restrictions, operatingHours };
     }
 
     async findList(
