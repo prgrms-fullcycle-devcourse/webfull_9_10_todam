@@ -17,8 +17,8 @@
 -->
 
 - [x] API 구현
-- [ ] UI 구현
-- [ ] API 연동
+- [x] UI 구현
+- [x] API 연동
 
 ## Context
 
@@ -436,3 +436,26 @@ Accept: application/json
   - `apps/api/src/modules/reservation/reservation.module.ts` — UserReservationController·CreateUserReservationUseCase·UserReservationRepository(→PrismaUserReservationRepository) 등록
   - `apps/api/src/modules/api-routes.snapshot.spec.ts` — UserReservationController 추가, POST /reservations 라우트 엔트리 추가
 - **검증 결과**: typecheck 0 errors · test 42 passed · build 성공 · lint 0 new warnings
+
+## Out (FE 구현물)
+
+- **신규 파일** (`apps/web/src/features/reservation/create/`)
+  - `api.ts` — `getAvailableSlots(programId, year, month)` → `GET /programs/{programId}/available-slots`, `createUserReservation(body)` → `POST /reservations`. 실 API(apiFetch, BE root 경로), AuthGuard 토큰 자동 주입.
+  - `queries.ts` — `useAvailableSlots`(year/month queryKey 재조회, 401/403/404 no-retry), `useCreateUserReservation`(mutation).
+  - `ui/ReserveClient.tsx` — **Figma "클래스 - 예약 생성" 다단계 마법사**로 재구성: ① 인원 바텀시트(`ParticipantSheet`, mount 1회, 최대 4명) → ② 1/2 날짜·시간(`ProgressBar` 50%, SlotCalendarView) → ③ 2/2 예약자 정보(이름 2~20자, 전화 `PHONE_REGEX`+`formatPhone`, 요청사항, 수령 방법 deliverable 분기, `DescriptionBlock` 수령 안내, `${총금액}원 예약하기`). 공통 컴포넌트 사용(`FormBottomSheet`/`Counter`/`ProgressBar`/`BottomBar`/`TextInput`/`Checkbox`/`DescriptionBlock`). 에러 코드별 메시지, 비인증 `/login` 리다이렉트, "입력한 정보 기억하기"=localStorage, "내 정보 불러오기"=프로필 prefill(nickname). 잔여 초과는 제출 단계에서 검증.
+  - `ui/ParticipantSheet.tsx` (신규) — 진입 시 인원 선택 바텀시트. `FormBottomSheet`+`Counter`(1~4), "예약 날짜 선택하기"로 확정.
+  - `ui/SlotCalendarView.tsx` — 연월 드롭다운 + 달력 + 선택 날짜 시간 슬롯 목록. CLOSED/CANCELED/!isAvailable 비선택("예약 불가"), 잔여 표시.
+  - `ui/ReserveConfirmClient.tsx` — 완료 화면(디자인 "예약완료"): 체크 히어로 + CONFIRMED/PENDING 문구 분기 + 결과 표(클래스/체험 일시/인원/예약자/결제 금액/작품 수령/예약번호) + "내 예약 보기"(`/my/reservations`)·"홈으로"(`/`). 표시용 메타는 ReserveClient가 sessionStorage(`todam_reservation_result`)에 `{reservation, meta}`로 전달.
+  - `index.ts` — barrel.
+- **수정 파일**
+  - `apps/web/src/app/(user)/classes/[id]/reserve/page.tsx` — `ReserveClient` 마운트(programId=params.id, title/price/deliverable=searchParams).
+  - `apps/web/src/app/(user)/classes/[id]/reserve/confirm/page.tsx` — `ReserveConfirmClient` 마운트.
+  - `packages/shared/src/contracts/reservation-create.ts` — `availableSlotItemSchema`/`availableSlotsResultSchema`, `createUserReservationResultSchema`, `ReservationCreateErrorCode` 추가(기존 request 스키마·`displayStateSchema`·enum 재사용).
+  - `apps/web/src/mocks/handlers.ts` — `GET /programs/:programId/available-slots`, `POST /reservations` MSW 핸들러(성공 PENDING/CONFIRMED + SLOT_BLOCKED/INSUFFICIENT_CAPACITY/404 시뮬). MSW 기본 on·`onUnhandledRequest:'bypass'`이라 dev 폴백, 실 API 연동은 api.ts가 담당.
+- **검증 결과**: `@todam/web` typecheck 0 errors · 변경 파일 eslint 0 errors · `@todam/shared` build 성공.
+- **알려진 갭 / 후속**
+  - 클래스 상세 → 예약 화면 진입 시 `title/price/deliverable`을 searchParams로 전달받음(없으면 title='클래스', price=0). 클래스 상세 페이지 Link에 쿼리 추가 또는 예약 화면에서 프로그램 상세 prefetch 필요. **price=0이면 금액 0 표시** — 클래스 상세 연동 시 보정.
+  - "내 정보 불러오기": 현재 프로필/auth user에 예약자 이름·전화 필드 없음(shared `user-me.ts` "예약자 필드 D2 미포함"). 이름은 nickname best-effort prefill, **전화 prefill은 D2(프로필 reserver 필드) 확정 후** 추가.
+  - 실 BE 기동 e2e(정상/에러 경로) 수동 검증 미수행 — `## Validation` Manual checks 항목 잔여.
+  - **인원 상한**: 디자인 "최대 4명" 기준 `MAX_PARTICIPANTS=4` 하드코딩. 슬롯별 `remainingCount`는 슬롯 선택 후에만 알 수 있어, 인원 선행 선택 → 제출 단계에서 잔여 초과 검증(초과 시 CTA 비활성 + 안내). 상품별 동적 상한이 필요하면 후속 보정.
+  - 완료 화면 결과 표의 **공방명(storeName)** 은 현재 진입 파라미터/응답에 없어 생략. searchParams 또는 프로그램 상세 prefetch 연동 시 추가.
