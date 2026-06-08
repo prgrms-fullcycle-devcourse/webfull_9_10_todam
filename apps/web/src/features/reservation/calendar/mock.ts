@@ -81,7 +81,7 @@ export const mockCalendarData: CalendarData = {
         {
             date: '2026-06-10',
             hasReservation: false,
-            isUnavailable: true,
+            isUnavailable: false,
             hasRestriction: false,
             reservationCount: 0,
         },
@@ -130,7 +130,7 @@ export const mockCalendarData: CalendarData = {
         {
             date: '2026-06-17',
             hasReservation: false,
-            isUnavailable: true,
+            isUnavailable: false,
             hasRestriction: false,
             reservationCount: 0,
         },
@@ -179,7 +179,7 @@ export const mockCalendarData: CalendarData = {
         {
             date: '2026-06-24',
             hasReservation: false,
-            isUnavailable: true,
+            isUnavailable: false,
             hasRestriction: false,
             reservationCount: 0,
         },

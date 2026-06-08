@@ -14,8 +14,8 @@
  *   - available: bg-surface border-border-subtle text-foreground
  *   - partiallyBlocked: bg-muted border-border text-foreground
  *   - holiday: bg-transparent border-border-subtle text-foreground-tertiary
- *   - today: bg-secondary-subtle text-secondary-darker
- *   - dot: bg-secondary-darker
+ *   - today: bg-secondary-subtle border-border-subtle text-foreground
+ *   - dot: bg-warning
  */
 
 export type CalendarItemState = 'available' | 'partiallyBlocked' | 'holiday' | 'today';
@@ -41,7 +41,7 @@ const stateBase: Record<CalendarItemState, string> = {
     available: 'bg-surface border border-border-subtle',
     partiallyBlocked: 'bg-muted border border-border',
     holiday: 'bg-transparent border border-border-subtle',
-    today: 'bg-secondary-subtle border border-secondary-lighter',
+    today: 'bg-secondary-subtle border border-border-subtle',
 };
 
 export function CalendarItem({
@@ -54,40 +54,38 @@ export function CalendarItem({
     onClick,
 }: CalendarItemProps) {
     if (empty) {
-        return <div className="rounded-lg aspect-square" />;
+        return <div className="h-14 rounded-lg" />;
     }
 
     const dowTextColor =
-        state === 'today'
-            ? 'text-secondary-darker'
-            : state === 'holiday'
-              ? 'text-foreground-tertiary'
-              : dow === 0
-                ? 'text-danger'
-                : dow === 6
-                  ? 'text-info'
-                  : 'text-foreground';
+        state === 'holiday'
+            ? 'text-foreground-tertiary'
+            : dow === 0
+              ? 'text-danger'
+              : dow === 6
+                ? 'text-info'
+                : 'text-foreground';
 
     return (
         <button
             type="button"
             onClick={onClick}
             className={[
-                'flex flex-col items-center justify-center gap-0.5 rounded-lg aspect-square transition-colors cursor-pointer',
+                'flex h-14 w-full flex-col items-center rounded-lg pb-2 pt-[18px] transition-colors cursor-pointer',
                 stateBase[state],
-                selected ? 'ring-2 ring-primary ring-offset-1' : 'hover:ring-1 hover:ring-border',
+                selected ? 'ring-2 ring-secondary-darker' : 'hover:ring-1 hover:ring-border',
             ]
                 .filter(Boolean)
                 .join(' ')}
         >
-            <span className={['text-xs font-medium leading-none', dowTextColor].join(' ')}>
+            <span className={['text-base font-normal leading-5', dowTextColor].join(' ')}>
                 {day}
             </span>
             {/* dot: 4px = size-1 */}
             <span
                 className={[
-                    'size-1 rounded-full transition-opacity',
-                    hasReservation ? 'bg-secondary-darker opacity-100' : 'opacity-0',
+                    'mt-1.5 size-1 shrink-0 aspect-square rounded-full transition-opacity',
+                    hasReservation ? 'bg-warning opacity-100' : 'opacity-0',
                 ].join(' ')}
             />
         </button>
