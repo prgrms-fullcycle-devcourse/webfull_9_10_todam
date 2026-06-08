@@ -9,5 +9,5 @@ export default function PartnerReservationsPage() {
     // storeId 없을 때 guard는 AppShell bootstrap이 처리(공방 선택 화면 redirect).
     if (!storeId) return null;
 
-    return <ReservationCalendarView />;
+    return <ReservationCalendarView storeId={storeId} />;
 }
