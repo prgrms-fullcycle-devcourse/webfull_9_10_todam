@@ -205,6 +205,15 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
                     select: { id: true },
                 });
 
+                await tx.artworkLog.create({
+                    data: {
+                        artworkId: artwork.id,
+                        changedBy: program.store.partner.userId,
+                        fromStatus: null,
+                        toStatus: ArtworkStatus.RESERVED,
+                    },
+                });
+
                 await tx.qrToken.create({
                     data: { artworkId: artwork.id, token: this.createQrToken(artwork.id) },
                 });

@@ -60,6 +60,7 @@ export interface PartnerReservationActionRow {
 }
 
 export interface CreateManualReservationInput {
+    changedBy: string;
     programId: string;
     slotId: string;
     reserverName: string;
