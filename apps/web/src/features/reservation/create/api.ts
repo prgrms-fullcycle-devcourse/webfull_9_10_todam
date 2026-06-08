@@ -4,7 +4,7 @@ import type {
     CreateUserReservationResult,
 } from '@todam/shared';
 
-import { apiFetch } from '@/shared/api';
+import { clientApiFetch } from '@/shared/api';
 
 // 예약 가능 슬롯 조회.
 // contract: docs/exec-plans/active/user-예약-신청.md API Contract (스냅샷)
@@ -15,7 +15,7 @@ export function getAvailableSlots(programId: string, year: number, month: number
         year: String(year),
         month: String(month),
     });
-    return apiFetch<AvailableSlotsResult>(
+    return clientApiFetch<AvailableSlotsResult>(
         `/programs/${programId}/available-slots?${params.toString()}`,
         { method: 'GET' },
     );
@@ -26,7 +26,7 @@ export function getAvailableSlots(programId: string, year: number, month: number
 // POST /reservations
 // AuthGuard 필요 — apiFetch 가 토큰 자동 주입.
 export function createUserReservation(body: CreateUserReservationRequest) {
-    return apiFetch<CreateUserReservationResult>('/reservations', {
+    return clientApiFetch<CreateUserReservationResult>('/reservations', {
         method: 'POST',
         body,
     });
