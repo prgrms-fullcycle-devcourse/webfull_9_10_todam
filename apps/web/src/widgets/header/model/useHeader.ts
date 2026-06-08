@@ -45,6 +45,10 @@ const patternConfig: Array<{ test: RegExp; config: HeaderConfig }> = [
         config: { type: 'sub', title: '예약 자세히보기' },
     },
     {
+        test: /^\/partner\/reservations\/[^/]+$/,
+        config: { type: 'sub', title: '예약 자세히보기' },
+    },
+    {
         test: /^\/my\/artworks\/[^/]+$/,
         config: { type: 'sub', title: '작품 제작 단계' },
     },
