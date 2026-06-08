@@ -27,6 +27,7 @@ export class PrismaPartnerStoreProgramsReader extends PartnerStoreProgramsReader
                 durationMinutes: true,
                 difficulty: true,
                 leadTimeDays: true,
+                deliverable: true,
                 status: true,
             },
         });
@@ -39,6 +40,7 @@ export class PrismaPartnerStoreProgramsReader extends PartnerStoreProgramsReader
                 durationMinutes: program.durationMinutes,
                 difficulty: program.difficulty as ProgramDifficulty,
                 leadTimeDays: program.leadTimeDays,
+                deliverable: program.deliverable,
                 status: program.status as ProgramStatus,
             })),
         };

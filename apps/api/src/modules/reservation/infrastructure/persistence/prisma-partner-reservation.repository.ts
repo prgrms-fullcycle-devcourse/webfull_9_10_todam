@@ -1,12 +1,14 @@
 import { randomUUID } from 'crypto';
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import {
     ArtworkStatus,
     Prisma,
     ReservationDeliveryMethod,
     ReservationSource,
     ReservationStatus,
+    StoreTimeSlotStatus,
 } from '@prisma/client';
+import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { PrismaService } from '../../../../database/prisma.service';
 import {
     CancelReservationResult,
@@ -134,15 +136,50 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                         price: true,
                         leadTimeDays: true,
                         deliverable: true,
+                        store: { select: { maxCapacityPerSlot: true } },
                     },
                 }),
                 tx.storeTimeSlot.findFirst({
                     where: { id: input.slotId, storeId },
-                    select: { id: true, startAt: true },
+                    select: { id: true, startAt: true, status: true, reservedCount: true },
                 }),
             ]);
 
             if (!program || !slot) return null;
+
+            if (slot.status !== StoreTimeSlotStatus.OPEN) {
+                throw new BusinessException(
+                    'SLOT_BLOCKED',
+                    '해당 시간대는 예약할 수 없습니다.',
+                    HttpStatus.CONFLICT,
+                );
+            }
+
+            const restriction = await tx.reservationRestriction.findFirst({
+                where: {
+                    storeId,
+                    startAt: slot.startAt,
+                    programId: program.id,
+                },
+                select: { id: true },
+            });
+
+            if (restriction) {
+                throw new BusinessException(
+                    'SLOT_BLOCKED',
+                    '해당 시간대는 예약이 차단되어 있습니다.',
+                    HttpStatus.CONFLICT,
+                );
+            }
+
+            const maxCapacity = program.store.maxCapacityPerSlot;
+            if (maxCapacity === null) {
+                throw new BusinessException(
+                    'INSUFFICIENT_CAPACITY',
+                    '해당 슬롯은 예약 정원이 설정되어 있지 않습니다.',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
 
             const snapshot = await tx.programSnapshot.create({
                 data: {
@@ -182,10 +219,22 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 },
             });
 
-            await tx.storeTimeSlot.update({
-                where: { id: slot.id },
+            const updateResult = await tx.storeTimeSlot.updateMany({
+                where: {
+                    id: slot.id,
+                    status: StoreTimeSlotStatus.OPEN,
+                    reservedCount: { lte: maxCapacity - input.participantCount },
+                },
                 data: { reservedCount: { increment: input.participantCount } },
             });
+
+            if (updateResult.count === 0) {
+                throw new BusinessException(
+                    'INSUFFICIENT_CAPACITY',
+                    '잔여 정원이 부족합니다.',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
 
             const artwork = await tx.artwork.create({
                 data: {

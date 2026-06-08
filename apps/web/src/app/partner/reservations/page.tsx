@@ -1,6 +1,6 @@
 'use client';
 
-import { ReservationCalendarView } from '@/features/reservation/calendar/ui/ReservationCalendarView';
+import { ReservationCalendarView } from '@/features/reservation/list/ui/ReservationCalendarView';
 import { useCurrentStoreId } from '@/entities/store';
 
 export default function PartnerReservationsPage() {
