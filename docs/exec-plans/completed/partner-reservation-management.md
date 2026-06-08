@@ -27,8 +27,8 @@
 
 ### 범위 3: 예약 생성 (파트너 수동 등록)
 - [x] BE: `POST /partner/stores/{storeId}/reservations` — 수동 예약 등록 API (Notion 스펙 O, 구현 완료)
-- [ ] FE: 수동 예약 등록 UI (시간대 선택 → 클래스 선택 → 예약 정보 입력 → 상태 선택)
-- [ ] API 연동
+- [x] FE: 수동 예약 등록 UI (시간대 선택 → 클래스 선택 → 예약 정보 입력 → 상태 선택)
+- [x] API 연동
 
 ### 범위 4: 예약 제한 — **본 문서 범위 아님 (이관됨)**
 > #161 타임슬롯 관리로 일원화. BE 완료, FE는 #170(예약 제한 화면) / #169(자동생성 연동). SSOT: `partner-timeslot-management.md`.
@@ -271,7 +271,8 @@
 > API명세 DB 확인. 스냅샷 기준일: 2026-06-04.
 
 - 가드: AuthGuard + PartnerGuard + 공방 소유권.
-- 특이사항: PENDING 단계 없이 `CONFIRMED` 또는 `IN_PROGRESS`로 직접 생성. 슬롯 CLOSED 검증 및 정원 초과 검증 생략. 과거 일자 슬롯 허용. `userId` null 허용(비회원 현장).
+- 특이사항: PENDING 단계 없이 `CONFIRMED` 또는 `IN_PROGRESS`로 직접 생성. `userId` null 허용(비회원 현장).
+- 검증 (정책 변경 2026-06-08, 업체 측 실수 방지): 슬롯 CLOSED → `409 SLOT_BLOCKED`. ReservationRestriction(클래스별 막기) 존재 → `409 SLOT_BLOCKED`. 슬롯 정원 미설정(`maxCapacityPerSlot = null`) → `400 INSUFFICIENT_CAPACITY`. 정원 초과(`reservedCount + participantCount > maxCapacity`) → `400 INSUFFICIENT_CAPACITY`. FE도 시간대 목록을 `status === OPEN && remainingCount > 0` 으로 필터링해 선택 차단.
 - req body:
   ```json
   {
@@ -285,7 +286,7 @@
     "internalMemo": "현장 방문 예약"
   }
   ```
-  - `deliveryMethod`: 프로그램 `deliveryOption = CUSTOMER_SELECT`일 때만 필수. 그 외는 서버가 PICKUP 강제.
+  - `deliveryMethod`: 프로그램 `deliverable = true`일 때만 선택(택배/직접수령) 노출·필수. `false`면 FE 미노출 + 서버가 PICKUP 강제. (프로그램 목록 응답에 `deliverable` 포함.)
   - `initialStatus`: `CONFIRMED` | `IN_PROGRESS`.
   - `internalMemo`: 최대 200자, 선택.
 - res `201`:
@@ -303,7 +304,7 @@
     }
   }
   ```
-- errors: `400 INVALID_REQUEST`, `403 FORBIDDEN`, `404 RESOURCE_NOT_FOUND`(프로그램/슬롯), `500 INTERNAL_SERVER_ERROR`
+- errors: `400 INVALID_REQUEST`, `400 INSUFFICIENT_CAPACITY`(정원 미설정/초과), `403 FORBIDDEN`, `404 RESOURCE_NOT_FOUND`(프로그램/슬롯), `409 SLOT_BLOCKED`(CLOSED 슬롯/restriction), `500 INTERNAL_SERVER_ERROR`
 
 ---
 
@@ -332,7 +333,7 @@
 - **타임슬롯 자체 생성/상태변경 + 예약 제한(ReservationRestriction) 전체**: `partner-timeslot-management.md`(#161) 소관. FE = #170(예약 제한 화면)/#169(자동생성 연동)
 - 고객 예약 신청 플로우 (User 대상): 별도 `customer-reservation.md` 소관
 - 월별 캘린더 마커 현황 중 슬롯 가용성 계산 로직 — 슬롯 OPEN/CLOSED 판단은 `partner-timeslot-management.md` 데이터 기반
-- 예약 생성 시 정원 합산·슬롯 유효성·제한 검증 로직(서버 사이드): 파트너 수동 등록은 정원·CLOSED 검증 생략 정책 따름
+- 예약 생성 시 정원 합산·슬롯 유효성·제한 검증 로직(서버 사이드): 파트너 수동 등록도 CLOSED/restriction/정원 초과 차단(정책 변경 2026-06-08)
 
 ---
 
@@ -438,7 +439,7 @@
 - Manual: 각 액션 버튼 클릭 후 상태 갱신, 취소된 예약 canceledAt 표시.
 
 ### 범위 3
-- Tests: 수동 등록 — 과거 일자 허용, CLOSED 슬롯 허용(정원 초과 허용), userId null 허용, initialStatus(CONFIRMED/IN_PROGRESS), deliveryMethod 강제 로직.
+- Tests: 수동 등록 — 과거 일자 허용, CLOSED 슬롯 차단(409 SLOT_BLOCKED), restriction 차단(409), 정원 미설정/초과 차단(400 INSUFFICIENT_CAPACITY), userId null 허용, initialStatus(CONFIRMED/IN_PROGRESS), deliveryMethod 강제 로직.
 - Manual: 등록 완료 후 캘린더 마커 갱신, 일별 목록에 신규 예약 반영.
 
 ### 범위 4 — 이관됨 (#161/#170). Validation은 해당 이슈/문서 참조.
@@ -457,7 +458,7 @@
 
 ## Outcome
 
-- Status: plan 확정. **예약 BE 구현 완료** (`ReservationModule` 신규 추가). Notion 스펙 3개(calendar/detail/reject)는 여전히 미등록이라 API명세 DB 반영 필요. FE/API 연동은 후속 작업.
+- Status: **완료** (2026-06-08). 범위 1·2·3 + 공통 액션 BE/FE/연동 전부 구현·검증 완료(reviewer drift 0). 정책 변경: 파트너 수동 등록도 CLOSED/restriction/정원초과 차단(업체 실수 방지). deliveryMethod는 프로그램 `deliverable` boolean 기준 분기. Notion 스펙 3개(calendar/detail/reject)는 여전히 미등록이라 API명세 DB 반영 필요.
 - 착수 가능 범위:
   - **즉시 착수 가능**: 범위 3 FE (BE API명세 확인됨), 범위 2 FE(confirm/cancel/complete 액션 부분)
   - **Open decision 해소 후 착수**: 범위 1 FE + 캘린더 API(D-CALENDAR-API), 범위 2 상세 조회 API(D-RESERVATION-DETAIL-PARTNER), 거절 API(D-REJECT)
@@ -465,3 +466,4 @@
   1. D-CALENDAR-API, D-RESERVATION-DETAIL-PARTNER, D-REJECT 확정 → API명세 DB 등록 → 본 스냅샷 갱신.
   2. D-UI-CALENDAR-MARKER, D-UI-RESERVATION-CARD — DESIGN.md 토큰 확보.
   3. 수동 등록 API의 slotId FK 참조 확인(`storeTimeSlotId` 맞는지 BE와 협의).
+  4. (권고) manual-create arbitrary tailwind value(`min-h-[*]`) DESIGN.md 토큰화, `shiftDateKey`/`timeRange` 공용 util 승격 검토.
