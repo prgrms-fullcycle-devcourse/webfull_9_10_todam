@@ -45,7 +45,7 @@ export function RadioInput({
       }}
       onKeyDown={handleKeyDown}
       className={[
-        "flex w-full cursor-pointer items-center gap-2 rounded-2xl border bg-surface p-3 text-left transition-colors duration-200",
+        "flex w-full cursor-pointer min-h-16 items-center gap-3 rounded-2xl border bg-surface p-3 text-left transition-colors duration-200",
         "aria-disabled:cursor-not-allowed aria-disabled:opacity-50",
         selected ? "border-primary-darker" : "border-border-subtle",
         className,

@@ -24,8 +24,8 @@ export function Radio({
         if (!e.defaultPrevented) onCheckedChange?.(!checked);
       }}
       className={[
-        "inline-flex h-6 w-6 shrink-0 rounded-full bg-surface transition-colors duration-200 ease-in-out cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
-        checked ? "border-[6px] border-primary" : "border-2 border-border",
+        "inline-flex h-4 w-4 shrink-0 rounded-full bg-surface transition-colors duration-300 ease-in-out cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
+        checked ? "border-4 border-primary" : "border-2 border-border",
         className,
       ]
         .filter(Boolean)
