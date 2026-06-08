@@ -18,7 +18,7 @@
 ### 범위 1: 월간 조회
 - [x] BE: `GET /partner/stores/{storeId}/reservations/calendar` — 월별 집계 API 구현 (Notion 스펙 미등록)
 - [x] FE: 월별 캘린더 UI (예약있음/예약불가/신규제한 마커)
-- [ ] API 연동: 캘린더 API 바인딩
+- [x] API 연동: 캘린더 API 바인딩
 
 ### 범위 2: 예약 상세 조회
 - [x] BE: `GET /partner/reservations/{reservationId}` — 예약 상세 API (내부 메모 포함, 파트너 뷰) (Notion 스펙 미등록)
