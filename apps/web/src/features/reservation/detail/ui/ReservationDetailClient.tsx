@@ -25,13 +25,14 @@ function isInProgress(status: ReservationStatus): boolean {
 }
 function isExperienceDone(status: ReservationStatus): boolean {
     // 체험 완료 후 = IN_PROGRESS 이후 단계 (제작 중 ~ 픽업 완료).
-    return [
+    const experienceDoneStatuses: ReservationStatus[] = [
         ReservationStatus.IN_PROGRESS,
         ReservationStatus.SHIPPED,
         ReservationStatus.DELIVERED,
         ReservationStatus.PICKUP_READY,
         ReservationStatus.PICKUP_DONE,
-    ].includes(status);
+    ];
+    return experienceDoneStatuses.includes(status);
 }
 
 // 예약 상세 클라이언트.

@@ -57,3 +57,35 @@ export const reservationListDataSchema = z.object({
     hasMore: z.boolean(),
 });
 export type ReservationListData = z.infer<typeof reservationListDataSchema>;
+
+export const partnerReservationStatusResponseSchema = z.object({
+    reservation: z
+        .object({
+            id: z.string(),
+            status: z.nativeEnum(ReservationStatus),
+            updatedAt: z.string().optional(),
+            artworkId: z.string().optional(),
+            artworkStatus: z.string().optional(),
+            canceledBy: z.string().nullable().optional(),
+            cancelReason: z.string().nullable().optional(),
+            canceledAt: z.string().nullable().optional(),
+        })
+        .passthrough(),
+});
+export type PartnerReservationStatusResponse = z.infer<
+    typeof partnerReservationStatusResponseSchema
+>;
+
+export const createPartnerReservationResponseSchema = z.object({
+    reservation: z.object({
+        id: z.string(),
+        reserverName: z.string(),
+        status: z.nativeEnum(ReservationStatus),
+        source: reservationSourceSchema,
+        artworkId: z.string(),
+        createdAt: z.string(),
+    }),
+});
+export type CreatePartnerReservationResponse = z.infer<
+    typeof createPartnerReservationResponseSchema
+>;
