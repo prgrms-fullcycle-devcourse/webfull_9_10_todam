@@ -22,8 +22,8 @@
 
 ### 범위 2: 예약 상세 조회
 - [x] BE: `GET /partner/reservations/{reservationId}` — 예약 상세 API (내부 메모 포함, 파트너 뷰) (Notion 스펙 미등록)
-- [ ] FE: 예약 상세 UI (상태 메시지·액션 버튼 상태별 분기)
-- [ ] API 연동
+- [x] FE: 예약 상세 UI (상태 메시지·액션 버튼 상태별 분기)
+- [x] API 연동
 
 ### 범위 3: 예약 생성 (파트너 수동 등록)
 - [x] BE: `POST /partner/stores/{storeId}/reservations` — 수동 예약 등록 API (Notion 스펙 O, 구현 완료)
