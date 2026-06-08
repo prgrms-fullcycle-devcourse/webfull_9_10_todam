@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Button, BottomBar, TextInput, InformationIcon } from '@todam/ui';
@@ -18,6 +18,14 @@ import { resetPassword } from '@/features/auth/reset-password';
 // 401 INVALID_OR_EXPIRED_TOKEN: 인라인 "링크 만료" 안내.
 
 export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={<ResetPasswordLoading />}>
+            <ResetPasswordContent />
+        </Suspense>
+    );
+}
+
+function ResetPasswordContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { push } = useToast();
@@ -121,6 +129,16 @@ export default function ResetPasswordPage() {
                     재설정 완료
                 </Button>
             </BottomBar>
+        </div>
+    );
+}
+
+function ResetPasswordLoading() {
+    return (
+        <div className="flex h-full items-center justify-center bg-background">
+            <p className="text-sm text-foreground-secondary">
+                비밀번호 재설정 화면을 불러오는 중...
+            </p>
         </div>
     );
 }
