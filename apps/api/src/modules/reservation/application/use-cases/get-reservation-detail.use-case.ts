@@ -9,11 +9,8 @@ import { BusinessException } from '../../../../common/exceptions/business.except
 import { calcDisplayState } from '../../domain/display-state.util';
 import { KST_OFFSET_MINUTES } from '../../domain/date.util';
 import { UserReservationRepository } from '../../domain/repositories/user-reservation.repository';
-import type {
-    ReservationDetailArtworkDto,
-    ReservationDetailDeliveryDto,
-    ReservationDetailResponseDto,
-} from '../../presentation/dto/user-reservation.dto';
+import type { ReservationDetailArtwork, ReservationDetailDelivery } from '@todam/shared';
+import type { ReservationDetailResponseDto } from '../../presentation/dto/user-reservation.dto';
 
 // 4단계(firing) 순서. ARTWORK_SEQUENCE import 대신 직접 정의해 인덱스 기반 계산.
 // plan의 "방식 A" 의사코드: STAGE_INDEX = { DRYING:1, BISQUE_FIRING:2, GLAZING:3, GLAZE_FIRING:4 }
@@ -164,7 +161,7 @@ export class GetReservationDetailUseCase {
         status: ReservationStatus,
         artworkId: string | null,
         artworkStatus: ArtworkStatus | null,
-    ): ReservationDetailArtworkDto | null {
+    ): ReservationDetailArtwork | null {
         if (status !== ReservationStatus.IN_PROGRESS) return null;
         if (!artworkId || !artworkStatus) return null;
 
@@ -188,7 +185,7 @@ export class GetReservationDetailUseCase {
             carrier: string | null;
             trackingNumber: string | null;
         } | null,
-    ): ReservationDetailDeliveryDto | null {
+    ): ReservationDetailDelivery | null {
         if (deliveryMethod !== ReservationDeliveryMethod.DELIVERY) return null;
         if (!delivery) return null;
 
