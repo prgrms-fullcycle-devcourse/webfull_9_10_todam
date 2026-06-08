@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
     CancelPartnerReservationRequest,
     CreatePartnerReservationRequest,
+    CreateReservationRestrictionsRequest,
+    DeleteReservationRestrictionsRequest,
     RejectPartnerReservationRequest,
 } from '@todam/shared';
 
@@ -14,6 +16,8 @@ import {
     completePartnerReservation,
     confirmPartnerReservation,
     createPartnerReservation,
+    createPartnerReservationRestrictions,
+    deletePartnerReservationRestrictions,
     getPartnerProgramReservationCounts,
     getPartnerReservationCalendar,
     getPartnerReservationDetail,
@@ -98,12 +102,18 @@ export function usePartnerProgramReservationCounts(
     date: string,
     timeSlotIds: string[],
     enabled = true,
+    // true 면 timeSlotIds가 빈 배열일 때도 쿼리 활성화 (ALL_DAY 경로: date 전체 슬롯 집계)
+    allowEmpty = false,
 ) {
     return useQuery({
         queryKey: [...PARTNER_PROGRAM_COUNTS_KEY, storeId, date, timeSlotIds.join(',')] as const,
         queryFn: () => getPartnerProgramReservationCounts(storeId, date, timeSlotIds),
         retry: retryExceptAuthOrNotFound,
-        enabled: enabled && Boolean(storeId) && Boolean(date) && timeSlotIds.length > 0,
+        enabled:
+            enabled &&
+            Boolean(storeId) &&
+            Boolean(date) &&
+            (allowEmpty ? true : timeSlotIds.length > 0),
     });
 }
 
@@ -117,6 +127,32 @@ export function useCreatePartnerReservationMutation(storeId: string) {
                 queryClient.invalidateQueries({ queryKey: ['partner', 'reservations'] }),
                 queryClient.invalidateQueries({ queryKey: PARTNER_TIMESLOTS_KEY }),
                 queryClient.invalidateQueries({ queryKey: PARTNER_PROGRAM_COUNTS_KEY }),
+            ]),
+    });
+}
+
+export function useCreatePartnerReservationRestrictionsMutation(storeId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreateReservationRestrictionsRequest) =>
+            createPartnerReservationRestrictions(storeId, body),
+        onSuccess: () =>
+            Promise.all([
+                queryClient.invalidateQueries({ queryKey: PARTNER_CALENDAR_KEY }),
+                queryClient.invalidateQueries({ queryKey: PARTNER_TIMESLOTS_KEY }),
+            ]),
+    });
+}
+
+export function useDeletePartnerReservationRestrictionsMutation(storeId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: DeleteReservationRestrictionsRequest) =>
+            deletePartnerReservationRestrictions(storeId, body),
+        onSuccess: () =>
+            Promise.all([
+                queryClient.invalidateQueries({ queryKey: PARTNER_CALENDAR_KEY }),
+                queryClient.invalidateQueries({ queryKey: PARTNER_TIMESLOTS_KEY }),
             ]),
     });
 }
