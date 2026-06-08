@@ -29,7 +29,10 @@ export class CreatePartnerReservationUseCase {
             );
         }
 
-        const result = await this.reservations.createManual(storeId, dto);
+        const result = await this.reservations.createManual(storeId, {
+            ...dto,
+            changedBy: userId,
+        });
         if (!result) {
             throw new BusinessException(
                 'RESOURCE_NOT_FOUND',
