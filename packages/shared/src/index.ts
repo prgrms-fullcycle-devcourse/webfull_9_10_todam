@@ -58,6 +58,7 @@ export * from './contracts/review-write';
 export * from './contracts/review-actions';
 export * from './contracts/delivery-edit';
 export * from './contracts/artwork-detail';
+export * from './contracts/partner-artwork-management';
 export * from './contracts/user-me';
 
 export * from './utils/date';
