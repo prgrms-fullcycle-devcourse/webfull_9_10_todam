@@ -35,8 +35,10 @@ export const programDetailSchema = z.object({
         .meta({ example: '처음 도자기를 접하는 분들을 위한 물레 체험입니다.' })
         .nullable(),
     materials: z.string().meta({ example: '앞치마 (공방 제공), 편한 복장' }).nullable().optional(),
+    caution: z.string().meta({ example: '체험 당일 취소는 불가합니다.' }).nullable().optional(),
     price: z.number().meta({ example: 45000 }),
     durationMinutes: z.number().meta({ example: 120 }),
+    capacity: z.number().nullable().optional().meta({ example: 4 }),
     leadTimeDays: z.number().meta({ example: 30 }),
     difficulty: z
         .nativeEnum(ProgramDifficulty)
@@ -53,6 +55,38 @@ export const programDetailResultSchema = z.object({
     program: programDetailSchema,
 });
 export type ProgramDetailResult = z.infer<typeof programDetailResultSchema>;
+
+// ─── 프로그램 리뷰 목록 (GET /stores/{slug}/programs/{programId}/reviews) ─────
+export const programReviewSortSchema = z.enum(['latest', 'rating_high']);
+export type ProgramReviewSort = z.infer<typeof programReviewSortSchema>;
+
+export const programReviewPhotoSchema = z.object({
+    thumbnailUrl: z.string().meta({ example: 'https://cdn.todam.app/reviews/review-01-thumb.jpg' }),
+});
+export type ProgramReviewPhoto = z.infer<typeof programReviewPhotoSchema>;
+
+export const programReviewSchema = z.object({
+    id: z.string().meta({ example: 'review-uuid-001' }),
+    userId: z.string().meta({ example: 'user-uuid-001' }),
+    nickname: z.string().meta({ example: '토담이' }),
+    rating: z.number().min(1).max(5).meta({ example: 5 }),
+    content: z.string().meta({ example: '정말 즐거운 체험이었습니다.' }),
+    photos: z.array(programReviewPhotoSchema),
+    createdAt: z.string().meta({ example: '2026-05-10T12:00:00.000Z' }),
+});
+export type ProgramReview = z.infer<typeof programReviewSchema>;
+
+export const programReviewListResultSchema = z.object({
+    totalCount: z.number().int().min(0).meta({ example: 24 }),
+    averageRating: z.number().min(0).max(5).meta({ example: 4.7 }),
+    reviews: z.array(programReviewSchema),
+    pagination: z.object({
+        currentPage: z.number().int().min(1).meta({ example: 1 }),
+        totalPages: z.number().int().min(0).meta({ example: 3 }),
+        limit: z.number().int().min(1).meta({ example: 10 }),
+    }),
+});
+export type ProgramReviewListResult = z.infer<typeof programReviewListResultSchema>;
 
 // ─── PATCH /partner/stores/{storeId}/programs/{programId} ────────
 export const programEditRequestSchema = z.object({
