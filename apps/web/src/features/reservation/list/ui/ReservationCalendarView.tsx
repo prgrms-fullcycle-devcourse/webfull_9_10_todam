@@ -115,7 +115,9 @@ export function ReservationCalendarView({ storeId }: ReservationCalendarViewProp
                         size="sm"
                         className="w-full"
                         disabled={!canRestrictReservation}
-                        onClick={() => router.push('/partner/reservations/restrict')}
+                        onClick={() =>
+                            router.push(`/partner/reservations/restrict?date=${selectedDate}`)
+                        }
                     >
                         {canRestrictReservation
                             ? '예약 제한'
