@@ -14,6 +14,7 @@ import { BusinessException } from '../../../../common/exceptions/business.except
 import {
     CreateCustomerReservationInput,
     CreateCustomerReservationResult,
+    UserReservationDetailRow,
     UserReservationListQuery,
     UserReservationListRow,
     UserReservationRepository,
@@ -260,6 +261,91 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
             artworkStatus: row.artwork?.status ?? null,
             createdAt: row.createdAt,
         }));
+    }
+
+    async findDetail(reservationId: string): Promise<UserReservationDetailRow | null> {
+        const row = await this.prisma.reservation.findUnique({
+            where: { id: reservationId },
+            select: {
+                id: true,
+                userId: true,
+                storeId: true,
+                programId: true,
+                scheduledAt: true,
+                reserverName: true,
+                reserverPhone: true,
+                participantCount: true,
+                deliveryMethod: true,
+                status: true,
+                source: true,
+                requestMemo: true,
+                createdAt: true,
+                store: {
+                    select: {
+                        name: true,
+                        cancelDeadlineDays: true,
+                    },
+                },
+                program: {
+                    select: { title: true },
+                },
+                programSnapshot: {
+                    select: { price: true },
+                },
+                artwork: {
+                    select: { id: true, status: true },
+                },
+                delivery: {
+                    select: {
+                        recipientName: true,
+                        recipientPhone: true,
+                        shippingAddress: true,
+                        addressDetail: true,
+                        carrier: true,
+                        trackingNumber: true,
+                    },
+                },
+                review: {
+                    select: { id: true },
+                },
+            },
+        });
+
+        if (!row) return null;
+
+        return {
+            id: row.id,
+            userId: row.userId,
+            storeId: row.storeId,
+            storeName: row.store.name,
+            cancelDeadlineDays: row.store.cancelDeadlineDays,
+            programId: row.programId,
+            programTitle: row.program.title,
+            programSnapshotPrice: row.programSnapshot.price,
+            scheduledAt: row.scheduledAt,
+            reserverName: row.reserverName,
+            reserverPhone: row.reserverPhone,
+            participantCount: row.participantCount,
+            deliveryMethod: row.deliveryMethod,
+            shippingAddress: row.delivery?.shippingAddress ?? null,
+            requestMemo: row.requestMemo,
+            status: row.status,
+            source: row.source,
+            artworkId: row.artwork?.id ?? null,
+            artworkStatus: row.artwork?.status ?? null,
+            createdAt: row.createdAt,
+            delivery: row.delivery
+                ? {
+                      recipientName: row.delivery.recipientName,
+                      recipientPhone: row.delivery.recipientPhone,
+                      shippingAddress: row.delivery.shippingAddress,
+                      addressDetail: row.delivery.addressDetail,
+                      carrier: row.delivery.carrier,
+                      trackingNumber: row.delivery.trackingNumber,
+                  }
+                : null,
+            review: row.review ? { id: row.review.id } : null,
+        };
     }
 
     private createQrToken(artworkId: string): string {

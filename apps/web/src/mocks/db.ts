@@ -14,6 +14,7 @@ import {
     type ReservationDetail,
     type ReservationListItem,
     type ReviewDetail,
+    type StoreReviewListItem,
     type ProgramImage,
 } from '@todam/shared';
 
@@ -274,6 +275,114 @@ export interface ProgramImageRow {
 // 시드: 테스트용 공방 + 프로그램 데이터
 export const MOCK_STORE_ID = 'store-seed-0001';
 export const MOCK_STORE_SLUG = 'todam-pottery';
+export const MOCK_STORE_NAME = '흙과 사람';
+
+export function findPublicStoreBySlug(slug: string) {
+    if (slug !== MOCK_STORE_SLUG) return null;
+    return {
+        id: MOCK_STORE_ID,
+        partnerId: 'partner-seed-0001',
+        slug: MOCK_STORE_SLUG,
+        name: MOCK_STORE_NAME,
+        description: '차분한 분위기에서 도자기 클래스를 운영하는 공방입니다.',
+        phone: '02-1234-5678',
+        address: '서울특별시 성동구 뚝섬로 273',
+        status: StoreStatus.PUBLISHED,
+        convenienceInfo: { parking: true, pet: false, wifi: true },
+        autoConfirm: false,
+        publishedAt: '2026-05-20T09:00:00.000Z',
+        images: [
+            {
+                imageUrl: 'https://placehold.co/640x360?text=store',
+                thumbnailUrl: 'https://placehold.co/320x180?text=store',
+            },
+        ],
+        rating: 4.8,
+        reviewCount: SEEDED_STORE_REVIEWS.length,
+        location: { lat: 37.5446, lng: 127.056 },
+        isFavorite: false,
+    };
+}
+
+const SEEDED_STORE_REVIEWS: StoreReviewListItem[] = [
+    {
+        id: 'store-review-001',
+        nickname: 'use*********',
+        rating: 5,
+        content: '처음 물레를 만져봤는데 차근차근 알려주셔서 완성까지 재미있게 했어요.',
+        photos: [
+            {
+                imageUrl: 'https://placehold.co/800x800?text=review-1',
+                thumbnailUrl: 'https://placehold.co/240x240?text=review-1',
+            },
+        ],
+        programTitle: '머그컵 만들기',
+        createdAt: '2026-05-24T12:00:00.000Z',
+    },
+    {
+        id: 'store-review-002',
+        nickname: 'cla*********',
+        rating: 5,
+        content:
+            '공방 분위기가 조용하고 선생님이 친절했어요. 다음에는 다른 클래스도 들어보고 싶어요.',
+        photos: [
+            {
+                imageUrl: 'https://placehold.co/800x800?text=review-2',
+                thumbnailUrl: 'https://placehold.co/240x240?text=review-2',
+            },
+            {
+                imageUrl: 'https://placehold.co/800x800?text=review-3',
+                thumbnailUrl: 'https://placehold.co/240x240?text=review-3',
+            },
+        ],
+        programTitle: '화병 클래스',
+        createdAt: '2026-05-23T12:00:00.000Z',
+    },
+    {
+        id: 'store-review-003',
+        nickname: 'pot*********',
+        rating: 4,
+        content: '설명이 명확해서 좋았습니다. 작품 받는 날이 기다려져요.',
+        photos: [],
+        programTitle: '핸드빌딩 머그컵 만들기',
+        createdAt: '2026-05-21T12:00:00.000Z',
+    },
+    {
+        id: 'store-review-004',
+        nickname: 'tod*********',
+        rating: 3,
+        content: '체험 자체는 좋았고, 주말이라 조금 붐볐어요.',
+        photos: [],
+        programTitle: '커플 도자기 클래스',
+        createdAt: '2026-05-19T12:00:00.000Z',
+    },
+];
+
+export function listStoreReviews(
+    slug: string,
+    cursor: string | null,
+    limit: number,
+    sort: 'latest' | 'rating_high',
+) {
+    if (slug !== MOCK_STORE_SLUG) return null;
+
+    const all = [...SEEDED_STORE_REVIEWS].sort((a, b) => {
+        if (sort === 'rating_high' && b.rating !== a.rating) return b.rating - a.rating;
+        return b.createdAt.localeCompare(a.createdAt);
+    });
+
+    let startIdx = 0;
+    if (cursor) {
+        const idx = all.findIndex((review) => review.id === cursor);
+        startIdx = idx >= 0 ? idx + 1 : all.length;
+    }
+
+    const window = all.slice(startIdx, startIdx + limit + 1);
+    const hasNext = window.length > limit;
+    const reviews = window.slice(0, limit);
+    const nextCursor = hasNext ? (reviews[reviews.length - 1]?.id ?? null) : null;
+    return { reviews, pageInfo: { nextCursor, hasNext } };
+}
 
 export const seededPrograms: ProgramRow[] = [
     {

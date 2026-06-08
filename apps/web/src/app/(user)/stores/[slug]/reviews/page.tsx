@@ -1,3 +1,5 @@
+import { StoreReviewsClient } from '@/features/store/reviews';
+
 export default function StoreReviewsPage() {
-    return <div>공방 리뷰</div>;
+    return <StoreReviewsClient />;
 }
