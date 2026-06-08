@@ -1,9 +1,8 @@
 'use client';
 
-import type { CalendarData, CalendarDay } from '@todam/shared';
-import { startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday, format } from 'date-fns';
+import { formatDateKey, type CalendarData, type CalendarDay } from '@todam/shared';
+import { startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday } from 'date-fns';
 import { useState } from 'react';
-import { Checkbox } from '@todam/ui';
 
 import { CalendarItem } from './CalendarItem';
 import type { CalendarItemState } from './CalendarItem';
@@ -19,8 +18,8 @@ const YEAR_RANGE = 5;
 
 function resolveState(day: CalendarDay, dateObj: Date): CalendarItemState {
     if (isToday(dateObj)) return 'today';
+    if (day.isUnavailable && !day.hasReservation && !day.hasRestriction) return 'holiday';
     if (day.isUnavailable || day.hasRestriction) return 'partiallyBlocked';
-    // API 연동 시: 슬롯 없음(정기휴무) → 'holiday'
     return 'available';
 }
 
@@ -46,7 +45,7 @@ function YearMonthPicker({ year, month, onChange }: YearMonthPickerProps) {
             <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-1 text-base font-semibold text-foreground"
+                className="flex h-8 items-center gap-1 text-2xl font-semibold leading-8 text-foreground"
             >
                 <span>
                     {year}년 {month}월
@@ -140,9 +139,6 @@ export function MonthCalendar({
     onSelectDate,
     onMonthChange,
 }: MonthCalendarProps) {
-    const [filterUnavailable, setFilterUnavailable] = useState(false);
-    const [filterRestriction, setFilterRestriction] = useState(false);
-
     // 해당 월의 모든 날짜 구간 계산
     const monthStart = new Date(data.year, data.month - 1, 1);
     const monthEnd = endOfMonth(monthStart);
@@ -159,19 +155,19 @@ export function MonthCalendar({
     const trailingEmpties = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-3 py-2">
             {/* 헤더: 연월 드롭다운 */}
-            <div className="px-1">
+            <div className="flex h-14 items-center">
                 <YearMonthPicker year={data.year} month={data.month} onChange={onMonthChange} />
             </div>
 
             {/* 요일 헤더 */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid h-6 min-w-0 grid-cols-7 gap-1">
                 {DOW_LABELS.map((label, idx) => (
                     <div
                         key={label}
                         className={[
-                            'text-center text-xs font-medium',
+                            'flex items-start justify-center pt-0.5 text-xs font-normal leading-4',
                             idx === 0
                                 ? 'text-danger'
                                 : idx === 6
@@ -185,45 +181,26 @@ export function MonthCalendar({
             </div>
 
             {/* 날짜 그리드 */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid min-w-0 grid-cols-7 gap-1">
                 {/* 앞 빈 셀 */}
                 {Array.from({ length: leadingEmpties }, (_, i) => (
-                    <CalendarItem key={`lead-${i}`} day={0} state="available" dow={i} empty />
+                    <div key={`lead-${i}`} className="min-w-0">
+                        <CalendarItem day={0} state="available" dow={i} empty />
+                    </div>
                 ))}
 
                 {/* 날짜 셀 */}
                 {daysInMonth.map((dateObj) => {
-                    const dateStr = format(dateObj, 'yyyy-MM-dd');
+                    const dateStr = formatDateKey(dateObj);
                     const calDay = dayMap.get(dateStr);
                     const dow = getDay(dateObj);
-
-                    // 필터 강조: filterUnavailable/filterRestriction 켰을 때 해당 날짜 강조(ring)
-                    // — 해당 마커가 없는 날짜는 opacity 낮춤
-                    const dimmed =
-                        (filterUnavailable && !filterRestriction && calDay
-                            ? !calDay.isUnavailable
-                            : false) ||
-                        (filterRestriction && !filterUnavailable && calDay
-                            ? !calDay.hasRestriction
-                            : false) ||
-                        (filterUnavailable && filterRestriction && calDay
-                            ? !calDay.isUnavailable && !calDay.hasRestriction
-                            : false);
 
                     const state: CalendarItemState = calDay
                         ? resolveState(calDay, dateObj)
                         : 'available';
 
                     return (
-                        <div
-                            key={dateStr}
-                            className={[
-                                'transition-opacity',
-                                (filterUnavailable || filterRestriction) && dimmed
-                                    ? 'opacity-30'
-                                    : 'opacity-100',
-                            ].join(' ')}
-                        >
+                        <div key={dateStr} className="min-w-0">
                             <CalendarItem
                                 day={dateObj.getDate()}
                                 state={state}
@@ -238,52 +215,35 @@ export function MonthCalendar({
 
                 {/* 뒤 빈 셀 */}
                 {Array.from({ length: trailingEmpties }, (_, i) => (
-                    <CalendarItem
-                        key={`trail-${i}`}
-                        day={0}
-                        state="available"
-                        dow={(leadingEmpties + daysInMonth.length + i) % 7}
-                        empty
-                    />
+                    <div key={`trail-${i}`} className="min-w-0">
+                        <CalendarItem
+                            day={0}
+                            state="available"
+                            dow={(leadingEmpties + daysInMonth.length + i) % 7}
+                            empty
+                        />
+                    </div>
                 ))}
             </div>
 
-            {/* 범례 체크박스 */}
-            <div className="flex flex-col gap-2 pt-1">
-                <CheckboxInput
-                    label="예약 불가"
-                    checked={filterUnavailable}
-                    onCheckedChange={setFilterUnavailable}
-                />
-                <CheckboxInput
-                    label="신규 예약 제한"
-                    checked={filterRestriction}
-                    onCheckedChange={setFilterRestriction}
-                />
+            <div className="flex h-8 items-center justify-end gap-3 py-2">
+                <LegendItem label="예약 불가" swatchClassName="border-border-subtle" />
+                <LegendItem label="신규 예약 제한" swatchClassName="border-border bg-muted" />
             </div>
         </div>
     );
 }
 
-// ─── 인라인 CheckboxInput (label만 필요한 간단 래퍼) ─────────────────────────
-
-interface CheckboxInputProps {
+interface LegendItemProps {
     label: string;
-    checked: boolean;
-    onCheckedChange: (v: boolean) => void;
+    swatchClassName: string;
 }
 
-function CheckboxInput({ label, checked, onCheckedChange }: CheckboxInputProps) {
+function LegendItem({ label, swatchClassName }: LegendItemProps) {
     return (
-        <button
-            type="button"
-            role="checkbox"
-            aria-checked={checked}
-            onClick={() => onCheckedChange(!checked)}
-            className="flex items-center gap-2 text-sm text-foreground-secondary"
-        >
-            <Checkbox checked={checked} aria-hidden tabIndex={-1} className="pointer-events-none" />
-            {label}
-        </button>
+        <div className="flex items-center gap-1">
+            <span className={['size-3 rounded-xs border', swatchClassName].join(' ')} />
+            <span className="text-xs font-normal leading-4 text-foreground-tertiary">{label}</span>
+        </div>
     );
 }
