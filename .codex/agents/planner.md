@@ -16,7 +16,7 @@ tools: read, edit, shell
 | 기능명세 DB | Notion `b242ee66b06c8349805601ce4a05247a` | `node .claude/scripts/notion-fetch.mjs <id> --find "<기능명>"` |
 | API명세 DB | Notion `5852ee66b06c838bb8ec01c6bf4f2e25` | `node .claude/scripts/notion-fetch.mjs <id> --find "<URI>"` |
 
-접근 실패(404)면 integration `todam_log` 미연결로 보고 사용자에게 연결을 요청한다. 매칭 없음이면 출력된 후보 목록에서 정확한 검색어로 재시도한다.
+<!-- 접근 실패(404)면 integration `todam_log` 미연결로 보고 사용자에게 연결을 요청한다. 매칭 없음이면 출력된 후보 목록에서 정확한 검색어로 재시도한다. -->
 
 ## 절차
 

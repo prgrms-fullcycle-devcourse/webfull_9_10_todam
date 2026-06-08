@@ -10,7 +10,7 @@ This folder mirrors the project workflows in `.claude/` for Codex.
 
 ## Logging
 
-**Skills do NOT call a logger inline.** Inline `node .codex/scripts/logger.mjs ...` calls triggered a Codex sandbox approval on every run (the content changes each time, so prefix allowlists never matched). They are removed.
+<!-- **Skills do NOT call a logger inline.** Inline `node .codex/scripts/logger.mjs ...` calls triggered a Codex sandbox approval on every run (the content changes each time, so prefix allowlists never matched). They are removed.
 
 Instead, a background poller collects logs from Codex session transcripts with no approval prompt:
 
@@ -18,7 +18,7 @@ Instead, a background poller collects logs from Codex session transcripts with n
 - It maps `user_message` → UserPromptSubmit/Subagent, `task_complete` → Stop, `function_call` names → `metadata.tools_used`, and `session_meta.agent_role` → `agent`.
 - Install once per machine (macOS launchd / Windows Task Scheduler): `bash .claude/scripts/install-codex-logger.sh` or `powershell -ExecutionPolicy Bypass -File .claude\scripts\install-codex-logger.ps1`.
 
-Logging is never the success criterion for a skill. A skill succeeds or fails based on whether the requested workflow itself completed. The poller records the session afterward regardless.
+Logging is never the success criterion for a skill. A skill succeeds or fails based on whether the requested workflow itself completed. The poller records the session afterward regardless. -->
 
 ## Command Names
 
