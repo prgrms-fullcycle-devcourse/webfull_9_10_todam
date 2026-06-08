@@ -65,6 +65,22 @@ export function formatYmdHm(iso: string): string {
     return `${formatYmd(iso)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// UTC ISO → KST offset ISO ("2026-06-10T10:00:00+09:00").
+// getTime()은 UTC 기준 ms이므로 +9h 이동 후 UTC 필드를 슬라이싱해 +09:00 suffix를 붙인다.
+// 잘못된 입력은 원본 그대로 반환(호출부 폴백).
+export function toKSTOffsetISO(utcISO: string): string {
+    const d = new Date(utcISO);
+    if (Number.isNaN(d.getTime())) return utcISO;
+    const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+    const yyyy = kst.getUTCFullYear();
+    const mm = pad(kst.getUTCMonth() + 1);
+    const dd = pad(kst.getUTCDate());
+    const hh = pad(kst.getUTCHours());
+    const mi = pad(kst.getUTCMinutes());
+    const ss = pad(kst.getUTCSeconds());
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}+09:00`;
+}
+
 // "YY.MM.DD" (예: "26.06.18")
 export function formatYmdShort(iso: string): string {
     const d = new Date(iso);
