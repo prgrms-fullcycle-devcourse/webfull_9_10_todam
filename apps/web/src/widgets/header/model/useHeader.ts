@@ -26,6 +26,7 @@ const routeConfig: Record<string, HeaderConfig> = {
     '/partner': { type: 'home' },
     '/partner/classes': { type: 'sub', title: '클래스 관리' },
     '/partner/reservations': { type: 'main', title: '예약 관리' },
+    '/partner/reservations/new': { type: 'sub', title: '흙과 사람 예약 등록하기' },
     '/partner/artworks': { type: 'sub', title: '작품' },
     '/partner/settings': { type: 'sub', title: '설정' },
 };
