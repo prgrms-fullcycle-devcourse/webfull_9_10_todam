@@ -5,9 +5,7 @@ export type CheckboxInputProps = {
   label: string;
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
-  /** 기본 false(테두리 없음). true 시 border 표시. */
   bordered?: boolean;
-  /** 우측 슬롯 (예: "보기" 버튼). */
   action?: ReactNode;
   disabled?: boolean;
 } & Omit<HTMLAttributes<HTMLDivElement>, "onChange">;
@@ -58,7 +56,7 @@ export function CheckboxInput({
         .join(" ")}
       {...props}
     >
-      <span className="flex min-w-0 items-center gap-2">
+      <span className="flex min-w-0 items-center justify-center gap-2">
         <Checkbox
           checked={checked}
           disabled={disabled}
@@ -70,7 +68,7 @@ export function CheckboxInput({
       </span>
       {action && (
         // 우측 액션 클릭은 체크 토글로 버블되지 않도록 차단
-        <span onClick={(e) => e.stopPropagation()}>{action}</span>
+        <span className="text-sm" onClick={(e) => e.stopPropagation()}>{action}</span>
       )}
     </div>
   );
