@@ -1,8 +1,12 @@
 import type {
     CalendarData,
     CancelPartnerReservationRequest,
+    CreatePartnerReservationRequest,
+    CreatePartnerReservationResponse,
+    ListTimeSlotsResult,
     PartnerReservationDetailResponse,
     PartnerReservationStatusResponse,
+    ProgramReservationCountsResult,
     ReservationDetailResponse,
     ReservationListData,
     RejectPartnerReservationRequest,
@@ -52,6 +56,38 @@ export function getPartnerReservationDetail(reservationId: string) {
     return clientApiFetch<PartnerReservationDetailResponse>(
         `${PARTNER_BASE}/reservations/${encodeURIComponent(reservationId)}`,
         { method: 'GET' },
+    );
+}
+
+export function getPartnerTimeSlotsByDate(storeId: string, date: string) {
+    const params = new URLSearchParams({ date });
+
+    return clientApiFetch<ListTimeSlotsResult>(
+        `${PARTNER_BASE}/stores/${encodeURIComponent(storeId)}/time-slots?${params}`,
+        { method: 'GET' },
+    );
+}
+
+export function getPartnerProgramReservationCounts(
+    storeId: string,
+    date: string,
+    timeSlotIds?: string[],
+) {
+    const params = new URLSearchParams({ date });
+    if (timeSlotIds?.length) {
+        params.set('timeSlotIds', timeSlotIds.join(','));
+    }
+
+    return clientApiFetch<ProgramReservationCountsResult>(
+        `${PARTNER_BASE}/stores/${encodeURIComponent(storeId)}/programs/reservation-counts?${params}`,
+        { method: 'GET' },
+    );
+}
+
+export function createPartnerReservation(storeId: string, body: CreatePartnerReservationRequest) {
+    return clientApiFetch<CreatePartnerReservationResponse>(
+        `${PARTNER_BASE}/stores/${encodeURIComponent(storeId)}/reservations`,
+        { method: 'POST', body },
     );
 }
 
