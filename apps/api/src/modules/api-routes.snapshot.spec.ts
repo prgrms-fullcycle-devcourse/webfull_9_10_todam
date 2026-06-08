@@ -45,6 +45,9 @@ function controllers(): ControllerClass[] {
     const { UserReservationController } = jest.requireActual<
         typeof import('./reservation/presentation/controllers/user-reservation.controller')
     >('./reservation/presentation/controllers/user-reservation.controller');
+    const { PartnerArtworkController } = jest.requireActual<
+        typeof import('./artwork/presentation/controllers/partner-artwork.controller')
+    >('./artwork/presentation/controllers/partner-artwork.controller');
 
     return [
         AuthController,
@@ -54,6 +57,7 @@ function controllers(): ControllerClass[] {
         TimeslotController,
         PartnerReservationController,
         UserReservationController,
+        PartnerArtworkController,
     ];
 }
 
@@ -235,6 +239,20 @@ describe('API route baseline', () => {
                 method: 'GET',
                 path: '/stores/:slug/reviews',
                 guards: [],
+            },
+            {
+                controller: 'StoreController',
+                handler: 'getPartnerCurrentStore',
+                method: 'GET',
+                path: '/partner/me/current-store',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'StoreController',
+                handler: 'updatePartnerCurrentStore',
+                method: 'PATCH',
+                path: '/partner/me/current-store',
+                guards: ['AuthGuard', 'PartnerGuard'],
             },
             {
                 controller: 'StoreController',
@@ -508,6 +526,76 @@ describe('API route baseline', () => {
                 method: 'POST',
                 path: '/reservations',
                 guards: ['AuthGuard'],
+            },
+            {
+                controller: 'PartnerArtworkController',
+                handler: 'list',
+                method: 'GET',
+                path: '/partner/stores/:storeId/artworks',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerArtworkController',
+                handler: 'count',
+                method: 'GET',
+                path: '/partner/artworks/count-by-step',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerArtworkController',
+                handler: 'detail',
+                method: 'GET',
+                path: '/partner/artworks/:artworkId',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerArtworkController',
+                handler: 'bulkStatus',
+                method: 'PATCH',
+                path: '/partner/artworks/bulk-status',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerArtworkController',
+                handler: 'status',
+                method: 'PATCH',
+                path: '/partner/artworks/:artworkId/status',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerArtworkController',
+                handler: 'photos',
+                method: 'POST',
+                path: '/partner/artworks/:artworkId/photos',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerArtworkController',
+                handler: 'confirmPhoto',
+                method: 'POST',
+                path: '/partner/artworks/:artworkId/photos/:photoId/confirm',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerArtworkController',
+                handler: 'deletePhoto',
+                method: 'DELETE',
+                path: '/partner/artworks/:artworkId/photos/:photoId',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerArtworkController',
+                handler: 'deliveryInfo',
+                method: 'PATCH',
+                path: '/partner/artworks/:artworkId/delivery-info',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerArtworkController',
+                handler: 'delivery',
+                method: 'PATCH',
+                path: '/partner/artworks/:artworkId/delivery',
+                guards: ['AuthGuard', 'PartnerGuard'],
             },
         ]);
     });
