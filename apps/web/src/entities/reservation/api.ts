@@ -1,8 +1,12 @@
 import type {
     CalendarData,
-    ReservationDetailResult,
+    CancelPartnerReservationRequest,
+    PartnerReservationDetailResponse,
+    PartnerReservationStatusResponse,
+    ReservationDetailResponse,
     ReservationListData,
-    ReviewDetailResult,
+    RejectPartnerReservationRequest,
+    ReviewDetailResponse,
 } from '@todam/shared';
 
 import { clientApiFetch } from '@/shared/api';
@@ -12,13 +16,13 @@ const BASE = '/api/v1';
 const PARTNER_BASE = '/partner';
 
 export function getReservationDetail(reservationId: string) {
-    return clientApiFetch<ReservationDetailResult>(`${BASE}/reservations/${reservationId}`, {
+    return clientApiFetch<ReservationDetailResponse>(`${BASE}/reservations/${reservationId}`, {
         method: 'GET',
     });
 }
 
 export function getReservationReview(reservationId: string) {
-    return clientApiFetch<ReviewDetailResult>(`${BASE}/reservations/${reservationId}/review`, {
+    return clientApiFetch<ReviewDetailResponse>(`${BASE}/reservations/${reservationId}/review`, {
         method: 'GET',
     });
 }
@@ -41,5 +45,46 @@ export function getPartnerReservationsByDate(storeId: string, date: string) {
     return clientApiFetch<ReservationListData>(
         `${PARTNER_BASE}/stores/${encodeURIComponent(storeId)}/reservations?${params}`,
         { method: 'GET' },
+    );
+}
+
+export function getPartnerReservationDetail(reservationId: string) {
+    return clientApiFetch<PartnerReservationDetailResponse>(
+        `${PARTNER_BASE}/reservations/${encodeURIComponent(reservationId)}`,
+        { method: 'GET' },
+    );
+}
+
+export function confirmPartnerReservation(reservationId: string) {
+    return clientApiFetch<PartnerReservationStatusResponse>(
+        `${PARTNER_BASE}/reservations/${encodeURIComponent(reservationId)}/confirm`,
+        { method: 'PATCH' },
+    );
+}
+
+export function rejectPartnerReservation(
+    reservationId: string,
+    body: RejectPartnerReservationRequest,
+) {
+    return clientApiFetch<PartnerReservationStatusResponse>(
+        `${PARTNER_BASE}/reservations/${encodeURIComponent(reservationId)}/reject`,
+        { method: 'PATCH', body },
+    );
+}
+
+export function cancelPartnerReservation(
+    reservationId: string,
+    body: CancelPartnerReservationRequest,
+) {
+    return clientApiFetch<PartnerReservationStatusResponse>(
+        `${PARTNER_BASE}/reservations/${encodeURIComponent(reservationId)}/cancel`,
+        { method: 'PATCH', body },
+    );
+}
+
+export function completePartnerReservation(reservationId: string) {
+    return clientApiFetch<PartnerReservationStatusResponse>(
+        `${PARTNER_BASE}/reservations/${encodeURIComponent(reservationId)}/complete`,
+        { method: 'PATCH' },
     );
 }
