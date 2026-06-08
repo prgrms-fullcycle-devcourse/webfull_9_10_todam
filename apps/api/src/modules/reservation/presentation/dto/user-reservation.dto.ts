@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { ReservationStatus } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ReservationDeliveryMethod, ReservationStatus } from '@prisma/client';
 import { createUserReservationRequestSchema, getMyReservationsQuerySchema } from '@todam/shared';
 import { createZodDto } from 'nestjs-zod';
 
@@ -50,4 +50,53 @@ export class MyReservationsResponseDto {
     @ApiProperty({ type: [MyReservationItemDto] }) reservations!: MyReservationItemDto[];
     @ApiProperty({ nullable: true }) nextCursor!: string | null;
     @ApiProperty() hasMore!: boolean;
+}
+
+// ─── GET /reservations/:reservationId ────────────────────────────────────────
+
+export class ReservationDetailDeliveryDto {
+    @ApiProperty() recipientName!: string;
+    @ApiProperty() recipientPhone!: string;
+    @ApiProperty() address!: string;
+    @ApiProperty({ nullable: true }) carrier!: string | null;
+    @ApiProperty({ nullable: true }) trackingNumber!: string | null;
+}
+
+export class ReservationDetailArtworkDto {
+    @ApiProperty() id!: string;
+    @ApiProperty({ minimum: 0, maximum: 100 }) progressPercent!: number;
+    @ApiProperty({ minimum: 0 }) remainingSteps!: number;
+}
+
+export class ReservationDetailDto {
+    @ApiProperty() id!: string;
+    @ApiProperty() storeId!: string;
+    @ApiProperty() storeName!: string;
+    @ApiProperty() programId!: string;
+    @ApiProperty() programTitle!: string;
+    @ApiProperty({ description: 'ISO 8601' }) scheduledAt!: string;
+    @ApiProperty() reserverName!: string;
+    @ApiProperty() reserverPhone!: string;
+    @ApiProperty({ minimum: 1 }) participantCount!: number;
+    @ApiProperty({ enum: Object.values(ReservationDeliveryMethod) })
+    deliveryMethod!: ReservationDeliveryMethod;
+    @ApiPropertyOptional({ nullable: true }) shippingAddress!: string | null;
+    @ApiPropertyOptional({ nullable: true }) requestMemo!: string | null;
+    @ApiProperty({ enum: Object.values(ReservationStatus) }) status!: ReservationStatus;
+    @ApiProperty({ type: DisplayStateDto }) displayState!: DisplayStateDto;
+    @ApiPropertyOptional({ nullable: true }) artworkId!: string | null;
+    @ApiProperty({ description: 'ISO 8601' }) createdAt!: string;
+    @ApiProperty({ minimum: 0 }) totalPrice!: number;
+    @ApiProperty({ type: ReservationDetailDeliveryDto, nullable: true })
+    delivery!: ReservationDetailDeliveryDto | null;
+    @ApiProperty() canCancel!: boolean;
+    @ApiProperty({ nullable: true }) cancelDeadlineDays!: number | null;
+    @ApiProperty({ type: ReservationDetailArtworkDto, nullable: true })
+    artwork!: ReservationDetailArtworkDto | null;
+    @ApiProperty() hasReview!: boolean;
+    @ApiProperty({ nullable: true }) reviewId!: string | null;
+}
+
+export class ReservationDetailResponseDto {
+    @ApiProperty({ type: ReservationDetailDto }) reservation!: ReservationDetailDto;
 }

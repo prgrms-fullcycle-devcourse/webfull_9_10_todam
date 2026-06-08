@@ -4,6 +4,7 @@ import {
     Get,
     HttpCode,
     HttpStatus,
+    Param,
     Post,
     Query,
     UseGuards,
@@ -13,6 +14,7 @@ import {
     ApiBody,
     ApiCreatedResponse,
     ApiOkResponse,
+    ApiParam,
     ApiQuery,
     ApiTags,
 } from '@nestjs/swagger';
@@ -25,11 +27,13 @@ import { CurrentUser } from '../../../../common/decorators/current-user.decorato
 import { ResponseMessage } from '../../../../common/decorators/response-message.decorator';
 import type { RequestUser } from '../../../../common/types/request-user.type';
 import { CreateUserReservationUseCase } from '../../application/use-cases/create-user-reservation.use-case';
+import { GetReservationDetailUseCase } from '../../application/use-cases/get-reservation-detail.use-case';
 import { ListUserReservationsUseCase } from '../../application/use-cases/list-user-reservations.use-case';
 import {
     CreateUserReservationDto,
     CreateUserReservationResponseDto,
     MyReservationsResponseDto,
+    ReservationDetailResponseDto,
 } from '../dto/user-reservation.dto';
 
 @ApiTags('reservations')
@@ -39,6 +43,7 @@ export class UserReservationController {
     constructor(
         private readonly createUseCase: CreateUserReservationUseCase,
         private readonly listUseCase: ListUserReservationsUseCase,
+        private readonly detailUseCase: GetReservationDetailUseCase,
     ) {}
 
     @Get('reservations/me')
@@ -69,5 +74,18 @@ export class UserReservationController {
         dto: CreateUserReservationRequest,
     ): Promise<CreateUserReservationResponseDto> {
         return this.createUseCase.execute(user.id, dto);
+    }
+
+    @Get('reservations/:reservationId')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ResponseMessage('예약 상세 정보가 성공적으로 조회되었습니다.')
+    @ApiOkResponse({ type: ReservationDetailResponseDto })
+    @ApiParam({ name: 'reservationId', type: String, description: 'UUID' })
+    async getReservationDetail(
+        @CurrentUser() user: RequestUser,
+        @Param('reservationId') reservationId: string,
+    ): Promise<ReservationDetailResponseDto> {
+        return this.detailUseCase.execute(user.id, reservationId);
     }
 }
