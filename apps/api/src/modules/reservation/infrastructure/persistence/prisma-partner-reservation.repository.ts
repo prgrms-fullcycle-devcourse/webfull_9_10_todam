@@ -200,6 +200,18 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 select: { id: true },
             });
 
+            await tx.artworkLog.create({
+                data: {
+                    artworkId: artwork.id,
+                    changedBy: input.changedBy,
+                    fromStatus: null,
+                    toStatus:
+                        input.initialStatus === ReservationStatus.IN_PROGRESS
+                            ? ArtworkStatus.VISITED
+                            : ArtworkStatus.RESERVED,
+                },
+            });
+
             await tx.qrToken.create({
                 data: { artworkId: artwork.id, token: this.createQrToken(artwork.id) },
             });
@@ -246,16 +258,27 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 select: { id: true, status: true, updatedAt: true },
             });
 
-            const artwork =
-                reservation.artwork ??
-                (await tx.artwork.create({
+            const artwork = reservation.artwork
+                ? reservation.artwork
+                : await tx.artwork.create({
+                      data: {
+                          reservationId: reservation.id,
+                          title: reservation.programTitle,
+                          status: ArtworkStatus.RESERVED,
+                      },
+                      select: { id: true, status: true },
+                  });
+
+            if (!reservation.artwork) {
+                await tx.artworkLog.create({
                     data: {
-                        reservationId: reservation.id,
-                        title: reservation.programTitle,
-                        status: ArtworkStatus.RESERVED,
+                        artworkId: artwork.id,
+                        changedBy: reservation.partnerUserId,
+                        fromStatus: null,
+                        toStatus: ArtworkStatus.RESERVED,
                     },
-                    select: { id: true, status: true },
-                }));
+                });
+            }
 
             await tx.qrToken.upsert({
                 where: { artworkId: artwork.id },
@@ -342,22 +365,33 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 select: { id: true, status: true, updatedAt: true },
             });
 
-            const artwork =
-                reservation.artwork ??
-                (await tx.artwork.create({
-                    data: {
-                        reservationId: reservation.id,
-                        title: reservation.programTitle,
-                        status: ArtworkStatus.VISITED,
-                    },
-                    select: { id: true, status: true },
-                }));
+            const artwork = reservation.artwork
+                ? reservation.artwork
+                : await tx.artwork.create({
+                      data: {
+                          reservationId: reservation.id,
+                          title: reservation.programTitle,
+                          status: ArtworkStatus.VISITED,
+                      },
+                      select: { id: true, status: true },
+                  });
 
             const artworkRow = await tx.artwork.update({
                 where: { id: artwork.id },
                 data: { status: ArtworkStatus.VISITED },
                 select: { status: true },
             });
+
+            if (!reservation.artwork || reservation.artwork.status !== ArtworkStatus.VISITED) {
+                await tx.artworkLog.create({
+                    data: {
+                        artworkId: artwork.id,
+                        changedBy: reservation.partnerUserId,
+                        fromStatus: reservation.artwork?.status ?? null,
+                        toStatus: ArtworkStatus.VISITED,
+                    },
+                });
+            }
 
             return { reservation: row, artwork: artworkRow };
         });

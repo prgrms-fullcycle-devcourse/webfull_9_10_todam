@@ -14,6 +14,7 @@ export function keyFromImageUrl(imageUrl: string): string {
 const ALLOWED_TYPES: Record<string, string> = {
     'image/jpeg': 'jpg',
     'image/png': 'png',
+    'image/heic': 'heic',
     'image/webp': 'webp',
     'application/pdf': 'pdf',
 };
