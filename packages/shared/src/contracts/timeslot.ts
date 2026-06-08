@@ -151,6 +151,25 @@ export const listTimeSlotsQuerySchema = z.object({
 });
 export type ListTimeSlotsQuery = z.infer<typeof listTimeSlotsQuerySchema>;
 
+export const timeSlotItemSchema = z.object({
+    slotId: z.string().meta({ example: 'slot-uuid-001' }),
+    startAt: z.string().meta({ example: '2026-06-10T10:00:00.000Z' }),
+    endAt: z.string().meta({ example: '2026-06-10T12:00:00.000Z' }),
+    reservedCount: z.number().int().nonnegative().meta({ example: 2 }),
+    remainingCount: z.number().int().nonnegative().meta({ example: 4 }),
+    status: z.nativeEnum(StoreTimeSlotStatus).meta({ example: StoreTimeSlotStatus.OPEN }),
+    confirmedReservationCount: z.number().int().nonnegative().meta({ example: 2 }),
+    isRestricted: z.boolean().meta({ example: false }),
+    restrictedProgramIds: z.array(z.string()).meta({ example: [] }),
+    createdAt: z.string().meta({ example: '2026-06-01T09:00:00.000Z' }),
+});
+export type TimeSlotItem = z.infer<typeof timeSlotItemSchema>;
+
+export const listTimeSlotsResultSchema = z.object({
+    slots: z.array(timeSlotItemSchema),
+});
+export type ListTimeSlotsResult = z.infer<typeof listTimeSlotsResultSchema>;
+
 // GET /partner/stores/:storeId/programs/reservation-counts
 export const programReservationCountsQuerySchema = z.object({
     date: z
@@ -167,6 +186,18 @@ export const programReservationCountsQuerySchema = z.object({
         .optional(),
 });
 export type ProgramReservationCountsQuery = z.infer<typeof programReservationCountsQuerySchema>;
+
+export const programReservationCountItemSchema = z.object({
+    programId: z.string().meta({ example: 'program-uuid-001' }),
+    programName: z.string().meta({ example: '머그컵 만들기' }),
+    confirmedReservationCount: z.number().int().nonnegative().meta({ example: 3 }),
+});
+export type ProgramReservationCountItem = z.infer<typeof programReservationCountItemSchema>;
+
+export const programReservationCountsResultSchema = z.object({
+    programs: z.array(programReservationCountItemSchema),
+});
+export type ProgramReservationCountsResult = z.infer<typeof programReservationCountsResultSchema>;
 
 // GET /programs/:programId/available-slots
 export const availableSlotsQuerySchema = z.object({

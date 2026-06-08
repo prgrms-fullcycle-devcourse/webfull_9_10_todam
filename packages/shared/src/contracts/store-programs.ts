@@ -8,7 +8,7 @@ import { ProgramStatus } from '../enums/program-status';
 // API Contract 스냅샷(docs/exec-plans/active/partner-class-list.md) SSOT.
 // 퍼블릭 목록과 달리 status enum 전체(DRAFT/ACTIVE/INACTIVE) 포함(파트너 본인 관리 화면).
 // 필드 재정합(2026-06-04): thumbnailUrl·sortOrder·createdAt 제거, difficulty·leadTimeDays 추가.
-// 최종 7필드: id, title, price, durationMinutes, difficulty, leadTimeDays, status.
+// 최종 8필드: id, title, price, durationMinutes, difficulty, leadTimeDays, deliverable, status.
 
 export const partnerProgramListItemSchema = z.object({
     id: z.string().meta({ example: 'program-uuid-001' }),
@@ -19,6 +19,8 @@ export const partnerProgramListItemSchema = z.object({
     difficulty: z.nativeEnum(ProgramDifficulty).meta({ example: ProgramDifficulty.BASIC }),
     // 작품 수령까지 평균 제작일.
     leadTimeDays: z.number().meta({ example: 30 }),
+    // 작품 배송 가능 여부. true면 수동 등록 시 수령방식(택배/직접수령) 선택 가능, false면 PICKUP 강제.
+    deliverable: z.boolean().meta({ example: true }),
     // CONTRACT-4: DRAFT(작성 중) / ACTIVE(예약 가능) / INACTIVE(일시 중단).
     status: z.nativeEnum(ProgramStatus).meta({ example: ProgramStatus.ACTIVE }),
 });
