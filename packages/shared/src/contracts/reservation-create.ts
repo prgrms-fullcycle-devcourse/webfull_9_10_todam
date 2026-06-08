@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
 import { ReservationDeliveryMethod } from '../enums/reservation-delivery-method';
+import { ReservationStatus } from '../enums/reservation-status';
+import { StoreTimeSlotStatus } from '../enums/store-time-slot-status';
+import { displayStateSchema } from './reservation-list';
 
 // ─── 예약 생성/상태변경 요청 (SSOT) ──────────────────────────────────
 // BE 컨트롤러 param ZodValidationPipe 가 이 스키마로 검증한다. class-validator 규칙과
@@ -46,6 +49,54 @@ export const createUserReservationRequestSchema = z
     })
     .strict();
 export type CreateUserReservationRequest = z.infer<typeof createUserReservationRequestSchema>;
+
+// ─── 예약 가능 슬롯 단일 항목 (GET /programs/{programId}/available-slots 응답) ─────
+// contract: docs/exec-plans/active/user-예약-신청.md API Contract (스냅샷)
+// BE PR #188 응답과 정합: capacity 없음, isAvailable = OPEN && 제한없음 && remaining>0
+export const availableSlotItemSchema = z.object({
+    slotId: z.string().meta({ example: 'slot-uuid-001' }),
+    startAt: z.string().meta({ example: '2026-06-01T10:00:00.000Z' }),
+    endAt: z.string().meta({ example: '2026-06-01T12:00:00.000Z' }),
+    reservedCount: z.number().int().nonnegative().meta({ example: 2 }),
+    remainingCount: z.number().int().nonnegative().meta({ example: 2 }),
+    status: z.nativeEnum(StoreTimeSlotStatus).meta({ example: StoreTimeSlotStatus.OPEN }),
+    isAvailable: z.boolean().meta({ example: true }),
+});
+export type AvailableSlotItem = z.infer<typeof availableSlotItemSchema>;
+
+export const availableSlotsResultSchema = z.object({
+    slots: z.array(availableSlotItemSchema),
+});
+export type AvailableSlotsResult = z.infer<typeof availableSlotsResultSchema>;
+
+// ─── 유저 예약 생성 응답 (POST /reservations 201) ──────────────────────────
+export const createUserReservationResultSchema = z.object({
+    reservation: z.object({
+        id: z.string().meta({ example: 'res-uuid-001' }),
+        programId: z.string().meta({ example: 'prog-uuid-001' }),
+        slotId: z.string().meta({ example: 'slot-uuid-001' }),
+        reserverName: z.string().meta({ example: '김토담' }),
+        participantCount: z.number().int().min(1).meta({ example: 2 }),
+        status: z.nativeEnum(ReservationStatus).meta({ example: ReservationStatus.PENDING }),
+        displayState: displayStateSchema,
+        createdAt: z.string().meta({ example: '2026-05-25T19:35:00.000Z' }),
+    }),
+});
+export type CreateUserReservationResult = z.infer<typeof createUserReservationResultSchema>;
+
+// ─── 유저 예약 생성 에러 코드 ─────────────────────────────────────────────
+export const ReservationCreateErrorCode = {
+    INSUFFICIENT_CAPACITY: 'INSUFFICIENT_CAPACITY',
+    UNAUTHORIZED: 'UNAUTHORIZED',
+    SELF_RESERVATION_NOT_ALLOWED: 'SELF_RESERVATION_NOT_ALLOWED',
+    FORBIDDEN: 'FORBIDDEN',
+    PROGRAM_NOT_FOUND: 'PROGRAM_NOT_FOUND',
+    RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
+    SLOT_BLOCKED: 'SLOT_BLOCKED',
+    INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
+} as const;
+export type ReservationCreateErrorCode =
+    (typeof ReservationCreateErrorCode)[keyof typeof ReservationCreateErrorCode];
 
 // ─── 파트너 수기 예약 생성 (POST /partner/.../reservations) ────────────
 // 수기 등록 초기 상태는 CONFIRMED(확정) 또는 IN_PROGRESS(작업중)만 허용.
