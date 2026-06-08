@@ -3,6 +3,7 @@
 import { BottomBar, Button, PhotoIcon, ShareIcon, Tag } from '@todam/ui';
 import { formatPrice } from '@todam/shared';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { getDifficultyLabel, useProgramReviews, usePublicProgramDetail } from '@/entities/program';
 import { ClassDescription, ClassInfoTable } from '@/features/program/detail';
@@ -12,6 +13,14 @@ const DEFAULT_STORE_SLUG = 'todam-pottery';
 const DEFAULT_STORE_NAME = '흙과 사람';
 
 export default function ClassDetailPage() {
+    return (
+        <Suspense fallback={<ClassDetailLoading />}>
+            <ClassDetailContent />
+        </Suspense>
+    );
+}
+
+function ClassDetailContent() {
     const router = useRouter();
     const params = useParams<{ id: string }>();
     const searchParams = useSearchParams();
@@ -141,6 +150,14 @@ export default function ClassDetailPage() {
                     </Button>
                 </BottomBar>
             </div>
+        </main>
+    );
+}
+
+function ClassDetailLoading() {
+    return (
+        <main className="min-h-full bg-[#FBF8F3] px-4 pb-[116px] pt-0">
+            <SkeletonDetail />
         </main>
     );
 }
