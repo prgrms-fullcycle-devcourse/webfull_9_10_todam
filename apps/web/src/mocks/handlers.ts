@@ -20,6 +20,7 @@ import {
     type ToggleFavoriteResult,
     type FavoriteStoreListResult,
     type ProgramDetailResult,
+    type ProgramReviewListResult,
     type ProgramEditResult,
     type GetMyProfileResponse,
     type UpdateMyProfileResponse,
@@ -104,6 +105,60 @@ export const handlers = [
             program: programToApiShape(program) as ProgramDetailResult['program'],
         };
         return ok(path, result, '프로그램 상세가 조회되었습니다.');
+    }),
+
+    // GET /stores/{slug}/programs/{programId}/reviews
+    http.get(`${API}/stores/:slug/programs/:programId/reviews`, ({ request, params }) => {
+        const slug = String(params.slug);
+        const programId = String(params.programId);
+        const url = new URL(request.url);
+        const page = Number(url.searchParams.get('page') ?? '1');
+        const limit = Number(url.searchParams.get('limit') ?? '10');
+        const path = `/api/v1/stores/${slug}/programs/${programId}/reviews`;
+
+        const program = findProgramBySlugAndId(slug, programId);
+        if (!program) {
+            return fail(
+                path,
+                404,
+                ProgramEditErrorCode.PROGRAM_NOT_FOUND,
+                '프로그램을 찾을 수 없습니다.',
+            );
+        }
+
+        const allReviews: ProgramReviewListResult['reviews'] = [
+            {
+                id: 'review-program-001',
+                userId: 'user-seed-001',
+                nickname: '토담이',
+                rating: 5,
+                content: '차분하게 알려주셔서 처음인데도 즐겁게 만들었어요.',
+                photos: [{ thumbnailUrl: 'https://placehold.co/240x240?text=review' }],
+                createdAt: '2026-05-10T12:00:00.000Z',
+            },
+            {
+                id: 'review-program-002',
+                userId: 'user-seed-002',
+                nickname: '흙손',
+                rating: 4,
+                content: '완성된 작품을 기다리는 과정도 좋았습니다.',
+                photos: [],
+                createdAt: '2026-05-08T12:00:00.000Z',
+            },
+        ];
+        const offset = Math.max(0, page - 1) * limit;
+        const reviews = allReviews.slice(offset, offset + limit);
+        const result: ProgramReviewListResult = {
+            totalCount: 24,
+            averageRating: 4.7,
+            reviews,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(24 / limit),
+                limit,
+            },
+        };
+        return ok(path, result, '리뷰 목록이 성공적으로 조회되었습니다.');
     }),
 
     // ─── 프로그램 수정 ────────────────────────────────────────────────
