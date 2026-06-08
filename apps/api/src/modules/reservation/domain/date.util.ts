@@ -47,6 +47,16 @@ export function formatKstDate(value: Date): string {
     return `${year}-${month}-${day}`;
 }
 
+const DAY_OF_WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const;
+
+export function kstDayOfWeek(date: string): (typeof DAY_OF_WEEK)[number] {
+    const parts = parseDateOnly(date);
+    if (!parts) throw new Error('Invalid date');
+
+    const kst = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+    return DAY_OF_WEEK[kst.getUTCDay()]!;
+}
+
 export function eachMonthDate(year: number, month: number): string[] {
     const days: string[] = [];
     const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
