@@ -67,15 +67,17 @@ function HeaderView({
                                 {title}
                             </span>
                         </div>
-                        <Button
-                            variant="ghost"
-                            layout="onlyIcon"
-                            size="lg"
-                            icon={<NotiIcon />}
-                            aria-label="알림"
-                            onClick={onNoti}
-                            className="hover:!bg-transparent hover:!text-foreground"
-                        />
+                        {rightAction ?? (
+                            <Button
+                                variant="ghost"
+                                layout="onlyIcon"
+                                size="lg"
+                                icon={<NotiIcon />}
+                                aria-label="알림"
+                                onClick={onNoti}
+                                className="hover:!bg-transparent hover:!text-foreground"
+                            />
+                        )}
                     </>
                 )}
 
