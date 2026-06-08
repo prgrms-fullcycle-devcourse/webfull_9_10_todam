@@ -8,7 +8,7 @@
 
 ## Status
 
-- [ ] API 구현
+- [x] API 구현
 - [ ] UI 구현
 - [ ] API 연동
 
@@ -74,7 +74,7 @@
 - ~~**D10 상태 변경과 사진 원자성**~~ **해소(Figma):** 사진 등록은 단계별 독립 액션이며 상태 변경 CTA와 원자 작업으로 묶지 않는다. 상태 변경 후 상세 재조회 및 완료 토스트를 노출한다.
 - ~~**D11 예상 완성일 보정**~~ **해소:** MVP에서는 자동 보정을 제외한다. Artwork 생성 시 `체험일 + Program.leadTimeDays`로 최초 계산한 값을 유지하며, 단계 정체에 따른 자동 변경과 파트너 수동 수정은 본 범위에서 제외한다. 단계별 표준 소요일 정책이 정의된 후 별도 worker 기능으로 재계획한다.
 - ~~**D12 일괄 공정 변경 API**~~ **해소:** 동일 공방·동일 현재 단계 작품만 최대 50개 선택하여 다음 단계로만 일괄 변경한다. 일괄 되돌리기는 금지한다. 모든 항목을 먼저 검증하고 하나라도 실패하면 전체 롤백하는 단일 트랜잭션으로 처리하며 작품별 `ArtworkLog`를 생성한다. 동시 상태 변경은 `fromStatus` 비교로 감지하여 `409 ARTWORK_STATUS_CHANGED`를 반환한다.
-- ~~**D13 배송사 enum/운송장 스캔**~~ **해소:** 서버는 배송사 enum `CJ_LOGISTICS | LOTTE | HANJIN | KOREA_POST | LOGEN | COUPANG_LOGISTICS | OTHER`를 사용한다. `OTHER` 선택 시 `carrierName` 필수. 운송장 번호는 문자열로 저장하며 FE가 공백/하이픈을 제거하고 서버가 숫자/길이를 검증한다. 바코드 스캔은 FE 입력 보조 기능으로만 제공하며 별도 API를 만들지 않고, 카메라 미지원/권한 거부 시 수동 입력을 제공한다.
+- ~~**D13 배송사 enum/운송장 스캔**~~ **해소:** 서버는 배송사 enum `CJ_LOGISTICS | LOTTE | HANJIN | KOREA_POST | LOGEN | COUPANG_LOGISTICS`를 사용한다. 발송 가능한 고정 택배사만 선택하며 임의 택배사 입력은 제공하지 않는다. 운송장 번호는 문자열로 저장하며 FE가 공백/하이픈을 제거하고 서버가 숫자/길이를 검증한다. 바코드 스캔은 FE 입력 보조 기능으로만 제공하며 별도 API를 만들지 않고, 카메라 미지원/권한 거부 시 수동 입력을 제공한다.
 
 ## API Contract (스냅샷)
 
@@ -190,7 +190,7 @@
   ```
 - 조건: 작품이 `CANCELED`가 아님, `artworkLogId`가 해당 작품의 현재 단계 로그, 해당 로그의 `PENDING + UPLOADED` 사진 합계 최대 5장, 각 5MB 이하, JPG/PNG/HEIC.
 - 처리: 각 파일을 동일한 `artworkLogId`에 연결한 `PENDING` 사진 row로 생성 + 10분 유효 S3 PUT URL 발급. 24시간 이상 PENDING은 worker가 정리.
-- res `200`: `{ "data": { "uploadUrls": [{ "photoId": "...", "filename": "...", "s3Key": "...", "presignedUrl": "...", "contentType": "image/jpeg" }] } }`
+- res `200`: `{ "data": { "photos": [{ "photoId": "...", "uploadUrl": "...", "imageUrl": "..." }] } }`
 - errors: `400 INVALID_FILE_SPEC`, `403 FORBIDDEN`, `409 ARTWORK_CANCELED`, `500 INTERNAL_SERVER_ERROR`.
 - Figma 계약 추가 필요:
   - 없음. confirm/삭제 endpoint는 아래 신규 계약으로 구현한다.
@@ -252,12 +252,12 @@
 ### `PATCH /partner/artworks/{artworkId}/delivery-info` — 파트너 작품 수령 정보 수정
 
 - 초기값: 예약 생성 시 저장된 `Reservation.deliveryMethod`와 기존 `Delivery` 정보.
-- req 필드: `deliveryMethod`, `recipientName?`, `recipientPhone?`, `postalCode?`, `address?`, `addressDetail?`, `carrier?`, `carrierName?`, `trackingNumber?`.
+- req 필드: `deliveryMethod`, `recipientName?`, `recipientPhone?`, `postalCode?`, `address?`, `addressDetail?`, `carrier?`, `trackingNumber?`.
 - 조건:
   - 작품 소속 공방 소유권 검증.
   - `Reservation.status`가 `SHIPPED | DELIVERED | PICKUP_READY | PICKUP_DONE`이면 변경 금지.
   - `deliveryMethod = DELIVERY`이면 수령인/연락처/우편번호/주소 필수.
-- `carrier`: `CJ_LOGISTICS | LOTTE | HANJIN | KOREA_POST | LOGEN | COUPANG_LOGISTICS | OTHER`; `OTHER`이면 `carrierName` 필수.
+- `carrier`: `CJ_LOGISTICS | LOTTE | HANJIN | KOREA_POST | LOGEN | COUPANG_LOGISTICS`.
 - `trackingNumber`: 문자열 저장. FE가 공백/하이픈 제거 후 전송하고 서버가 숫자/길이 검증.
 - `PICKUP` 선택 시 배송 주소/택배 정보 입력 영역을 숨긴다. 기존 Delivery 정보는 보존하지만 배송 처리에는 사용하지 않는다.
 - 처리: `Reservation.deliveryMethod` 갱신 + DELIVERY 선택 시 Delivery upsert.
@@ -305,6 +305,10 @@
 ## Out (단계별 완료물)
 
 - API: 파트너 작품 목록/카운트/상세/상태 변경/사진 presign·confirm·삭제/배송·픽업 처리.
+- BE 구현 완료(2026-06-08): shared 요청 계약, ArtworkModule, 소유권 검증, 상태/일괄 전이 로그, 사진 presign·confirm·삭제, 수령 정보 및 배송/픽업 처리, 상태 정책 테스트.
+- BE DDD 리팩터링 완료(2026-06-08): endpoint별 application use-case, domain `ArtworkRepository` 포트와 상태 정책, infrastructure `PrismaArtworkRepository`, presentation controller/DTO 경계로 분리.
+- 작품 사진 presign 응답 정리(2026-06-08): 공방/프로그램 이미지 등록과 동일하게 각 항목을 `식별자 + uploadUrl + imageUrl` 형태로 통일.
+- Shared 계약 정리(2026-06-08): 목록/카운트/상세/상태 변경/사진/배송 응답 Zod schema와 공용 상태 그룹·상세 상태·available action 타입을 `packages/shared`로 분리하고 API repository/Swagger DTO에 바인딩.
 - UI: 파트너 작품 관리 목록 및 상세 화면.
 - 연동: 현재 공방, 목록 필터/페이지네이션, 상세 mutation, 이미지 직접 업로드, 배송/픽업 액션.
 
@@ -346,7 +350,7 @@
 - 추가 운영 시안에서 배송 시작/픽업 준비·완료와 목록 일괄 공정 변경 흐름을 신규 범위로 반영했다. — 2026-06-08
 - 예상 완성일 자동 보정은 MVP에서 제외하고 최초 계산값을 유지한다. — 사용자 확정 2026-06-08
 - 일괄 공정 변경은 동일 공방·동일 현재 단계 최대 50개를 다음 단계로만 단일 트랜잭션 처리한다. — 사용자 확정 2026-06-08
-- 배송사는 고정 enum + OTHER/carrierName을 사용하고 바코드 스캔은 FE 입력 보조로 처리한다. — 사용자 확정 2026-06-08
+- 배송사는 운영 가능한 고정 enum만 사용하고 바코드 스캔은 FE 입력 보조로 처리한다. — 사용자 확정 2026-06-08
 - 파트너는 배송/픽업 처리 시작 전까지 작품의 수령 방식을 변경할 수 있으며, 파트너 전용 delivery-info API를 사용한다. — 사용자 확정 2026-06-08
 - 작품 목록 상태 그룹은 서버가 Artwork/Reservation 상태와 deliveryMethod를 조합해 WAITING/IN_PROGRESS/RECEIVING/RECEIVED로 계산하며 취소 건은 제외한다. — 사용자 확정 2026-06-08
 - 배송/픽업 action은 deliveryMethod와 Artwork/Reservation 상태 전이표로 검증하며, 파트너 수동 DELIVERED 처리를 허용한다. — 사용자 확정 2026-06-08
