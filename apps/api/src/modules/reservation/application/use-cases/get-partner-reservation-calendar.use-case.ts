@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
-import { eachMonthDate, formatKstDate, kstMonthRange } from '../../domain/date.util';
+import { eachMonthDate, formatKstDate, kstDayOfWeek, kstMonthRange } from '../../domain/date.util';
 import { PartnerReservationRepository } from '../../domain/repositories/partner-reservation.repository';
 import type {
     PartnerReservationCalendarQueryDto,
@@ -44,6 +44,7 @@ export class GetPartnerReservationCalendarUseCase {
         const restrictionDates = new Set(
             calendar.restrictions.map((r) => formatKstDate(r.startAt)),
         );
+        const operatingDays = new Set(calendar.operatingHours.map((hour) => hour.dayOfWeek));
 
         return {
             year: query.year,
@@ -51,10 +52,12 @@ export class GetPartnerReservationCalendarUseCase {
             days: eachMonthDate(query.year, query.month).map((date) => {
                 const stat = slotStats.get(date);
                 const reservationCount = counts.get(date) ?? 0;
+                const isOperatingDay = operatingDays.has(kstDayOfWeek(date));
                 return {
                     date,
                     hasReservation: reservationCount > 0,
-                    isUnavailable: !stat || stat.total === 0 || stat.unavailable === stat.total,
+                    isUnavailable:
+                        !isOperatingDay || Boolean(stat && stat.unavailable === stat.total),
                     hasRestriction: restrictionDates.has(date),
                     reservationCount,
                 };
