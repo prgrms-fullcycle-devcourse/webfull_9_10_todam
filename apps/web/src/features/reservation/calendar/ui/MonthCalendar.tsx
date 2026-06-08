@@ -17,9 +17,9 @@ const YEAR_RANGE = 5;
 // ─── state 계산 ─────────────────────────────────────────────────────────────
 
 function resolveState(day: CalendarDay, dateObj: Date): CalendarItemState {
+    if (day.hasRestriction) return 'partiallyBlocked';
+    if (day.isUnavailable) return 'holiday';
     if (isToday(dateObj)) return 'today';
-    if (day.isUnavailable && !day.hasReservation && !day.hasRestriction) return 'holiday';
-    if (day.isUnavailable || day.hasRestriction) return 'partiallyBlocked';
     return 'available';
 }
 
