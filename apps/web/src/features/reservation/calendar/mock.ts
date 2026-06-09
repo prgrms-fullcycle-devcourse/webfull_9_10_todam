@@ -236,6 +236,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
             {
                 id: 'res-uuid-001',
                 programTitle: '물레 체험 기초반',
+                durationMinutes: 120,
                 scheduledAt: '2026-06-01T10:00:00.000Z',
                 reserverName: '김지은',
                 participantCount: 2,
@@ -246,6 +247,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
             {
                 id: 'res-uuid-002',
                 programTitle: '핀치팟 체험 입문',
+                durationMinutes: 90,
                 scheduledAt: '2026-06-01T14:00:00.000Z',
                 reserverName: '박민준',
                 participantCount: 1,
@@ -256,6 +258,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
             {
                 id: 'res-uuid-003',
                 programTitle: '물레 체험 기초반',
+                durationMinutes: 120,
                 scheduledAt: '2026-06-01T16:00:00.000Z',
                 reserverName: '이수현',
                 participantCount: 3,
@@ -272,6 +275,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
             {
                 id: 'res-uuid-004',
                 programTitle: '물레 체험 기초반',
+                durationMinutes: 120,
                 scheduledAt: '2026-06-05T10:00:00.000Z',
                 reserverName: '최예진',
                 participantCount: 2,
@@ -282,6 +286,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
             {
                 id: 'res-uuid-005',
                 programTitle: '슬라브 핸드빌딩 심화',
+                durationMinutes: 150,
                 scheduledAt: '2026-06-05T13:00:00.000Z',
                 reserverName: '정하늘',
                 participantCount: 1,
@@ -298,6 +303,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
             {
                 id: 'res-uuid-006',
                 programTitle: '물레 체험 기초반',
+                durationMinutes: 120,
                 scheduledAt: '2026-06-08T10:00:00.000Z',
                 reserverName: '강동욱',
                 participantCount: 4,
@@ -308,6 +314,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
             {
                 id: 'res-uuid-007',
                 programTitle: '핀치팟 체험 입문',
+                durationMinutes: 90,
                 scheduledAt: '2026-06-08T13:00:00.000Z',
                 reserverName: '윤지혜',
                 participantCount: 2,
@@ -318,6 +325,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
             {
                 id: 'res-uuid-008',
                 programTitle: '슬라브 핸드빌딩 심화',
+                durationMinutes: 150,
                 scheduledAt: '2026-06-08T15:00:00.000Z',
                 reserverName: '임서준',
                 participantCount: 1,
@@ -328,6 +336,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
             {
                 id: 'res-uuid-009',
                 programTitle: '물레 체험 기초반',
+                durationMinutes: 120,
                 scheduledAt: '2026-06-08T17:00:00.000Z',
                 reserverName: '한소희',
                 participantCount: 2,
@@ -344,6 +353,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
             {
                 id: 'res-uuid-010',
                 programTitle: '물레 체험 기초반',
+                durationMinutes: 120,
                 scheduledAt: '2026-06-15T10:00:00.000Z',
                 reserverName: '조민서',
                 participantCount: 5,
@@ -360,6 +370,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
             {
                 id: 'res-uuid-011',
                 programTitle: '핀치팟 체험 입문',
+                durationMinutes: 90,
                 scheduledAt: '2026-06-25T11:00:00.000Z',
                 reserverName: '신은비',
                 participantCount: 2,
@@ -370,6 +381,7 @@ const mockReservationsByDate: Record<string, ReservationListData> = {
             {
                 id: 'res-uuid-012',
                 programTitle: '슬라브 핸드빌딩 심화',
+                durationMinutes: 150,
                 scheduledAt: '2026-06-25T14:00:00.000Z',
                 reserverName: '오준혁',
                 participantCount: 1,
