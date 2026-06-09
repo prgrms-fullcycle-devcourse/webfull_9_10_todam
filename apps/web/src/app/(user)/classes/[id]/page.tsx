@@ -37,6 +37,7 @@ function ClassDetailContent() {
     useHeaderOverride({ title: storeName, hideRightAction: true });
 
     const heroImage = program?.images[0]?.imageUrl ?? program?.images[0]?.thumbnailUrl;
+    const reviewsHref = `/classes/${programId}/reviews?store=${encodeURIComponent(storeSlug)}&storeName=${encodeURIComponent(storeName)}`;
     const reserveHref = program
         ? `/classes/${program.id}/reserve?title=${encodeURIComponent(program.title)}&price=${program.price}&deliverable=${program.deliverable}`
         : '#';
@@ -116,7 +117,7 @@ function ClassDetailContent() {
                     </h1>
                     <button
                         type="button"
-                        onClick={() => router.push(`/classes/${program.id}/reviews`)}
+                        onClick={() => router.push(reviewsHref)}
                         className="mt-3 text-sm font-semibold leading-[18px] text-foreground"
                     >
                         클래스 리뷰 {reviewCount.toLocaleString('ko-KR')}개

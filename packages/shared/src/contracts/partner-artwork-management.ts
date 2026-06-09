@@ -81,30 +81,34 @@ const reservationStatusValueSchema = z.enum([
 const reservationDeliveryMethodValueSchema = z.enum(['DELIVERY', 'PICKUP']);
 
 export const listPartnerArtworksQuerySchema = z.object({
+    group: artworkStatusGroupSchema.optional(),
+    // 단계 칩 필터. count-by-step 의 steps 키(detail 기반)와 1:1. group 보다 세밀.
+    detailStatus: artworkDetailStatusSchema.optional(),
     status: z.nativeEnum(ArtworkStatus).optional(),
     cursor: z.string().optional(),
     limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 export type ListPartnerArtworksQuery = z.infer<typeof listPartnerArtworksQuerySchema>;
 
+export const partnerArtworkListItemSchema = z.object({
+    id: z.string(),
+    reserverName: z.string(),
+    status: artworkStatusValueSchema,
+    estimatedCompletedAt: z.string().nullable(),
+    thumbnailUrl: z.string().nullable(),
+    updatedAt: z.string(),
+    scheduledAt: z.string(),
+    programTitle: z.string(),
+    participantCount: z.number().int(),
+    deliveryMethod: reservationDeliveryMethodValueSchema,
+    reservationStatus: reservationStatusValueSchema,
+    statusGroup: artworkStatusGroupSchema.nullable(),
+    detailStatus: artworkDetailStatusSchema.nullable(),
+});
+export type PartnerArtworkListItem = z.infer<typeof partnerArtworkListItemSchema>;
+
 export const listPartnerArtworksResultSchema = z.object({
-    artworks: z.array(
-        z.object({
-            id: z.string(),
-            reserverName: z.string(),
-            status: artworkStatusValueSchema,
-            estimatedCompletedAt: z.string().nullable(),
-            thumbnailUrl: z.string().nullable(),
-            updatedAt: z.string(),
-            scheduledAt: z.string(),
-            programTitle: z.string(),
-            participantCount: z.number().int(),
-            deliveryMethod: reservationDeliveryMethodValueSchema,
-            reservationStatus: reservationStatusValueSchema,
-            statusGroup: artworkStatusGroupSchema.nullable(),
-            detailStatus: artworkDetailStatusSchema.nullable(),
-        }),
-    ),
+    artworks: z.array(partnerArtworkListItemSchema),
     nextCursor: z.string().nullable(),
     hasMore: z.boolean(),
 });
@@ -119,7 +123,8 @@ export type CountPartnerArtworksQuery = z.infer<typeof countPartnerArtworksQuery
 export const countPartnerArtworksResultSchema = z.object({
     group: artworkStatusGroupSchema.nullable(),
     total: z.number().int().nonnegative(),
-    steps: z.record(z.string(), z.number().int().nonnegative()),
+    // 키 = ArtworkDetailStatus(enum). 응답엔 존재하는 단계만 포함되므로 partial.
+    steps: z.partialRecord(artworkDetailStatusSchema, z.number().int().nonnegative()),
 });
 export type CountPartnerArtworksResult = z.infer<typeof countPartnerArtworksResultSchema>;
 
@@ -253,6 +258,10 @@ export const getPartnerArtworkDetailResultSchema = z.object({
             }),
         ),
         deliveryMethod: reservationDeliveryMethodValueSchema,
+        reservationStatus: reservationStatusValueSchema,
+        pickupReadyAt: z.string().nullable(),
+        pickupDoneAt: z.string().nullable(),
+        deliveredAt: z.string().nullable(),
         delivery: artworkDeliverySchema.nullable(),
         timeline: z.array(
             z.object({

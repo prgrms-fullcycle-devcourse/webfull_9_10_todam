@@ -42,6 +42,7 @@ export type CalendarData = z.infer<typeof calendarDataSchema>;
 export const reservationItemSchema = z.object({
     id: z.string(),
     programTitle: z.string(),
+    durationMinutes: z.number().int().positive(),
     scheduledAt: z.string(), // ISO 8601
     reserverName: z.string(),
     participantCount: z.number(),
@@ -57,6 +58,17 @@ export const reservationListDataSchema = z.object({
     hasMore: z.boolean(),
 });
 export type ReservationListData = z.infer<typeof reservationListDataSchema>;
+
+export const pendingReservationDateSchema = z.object({
+    date: z.string(), // YYYY-MM-DD
+    reservationCount: z.number().int().nonnegative(),
+});
+export type PendingReservationDate = z.infer<typeof pendingReservationDateSchema>;
+
+export const pendingReservationSummarySchema = z.object({
+    dates: z.array(pendingReservationDateSchema),
+});
+export type PendingReservationSummary = z.infer<typeof pendingReservationSummarySchema>;
 
 export const partnerReservationStatusResponseSchema = z.object({
     reservation: z

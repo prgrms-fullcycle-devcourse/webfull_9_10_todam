@@ -24,7 +24,7 @@ import {
 } from '@/entities/store';
 import { useReviewStore } from '@/entities/store';
 import { PartnerClassListItem } from '@/features/program/list';
-import { StoreEditSheet, StoreReviewResult } from '@/features/store/detail';
+import { StoreEditSheet, StoreReviewPreview, StoreReviewResult } from '@/features/store/detail';
 import { ApiError } from '@/shared/api';
 import { useCurrentStoreId } from '@/entities/store';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
@@ -55,12 +55,13 @@ function StoreInfoActions({
     slug,
     storeName,
 }: {
-    phone: string;
+    phone: string | null;
     slug: string;
     storeName: string;
 }) {
     const { push } = useToast();
-    const telHref = `tel:${phone.replace(/[^0-9+]/g, '')}`;
+    // phone 미등록(null) 공방은 전화 링크 비표시.
+    const telHref = phone ? `tel:${phone.replace(/[^0-9+]/g, '')}` : null;
 
     async function handleShare() {
         const url = `${window.location.origin}/stores/${slug}`;
@@ -82,14 +83,18 @@ function StoreInfoActions({
 
     return (
         <>
-            <span className="text-foreground-tertiary">・</span>
-            <a
-                href={telHref}
-                className="inline-flex items-center gap-1 text-xs font-medium text-foreground-tertiary hover:text-foreground"
-            >
-                <PhoneIcon size={16} />
-                <span>문의하기</span>
-            </a>
+            {telHref && (
+                <>
+                    <span className="text-foreground-tertiary">・</span>
+                    <a
+                        href={telHref}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-foreground-tertiary hover:text-foreground"
+                    >
+                        <PhoneIcon size={16} />
+                        <span>문의하기</span>
+                    </a>
+                </>
+            )}
             <span className="text-foreground-tertiary">・</span>
             <button
                 type="button"
@@ -172,9 +177,9 @@ export default function PartnerStorePage() {
                 storeName={store.name}
                 status={store.status}
                 rejectedReason={store.rejectedReason}
-                address={store.address}
+                address={store.address ?? undefined}
                 businessNumber={store.businessDocument?.businessNumber}
-                email={store.businessDocument?.email}
+                email={store.businessDocument?.email ?? undefined}
                 createdAt={store.createdAt}
                 onEditInfo={() => router.push(`/partner/studio/${storeId}/business`)}
                 onBack={goHome}
@@ -235,6 +240,8 @@ export default function PartnerStorePage() {
                         />
                     </div>
 
+                    <StoreReviewPreview slug={store.slug} />
+
                     <Divider />
 
                     <SectionTitle
@@ -290,9 +297,9 @@ export default function PartnerStorePage() {
                     <SectionTitle title="위치" size="lg" />
                     <section className="py-2">
                         <StoreLocation
-                            address={store.address}
-                            latitude={store.latitude}
-                            longitude={store.longitude}
+                            address={store.address ?? ''}
+                            latitude={store.latitude ?? undefined}
+                            longitude={store.longitude ?? undefined}
                             name={store.name}
                         />
                     </section>

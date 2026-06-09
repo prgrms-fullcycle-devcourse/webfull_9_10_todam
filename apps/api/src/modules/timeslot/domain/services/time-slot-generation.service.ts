@@ -6,8 +6,8 @@ import {
     eachDateInclusive,
     kstDayOfWeek,
     kstWallClockToInstant,
-    timeColumnToMinutes,
-} from '../time.util';
+} from '../../../../common/date/kst-date.util';
+import { timeColumnToMinutes } from '../time.util';
 
 /** 요일별 영업시간 입력(Prisma 타입 비의존 — db.Time 은 Date 로 표현). */
 export interface OperatingHourInput {

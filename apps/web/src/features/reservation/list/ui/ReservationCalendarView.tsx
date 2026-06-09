@@ -10,6 +10,7 @@ import {
     usePartnerReservationsByDate,
 } from '@/entities/reservation';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { EmptyBox } from '@/shared/ui';
 
 import { MonthCalendar } from './MonthCalendar';
 import { ReservationManagementCardItem } from './ReservationManagementCardItem';
@@ -104,9 +105,11 @@ export function ReservationCalendarView({ storeId }: ReservationCalendarViewProp
                         ))}
                     </ul>
                 ) : (
-                    <div className="flex items-center justify-center py-12 text-sm text-foreground-tertiary">
-                        예약 내역이 없습니다.
-                    </div>
+                    <EmptyBox
+                        description="예약 내역이 없습니다."
+                        actionLabel="예약 등록하기"
+                        action={() => router.push(`/partner/reservations/new?date=${selectedDate}`)}
+                    />
                 )}
 
                 {!isSelectedHoliday && (

@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 export type FavoriteStoreCardProps = {
     storeId: string;
     name: string;
-    category: string;
+    category?: string;
     imageUrl: string;
     address: string;
     // 찜 버튼은 features 컴포넌트(FavoriteToggleButton)를 슬롯으로 주입(행동0=표현).

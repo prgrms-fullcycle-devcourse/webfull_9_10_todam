@@ -17,25 +17,25 @@
 -->
 
 - [ ] API 구현
-- [ ] UI 구현
+- [x] UI 구현
 - [ ] API 연동
 
 ## Context
 
 - 요구사항명세서(고정): docs/requirements.md — `# 리뷰 review` > `5. 리뷰 조회` 섹션
 - 기능명세: 클래스 리뷰 전체보기 (Notion 기능명세 DB `b242ee66b06c8349805601ce4a05247a`)
-  - 실행주체: guest, user
-  - 도메인: review
-  - 트리거: 클래스 상세 화면 진입 / 리뷰 더보기 버튼 클릭
-  - 연관화면: 리뷰 리스트
+    - 실행주체: guest, user
+    - 도메인: review
+    - 트리거: 클래스 상세 화면 진입 / 리뷰 더보기 버튼 클릭
+    - 연관화면: 리뷰 리스트
 - API명세: (Notion API명세 DB `5852ee66b06c838bb8ec01c6bf4f2e25`)
-  - `GET /stores/{slug}/programs/{programId}/reviews` — 프로그램 리뷰 목록
+    - `GET /stores/{slug}/programs/{programId}/reviews` — 프로그램 리뷰 목록
 - Relevant design docs: DESIGN.md 확인 필요 (리뷰 카드 variant enum, 별점 컴포넌트 size별 토큰, 썸네일 그리드 규격)
 - Open decisions:
-  - [ ] 이미지 확대보기(lightbox)는 별도 컴포넌트로 구현하는가, 기존 공용 컴포넌트를 재사용하는가?
-  - [ ] `sort=rating_high` UI 트리거는 탭인가 드롭다운인가? DESIGN.md에 정의된 정렬 UI 패턴 확인 필요.
-  - [ ] 무한스크롤 vs 페이지네이션 버튼 — UX 방식 결정 필요 (기능명세에 미명시).
-  - [ ] `userId` 필드가 응답에 포함되나, 닉네임만 표시하는지 사람 확인 필요 (개인정보 노출 여부).
+    - [ ] 이미지 확대보기(lightbox)는 별도 컴포넌트로 구현하는가, 기존 공용 컴포넌트를 재사용하는가?
+    - [ ] `sort=rating_high` UI 트리거는 탭인가 드롭다운인가? DESIGN.md에 정의된 정렬 UI 패턴 확인 필요.
+    - [ ] 무한스크롤 vs 페이지네이션 버튼 — UX 방식 결정 필요 (기능명세에 미명시).
+    - [ ] `userId` 필드가 응답에 포함되나, 닉네임만 표시하는지 사람 확인 필요 (개인정보 노출 여부).
 
 ## API Contract (스냅샷)
 
@@ -45,22 +45,24 @@
 ### 데이터 모델
 
 #### ReviewItem
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| `id` | string (UUID) | 리뷰 식별자 |
-| `userId` | string (UUID) | 작성자 식별자 |
-| `nickname` | string | 작성자 닉네임 |
-| `rating` | number (1~5) | 별점 |
-| `content` | string \| null | 리뷰 본문 (최대 500자) |
-| `photos` | `{ thumbnailUrl: string }[]` | 썸네일 이미지 목록 (최대 3장, 240x240) |
-| `createdAt` | string (ISO 8601) | 작성일시 |
+
+| 필드        | 타입                         | 설명                                   |
+| ----------- | ---------------------------- | -------------------------------------- |
+| `id`        | string (UUID)                | 리뷰 식별자                            |
+| `userId`    | string (UUID)                | 작성자 식별자                          |
+| `nickname`  | string                       | 작성자 닉네임                          |
+| `rating`    | number (1~5)                 | 별점                                   |
+| `content`   | string \| null               | 리뷰 본문 (최대 500자)                 |
+| `photos`    | `{ thumbnailUrl: string }[]` | 썸네일 이미지 목록 (최대 3장, 240x240) |
+| `createdAt` | string (ISO 8601)            | 작성일시                               |
 
 #### Pagination
-| 필드 | 타입 | 설명 |
-|------|------|------|
+
+| 필드          | 타입   | 설명             |
+| ------------- | ------ | ---------------- |
 | `currentPage` | number | 현재 페이지 번호 |
-| `totalPages` | number | 전체 페이지 수 |
-| `limit` | number | 페이지당 항목 수 |
+| `totalPages`  | number | 전체 페이지 수   |
+| `limit`       | number | 페이지당 항목 수 |
 
 ---
 
@@ -84,61 +86,64 @@
 | `sort` | `latest` \| `rating_high` | `latest` | 정렬 기준 |
 
 **Response 200 OK**
+
 ```json
 {
-  "statusCode": 200,
-  "timestamp": "2026-05-25T19:20:00.000Z",
-  "path": "/stores/todam-studio/programs/prog-uuid-001/reviews",
-  "message": "리뷰 목록이 성공적으로 조회되었습니다.",
-  "data": {
-    "totalCount": 24,
-    "averageRating": 4.7,
-    "reviews": [
-      {
-        "id": "review-uuid-001",
-        "userId": "user-uuid-001",
-        "nickname": "토담이",
-        "rating": 5,
-        "content": "정말 즐거운 체험이었습니다. 작품도 예쁘게 완성되었어요!",
-        "photos": [
-          {
-            "thumbnailUrl": "https://cdn.todam.app/reviews/review-uuid-001/01_thumb.jpg"
-          }
+    "statusCode": 200,
+    "timestamp": "2026-05-25T19:20:00.000Z",
+    "path": "/stores/todam-studio/programs/prog-uuid-001/reviews",
+    "message": "리뷰 목록이 성공적으로 조회되었습니다.",
+    "data": {
+        "totalCount": 24,
+        "averageRating": 4.7,
+        "reviews": [
+            {
+                "id": "review-uuid-001",
+                "userId": "user-uuid-001",
+                "nickname": "토담이",
+                "rating": 5,
+                "content": "정말 즐거운 체험이었습니다. 작품도 예쁘게 완성되었어요!",
+                "photos": [
+                    {
+                        "thumbnailUrl": "https://cdn.todam.app/reviews/review-uuid-001/01_thumb.jpg"
+                    }
+                ],
+                "createdAt": "2026-05-10T12:00:00.000Z"
+            }
         ],
-        "createdAt": "2026-05-10T12:00:00.000Z"
-      }
-    ],
-    "pagination": {
-      "currentPage": 1,
-      "totalPages": 3,
-      "limit": 10
-    }
-  },
-  "error": null
+        "pagination": {
+            "currentPage": 1,
+            "totalPages": 3,
+            "limit": 10
+        }
+    },
+    "error": null
 }
 ```
 
 **Response 404 Not Found**
+
 ```json
 {
-  "statusCode": 404,
-  "timestamp": "2026-05-25T19:20:03.000Z",
-  "path": "/stores/todam-studio/programs/prog-uuid-001/reviews",
-  "message": "프로그램을 찾을 수 없습니다.",
-  "data": null,
-  "error": "PROGRAM_NOT_FOUND"
+    "statusCode": 404,
+    "timestamp": "2026-05-25T19:20:03.000Z",
+    "path": "/stores/todam-studio/programs/prog-uuid-001/reviews",
+    "message": "프로그램을 찾을 수 없습니다.",
+    "data": null,
+    "error": "PROGRAM_NOT_FOUND"
 }
 ```
 
 **Response 500 Internal Server Error**
+
 ```json
 {
-  "statusCode": 500,
-  "timestamp": "2026-05-25T19:20:08.000Z",
-  "path": "/stores/todam-studio/programs/prog-uuid-001/reviews",
-  "message": "리뷰 목록 조회 중 서버 오류가 발생했습니다.",
-  "data": null,
-  "error": "INTERNAL_SERVER_ERROR"
+    "statusCode": 500,
+    "timestamp": "2026-05-25T19:20:08.000Z",
+    "path": "/stores/todam-studio/programs/prog-uuid-001/reviews",
+    "message": "리뷰 목록 조회 중 서버 오류가 발생했습니다.",
+    "data": null,
+    "error": "INTERNAL_SERVER_ERROR"
 }
 ```
 
@@ -149,32 +154,32 @@
 ## Scope
 
 - In:
-  - `GET /stores/{slug}/programs/{programId}/reviews` BE 엔드포인트 구현
-  - 리뷰 목록 UI: 평점 평균·총 건수 헤더, 리뷰 카드(닉네임, 별점, 본문, 이미지 썸네일, 작성일)
-  - 정렬 전환 (최신순 / 별점 높은 순)
-  - 페이지네이션 (방식은 Open decisions 해결 후 확정)
-  - 이미지 썸네일 확대보기
-  - 빈 상태(empty state) 화면
-  - MSW mock → 실 API 연동 전환
-  - UI: DESIGN.md 준수 (별점 컴포넌트 size·토큰, 리뷰 카드 variant enum, 썸네일 그리드 규격)
+    - `GET /stores/{slug}/programs/{programId}/reviews` BE 엔드포인트 구현
+    - 리뷰 목록 UI: 평점 평균·총 건수 헤더, 리뷰 카드(닉네임, 별점, 본문, 이미지 썸네일, 작성일)
+    - 정렬 전환 (최신순 / 별점 높은 순)
+    - 페이지네이션 (방식은 Open decisions 해결 후 확정)
+    - 이미지 썸네일 확대보기
+    - 빈 상태(empty state) 화면
+    - MSW mock → 실 API 연동 전환
+    - UI: DESIGN.md 준수 (별점 컴포넌트 size·토큰, 리뷰 카드 variant enum, 썸네일 그리드 규격)
 
 - Out:
-  - 공방 전체 리뷰 목록 (`/stores/{slug}/reviews`) — 별도 기능으로 처리
-  - 리뷰 작성·수정·삭제
-  - 파트너 답글 기능 (MVP 이후)
-  - 리뷰 신고 기능 (MVP 이후)
-  - 이미지 원본 signed URL 조회 (썸네일만 표시; 확대보기는 thumbnailUrl 사용 또는 별도 상세 API 확인 필요)
+    - 공방 전체 리뷰 목록 (`/stores/{slug}/reviews`) — 별도 기능으로 처리
+    - 리뷰 작성·수정·삭제
+    - 파트너 답글 기능 (MVP 이후)
+    - 리뷰 신고 기능 (MVP 이후)
+    - 이미지 원본 signed URL 조회 (썸네일만 표시; 확대보기는 thumbnailUrl 사용 또는 별도 상세 API 확인 필요)
 
 ## Plan
 
 ### BE
 
 1. `ReviewModule` 내 `GET /stores/:slug/programs/:programId/reviews` 라우트 추가
-   - `slug` + `programId` 유효성 검증, 공방 `PUBLISHED` 상태 확인
-   - 삭제·비공개 리뷰 필터링
-   - `sort` 쿼리(`latest` → `createdAt DESC` / `rating_high` → `rating DESC, createdAt DESC`) 처리
-   - 페이지네이션 (`page`, `limit`)
-   - `totalCount`, `averageRating`, `reviews[]`, `pagination` 조합 응답
+    - `slug` + `programId` 유효성 검증, 공방 `PUBLISHED` 상태 확인
+    - 삭제·비공개 리뷰 필터링
+    - `sort` 쿼리(`latest` → `createdAt DESC` / `rating_high` → `rating DESC, createdAt DESC`) 처리
+    - 페이지네이션 (`page`, `limit`)
+    - `totalCount`, `averageRating`, `reviews[]`, `pagination` 조합 응답
 2. DTO 정의: `GetProgramReviewsQueryDto`, `ReviewItemDto`, `ProgramReviewsResponseDto`
 3. 단위 테스트: service 레이어 (정렬·페이지네이션·필터 검증)
 4. E2E 테스트: 200 / 404 시나리오
@@ -184,19 +189,19 @@
 5. DESIGN.md에서 리뷰 카드 variant enum, 별점 컴포넌트 토큰, 썸네일 그리드 규격 확인 (Open decisions 해결 선행)
 6. MSW handler 추가: `GET /stores/:slug/programs/:programId/reviews`
 7. 리뷰 목록 페이지/컴포넌트 구현
-   - 평점 평균·총 건수 헤더
-   - 정렬 전환 UI
-   - `ReviewCard` 컴포넌트 (닉네임, 별점, 본문, 썸네일 그리드, 작성일)
-   - 이미지 확대보기 (lightbox)
-   - 빈 상태 컴포넌트
-   - 페이지네이션 UI
+    - 평점 평균·총 건수 헤더
+    - 정렬 전환 UI
+    - `ReviewCard` 컴포넌트 (닉네임, 별점, 본문, 썸네일 그리드, 작성일)
+    - 이미지 확대보기 (lightbox)
+    - 빈 상태 컴포넌트
+    - 페이지네이션 UI
 8. 실 API 연동 전환 (MSW mock 제거)
 9. UI 검증: DESIGN.md 토큰 적용 확인, 빈 상태·네트워크 오류 시나리오 수동 확인
 
 ## Out (단계별 완료물)
 
 - API: `GET /stores/{slug}/programs/{programId}/reviews` 엔드포인트, DTO, service 로직
-- UI: 리뷰 목록 화면, `ReviewCard` 컴포넌트, 빈 상태 컴포넌트, 이미지 확대보기
+- UI: `/classes/[id]/reviews` 화면 구현 완료. `ClassReviewsClient`에서 헤더(`클래스 리뷰`), 평균 별점·총 리뷰 수, 정렬 토글(`latest`/`rating_high`), 리뷰 카드(닉네임·별점·본문·썸네일·작성일), 페이지네이션, 빈 상태, 이미지 확대 모달을 제공. 클래스 상세의 리뷰 진입 링크는 `store`/`storeName` 쿼리를 보존한다.
 - 연동: MSW handler → 실 API 전환, contract 스키마 기반 타입 바인딩 확인
 
 ## Risks
@@ -208,18 +213,18 @@
 ## Validation
 
 - Tests:
-  - BE: `GET /stores/{slug}/programs/{programId}/reviews` 200/404 E2E
-  - BE: 정렬 파라미터별 순서 검증 단위 테스트
-  - BE: 삭제된 리뷰 필터링 단위 테스트
-  - FE: `ReviewCard` 렌더링 단위 테스트 (별점·본문·이미지 없는 케이스 포함)
+    - BE: `GET /stores/{slug}/programs/{programId}/reviews` 200/404 E2E
+    - BE: 정렬 파라미터별 순서 검증 단위 테스트
+    - BE: 삭제된 리뷰 필터링 단위 테스트
+    - FE: `ReviewCard` 렌더링 단위 테스트 (별점·본문·이미지 없는 케이스 포함)
 - Manual checks:
-  - 리뷰 0건 빈 상태 화면 확인
-  - 정렬 전환 후 순서 변경 확인
-  - 이미지 썸네일 확대보기 동작 확인
-  - 네트워크 오류 시 에러 처리 확인
+    - 리뷰 0건 빈 상태 화면 확인
+    - 정렬 전환 후 순서 변경 확인
+    - 이미지 썸네일 확대보기 동작 확인
+    - 네트워크 오류 시 에러 처리 확인
 - Observability:
-  - 404 응답 로그 (잘못된 slug·programId)
-  - 응답 시간 모니터링 (averageRating 집계 쿼리 성능)
+    - 404 응답 로그 (잘못된 slug·programId)
+    - 응답 시간 모니터링 (averageRating 집계 쿼리 성능)
 
 ## Decision Log
 
@@ -230,5 +235,5 @@
 
 - Status: planning
 - Follow-up:
-  - Open decisions 4건 해결 후 FE 구현 착수
-  - 공방 전체 리뷰 목록(`/stores/{slug}/reviews`) 기능 별도 plan 필요
+    - Open decisions 4건 해결 후 FE 구현 착수
+    - 공방 전체 리뷰 목록(`/stores/{slug}/reviews`) 기능 별도 plan 필요

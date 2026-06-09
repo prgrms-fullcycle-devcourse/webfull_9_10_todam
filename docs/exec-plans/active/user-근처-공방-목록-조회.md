@@ -16,8 +16,8 @@
 -->
 
 - [x] API 구현
-- [ ] UI 구현
-- [ ] API 연동
+- [x] UI 구현
+- [x] API 연동
 
 ## Context
 
@@ -32,22 +32,11 @@
 - API명세: `GET /stores?lat=&lng=&keyword=` ("공방 목록 탐색 (위치/키워드)") — API명세 DB select 완료
 - Relevant design docs: DESIGN.md (공방 카드 컴포넌트). UI: DESIGN.md 준수.
 - Source of truth: **UI 화면(검수 완료)**. 아래 결정은 메인 화면 "근처 공방" 카드 디자인을 기준으로 확정함.
-- Open decisions:
-  1. **(Contract gap) — 결정됨(2026-06-02): (a) `/stores` 응답에 카드 필드 추가.** UI 카드가 렌더하는 항목을 응답 `data.stores[]`에 추가한다. 메인 목록 1회 호출로 카드 전체 렌더.
-     - `thumbnailUrl: string | null` — 대표 이미지
-     - `rating: number | null` — 별점. **리뷰 0건이면 `null`** (FE는 미표시)
-     - `reviewCount: number` — 리뷰 수. 없으면 `0`
-     - `region: string` — 행정동명(예: `성수동`). **카카오 `coord2regioncode`를 공방 등록/주소수정 시점에 1회 호출해 컬럼에 저장**, 목록 조회는 저장값만 반환(조회당 외부 API 호출 0). **Store에 `region` 컬럼 신규 추가 필요 + 기존 데이터 백필.** 사용자 현재위치 라벨은 FE가 본인 좌표로 카카오 1회 호출.
-     - `distance: number` — 사용자 좌표 기준 거리, **미터(정수)**. FE가 km로 포맷.
-     - `representativeClass: { name: string, price: number, hasMore: boolean } | null` — **최저가 클래스**(노출 가능 Program 중 `price` 최소, 동가는 `sortOrder`→`id` tie-break). `hasMore`=노출 클래스 2개 이상이면 `true` → FE가 가격 뒤 **"~"** 표시(예: `10,000~`). 1개면 `false`(`10,000원`). 노출 클래스 0개면 `null`.
-     - `isOperating: boolean` — 현재 공방 운영시간 내 여부. `false` 면 카드 썸네일에 **"준비 중"** 뱃지. **`StoreOperatingHour` 테이블 존재 확인됨** → 요일·`openTime`/`closeTime`(+`breakStart`/`breakEnd`)과 현재시각 비교로 계산.
-  2. **(거리/반경) — 결정됨(2026-06-02): 반경 제한 없음, distance 응답 포함.** `radius` 파라미터를 두지 않고 거리순 정렬 + 무한스크롤로 전체를 페이징한다. `distance`(미터)는 응답에 포함(#1).
-  3. **(페이지네이션) — 결정됨(2026-06-02): 커서 기반 무한스크롤.** 메인 목록은 **cursor 기반** 무한스크롤로 페이징한다(offset `page` 아님). `GET /stores`에 `cursor`/`limit` 쿼리 + 응답 `pageInfo{nextCursor, hasNext}` 추가. 커서는 정렬키(거리, `id`)를 인코딩(opaque)하며, **클라이언트는 후속 페이지 요청 시 최초의 `lat`/`lng`를 동일하게 유지**해야 한다(거리 정렬 기준 고정). `total`은 제공하지 않음(커서 방식). → **BE는 API명세 갱신 후 구현.**
-  4. **(위치 권한 거부 폴백) — 결정됨(2026-06-02): 기본 위치 = 성수동.** 권한 거부/획득 실패 시 FE가 성수동 기준 좌표(`lat=37.5446`, `lng=127.0560`)를 채워서 `GET /stores`를 호출한다(BE는 lat/lng를 항상 좌표로만 처리, 기본값 로직은 FE 보유). 향후 기준점 변경 가능성 대비 상수로 분리.
+- Open decisions: 모두 확정 — 상세는 아래 Decision Log 참조. Notion API명세 원본 2026-06-09 재동기화로 카드 필드·커서 페이지네이션·반경 제한 없음 전부 공식 반영 확인.
 
 ## API Contract (스냅샷)
 
-<!-- API명세 DB(GET /stores?lat=&lng=&keyword=)를 그대로 고정. Notion 원본이 바뀌면 재plan. -->
+<!-- API명세 DB(GET /stores?lat=&lng=&keyword=) 2026-06-09 재동기화. Notion 원본이 바뀌면 재plan. -->
 
 ### 데이터모델 — Store (응답 항목)
 
@@ -63,42 +52,39 @@
 | `status` | string | 항상 `PUBLISHED`만 반환 |
 | `convenienceInfo` | object | `{ parking: boolean, pet: boolean, wifi: boolean }` |
 | `autoConfirm` | boolean | 자동 예약 확정 여부 |
-| `region` | object | `{ sido, sigungu, dong }` (예: `{"서울","성동구","성수동"}`). 카카오 coord2regioncode 시·구·동을 **구조화 저장**(Store 신규 컬럼). 근처 카드=`dong`, 검색 카드/자동완성=`"{sido} {sigungu} {dong}"`. (`user-stores-keyword` 동기화) |
-| `thumbnailUrl` | string \| null | 카드 대표 이미지 (`StoreImage.thumbnailUrl`, `isThumbnail`) |
-| `rating` | number \| null | 별점. `Review.rating` 평균(`isVisible=true`). 리뷰 0건이면 `null` |
+| `region` | object | `{ sido, sigungu, dong }` (예: `{"서울","성동구","성수동"}`). 카카오 coord2regioncode를 공방 등록·주소수정 시 1회 호출해 Store 컬럼에 저장 — 조회 시 외부 호출 없음. 근처 카드=`dong`, 검색 카드=전체 문자열. |
+| `thumbnailUrl` | string \| null | 공방 대표 이미지(StoreImage, isThumbnail). 없으면 `null` |
+| `rating` | number \| null | `Review.rating` 평균(`isVisible=true`). 리뷰 0건이면 `null` |
 | `reviewCount` | number | 리뷰 수(`isVisible=true`). 없으면 `0` |
 | `distance` | number | 사용자 좌표 기준 거리, **미터(정수)**. `Store.latitude/longitude` 기준. FE가 km 포맷 |
-| `representativeClass` | object \| null | `{ name: string, price: number(KRW), hasMore: boolean }`. **최저가 Program**, `hasMore`=노출 클래스 2개↑ → FE "~" 표시 |
-| `matchedClass` | object \| null | `{ name, price }`. `keyword`가 해당 공방의 ACTIVE 프로그램명에 매칭될 때만 non-null(다건이면 최저가). FE는 있으면 이걸, 없으면 `representativeClass` 렌더. (검색 통합 — `user-stores-keyword`) |
-| `isOperating` | boolean | 현재 운영시간 내 여부(`StoreOperatingHour` 기준). `false`→"준비 중" 뱃지 |
+| `representativeClass` | object \| null | `{ name: string, price: number(KRW), hasMore: boolean }`. 노출 가능 Program 중 **최저가** 1개. `hasMore`=노출 클래스 2개↑ → FE "~" 표시. 0개면 `null` |
+| `matchedClass` | object \| null | `{ name, price }`. `keyword`가 해당 공방의 ACTIVE Program명에 매칭될 때만 non-null(다건이면 최저가). FE는 있으면 이걸, 없으면 `representativeClass` 렌더 |
+| `isOperating` | boolean | 현재 운영시간 내 여부(`StoreOperatingHour` 요일·openTime·closeTime·break 기준, KST). `false` → 카드 "준비 중" 뱃지 |
 | `publishedAt` | string (ISO) | 공개 시각 |
 | `createdAt` | string (ISO) | 생성 시각 |
-
-> UI(검수 완료) 카드 기준으로 `thumbnailUrl`/`rating`/`reviewCount`/`region`/`distance`/`representativeClass`/`isOperating` 를 응답에 포함하기로 확정(Open decisions #1). **API명세 DB 원본에는 아직 없으므로 BE 구현 전 API명세 갱신 필요.**
 
 ### 엔드포인트
 
 #### `GET /stores?lat=&lng=&keyword=` — 공방 목록 탐색 (위치/키워드)
 
-- 인증: 불필요 (Guest·User 공통 공개 조회)
-- Headers: `Accept: application/json`
-- Query Parameters (전부 선택):
-  - `lat`: 검색 중심 위도 (예: `37.5665`) — 권한 거부 시 FE가 성수동 기본값 `37.5446` 전송 (Open decisions #4)
-  - `lng`: 검색 중심 경도 (예: `126.9780`) — 권한 거부 시 FE가 성수동 기본값 `127.0560` 전송 (Open decisions #4)
-  - `keyword`: 공방 이름(`name`)·주소(`address`) **+ ACTIVE 프로그램명(`Program.title`)** 부분일치(LIKE) 검색어. (검색 통합 — `user-stores-keyword`)
-  - `cursor`: 다음 페이지 커서 (opaque, 첫 페이지는 미전송) — 커서 기반 무한스크롤 (Open decisions #3, **API명세 갱신 필요**)
-  - `limit`: 페이지당 항목 수 (기본 `20`) — (Open decisions #3, **API명세 갱신 필요**)
-- 시스템 처리:
-  - 파라미터 형식 검증
+- **인증**: 불필요 (Guest·User 공통 공개 조회)
+- **Headers**: `Accept: application/json`
+- **Query Parameters** (전부 선택):
+  - `lat`: 검색 중심 위도 (예: `37.5665`) — 권한 거부 시 FE가 성수동 기본값 `37.5446` 전송
+  - `lng`: 검색 중심 경도 (예: `126.9780`) — 권한 거부 시 FE가 성수동 기본값 `127.0560` 전송
+  - `keyword`: 공방 이름(`name`)·주소(`address`) + **ACTIVE Program.title** 부분일치(LIKE) 검색어
+  - `cursor`: 다음 페이지 커서 (opaque, 첫 페이지는 미전송) — 커서 기반 무한스크롤
+  - `limit`: 페이지당 항목 수 (기본 `20`)
+- **시스템 처리**:
+  - 파라미터 형식(lat/lng 숫자 여부) 검증
   - `status = 'PUBLISHED'` 공방만 필터
-  - `keyword` 있으면 `name`/`address` **+ ACTIVE `Program.title`** LIKE 필터(programs join). 프로그램명 매칭 시 해당 공방의 `matchedClass`(매칭 프로그램, 다건 최저가) 산출
-  - `lat`/`lng` 기준 좌표↔공방 좌표 거리 연산 → `distance`(미터) 산출, 거리순 정렬 (동일 거리는 `id` 보조정렬로 페이지 경계 안정화)
-  - **반경(radius) 제한 없음** — 전체를 거리순 정렬 후 무한스크롤로 페이징 (Open decisions #2)
-  - `rating`(`Review.rating` 평균, `isVisible=true`)/`reviewCount`(count) 집계, `representativeClass`(노출 Program 중 최저가 + `hasMore`), `isOperating`(`StoreOperatingHour` vs 현재 요일·시각) 산출
-  - `region`은 저장된 구조화 컬럼(`sido`/`sigungu`/`dong`)을 객체로 반환(조회 시 카카오 호출 없음)
-  - **커서 기반 페이징**: `cursor` 디코드 → 해당 지점 이후부터 `limit`개 조회, 다음 `nextCursor`(없으면 `null`) 및 `hasNext` 산출.
-    - 커서 payload는 정렬키에 따라 분기: **lat/lng 있으면 `{ distance, id }`**(거리순+id), **없으면 `{ id }`**(또는 `{ publishedAt, id }`). 좌표 있을 때는 후속 요청에 lat/lng 고정 필수.
-- 응답 `200 OK`:
+  - `keyword` 있으면 `name`/`address` + ACTIVE `Program.title` LIKE 필터(programs Left Join). 프로그램명 매칭 시 해당 공방 `matchedClass`(매칭 프로그램 중 최저가) 산출
+  - `lat`/`lng` 기준 Haversine 거리 연산 → `distance`(미터) 산출, 거리순 정렬. 동일 거리는 `id` 보조 정렬(페이지 경계 안정화)
+  - **반경 제한 없음** — 전체를 거리순 정렬 후 cursor 기반 무한스크롤로 페이징
+  - `rating`/`reviewCount` 집계, `representativeClass`(최저가+hasMore), `isOperating`(KST), `region`(저장된 컬럼 반환) 산출
+  - **커서 기반 페이징**: cursor 디코드 → 해당 지점 이후 limit개 조회, `nextCursor`/`hasNext` 산출. lat/lng 있을 때 커서 payload `{ distance, id }`, 없을 때 `{ id }`(또는 `{ publishedAt, id }`). 후속 요청에 최초 lat/lng 고정 필수
+
+- **응답 `200 OK`**:
 
 ```json
 {
@@ -111,39 +97,39 @@
       {
         "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
         "partnerId": "d5e6f7a8-9b0c-1d2e-3f4a-5b6c7d8e9f0a",
-        "slug": "todam-jeonju",
-        "name": "토담 전주 한옥마을점",
-        "description": "한옥의 고즈넉함 속에서 즐기는 도자기 물레 체험 공방입니다.",
-        "phone": "063-123-4567",
-        "address": "전북 전주시 완산구 교동 한옥마을길 12",
+        "slug": "plus-doja",
+        "name": "플러스 도자기",
+        "description": "성수동 감성을 담은 도자기 공방입니다.",
+        "phone": "02-1234-5678",
+        "address": "서울특별시 성동구 성수이로 12길 34",
         "status": "PUBLISHED",
         "convenienceInfo": { "parking": true, "pet": false, "wifi": true },
         "autoConfirm": false,
         "region": { "sido": "서울", "sigungu": "성동구", "dong": "성수동" },
-        "thumbnailUrl": "https://cdn.todam.example/stores/todam-jeonju/thumb.jpg",
+        "thumbnailUrl": "https://cdn.todam.example/stores/plus-doja/thumb.jpg",
         "rating": 4.9,
         "reviewCount": 253,
-        "distance": 1400,
-        "representativeClass": { "name": "머그컵 만들기", "price": 45000, "hasMore": true },
-        "matchedClass": null,
+        "distance": 1200,
+        "representativeClass": { "name": "머그컵 만들기", "price": 30000, "hasMore": true },
+        "matchedClass": { "name": "성수동 감성 빈티지 볼 그릇", "price": 45000 },
         "isOperating": true,
         "publishedAt": "2026-05-25T10:00:00.000Z",
         "createdAt": "2026-05-24T12:00:00.000Z"
       }
     ],
     "pageInfo": {
-      "nextCursor": "eyJkaXN0YW5jZSI6MTQwMCwiaWQiOiJhMWIyYzNkNCJ9",
+      "nextCursor": "eyJkaXN0YW5jZSI6MTIwMCwiaWQiOiJhMWIyYzNkNCJ9",
       "hasNext": true
     }
   },
   "error": null
 }
+// matchedClass는 위치 기반 단순 조회(keyword 없음/공방·지역 매칭) 시 null.
+// nextCursor는 마지막 페이지에서 null.
 ```
 
-> 주의: `data.pageInfo`(커서 기반)는 무한스크롤 결정(Open decisions #3)에 따라 plan에서 추가한 contract이며, **API명세 DB 원본에는 아직 없음**. BE 구현 전 API명세 갱신으로 확정 필요. `nextCursor`는 마지막 페이지에서 `null`.
-
-- 응답 `400 Bad Request` (`INVALID_QUERY_PARAMETERS`): 위도/경도가 숫자 형식이 아닌 경우 — `data: null`
-- 응답 `500 Internal Server Error` (`INTERNAL_SERVER_ERROR`): 서버 내부 오류 — `data: null`
+- **응답 `400 Bad Request`** (`INVALID_QUERY_PARAMETERS`): 위도/경도가 숫자 형식이 아닌 경우 — `data: null`
+- **응답 `500 Internal Server Error`** (`INTERNAL_SERVER_ERROR`): 서버 내부 오류 — `data: null`
 
 ## Scope
 
@@ -180,8 +166,14 @@
   - 스키마: `Store`에 `regionSido`/`regionSigungu`/`regionDong` 컬럼 추가 — `apps/api/prisma/schema.prisma` + 마이그레이션 `apps/api/prisma/migrations/20260602130000_add_store_region_columns/migration.sql`
   - 빌드/타입체크: `nest build`·`tsc --noEmit` 통과. 신규 파일 lint 클린.
   - **별도 작업(미완·골격만)**: 기존 데이터 region 백필 스크립트 `apps/api/prisma/scripts/backfill-store-region.ts` (카카오 coord2regioncode 호출부 TODO). 운영 작업으로 분리.
-- UI: <!-- 메인 공방 목록 섹션, 공방 카드 컴포넌트 -->
-- 연동: <!-- 실 GET /stores 바인딩, 권한 허용/거부 경로 검증 결과 -->
+- UI: `NearbyStoresSection` — 메인 화면 "근처 공방" 섹션. 위치 로딩/빈 상태/에러 상태 처리. 무한스크롤(IntersectionObserver sentinel). 공방 카드는 기존 `StoreSearchCard` 재사용(slug → `/stores/[slug]`, `isOperating` "준비 중" 뱃지, `representativeClass.hasMore` "~" 표기 포함).
+  - `apps/web/src/features/store/nearby-list/ui/NearbyStoresSection.tsx`
+- 연동:
+  - API 클라이언트: `features/store/search/api.ts`의 `getStores` 재사용 (이미 contract 완전 구현). `DEFAULT_LAT=37.5446`, `DEFAULT_LNG=127.0560` 상수 공유.
+  - 타입: `@todam/shared`의 `StoreListItem`, `StoreListResult`, `StoreListPageInfo` (contract 1:1 정합).
+  - React Query hook: `features/store/nearby-list/queries.ts` — `useNearbyStores` (위치 기반 전용, `enabled` 게이트, 커서 `pageInfo.hasNext`/`pageInfo.nextCursor` 기반).
+  - 메인 페이지 `apps/web/src/app/page.tsx`에 `NearbyStoresSection` 마운트. 서버 컴포넌트 page → 클라이언트 컴포넌트 위임 패턴 유지.
+  - 위치 권한 거부/타임아웃(5s) → 성수동 폴백 자동 실행 확인.
 
 ## Risks
 
@@ -215,5 +207,5 @@
 
 ## Outcome
 
-- Status: Open decisions #1~#4 전부 확정(UI 기준). **+ 검색 통합 계약 변경(region 객체화·keyword 클래스 매칭·matchedClass)** 반영. API명세 DB 갱신 + 팀(BE) approve 대기.
-- Follow-up: API명세 갱신(카드 필드·커서·region 객체·keyword 확장·matchedClass) 후 implementer로 인계. `user-stores-keyword.md`와 contract 동기 유지.
+- Status: 모든 결정 확정. Notion API명세 원본(2026-06-09)에 카드 필드(thumbnailUrl·rating·reviewCount·region·distance·representativeClass·matchedClass·isOperating)·커서 기반 페이지네이션·반경 제한 없음이 공식 반영됨을 확인. BE API 구현 완료. FE UI 구현 및 실 API 연동 대기.
+- Follow-up: FE 구현자는 이 스냅샷 기준으로 타입·호출 클라이언트 작성. `user-stores-keyword.md`와 contract 동기 유지.

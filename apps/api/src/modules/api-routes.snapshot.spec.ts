@@ -48,6 +48,12 @@ function controllers(): ControllerClass[] {
     const { PartnerArtworkController } = jest.requireActual<
         typeof import('./artwork/presentation/controllers/partner-artwork.controller')
     >('./artwork/presentation/controllers/partner-artwork.controller');
+    const { PartnerController } = jest.requireActual<
+        typeof import('./partner/presentation/controllers/partner.controller')
+    >('./partner/presentation/controllers/partner.controller');
+    const { UserController } = jest.requireActual<
+        typeof import('./user/presentation/controllers/user.controller')
+    >('./user/presentation/controllers/user.controller');
 
     return [
         AuthController,
@@ -58,6 +64,8 @@ function controllers(): ControllerClass[] {
         PartnerReservationController,
         UserReservationController,
         PartnerArtworkController,
+        PartnerController,
+        UserController,
     ];
 }
 
@@ -339,6 +347,13 @@ describe('API route baseline', () => {
                 guards: ['AuthGuard'],
             },
             {
+                controller: 'StoreController',
+                handler: 'listFavoriteStores',
+                method: 'GET',
+                path: '/users/me/favorite-stores',
+                guards: ['AuthGuard'],
+            },
+            {
                 controller: 'ProgramController',
                 handler: 'createProgram',
                 method: 'POST',
@@ -473,6 +488,13 @@ describe('API route baseline', () => {
             },
             {
                 controller: 'PartnerReservationController',
+                handler: 'pendingSummary',
+                method: 'GET',
+                path: '/partner/stores/:storeId/reservations/pending-summary',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerReservationController',
                 handler: 'createManual',
                 method: 'POST',
                 path: '/partner/stores/:storeId/reservations',
@@ -514,6 +536,13 @@ describe('API route baseline', () => {
                 guards: ['AuthGuard', 'PartnerGuard'],
             },
             {
+                controller: 'PartnerReservationController',
+                guards: ['AuthGuard', 'PartnerGuard'],
+                handler: 'updateInternalMemo',
+                method: 'PATCH',
+                path: '/partner/reservations/:reservationId/internal-memo',
+            },
+            {
                 controller: 'UserReservationController',
                 handler: 'listMyReservations',
                 method: 'GET',
@@ -532,6 +561,13 @@ describe('API route baseline', () => {
                 handler: 'getReservationDetail',
                 method: 'GET',
                 path: '/reservations/:reservationId',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'UserReservationController',
+                handler: 'cancelReservation',
+                method: 'POST',
+                path: '/reservations/:reservationId/cancel',
                 guards: ['AuthGuard'],
             },
             {
@@ -603,6 +639,34 @@ describe('API route baseline', () => {
                 method: 'PATCH',
                 path: '/partner/artworks/:artworkId/delivery',
                 guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerController',
+                handler: 'terminate',
+                method: 'DELETE',
+                path: '/partners/me',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'UserController',
+                handler: 'getProfile',
+                method: 'GET',
+                path: '/users/me',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'UserController',
+                handler: 'patchProfile',
+                method: 'PATCH',
+                path: '/users/me',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'UserController',
+                handler: 'withdraw',
+                method: 'DELETE',
+                path: '/users/me',
+                guards: ['AuthGuard'],
             },
         ]);
     });

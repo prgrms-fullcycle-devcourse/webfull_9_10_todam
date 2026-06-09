@@ -12,13 +12,20 @@ import {
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import {
+    CancelUserReservationResult,
     CreateCustomerReservationInput,
     CreateCustomerReservationResult,
+    UserReservationCancelRow,
     UserReservationDetailRow,
     UserReservationListQuery,
     UserReservationListRow,
     UserReservationRepository,
 } from '../../domain/repositories/user-reservation.repository';
+import {
+    assertReservationStatusTransition,
+    decrementReservedCount,
+    tryIncrementReservedCount,
+} from './reservation-slot-count';
 
 @Injectable()
 export class PrismaUserReservationRepository extends UserReservationRepository {
@@ -150,16 +157,14 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
                 : ReservationStatus.PENDING;
 
             // 7. 조건부 원자 increment (동시성 안전)
-            const updateResult = await tx.storeTimeSlot.updateMany({
-                where: {
-                    id: input.slotId,
-                    status: StoreTimeSlotStatus.OPEN,
-                    reservedCount: { lte: maxCapacity - input.participantCount },
-                },
-                data: { reservedCount: { increment: input.participantCount } },
-            });
+            const incremented = await tryIncrementReservedCount(
+                tx,
+                input.slotId,
+                input.participantCount,
+                maxCapacity,
+            );
 
-            if (updateResult.count === 0) {
+            if (!incremented) {
                 throw new BusinessException(
                     'INSUFFICIENT_CAPACITY',
                     '잔여 정원이 부족합니다.',
@@ -346,6 +351,102 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
                 : null,
             review: row.review ? { id: row.review.id } : null,
         };
+    }
+
+    async findForCancel(reservationId: string): Promise<UserReservationCancelRow | null> {
+        const row = await this.prisma.reservation.findUnique({
+            where: { id: reservationId },
+            select: {
+                id: true,
+                userId: true,
+                status: true,
+                source: true,
+                scheduledAt: true,
+                participantCount: true,
+                storeTimeSlotId: true,
+                store: { select: { cancelDeadlineDays: true } },
+                artwork: { select: { id: true, status: true } },
+            },
+        });
+
+        if (!row) return null;
+
+        return {
+            id: row.id,
+            userId: row.userId,
+            status: row.status,
+            source: row.source,
+            scheduledAt: row.scheduledAt,
+            participantCount: row.participantCount,
+            storeTimeSlotId: row.storeTimeSlotId,
+            cancelDeadlineDays: row.store.cancelDeadlineDays,
+            artworkId: row.artwork?.id ?? null,
+            artworkStatus: row.artwork?.status ?? null,
+        };
+    }
+
+    async cancelReservation(
+        row: UserReservationCancelRow,
+        userId: string,
+    ): Promise<CancelUserReservationResult> {
+        return this.prisma.$transaction(async (tx) => {
+            // 1. Reservation 상태 전이 — 기대 상태일 때만 갱신(동시 취소 시 1건만 성공)
+            await assertReservationStatusTransition(tx, row.id, row.status, {
+                status: ReservationStatus.CANCELED,
+                canceledBy: userId,
+                cancelReason: null,
+                canceledAt: new Date(),
+            });
+
+            const updated = await tx.reservation.findUniqueOrThrow({
+                where: { id: row.id },
+                select: {
+                    id: true,
+                    canceledBy: true,
+                    cancelReason: true,
+                    canceledAt: true,
+                },
+            });
+
+            // 2. StoreTimeSlot.reservedCount decrement (floor 0, 동시성 안전)
+            await decrementReservedCount(tx, row.storeTimeSlotId, row.participantCount);
+
+            // 3 & 4. Artwork 존재 시 CANCELED 전이 + ArtworkLog 기록
+            // plan §Risks: 트랜잭션 내 artwork.findUnique → artwork.update → artworkLog.create 순서.
+            // fromStatus를 트랜잭션 밖 stale 값이 아닌, 트랜잭션 내 재조회 값으로 사용.
+            if (row.artworkId) {
+                const currentArtwork = await tx.artwork.findUnique({
+                    where: { id: row.artworkId },
+                    select: { status: true },
+                });
+
+                // 이미 CANCELED이면 update/log 스킵 (幂等 보장)
+                if (currentArtwork && currentArtwork.status !== ArtworkStatus.CANCELED) {
+                    await tx.artwork.update({
+                        where: { id: row.artworkId },
+                        data: { status: ArtworkStatus.CANCELED },
+                    });
+
+                    await tx.artworkLog.create({
+                        data: {
+                            artworkId: row.artworkId,
+                            changedBy: userId,
+                            fromStatus: currentArtwork.status, // 트랜잭션 내 재조회 값
+                            toStatus: ArtworkStatus.CANCELED,
+                            memo: null,
+                        },
+                    });
+                }
+            }
+
+            return {
+                id: updated.id,
+                status: 'CANCELED' as const,
+                canceledBy: updated.canceledBy,
+                cancelReason: updated.cancelReason,
+                canceledAt: updated.canceledAt,
+            };
+        });
     }
 
     private createQrToken(artworkId: string): string {

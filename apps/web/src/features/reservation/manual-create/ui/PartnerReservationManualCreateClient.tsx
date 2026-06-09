@@ -33,7 +33,7 @@ import {
     usePartnerProgramReservationCounts,
     usePartnerTimeSlotsByDate,
 } from '@/entities/reservation';
-import { usePartnerStorePrograms } from '@/entities/store';
+import { usePartnerStorePrograms, usePartnerStoreDetail } from '@/entities/store';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useSheet, useToast } from '@/shared/model';
 
@@ -134,6 +134,7 @@ export function PartnerReservationManualCreateClient({ storeId, initialDate }: P
 
     const timeSlotsQuery = usePartnerTimeSlotsByDate(storeId, selectedDate);
     const programsQuery = usePartnerStorePrograms(storeId);
+    const storeName = usePartnerStoreDetail(storeId).data?.store.name;
     const mutation = useCreatePartnerReservationMutation(storeId);
 
     const slots = useMemo(
@@ -189,7 +190,7 @@ export function PartnerReservationManualCreateClient({ storeId, initialDate }: P
     const backToCalendar = () => router.push(`/partner/reservations?date=${selectedDate}`);
 
     useHeaderOverride({
-        title: '흙과 사람 예약 등록하기',
+        title: storeName ? `${storeName} 예약 등록하기` : '예약 등록하기',
         hideRightAction: true,
         onBack: () => {
             if (step === 'time') {

@@ -14,6 +14,8 @@ export type CardItemProps = {
     className?: string;
 };
 
+// 리뷰 미리보기 카드(256×80 고정). 이미지·내용 유무로 full·emptyPhoto·emptyContents 분기.
+// 본문은 2줄까지만(line-clamp) 노출. 카드 스펙은 여기에 고정 → 사용처는 데이터만 전달.
 export function CardItem({
     rating,
     contents,
@@ -26,7 +28,7 @@ export function CardItem({
     return (
         <div
             className={[
-                'flex w-full items-start gap-3 rounded-2xl border border-border-subtle bg-surface p-3',
+                'flex h-20 w-64 shrink-0 snap-start items-start gap-3 overflow-hidden rounded-2xl border border-border-subtle bg-surface p-3',
                 className,
             ]
                 .filter(Boolean)
@@ -47,7 +49,7 @@ export function CardItem({
                 <Rating scope={Math.round(rating)} />
                 <p
                     className={[
-                        'text-xs leading-4',
+                        'line-clamp-2 text-xs leading-4',
                         hasContents ? 'text-foreground' : 'text-foreground-tertiary',
                     ].join(' ')}
                 >

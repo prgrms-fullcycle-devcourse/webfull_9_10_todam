@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { formatKstDate } from '../../domain/date.util';
+import { formatKstDate } from '../../../../common/date/kst-date.util';
 import { availablePartnerReservationActions } from '../../domain/reservation-actions';
 import { PartnerReservationRepository } from '../../domain/repositories/partner-reservation.repository';
 import { PartnerReservationPolicy } from '../../domain/services/partner-reservation-policy.service';

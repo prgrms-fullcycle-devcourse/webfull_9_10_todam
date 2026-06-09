@@ -1,6 +1,6 @@
+import { DAY_OF_WEEK, toKstWallClock } from '../../../../common/date/kst-date.util';
+
 const EARTH_RADIUS_M = 6_371_000;
-const KST_OFFSET_MINUTES = 9 * 60;
-const DAYS_OF_WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const;
 
 export interface StoreCoordinates {
     latitude: number | null;
@@ -51,8 +51,8 @@ export class StoreListPolicy {
     }
 
     static isOperating(hours: StoreOperatingHour[], now = new Date()): boolean {
-        const nowKst = new Date(now.getTime() + KST_OFFSET_MINUTES * 60 * 1000);
-        const day = DAYS_OF_WEEK[nowKst.getUTCDay()];
+        const nowKst = toKstWallClock(now);
+        const day = DAY_OF_WEEK[nowKst.getUTCDay()];
         const nowMinutes = nowKst.getUTCHours() * 60 + nowKst.getUTCMinutes();
 
         return hours

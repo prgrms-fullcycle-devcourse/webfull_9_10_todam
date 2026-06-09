@@ -48,6 +48,7 @@ export interface StoreReviewListItem {
     rating: number;
     content: string;
     photos: { imageUrl: string; thumbnailUrl: string }[];
+    programId: string;
     programTitle: string;
     createdAt: string;
 }
@@ -68,10 +69,9 @@ export interface AutocompleteStoresResult {
     suggestions: StoreSuggestion[];
 }
 
-export interface PartnerOnboardingResult {
-    partnerStatus: `${PartnerStatus}` | null;
-    store: { id: string; status: `${StoreStatus}`; rejectedReason: string | null } | null;
-}
+// 응답 형태 SSOT = @todam/shared(zod). infra(Prisma reader)가 경계에서 Prisma enum → shared enum 매핑.
+// 타입 정의는 하단 @todam/shared import 블록에서 가져와 재노출(export type).
+export type { PartnerOnboardingResult };
 
 export interface PartnerStoreDetailResult {
     store: {
@@ -143,15 +143,7 @@ export interface PublicStoreDetailResult {
     };
 }
 
-export interface PartnerStoresResult {
-    stores: {
-        id: string;
-        name: string;
-        ownerName: string;
-        status: `${StoreStatus}`;
-        createdAt: string;
-    }[];
-}
+export type PartnerStoresResult = PartnerDashboardStoresResult;
 
 export interface StoreProgramsResult {
     programs: {
@@ -213,9 +205,36 @@ export abstract class StoreReviewsReader {
 export abstract class StoresReader {
     abstract execute(query: ListStoresQuery): Promise<ListStoresResult>;
 }
+
+// ─── 찜한 공방 목록 (GET /users/me/favorite-stores) ──────────────────────────
+export interface ListFavoriteStoresQuery {
+    userId: string;
+    cursor?: string;
+    limit: number;
+}
+
+export interface FavoriteStoreListItem {
+    favoriteId: string;
+    storeId: string;
+    name: string;
+    imageUrl: string;
+    address: string;
+    createdAt: string; // ISO 8601
+}
+
+export interface ListFavoriteStoresResult {
+    favoriteStores: FavoriteStoreListItem[];
+    nextCursor: string | null;
+}
+
+export abstract class FavoriteStoresReader {
+    abstract execute(query: ListFavoriteStoresQuery): Promise<ListFavoriteStoresResult>;
+}
+
 import type {
     OcrStatus,
-    PartnerStatus,
+    PartnerDashboardStoresResult,
+    PartnerOnboardingResult,
     ProgramDifficulty,
     ProgramStatus,
     StoreStatus,

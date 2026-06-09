@@ -1,3 +1,12 @@
+'use client';
+
+import { useCurrentStoreId } from '@/entities/store';
+import { ArtworkListClient } from '@/features/artwork/list';
+
 export default function PartnerArtworksPage() {
-    return <div>파트너 작품 관리</div>;
+    const storeId = useCurrentStoreId();
+
+    if (!storeId) return null;
+
+    return <ArtworkListClient storeId={storeId} />;
 }

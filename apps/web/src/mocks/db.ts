@@ -10,7 +10,6 @@ import {
     type ArtworkDetail,
     type ConvenienceInfo,
     type DayOfWeek,
-    type FavoriteStoreItem,
     type ReservationDetail,
     type ReservationListItem,
     type ReviewDetail,
@@ -80,160 +79,6 @@ export const db: MockDb = {
     businessDocuments: [],
     operatingHours: [],
 };
-
-// ─── 찜한 공방 mock ──────────────────────────────────────────────
-// 찜한 공방 목록 seed (최신 찜순 = createdAt 내림차순). 무한스크롤/빈상태 검증용 ≥ 12개.
-// 모두 PUBLISHED 공방 가정(목록은 PUBLISHED 만 노출 — 요구사항 store §1·§4).
-const SEEDED_FAVORITE_STORES: FavoriteStoreItem[] = [
-    {
-        favoriteId: 'fav-seed-0012',
-        storeId: 'store-fav-0012',
-        name: '토담 공방 성수점',
-        category: '도자기',
-        imageUrl: 'https://placehold.co/80x80?text=ceramic',
-        address: '서울특별시 성동구 성수이로 12길',
-        createdAt: '2026-05-30T18:00:00.000Z',
-    },
-    {
-        favoriteId: 'fav-seed-0011',
-        storeId: 'store-fav-0011',
-        name: '흙과 사람',
-        category: '도자기',
-        imageUrl: 'https://placehold.co/80x80?text=clay',
-        address: '서울특별시 성동구 뚝섬로 273',
-        createdAt: '2026-05-29T17:30:00.000Z',
-    },
-    {
-        favoriteId: 'fav-seed-0010',
-        storeId: 'store-fav-0010',
-        name: '플러스 도자기',
-        category: '도자기',
-        imageUrl: 'https://placehold.co/80x80?text=pottery',
-        address: '서울특별시 마포구 와우산로 100',
-        createdAt: '2026-05-28T16:00:00.000Z',
-    },
-    {
-        favoriteId: 'fav-seed-0009',
-        storeId: 'store-fav-0009',
-        name: '클레이 서울',
-        category: '공예',
-        imageUrl: 'https://placehold.co/80x80?text=craft',
-        address: '서울특별시 종로구 자하문로 50',
-        createdAt: '2026-05-27T15:20:00.000Z',
-    },
-    {
-        favoriteId: 'fav-seed-0008',
-        storeId: 'store-fav-0008',
-        name: '온도 스튜디오',
-        category: '캔들',
-        imageUrl: 'https://placehold.co/80x80?text=candle',
-        address: '서울특별시 용산구 이태원로 200',
-        createdAt: '2026-05-26T14:10:00.000Z',
-    },
-    {
-        favoriteId: 'fav-seed-0007',
-        storeId: 'store-fav-0007',
-        name: '백자방',
-        category: '도자기',
-        imageUrl: 'https://placehold.co/80x80?text=white',
-        address: '서울특별시 강남구 도산대로 33',
-        createdAt: '2026-05-25T13:00:00.000Z',
-    },
-    {
-        favoriteId: 'fav-seed-0006',
-        storeId: 'store-fav-0006',
-        name: '나무공방 손길',
-        category: '목공',
-        imageUrl: 'https://placehold.co/80x80?text=wood',
-        address: '서울특별시 마포구 성미산로 80',
-        createdAt: '2026-05-24T12:00:00.000Z',
-    },
-    {
-        favoriteId: 'fav-seed-0005',
-        storeId: 'store-fav-0005',
-        name: '가죽공방 무드',
-        category: '가죽',
-        imageUrl: 'https://placehold.co/80x80?text=leather',
-        address: '서울특별시 서대문구 연희로 11',
-        createdAt: '2026-05-23T11:30:00.000Z',
-    },
-    {
-        favoriteId: 'fav-seed-0004',
-        storeId: 'store-fav-0004',
-        name: '유리공방 빛',
-        category: '유리',
-        imageUrl: 'https://placehold.co/80x80?text=glass',
-        address: '서울특별시 성북구 동소문로 5',
-        createdAt: '2026-05-22T10:40:00.000Z',
-    },
-    {
-        favoriteId: 'fav-seed-0003',
-        storeId: 'store-fav-0003',
-        name: '향기연구소',
-        category: '향수',
-        imageUrl: 'https://placehold.co/80x80?text=perfume',
-        address: '서울특별시 강동구 천호대로 900',
-        createdAt: '2026-05-21T09:50:00.000Z',
-    },
-    {
-        favoriteId: 'fav-seed-0002',
-        storeId: 'store-fav-0002',
-        name: '플라워 아틀리에',
-        category: '플라워',
-        imageUrl: 'https://placehold.co/80x80?text=flower',
-        address: '서울특별시 송파구 올림픽로 240',
-        createdAt: '2026-05-20T09:00:00.000Z',
-    },
-    {
-        favoriteId: 'fav-seed-0001',
-        storeId: 'store-fav-0001',
-        name: '실과 바늘',
-        category: '자수',
-        imageUrl: 'https://placehold.co/80x80?text=embroidery',
-        address: '서울특별시 영등포구 여의대로 24',
-        createdAt: '2026-05-19T08:30:00.000Z',
-    },
-];
-
-// 찜한 공방 storeId 집합 (mock). seed 의 storeId 로 초기화.
-export const likedStores = new Set<string>(SEEDED_FAVORITE_STORES.map((s) => s.storeId));
-
-// 찜 토글: 이력 없으면 add → true(등록됨), 있으면 delete → false(해제됨).
-export function toggleFavorite(storeId: string): boolean {
-    if (likedStores.has(storeId)) {
-        likedStores.delete(storeId);
-        return false;
-    }
-    likedStores.add(storeId);
-    return true;
-}
-
-// 찜한 공방 목록(커서 페이지네이션). createdAt 내림차순 + favoriteId 커서 슬라이스.
-// likedStores 와 동기화: 토글로 해제된 공방은 목록에서 제외.
-export function listFavoriteStores(
-    cursor: string | null,
-    limit: number,
-): { favoriteStores: FavoriteStoreItem[]; nextCursor: string | null } {
-    const all = SEEDED_FAVORITE_STORES.filter((s) => likedStores.has(s.storeId)).sort((a, b) =>
-        b.createdAt.localeCompare(a.createdAt),
-    );
-
-    let startIdx = 0;
-    if (cursor) {
-        const idx = all.findIndex((s) => s.favoriteId === cursor);
-        startIdx = idx >= 0 ? idx + 1 : all.length; // cursor 미존재 시 빈 결과.
-    }
-
-    // limit+1 방식으로 다음 페이지 존재 여부 판정.
-    const window = all.slice(startIdx, startIdx + limit + 1);
-    const hasMore = window.length > limit;
-    const favoriteStores = window.slice(0, limit);
-    const nextCursor = hasMore
-        ? (favoriteStores[favoriteStores.length - 1]?.favoriteId ?? null)
-        : null;
-
-    return { favoriteStores, nextCursor };
-}
 
 let seq = 0;
 export function genId(prefix: string): string {
@@ -316,6 +161,7 @@ const SEEDED_STORE_REVIEWS: StoreReviewListItem[] = [
                 thumbnailUrl: 'https://placehold.co/240x240?text=review-1',
             },
         ],
+        programId: 'prog-uuid-001',
         programTitle: '머그컵 만들기',
         createdAt: '2026-05-24T12:00:00.000Z',
     },
@@ -335,6 +181,7 @@ const SEEDED_STORE_REVIEWS: StoreReviewListItem[] = [
                 thumbnailUrl: 'https://placehold.co/240x240?text=review-3',
             },
         ],
+        programId: 'prog-uuid-002',
         programTitle: '화병 클래스',
         createdAt: '2026-05-23T12:00:00.000Z',
     },
@@ -344,6 +191,7 @@ const SEEDED_STORE_REVIEWS: StoreReviewListItem[] = [
         rating: 4,
         content: '설명이 명확해서 좋았습니다. 작품 받는 날이 기다려져요.',
         photos: [],
+        programId: 'prog-uuid-003',
         programTitle: '핸드빌딩 머그컵 만들기',
         createdAt: '2026-05-21T12:00:00.000Z',
     },
@@ -353,6 +201,7 @@ const SEEDED_STORE_REVIEWS: StoreReviewListItem[] = [
         rating: 3,
         content: '체험 자체는 좋았고, 주말이라 조금 붐볐어요.',
         photos: [],
+        programId: 'prog-uuid-004',
         programTitle: '커플 도자기 클래스',
         createdAt: '2026-05-19T12:00:00.000Z',
     },
@@ -535,7 +384,6 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '토담 공방',
         programTitle: '머그컵 만들기',
         scheduledAt: '2026-06-18T10:00:00.000Z',
-        category: '도자기',
         participantCount: 2,
         status: ReservationStatus.PENDING,
         displayState: {
@@ -550,7 +398,6 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '서래마을 도예원',
         programTitle: '주말 가족 도자기',
         scheduledAt: '2026-06-12T13:00:00.000Z',
-        category: '도자기',
         participantCount: 4,
         status: ReservationStatus.CONFIRMED,
         displayState: {
@@ -565,7 +412,6 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '플러스 도자기',
         programTitle: '취소된 클래스',
         scheduledAt: '2026-06-10T10:00:00.000Z',
-        category: '도자기',
         participantCount: 1,
         status: ReservationStatus.CANCELED,
         displayState: {
@@ -580,7 +426,6 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '흙과 사람',
         programTitle: '물레 체험 기초반',
         scheduledAt: '2026-06-15T14:00:00.000Z',
-        category: '도자기',
         participantCount: 1,
         status: ReservationStatus.IN_PROGRESS,
         displayState: {
@@ -595,7 +440,6 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '클레이 서울',
         programTitle: '체험 한바탕',
         scheduledAt: '2026-06-08T11:00:00.000Z',
-        category: '도자기',
         participantCount: 2,
         status: ReservationStatus.IN_PROGRESS,
         displayState: {
@@ -610,7 +454,6 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '토담 공방',
         programTitle: '핸드 빌딩 클래스',
         scheduledAt: '2026-05-15T15:00:00.000Z',
-        category: '도자기',
         participantCount: 1,
         status: ReservationStatus.IN_PROGRESS,
         displayState: {
@@ -625,7 +468,6 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '백자방',
         programTitle: '화병 만들기',
         scheduledAt: '2026-05-10T11:00:00.000Z',
-        category: '도자기',
         participantCount: 2,
         status: ReservationStatus.IN_PROGRESS,
         displayState: {
@@ -640,7 +482,6 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '클레이 서울',
         programTitle: '도자기 페인팅 클래스',
         scheduledAt: '2026-06-05T16:00:00.000Z',
-        category: '도자기',
         participantCount: 3,
         status: ReservationStatus.SHIPPED,
         displayState: {
@@ -655,7 +496,6 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '플러스 도자기',
         programTitle: '접시 만들기 원데이',
         scheduledAt: '2026-05-20T11:00:00.000Z',
-        category: '도자기',
         participantCount: 2,
         status: ReservationStatus.DELIVERED,
         // DELIVERED 는 status message UI 숨김 → description 공백.
@@ -671,7 +511,6 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '온도 스튜디오',
         programTitle: '오브제 만들기',
         scheduledAt: '2026-05-12T13:00:00.000Z',
-        category: '도자기',
         participantCount: 1,
         status: ReservationStatus.PICKUP_READY,
         displayState: {
@@ -686,7 +525,6 @@ const SEEDED_RESERVATIONS: ReservationListItem[] = [
         storeName: '흙과 사람',
         programTitle: '캔들 홀더 만들기',
         scheduledAt: '2026-04-22T10:00:00.000Z',
-        category: '도자기',
         participantCount: 1,
         status: ReservationStatus.PICKUP_DONE,
         displayState: {

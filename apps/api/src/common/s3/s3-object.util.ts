@@ -3,12 +3,15 @@ import { randomUUID } from 'crypto';
 import { BusinessException } from '../exceptions/business.exception';
 import { ErrorCode } from '../constants/error-code';
 
-// S3 버킷 공개 읽기(prefix: stores/* programs/* reviews/*) 직접 주소.
-// 추후 cdn.todam.app CDN 구축 시 이 상수만 교체하면 됨.
-export const CDN_BASE = 'https://todam-prod-assets.s3.ap-northeast-2.amazonaws.com';
+// Public asset URLs use Cloudflare CDN while uploads and object operations still use S3 keys.
+export const CDN_BASE = 'https://cdn.todam.app';
+const LEGACY_S3_BASE = 'https://todam-prod-assets.s3.ap-northeast-2.amazonaws.com';
 
 export function keyFromImageUrl(imageUrl: string): string {
-    return imageUrl.startsWith(`${CDN_BASE}/`) ? imageUrl.slice(CDN_BASE.length + 1) : imageUrl;
+    const base = [CDN_BASE, LEGACY_S3_BASE].find((candidate) =>
+        imageUrl.startsWith(`${candidate}/`),
+    );
+    return base ? imageUrl.slice(base.length + 1) : imageUrl;
 }
 
 const ALLOWED_TYPES: Record<string, string> = {

@@ -10,6 +10,9 @@ import {
     ProgramEditErrorCode,
     createUserReservationRequestSchema,
     ReservationCreateErrorCode,
+    AUTOCOMPLETE_ERROR_CODES,
+    ProgramDifficulty,
+    ProgramStatus,
     type DeliveryEditResult,
     type ArtworkDetailResult,
     type GeocodeResult,
@@ -20,8 +23,6 @@ import {
     type ReviewUpdateResult,
     type ReviewImageUploadRequest,
     type ReviewImageUploadResult,
-    type ToggleFavoriteResult,
-    type FavoriteStoreListResult,
     type ProgramDetailResult,
     type ProgramReviewListResult,
     type StoreReviewListResult,
@@ -32,6 +33,10 @@ import {
     type PatchNotificationSettingsResponse,
     type AvailableSlotsResult,
     type CreateUserReservationResult,
+    type StoreListResult,
+    type AutocompleteResult,
+    type PublicProgramListResult,
+    StoreStatus,
 } from '@todam/shared';
 import { http, HttpResponse } from 'msw';
 
@@ -47,16 +52,16 @@ import {
     createReview,
     updateReview,
     createReviewImageUpload,
-    listFavoriteStores,
     listStoreReviews,
     listMyReservations,
     mockGeocode,
     nowIso,
-    toggleFavorite,
     upsertDeliveryEdit,
+    MOCK_STORE_SLUG,
+    MOCK_STORE_ID,
+    seededPrograms,
+    seededProgramImages,
 } from './db';
-
-const FAVORITE_LIST_DEFAULT_LIMIT = 10;
 
 // 봉투 빌더 — apps/api 응답 형태와 일치.
 function ok<T>(path: string, data: T, message = '요청이 처리되었습니다.', statusCode = 200) {
@@ -126,6 +131,46 @@ export const handlers = [
         }
 
         return ok(path, { store }, '공방 상세가 조회되었습니다.');
+    }),
+
+    // GET /stores/{slug}/programs — 퍼블릭 운영 클래스 목록 (Contract B)
+    // plan: docs/exec-plans/active/user-공방-상세.md § Contract B
+    // ACTIVE 프로그램만, sortOrder·id asc. 빈 목록 → programs:[] 200.
+    http.get(`${API}/stores/:slug/programs`, ({ params }) => {
+        const slug = String(params.slug);
+        const path = `/api/v1/stores/${slug}/programs`;
+
+        if (slug !== MOCK_STORE_SLUG) {
+            return fail(path, 404, 'STORE_NOT_FOUND', '공방을 찾을 수 없습니다.');
+        }
+
+        // ACTIVE 프로그램만 필터링 → Contract B: status=ACTIVE 만 퍼블릭 노출
+        const activePrograms = seededPrograms
+            .filter((p) => p.status === ProgramStatus.ACTIVE && p.storeId === MOCK_STORE_ID)
+            .sort((a, b) => a.id.localeCompare(b.id)); // sortOrder 없으면 id asc
+
+        const programs: PublicProgramListResult['programs'] = activePrograms.map((p, idx) => {
+            const img = seededProgramImages.find(
+                (i) => i.programId === p.id && i.status === 'UPLOADED' && i.isThumbnail,
+            );
+            return {
+                id: p.id,
+                title: p.title,
+                difficulty:
+                    p.difficulty as (typeof ProgramDifficulty)[keyof typeof ProgramDifficulty],
+                description: p.description ?? '',
+                price: p.price,
+                durationMinutes: p.durationMinutes,
+                leadTimeDays: p.leadTimeDays,
+                deliverable: p.deliverable,
+                thumbnailUrl: img?.thumbnailUrl ?? null,
+                status: ProgramStatus.ACTIVE,
+                sortOrder: idx,
+            };
+        });
+
+        const result: PublicProgramListResult = { programs };
+        return ok(path, result, '운영 클래스 목록이 성공적으로 조회되었습니다.');
     }),
 
     // GET /stores/{slug}/reviews
@@ -247,55 +292,115 @@ export const handlers = [
         },
     ),
 
-    // 공방 찜 등록/해제 (토글). Request body 없음 — path param storeId 만.
-    // plan: docs/exec-plans/active/유저 마이 - 찜한 공방 목록 조회, 공방 찜 등록_해제.md
-    // 실 BE 연동: 토글은 root 경로(/stores/...)로 실연동 → mock 핸들러도 prefix 없이 매칭. 시뮬: ?unauth=1 → 401.
-    http.post(`*/stores/:storeId/favorite`, ({ params, request }) => {
-        const storeId = String(params.storeId);
-        const path = `/stores/${storeId}/favorite`;
+    // ─── 예약 가능 슬롯 조회 ───────────────────────────────────────────
+    // GET /programs/{programId}/available-slots?year=&month=
+    // plan: docs/exec-plans/active/user-예약-신청.md API Contract (스냅샷).
+    // 시뮬: ?year&month 의 5·12·20일에 10:00/14:00 슬롯 생성. 12일 14시=CLOSED, 20일 14시=만석(isAvailable=false).
+    http.get('*/programs/:programId/available-slots', ({ request, params }) => {
+        const programId = String(params.programId);
+        const path = `/programs/${programId}/available-slots`;
         const url = new URL(request.url);
 
-        if (url.searchParams.get('unauth') === '1') {
-            return fail(path, 401, 'UNAUTHORIZED', '찜하기 기능을 이용하려면 로그인이 필요합니다.');
-        }
-
-        const isFavorite = toggleFavorite(storeId);
-        const result: ToggleFavoriteResult = { storeId, isFavorite };
-        return ok(path, result, isFavorite ? '찜했습니다.' : '찜을 해제했습니다.');
-    }),
-
-    // 찜한 공방 목록 조회 (인증 필요, 본인 찜만, 커서 페이지네이션, PUBLISHED·최신 찜순).
-    // plan: docs/exec-plans/active/유저 마이 - 찜한 공방 목록 조회, 공방 찜 등록_해제.md
-    // 시뮬: ?unauth=1 → 401, ?empty=1 → 빈 목록, ?simulate=500 → 500.
-    http.get(`${API}/users/me/favorite-stores`, ({ request }) => {
-        const path = '/api/v1/users/me/favorite-stores';
-        const url = new URL(request.url);
-
-        if (url.searchParams.get('unauth') === '1') {
-            return fail(path, 401, 'UNAUTHORIZED', '찜하기 기능을 이용하려면 로그인이 필요합니다.');
-        }
-        if (url.searchParams.get('simulate') === '500') {
+        if (url.searchParams.get('simulate') === '404') {
             return fail(
                 path,
-                500,
-                'INTERNAL_SERVER_ERROR',
-                '찜한 공방 조회 중 서버 오류가 발생했습니다.',
+                404,
+                ReservationCreateErrorCode.PROGRAM_NOT_FOUND,
+                '프로그램을 찾을 수 없습니다.',
             );
         }
-        if (url.searchParams.get('empty') === '1') {
-            const result: FavoriteStoreListResult = { favoriteStores: [], nextCursor: null };
-            return ok(path, result, '찜한 공방 목록이 성공적으로 조회되었습니다.');
+
+        const now = new Date();
+        const year = Number(url.searchParams.get('year')) || now.getFullYear();
+        const month = Number(url.searchParams.get('month')) || now.getMonth() + 1;
+        const max = 4; // mock Store.maxCapacityPerSlot
+
+        const iso = (day: number, hour: number) =>
+            new Date(Date.UTC(year, month - 1, day, hour, 0, 0)).toISOString();
+        const slot = (
+            id: string,
+            day: number,
+            hour: number,
+            reserved: number,
+            status: StoreTimeSlotStatus,
+        ) => {
+            const remainingCount = Math.max(0, max - reserved);
+            return {
+                slotId: id,
+                startAt: iso(day, hour),
+                endAt: iso(day, hour + 2),
+                reservedCount: reserved,
+                remainingCount,
+                status,
+                isAvailable: status === StoreTimeSlotStatus.OPEN && remainingCount > 0,
+            };
+        };
+
+        const result: AvailableSlotsResult = {
+            slots: [
+                slot('slot-05-10', 5, 10, 1, StoreTimeSlotStatus.OPEN),
+                slot('slot-05-14', 5, 14, 2, StoreTimeSlotStatus.OPEN),
+                slot('slot-12-10', 12, 10, 0, StoreTimeSlotStatus.OPEN),
+                slot('slot-12-14-blocked', 12, 14, 2, StoreTimeSlotStatus.CLOSED),
+                slot('slot-20-10', 20, 10, 3, StoreTimeSlotStatus.OPEN),
+                slot('slot-20-14-full', 20, 14, 4, StoreTimeSlotStatus.OPEN),
+            ],
+        };
+        return ok(path, result, '예약 가능 시간 목록이 성공적으로 조회되었습니다.');
+    }),
+
+    // ─── 예약 생성 ─────────────────────────────────────────────────────
+    // POST /reservations
+    // plan: docs/exec-plans/active/user-예약-신청.md API Contract (스냅샷).
+    // 시뮬: slotId 에 'blocked' 포함→SLOT_BLOCKED, 'full' 포함→INSUFFICIENT_CAPACITY,
+    //       'auto' 포함→CONFIRMED, 그 외 PENDING.
+    http.post(/^https?:\/\/[^/]+\/reservations(\?.*)?$/, async ({ request }) => {
+        const path = '/reservations';
+
+        const parsed = createUserReservationRequestSchema.safeParse(await request.json());
+        if (!parsed.success) {
+            return fail(path, 400, 'VALIDATION_ERROR', '요청 형식이 올바르지 않습니다.');
+        }
+        const body = parsed.data;
+
+        if (body.slotId.includes('blocked')) {
+            return fail(
+                path,
+                409,
+                ReservationCreateErrorCode.SLOT_BLOCKED,
+                '예약이 불가한 슬롯입니다.',
+            );
+        }
+        if (body.slotId.includes('full')) {
+            return fail(
+                path,
+                400,
+                ReservationCreateErrorCode.INSUFFICIENT_CAPACITY,
+                '잔여 정원이 부족합니다.',
+            );
         }
 
-        const cursor = url.searchParams.get('cursor');
-        const limitParam = Number(url.searchParams.get('limit'));
-        const limit =
-            Number.isFinite(limitParam) && limitParam > 0
-                ? limitParam
-                : FAVORITE_LIST_DEFAULT_LIMIT;
-
-        const result: FavoriteStoreListResult = listFavoriteStores(cursor, limit);
-        return ok(path, result, '찜한 공방 목록이 성공적으로 조회되었습니다.');
+        const confirmed = body.slotId.includes('auto');
+        const status = confirmed ? ReservationStatus.CONFIRMED : ReservationStatus.PENDING;
+        const result: CreateUserReservationResult = {
+            reservation: {
+                id: `res-${Date.now()}`,
+                programId: body.programId,
+                slotId: body.slotId,
+                reserverName: body.reserverName,
+                participantCount: body.participantCount,
+                status,
+                displayState: confirmed
+                    ? { label: '예약확정', description: '예약이 확정되었어요.', subLabel: null }
+                    : {
+                          label: '예약신청',
+                          description: '작가님이 예약 내용을 확인하고 있어요.',
+                          subLabel: null,
+                      },
+                createdAt: nowIso(),
+            },
+        };
+        return ok(path, result, '예약이 성공적으로 접수되었습니다.', 201);
     }),
 
     // ─── 예약 가능 슬롯 조회 ───────────────────────────────────────────
@@ -940,6 +1045,204 @@ export const handlers = [
             },
         };
         return ok(path, result, '알림 설정이 성공적으로 조회되었습니다.');
+    }),
+
+    // ─── 공방 검색 결과 (GET /api/v1/stores) ───────────────────────────────────
+    // contract: docs/exec-plans/active/user-stores-keyword.md API Contract A
+    // 인증 불필요(공개). keyword 매칭(name/address/program title), matchedClass 포함.
+    // 시뮬: ?simulate=500 → 500 / ?empty=1 → 빈 결과.
+    // 주의: /stores/:slug 보다 먼저 등록해야 하지만 MSW는 등록 순서대로 매칭하므로
+    //       /stores/search/autocomplete 를 /stores/:slug 보다 먼저 위치시킴.
+    http.get(`${API}/stores`, ({ request }) => {
+        const path = '/api/v1/stores';
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('simulate') === '500') {
+            return fail(
+                path,
+                500,
+                'INTERNAL_SERVER_ERROR',
+                '공방 검색 중 서버 오류가 발생했습니다.',
+            );
+        }
+        if (url.searchParams.get('empty') === '1') {
+            const result: StoreListResult = {
+                stores: [],
+                pageInfo: { nextCursor: null, hasNext: false },
+            };
+            return ok(path, result, '공방 목록이 성공적으로 조회되었습니다.');
+        }
+
+        const keyword = url.searchParams.get('keyword') ?? '';
+        const cursor = url.searchParams.get('cursor');
+        const limitParam = Number(url.searchParams.get('limit'));
+        const limit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 10;
+
+        // mock 데이터 — plan API Contract A 스냅샷 형태
+        // BE 응답 정합용 공통 필드(목록 카드에는 미사용이나 계약상 필수).
+        const STORE_COMMON = {
+            partnerId: 'partner-uuid-001',
+            description: '도자기 체험 공방입니다.',
+            phone: '02-1234-5678',
+            address: '서울 성동구 성수동',
+            status: StoreStatus.PUBLISHED,
+            convenienceInfo: { parking: true, pet: false, wifi: true },
+            autoConfirm: false,
+            publishedAt: '2026-05-25T10:00:00.000Z',
+            createdAt: '2026-05-24T12:00:00.000Z',
+        };
+        const MOCK_STORES: StoreListResult['stores'] = [
+            {
+                ...STORE_COMMON,
+                id: 'store-uuid-001',
+                slug: 'plus-doja',
+                name: '플러스 도자기',
+                region: { sido: '서울', sigungu: '성동구', dong: '성수동' },
+                thumbnailUrl: 'https://placehold.co/80x80?text=pottery',
+                rating: 4.9,
+                reviewCount: 253,
+                distance: 1200,
+                representativeClass: { name: '머그컵 만들기', price: 30000, hasMore: true },
+                matchedClass: null,
+                isOperating: true,
+            },
+            {
+                ...STORE_COMMON,
+                id: 'store-uuid-002',
+                slug: 'todam-pottery',
+                name: '흙과 사람',
+                region: { sido: '서울', sigungu: '성동구', dong: '성수동' },
+                thumbnailUrl: 'https://placehold.co/80x80?text=clay',
+                rating: 4.8,
+                reviewCount: 180,
+                distance: 2300,
+                representativeClass: { name: '물레 체험 기초반', price: 45000, hasMore: false },
+                matchedClass: null,
+                isOperating: true,
+            },
+            {
+                ...STORE_COMMON,
+                id: 'store-uuid-003',
+                slug: 'clay-seoul',
+                name: '클레이 서울',
+                region: { sido: '서울', sigungu: '종로구', dong: '통인동' },
+                thumbnailUrl: 'https://placehold.co/80x80?text=craft',
+                rating: 4.7,
+                reviewCount: 92,
+                distance: 5600,
+                representativeClass: { name: '핸드빌딩 기초', price: 35000, hasMore: false },
+                matchedClass: null,
+                isOperating: false,
+            },
+            {
+                ...STORE_COMMON,
+                id: 'store-uuid-004',
+                slug: 'seongsu-vintage',
+                name: '성수동 작은 공방',
+                region: { sido: '서울', sigungu: '성동구', dong: '성수동' },
+                thumbnailUrl: 'https://placehold.co/80x80?text=vintage',
+                rating: 4.6,
+                reviewCount: 47,
+                distance: 16400,
+                representativeClass: null,
+                // 키워드가 프로그램명에 매칭된 경우 matchedClass 세팅 예시
+                matchedClass: { name: '성수동 감성 빈티지 볼 그릇', price: 45000 },
+                isOperating: true,
+            },
+        ];
+
+        // keyword 부분 매칭 필터 (mock — name/region/program title)
+        let filtered = MOCK_STORES;
+        if (keyword.trim()) {
+            const kw = keyword.trim().toLowerCase();
+            filtered = MOCK_STORES.filter(
+                (s) =>
+                    s.name.toLowerCase().includes(kw) ||
+                    (s.region.dong?.toLowerCase().includes(kw) ?? false) ||
+                    (s.region.sigungu?.toLowerCase().includes(kw) ?? false) ||
+                    (s.representativeClass?.name.toLowerCase().includes(kw) ?? false) ||
+                    (s.matchedClass?.name.toLowerCase().includes(kw) ?? false),
+            );
+        }
+
+        // 커서 기반 페이지네이션
+        let startIdx = 0;
+        if (cursor) {
+            const idx = filtered.findIndex((s) => s.id === cursor);
+            startIdx = idx >= 0 ? idx + 1 : filtered.length;
+        }
+        const window = filtered.slice(startIdx, startIdx + limit + 1);
+        const hasNext = window.length > limit;
+        const stores = window.slice(0, limit);
+        const nextCursor = hasNext ? (stores[stores.length - 1]?.id ?? null) : null;
+
+        const result: StoreListResult = { stores, pageInfo: { nextCursor, hasNext } };
+        return ok(path, result, '공방 목록이 성공적으로 조회되었습니다.');
+    }),
+
+    // ─── 공방 자동완성 (GET /api/v1/stores/search/autocomplete) ─────────────
+    // contract: docs/exec-plans/active/user-stores-keyword.md API Contract B
+    // keyword 필수(공백 불가) → 없으면 400 KEYWORD_REQUIRED.
+    // REGION ≤ 3 / STORE ≤ 5 / PROGRAM ≤ 5.
+    // 주의: /stores/:slug 패턴보다 먼저 배치 (MSW 순서 매칭).
+    http.get(`${API}/stores/search/autocomplete`, ({ request }) => {
+        const path = '/api/v1/stores/search/autocomplete';
+        const url = new URL(request.url);
+        const keyword = url.searchParams.get('keyword') ?? '';
+
+        if (!keyword.trim()) {
+            return fail(
+                path,
+                400,
+                AUTOCOMPLETE_ERROR_CODES.KEYWORD_REQUIRED,
+                'keyword는 필수이며 공백일 수 없습니다.',
+            );
+        }
+
+        const kw = keyword.trim().toLowerCase();
+
+        // mock 자동완성 후보
+        const ALL_REGIONS = [
+            { id: 'seongdong-seongsu', text: '성수동', subtitle: '서울 성동구 성수동' },
+            { id: 'jongno-tongin', text: '통인동', subtitle: '서울 종로구 통인동' },
+            { id: 'mapo-yeonnam', text: '연남동', subtitle: '서울 마포구 연남동' },
+            { id: 'seongbuk-anam', text: '안암동', subtitle: '서울 성북구 안암동' },
+        ];
+        const ALL_STORES = [
+            { id: 'store-uuid-001', text: '플러스 도자기', subtitle: '서울 성동구 성수동' },
+            { id: 'store-uuid-002', text: '흙과 사람', subtitle: '서울 성동구 성수동' },
+            { id: 'store-uuid-003', text: '클레이 서울', subtitle: '서울 종로구 통인동' },
+            { id: 'store-uuid-004', text: '성수동 작은 공방', subtitle: '서울 성동구 성수동' },
+            { id: 'store-uuid-005', text: '성수 도예원', subtitle: '서울 성동구 성수동' },
+            { id: 'store-uuid-006', text: '온도 스튜디오', subtitle: '서울 용산구 이태원동' },
+        ];
+        const ALL_PROGRAMS = [
+            { id: 'prog-uuid-001', text: '성수동 감성 머그컵', subtitle: null },
+            { id: 'prog-uuid-002', text: '물레 체험 기초반', subtitle: null },
+            { id: 'prog-uuid-003', text: '핸드빌딩 머그컵 만들기', subtitle: null },
+            { id: 'prog-uuid-004', text: '성수동 감성 빈티지 볼 그릇', subtitle: null },
+            { id: 'prog-uuid-005', text: '커플 도자기 클래스', subtitle: null },
+            { id: 'prog-uuid-006', text: '화병 클래스', subtitle: null },
+        ];
+
+        const matchRegions = ALL_REGIONS.filter((r) => r.text.toLowerCase().includes(kw)).slice(
+            0,
+            3,
+        );
+        const matchStores = ALL_STORES.filter((s) => s.text.toLowerCase().includes(kw)).slice(0, 5);
+        const matchPrograms = ALL_PROGRAMS.filter((p) => p.text.toLowerCase().includes(kw)).slice(
+            0,
+            5,
+        );
+
+        const suggestions: AutocompleteResult['suggestions'] = [
+            ...matchRegions.map((r) => ({ type: 'REGION' as const, ...r })),
+            ...matchStores.map((s) => ({ type: 'STORE' as const, ...s })),
+            ...matchPrograms.map((p) => ({ type: 'PROGRAM' as const, ...p })),
+        ];
+
+        const result: AutocompleteResult = { suggestions };
+        return ok(path, result, '자동완성 목록 조회가 완료되었습니다.');
     }),
 
     // ─── 알림 설정 수정 (PATCH /api/v1/users/me/notification-settings) ────────

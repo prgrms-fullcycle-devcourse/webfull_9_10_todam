@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { StoreStatus } from '../enums/store-status';
+import { convenienceInfoSchema } from './store-registration';
+
 // ─── 공방 조회 쿼리 (SSOT) ───────────────────────────────────────────
 // @Query 문자열 도착 — 숫자는 z.coerce. unknown 키 strip(기본). BE 컨트롤러
 // param ZodValidationPipe(또는 INVALID_QUERY_PARAMETERS 매핑 파이프)가 검증.
@@ -42,3 +45,49 @@ export const slugAvailabilityQuerySchema = z.object({
     excludeStoreId: z.string().optional(),
 });
 export type SlugAvailabilityQuery = z.infer<typeof slugAvailabilityQuerySchema>;
+
+// ─── 공개 공방 상세 (GET /stores/:slug 응답, SSOT) ───────────────────
+// 형태 SSOT = BE 응답(prisma-store-detail.reader). PUBLISHED 공방만 노출.
+//  - images[].thumbnailUrl: 썸네일 미생성 시 null
+//  - rating: 노출 리뷰 0건이면 null
+export const publicStoreDetailImageSchema = z.object({
+    imageUrl: z.string().meta({ example: 'https://cdn.todam.example/stores/todam-jeonju/1.jpg' }),
+    thumbnailUrl: z
+        .string()
+        .meta({ example: 'https://cdn.todam.example/stores/todam-jeonju/1-thumb.jpg' })
+        .nullable(),
+});
+export type PublicStoreDetailImage = z.infer<typeof publicStoreDetailImageSchema>;
+
+export const publicStoreDetailSchema = z.object({
+    id: z.string().meta({ example: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d' }),
+    partnerId: z.string().meta({ example: 'd5e6f7a8-9b0c-1d2e-3f4a-5b6c7d8e9f0a' }),
+    slug: z.string().meta({ example: 'todam-jeonju' }),
+    name: z.string().meta({ example: '토담 전주 한옥마을점' }),
+    description: z
+        .string()
+        .meta({ example: '한옥의 고즈넉함 속에서 즐기는 도자기 물레 체험 공방입니다.' }),
+    phone: z.string().meta({ example: '063-123-4567' }),
+    address: z.string().meta({ example: '전북 전주시 완산구 교동 한옥마을길 12' }),
+    status: z.nativeEnum(StoreStatus).meta({ example: StoreStatus.PUBLISHED }),
+    convenienceInfo: convenienceInfoSchema,
+    autoConfirm: z.boolean().meta({ example: false }),
+    publishedAt: z.string().meta({ example: '2026-05-25T10:00:00.000Z' }),
+    images: z.array(publicStoreDetailImageSchema),
+    rating: z
+        .number()
+        .meta({ example: 4.9, description: '노출 리뷰 평균 별점. 리뷰 0건이면 null' })
+        .nullable(),
+    reviewCount: z.number().meta({ example: 248 }),
+    location: z.object({
+        lat: z.number().meta({ example: 37.5446 }),
+        lng: z.number().meta({ example: 127.056 }),
+    }),
+    isFavorite: z.boolean().meta({ example: false, description: '인증 시 찜 여부, 비인증 false' }),
+});
+export type PublicStoreDetail = z.infer<typeof publicStoreDetailSchema>;
+
+export const publicStoreDetailResultSchema = z.object({
+    store: publicStoreDetailSchema,
+});
+export type PublicStoreDetailResult = z.infer<typeof publicStoreDetailResultSchema>;

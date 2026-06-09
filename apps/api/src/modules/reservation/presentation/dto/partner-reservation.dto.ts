@@ -7,8 +7,11 @@ import {
     partnerReservationCalendarQuerySchema,
     partnerReservationDetailResponseSchema,
     partnerReservationStatusResponseSchema,
+    pendingReservationSummarySchema,
     reservationListDataSchema,
     rejectPartnerReservationRequestSchema,
+    updateInternalMemoRequestSchema,
+    updateInternalMemoResponseSchema,
 } from '@todam/shared';
 import { createZodDto } from 'nestjs-zod';
 
@@ -24,6 +27,10 @@ export class ListPartnerReservationsQueryDto extends createZodDto(
 ) {}
 
 export class ListPartnerReservationsResponseDto extends createZodDto(reservationListDataSchema) {}
+
+export class PendingReservationSummaryResponseDto extends createZodDto(
+    pendingReservationSummarySchema,
+) {}
 
 export class GetPartnerReservationDetailResponseDto extends createZodDto(
     partnerReservationDetailResponseSchema,
@@ -49,3 +56,7 @@ export class CreatePartnerReservationDto extends createZodDto(
 export class CreatePartnerReservationResponseDto extends createZodDto(
     createPartnerReservationResponseSchema,
 ) {}
+
+export class UpdateInternalMemoDto extends createZodDto(updateInternalMemoRequestSchema) {}
+
+export class UpdateInternalMemoResponseDto extends createZodDto(updateInternalMemoResponseSchema) {}

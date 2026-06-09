@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
-import { eachMonthDate, formatKstDate, kstDayOfWeek, kstMonthRange } from '../../domain/date.util';
+import {
+    eachMonthDate,
+    formatKstDate,
+    kstDayOfWeek,
+    kstMonthRange,
+} from '../../../../common/date/kst-date.util';
 import { PartnerReservationRepository } from '../../domain/repositories/partner-reservation.repository';
 import type {
     PartnerReservationCalendarQueryDto,

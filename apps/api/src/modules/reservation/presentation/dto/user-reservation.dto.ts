@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ReservationStatus } from '@prisma/client';
 import {
+    cancelReservationResponseSchema,
     createUserReservationRequestSchema,
     createUserReservationResultSchema,
     getMyReservationsQuerySchema,
@@ -51,3 +52,8 @@ export class MyReservationsResponseDto {
 // ─── GET /reservations/:reservationId ────────────────────────────────────────
 // 응답 SSOT = @todam/shared(zod).
 export class ReservationDetailResponseDto extends createZodDto(reservationDetailResponseSchema) {}
+
+// ─── POST /reservations/:reservationId/cancel ─────────────────────────────────
+// 요청 바디 없음 — 요청 DTO 불필요 (O3 확정).
+// 응답 SSOT = @todam/shared(zod).
+export class CancelReservationResponseDto extends createZodDto(cancelReservationResponseSchema) {}

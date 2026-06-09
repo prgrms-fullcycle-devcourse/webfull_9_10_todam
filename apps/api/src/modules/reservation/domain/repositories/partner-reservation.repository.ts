@@ -31,6 +31,12 @@ export interface PartnerReservationListRow {
     source: ReservationSource;
     createdAt: Date;
     programTitle: string;
+    durationMinutes: number;
+}
+
+export interface PendingReservationDateCount {
+    date: string;
+    reservationCount: number;
 }
 
 export interface PartnerReservationDetailRow {
@@ -119,6 +125,11 @@ export abstract class PartnerReservationRepository {
         query: PartnerReservationListQuery,
     ): Promise<PartnerReservationListRow[]>;
 
+    abstract countPendingByKstDate(
+        storeId: string,
+        start: Date,
+    ): Promise<PendingReservationDateCount[]>;
+
     abstract findDetail(reservationId: string): Promise<PartnerReservationDetailRow | null>;
 
     abstract createManual(
@@ -143,4 +154,9 @@ export abstract class PartnerReservationRepository {
     ): Promise<CancelReservationResult>;
 
     abstract complete(reservation: PartnerReservationActionRow): Promise<CompleteReservationResult>;
+
+    abstract updateInternalMemo(
+        reservationId: string,
+        memo: string | null,
+    ): Promise<{ id: string; internalMemo: string | null }>;
 }

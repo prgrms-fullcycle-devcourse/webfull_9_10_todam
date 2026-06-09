@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from 'react';
+import type { ComponentType, HTMLAttributes } from 'react';
 import { CheckIcon, LeafIcon } from '@todam/ui';
 
 export type StepperIconShape = 'square' | 'circle';
@@ -7,6 +7,7 @@ export type StepperIconStatus = 'completed' | 'current' | 'upcoming';
 export type StepperIconProps = {
     shape?: StepperIconShape;
     status?: StepperIconStatus;
+    icon?: ComponentType<{ size?: number }>;
 } & HTMLAttributes<HTMLSpanElement>;
 
 const shapeClasses: Record<StepperIconShape, string> = {
@@ -28,11 +29,12 @@ const statusClasses: Record<StepperIconStatus, string> = {
 export function StepperIcon({
     shape = 'circle',
     status = 'upcoming',
+    icon: Icon = LeafIcon,
     className,
     ...props
 }: StepperIconProps) {
     const size = iconSize[shape];
-    const icon = status === 'completed' ? <CheckIcon size={size} /> : <LeafIcon size={size} />;
+    const icon = status === 'completed' ? <CheckIcon size={size} /> : <Icon size={size} />;
 
     return (
         <span

@@ -9,6 +9,8 @@ export type FavoriteToggleButtonProps = {
     storeId: string;
     initialFavorite?: boolean;
     onChange?: (isFavorite: boolean) => void;
+    /** 토글 API 성공 후 추가 사이드이펙트 (예: 다른 쿼리 무효화). */
+    onAfterSuccess?: (isFavorite: boolean) => void;
     className?: string;
 };
 
@@ -18,6 +20,7 @@ export function FavoriteToggleButton({
     storeId,
     initialFavorite = false,
     onChange,
+    onAfterSuccess,
     className,
 }: FavoriteToggleButtonProps) {
     const [isFavorite, setIsFavorite] = useState(initialFavorite);
@@ -35,10 +38,12 @@ export function FavoriteToggleButton({
                     onChange?.(!next);
                 },
                 onSuccess: (res) => {
-                    if (res.isFavorite !== next) {
-                        setIsFavorite(res.isFavorite);
-                        onChange?.(res.isFavorite);
+                    const resolved = res.isFavorite;
+                    if (resolved !== next) {
+                        setIsFavorite(resolved);
+                        onChange?.(resolved);
                     }
+                    onAfterSuccess?.(resolved);
                 },
             },
         );

@@ -22,8 +22,14 @@ import {
     PartnerReservationListQuery,
     PartnerReservationListRow,
     PartnerReservationRepository,
+    PendingReservationDateCount,
     RejectReservationResult,
 } from '../../domain/repositories/partner-reservation.repository';
+import {
+    assertReservationStatusTransition,
+    decrementReservedCount,
+    tryIncrementReservedCount,
+} from './reservation-slot-count';
 
 @Injectable()
 export class PrismaPartnerReservationRepository extends PartnerReservationRepository {
@@ -86,11 +92,32 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 status: true,
                 source: true,
                 createdAt: true,
-                program: { select: { title: true } },
+                program: { select: { title: true, durationMinutes: true } },
             },
         });
 
-        return rows.map((row) => ({ ...row, programTitle: row.program.title }));
+        return rows.map((row) => ({
+            ...row,
+            programTitle: row.program.title,
+            durationMinutes: row.program.durationMinutes,
+        }));
+    }
+
+    async countPendingByKstDate(
+        storeId: string,
+        start: Date,
+    ): Promise<PendingReservationDateCount[]> {
+        return this.prisma.$queryRaw<PendingReservationDateCount[]>(Prisma.sql`
+            SELECT
+                TO_CHAR(("scheduled_at" AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD') AS "date",
+                COUNT(*)::int AS "reservationCount"
+            FROM "reservations"
+            WHERE "store_id" = ${storeId}::uuid
+              AND "status" = ${ReservationStatus.PENDING}::"ReservationStatus"
+              AND "scheduled_at" >= ${start}
+            GROUP BY ("scheduled_at" AT TIME ZONE 'Asia/Seoul')::date
+            ORDER BY ("scheduled_at" AT TIME ZONE 'Asia/Seoul')::date ASC
+        `);
     }
 
     async findDetail(reservationId: string): Promise<PartnerReservationDetailRow | null> {
@@ -219,16 +246,14 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 },
             });
 
-            const updateResult = await tx.storeTimeSlot.updateMany({
-                where: {
-                    id: slot.id,
-                    status: StoreTimeSlotStatus.OPEN,
-                    reservedCount: { lte: maxCapacity - input.participantCount },
-                },
-                data: { reservedCount: { increment: input.participantCount } },
-            });
+            const incremented = await tryIncrementReservedCount(
+                tx,
+                slot.id,
+                input.participantCount,
+                maxCapacity,
+            );
 
-            if (updateResult.count === 0) {
+            if (!incremented) {
                 throw new BusinessException(
                     'INSUFFICIENT_CAPACITY',
                     '잔여 정원이 부족합니다.',
@@ -236,6 +261,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 );
             }
 
+            // 체험완료(IN_PROGRESS)로 직접 등록하면 제작 시작 상태(건조)로 둔다.
             const artwork = await tx.artwork.create({
                 data: {
                     reservationId: reservation.id,
@@ -243,7 +269,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                     internalMemo: input.internalMemo ?? null,
                     status:
                         input.initialStatus === ReservationStatus.IN_PROGRESS
-                            ? ArtworkStatus.VISITED
+                            ? ArtworkStatus.DRYING
                             : ArtworkStatus.RESERVED,
                 },
                 select: { id: true },
@@ -256,7 +282,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                     fromStatus: null,
                     toStatus:
                         input.initialStatus === ReservationStatus.IN_PROGRESS
-                            ? ArtworkStatus.VISITED
+                            ? ArtworkStatus.DRYING
                             : ArtworkStatus.RESERVED,
                 },
             });
@@ -301,9 +327,12 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
 
     async confirm(reservation: PartnerReservationActionRow): Promise<ConfirmReservationResult> {
         return this.prisma.$transaction(async (tx) => {
-            const row = await tx.reservation.update({
+            await assertReservationStatusTransition(tx, reservation.id, reservation.status, {
+                status: ReservationStatus.CONFIRMED,
+            });
+
+            const row = await tx.reservation.findUniqueOrThrow({
                 where: { id: reservation.id },
-                data: { status: ReservationStatus.CONFIRMED },
                 select: { id: true, status: true, updatedAt: true },
             });
 
@@ -345,18 +374,19 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
         rejectReason: string | null,
     ): Promise<RejectReservationResult> {
         return this.prisma.$transaction(async (tx) => {
-            const row = await tx.reservation.update({
+            await assertReservationStatusTransition(tx, reservation.id, reservation.status, {
+                status: ReservationStatus.CANCELED,
+                canceledBy: userId,
+                cancelReason: rejectReason,
+                canceledAt: new Date(),
+            });
+
+            const row = await tx.reservation.findUniqueOrThrow({
                 where: { id: reservation.id },
-                data: {
-                    status: ReservationStatus.CANCELED,
-                    canceledBy: userId,
-                    cancelReason: rejectReason,
-                    canceledAt: new Date(),
-                },
                 select: { id: true, status: true, updatedAt: true },
             });
 
-            await this.decrementReservedCount(
+            await decrementReservedCount(
                 tx,
                 reservation.storeTimeSlotId,
                 reservation.participantCount,
@@ -372,14 +402,15 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
         cancelReason: string,
     ): Promise<CancelReservationResult> {
         return this.prisma.$transaction(async (tx) => {
-            const row = await tx.reservation.update({
+            await assertReservationStatusTransition(tx, reservation.id, reservation.status, {
+                status: ReservationStatus.CANCELED,
+                canceledBy: userId,
+                cancelReason,
+                canceledAt: new Date(),
+            });
+
+            const row = await tx.reservation.findUniqueOrThrow({
                 where: { id: reservation.id },
-                data: {
-                    status: ReservationStatus.CANCELED,
-                    canceledBy: userId,
-                    cancelReason,
-                    canceledAt: new Date(),
-                },
                 select: {
                     id: true,
                     status: true,
@@ -396,7 +427,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 });
             }
 
-            await this.decrementReservedCount(
+            await decrementReservedCount(
                 tx,
                 reservation.storeTimeSlotId,
                 reservation.participantCount,
@@ -408,62 +439,61 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
 
     async complete(reservation: PartnerReservationActionRow): Promise<CompleteReservationResult> {
         return this.prisma.$transaction(async (tx) => {
-            const row = await tx.reservation.update({
+            await assertReservationStatusTransition(tx, reservation.id, reservation.status, {
+                status: ReservationStatus.IN_PROGRESS,
+            });
+
+            const row = await tx.reservation.findUniqueOrThrow({
                 where: { id: reservation.id },
-                data: { status: ReservationStatus.IN_PROGRESS },
                 select: { id: true, status: true, updatedAt: true },
             });
 
-            const artwork = reservation.artwork
-                ? reservation.artwork
+            // 체험완료 = 제작 시작(건조). 작품 상태를 바로 DRYING 으로 두어
+            // statusView 가 IN_PROGRESS(제작 중) 그룹·건조 단계로 노출한다.
+            // 기존 작품 있으면 update, 없으면 create — 둘 중 1회 write.
+            const existing = reservation.artwork;
+            const artwork = existing
+                ? await tx.artwork.update({
+                      where: { id: existing.id },
+                      data: { status: ArtworkStatus.DRYING },
+                      select: { id: true, status: true },
+                  })
                 : await tx.artwork.create({
                       data: {
                           reservationId: reservation.id,
                           title: reservation.programTitle,
-                          status: ArtworkStatus.VISITED,
+                          status: ArtworkStatus.DRYING,
                       },
                       select: { id: true, status: true },
                   });
 
-            const artworkRow = await tx.artwork.update({
-                where: { id: artwork.id },
-                data: { status: ArtworkStatus.VISITED },
-                select: { status: true },
-            });
-
-            if (!reservation.artwork || reservation.artwork.status !== ArtworkStatus.VISITED) {
+            if (!existing || existing.status !== ArtworkStatus.DRYING) {
                 await tx.artworkLog.create({
                     data: {
                         artworkId: artwork.id,
                         changedBy: reservation.partnerUserId,
-                        fromStatus: reservation.artwork?.status ?? null,
-                        toStatus: ArtworkStatus.VISITED,
+                        fromStatus: existing?.status ?? null,
+                        toStatus: ArtworkStatus.DRYING,
                     },
                 });
             }
 
-            return { reservation: row, artwork: artworkRow };
+            return { reservation: row, artwork };
+        });
+    }
+
+    async updateInternalMemo(
+        reservationId: string,
+        memo: string | null,
+    ): Promise<{ id: string; internalMemo: string | null }> {
+        return this.prisma.reservation.update({
+            where: { id: reservationId },
+            data: { internalMemo: memo },
+            select: { id: true, internalMemo: true },
         });
     }
 
     private createQrToken(artworkId: string): string {
         return `artwork:${artworkId}:${randomUUID()}`;
-    }
-
-    private async decrementReservedCount(
-        tx: Prisma.TransactionClient,
-        storeTimeSlotId: string,
-        amount: number,
-    ): Promise<void> {
-        const slot = await tx.storeTimeSlot.findUnique({
-            where: { id: storeTimeSlotId },
-            select: { reservedCount: true },
-        });
-        if (!slot) return;
-
-        await tx.storeTimeSlot.update({
-            where: { id: storeTimeSlotId },
-            data: { reservedCount: Math.max(0, slot.reservedCount - amount) },
-        });
     }
 }

@@ -72,14 +72,15 @@ export function BusinessInfoEditScreen({ storeId }: { storeId: string }) {
 function BusinessEditInner({ storeId, store }: { storeId: string; store: PartnerStoreDetail }) {
     const router = useRouter();
     const { push } = useToast();
+    // 사업자 서류 미등록(null) 공방은 빈 값으로 prefill — 신규 입력.
     const doc = store.businessDocument;
 
     const baseline: BusinessForm = {
-        businessNumber: formatBusinessNumber(doc.businessNumber),
-        businessName: doc.businessName,
-        ownerName: doc.ownerName,
-        businessAddress: doc.businessAddress,
-        email: doc.email,
+        businessNumber: doc ? formatBusinessNumber(doc.businessNumber) : '',
+        businessName: doc?.businessName ?? '',
+        ownerName: doc?.ownerName ?? '',
+        businessAddress: doc?.businessAddress ?? '',
+        email: doc?.email ?? '',
         // 서류 이미지 prefill 보류: 사업자서류 S3 객체 비공개(403) → raw URL 표시 불가.
         // TODO: 표시하려면 presigned GET 발급 필요(별도 작업). baseline=null → 재업로드만.
         documentUrl: null,

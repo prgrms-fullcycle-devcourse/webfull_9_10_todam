@@ -8,27 +8,28 @@ import type {
     ListTimeSlotsResult,
     PartnerReservationDetailResponse,
     PartnerReservationStatusResponse,
+    PendingReservationSummary,
     ProgramReservationCountsResult,
     ReservationDetailResponse,
     ReservationListData,
     RejectPartnerReservationRequest,
     ReviewDetailResponse,
+    UpdateInternalMemoRequest,
+    UpdateInternalMemoResponse,
 } from '@todam/shared';
 
 import { clientApiFetch } from '@/shared/api';
 
-const BASE = '/api/v1';
-
 const PARTNER_BASE = '/partner';
 
 export function getReservationDetail(reservationId: string) {
-    return clientApiFetch<ReservationDetailResponse>(`${BASE}/reservations/${reservationId}`, {
+    return clientApiFetch<ReservationDetailResponse>(`/reservations/${reservationId}`, {
         method: 'GET',
     });
 }
 
 export function getReservationReview(reservationId: string) {
-    return clientApiFetch<ReviewDetailResponse>(`${BASE}/reservations/${reservationId}/review`, {
+    return clientApiFetch<ReviewDetailResponse>(`/reservations/${reservationId}/review`, {
         method: 'GET',
     });
 }
@@ -50,6 +51,15 @@ export function getPartnerReservationsByDate(storeId: string, date: string) {
 
     return clientApiFetch<ReservationListData>(
         `${PARTNER_BASE}/stores/${encodeURIComponent(storeId)}/reservations?${params}`,
+        { method: 'GET' },
+    );
+}
+
+// 대기 중인 예약 일자별 요약 (확정 대기 PENDING 건 날짜별 집계).
+// GET /partner/stores/{storeId}/reservations/pending-summary
+export function getPartnerPendingReservations(storeId: string) {
+    return clientApiFetch<PendingReservationSummary>(
+        `${PARTNER_BASE}/stores/${encodeURIComponent(storeId)}/reservations/pending-summary`,
         { method: 'GET' },
     );
 }
@@ -124,6 +134,16 @@ export function completePartnerReservation(reservationId: string) {
     return clientApiFetch<PartnerReservationStatusResponse>(
         `${PARTNER_BASE}/reservations/${encodeURIComponent(reservationId)}/complete`,
         { method: 'PATCH' },
+    );
+}
+
+export function updatePartnerReservationInternalMemo(
+    reservationId: string,
+    body: UpdateInternalMemoRequest,
+) {
+    return clientApiFetch<UpdateInternalMemoResponse>(
+        `${PARTNER_BASE}/reservations/${encodeURIComponent(reservationId)}/internal-memo`,
+        { method: 'PATCH', body },
     );
 }
 

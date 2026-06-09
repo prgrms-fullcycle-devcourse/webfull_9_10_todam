@@ -26,7 +26,7 @@ type ReviewRow = Prisma.ReviewGetPayload<{
         content: true;
         createdAt: true;
         user: { select: { nickname: true } };
-        reservation: { select: { program: { select: { title: true } } } };
+        reservation: { select: { program: { select: { id: true; title: true } } } };
         photos: {
             select: { imageUrl: true; thumbnailUrl: true; sortOrder: true; id: true };
         };
@@ -39,7 +39,7 @@ const REVIEW_SELECT = {
     content: true,
     createdAt: true,
     user: { select: { nickname: true } },
-    reservation: { select: { program: { select: { title: true } } } },
+    reservation: { select: { program: { select: { id: true, title: true } } } },
     photos: {
         select: { imageUrl: true, thumbnailUrl: true, sortOrder: true, id: true },
     },
@@ -159,6 +159,7 @@ export class PrismaStoreReviewsReader {
             rating: row.rating,
             content: row.content ?? '',
             photos: this.toPhotos(row.photos),
+            programId: row.reservation.program.id,
             programTitle: row.reservation.program.title,
             createdAt: row.createdAt.toISOString(),
         };

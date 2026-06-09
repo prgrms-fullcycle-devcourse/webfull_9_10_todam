@@ -10,7 +10,7 @@ import { useSheet, useToast } from '@/shared/model';
 import { requestPasswordReset } from '../api';
 
 // 재전송 쿨다운: FE 로컬 타이머 전용 (API Contract 변경 없음, 429 없음).
-// Plan step 8, UI 규칙 "바텀시트 — 링크 전송 완료" 기준.
+// 링크 방식: 메일의 재설정 링크 클릭 → /reset-password?email=&code= 진입(별도 페이지).
 const RESEND_COOLDOWN_SECONDS = 180;
 
 export type ResetRequestSheetProps = {
@@ -30,7 +30,6 @@ export function ResetRequestSheet({ onClose }: ResetRequestSheetProps) {
 
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // 쿨다운 타이머 시작
     const startCooldown = () => {
         setCooldown(RESEND_COOLDOWN_SECONDS);
     };
@@ -106,7 +105,7 @@ export function ResetRequestSheet({ onClose }: ResetRequestSheetProps) {
     };
 
     // ── 링크 전송 전 상태 ──
-    // Figma frame 8474:12017: 타이틀 "비밀번호를 잊으셨나요?", 설명 "가입하신 이메일 주소를 입력해 주세요."
+    // Figma frame 8474:12017: "비밀번호를 잊으셨나요?", "가입하신 이메일 주소를 입력해 주세요."
     if (!sent) {
         return (
             <FormBottomSheet
@@ -133,7 +132,7 @@ export function ResetRequestSheet({ onClose }: ResetRequestSheetProps) {
     }
 
     // ── 링크 전송 완료 상태 ──
-    // Figma frame 8474:10549: 타이틀 "메일함을 확인해 주세요", 이메일 disabled, 재전송 쿨다운 버튼
+    // Figma frame 8474:10549: "메일함을 확인해 주세요", 이메일 disabled, 재전송 쿨다운 버튼
     const canResend = cooldown === 0 && !pending;
     const primaryLabel =
         cooldown > 0 ? `재전송 까지 ${formatMmSs(cooldown)}` : '재설정 링크 재전송';

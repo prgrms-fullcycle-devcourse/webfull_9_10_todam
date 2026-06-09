@@ -17,7 +17,8 @@ describe('PrismaPartnerReservationRepository artwork logs', () => {
     it('creates an initial RESERVED log when confirmation creates an artwork', async () => {
         const tx = {
             reservation: {
-                update: jest.fn().mockResolvedValue({
+                updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+                findUniqueOrThrow: jest.fn().mockResolvedValue({
                     id: reservation.id,
                     status: ReservationStatus.CONFIRMED,
                     updatedAt: new Date(),
@@ -47,7 +48,7 @@ describe('PrismaPartnerReservationRepository artwork logs', () => {
         });
     });
 
-    it('creates a RESERVED to VISITED log when an experience completes', async () => {
+    it('creates a RESERVED to DRYING log when an experience completes', async () => {
         const existing = {
             ...reservation,
             status: ReservationStatus.CONFIRMED,
@@ -55,7 +56,8 @@ describe('PrismaPartnerReservationRepository artwork logs', () => {
         };
         const tx = {
             reservation: {
-                update: jest.fn().mockResolvedValue({
+                updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+                findUniqueOrThrow: jest.fn().mockResolvedValue({
                     id: reservation.id,
                     status: ReservationStatus.IN_PROGRESS,
                     updatedAt: new Date(),
@@ -63,7 +65,10 @@ describe('PrismaPartnerReservationRepository artwork logs', () => {
             },
             artwork: {
                 create: jest.fn(),
-                update: jest.fn().mockResolvedValue({ status: ArtworkStatus.VISITED }),
+                update: jest.fn().mockResolvedValue({
+                    id: 'artwork-1',
+                    status: ArtworkStatus.DRYING,
+                }),
             },
             artworkLog: { create: jest.fn().mockResolvedValue({}) },
         };
@@ -77,7 +82,7 @@ describe('PrismaPartnerReservationRepository artwork logs', () => {
                 artworkId: 'artwork-1',
                 changedBy: reservation.partnerUserId,
                 fromStatus: ArtworkStatus.RESERVED,
-                toStatus: ArtworkStatus.VISITED,
+                toStatus: ArtworkStatus.DRYING,
             },
         });
     });
