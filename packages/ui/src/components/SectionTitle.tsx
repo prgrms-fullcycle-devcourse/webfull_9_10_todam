@@ -8,6 +8,8 @@ export type SectionTitleProps = {
   subText?: string;
   icon?: ReactElement;
   className?: string;
+  // 지정 시 우측 영역(icon+subText)을 버튼으로 렌더 → 모두보기/자세히보기 네비용.
+  onSubTextClick?: () => void;
 };
 
 const titleClasses: Record<SectionTitleSize, string> = {
@@ -22,8 +24,10 @@ export function SectionTitle({
   subText,
   icon,
   className,
+  onSubTextClick,
 }: SectionTitleProps) {
   const hasRight = icon != null || subText != null;
+  const rightClassName = "flex items-center gap-1 text-foreground-tertiary text-xs";
 
   return (
     <div
@@ -34,12 +38,22 @@ export function SectionTitle({
       <span className={["text-foreground", titleClasses[size]].join(" ")}>
         {title}
       </span>
-      {hasRight && (
-        <div className="flex items-center gap-1 text-foreground-tertiary text-xs">
-          {icon}
-          {subText && <span>{subText}</span>}
-        </div>
-      )}
+      {hasRight &&
+        (onSubTextClick ? (
+          <button
+            type="button"
+            onClick={onSubTextClick}
+            className={`${rightClassName} cursor-pointer transition-colors hover:text-foreground-secondary`}
+          >
+            {icon}
+            {subText && <span>{subText}</span>}
+          </button>
+        ) : (
+          <div className={rightClassName}>
+            {icon}
+            {subText && <span>{subText}</span>}
+          </div>
+        ))}
     </div>
   );
 }
