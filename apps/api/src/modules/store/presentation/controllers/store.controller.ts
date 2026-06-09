@@ -24,6 +24,7 @@ import {
     businessDocumentUpdateRequestSchema,
     createStoreImageRequestSchema,
     createStoreRequestSchema,
+    favoriteStoresQuerySchema,
     listStoreReviewsQuerySchema,
     listStoresQuerySchema,
     slugAvailabilityQuerySchema,
@@ -68,6 +69,7 @@ import { GetStoreDetailUseCase } from '../../application/use-cases/get-store-det
 import { ListStoreProgramsUseCase } from '../../application/use-cases/list-store-programs.use-case';
 import { ListStoreReviewsUseCase } from '../../application/use-cases/list-store-reviews.use-case';
 import { ToggleFavoriteStoreUseCase } from '../../application/use-cases/toggle-favorite-store.use-case';
+import { ListFavoriteStoresUseCase } from '../../application/use-cases/list-favorite-stores.use-case';
 import { GetPartnerCurrentStoreUseCase } from '../../application/use-cases/get-partner-current-store.use-case';
 import { UpdatePartnerCurrentStoreUseCase } from '../../application/use-cases/update-partner-current-store.use-case';
 import { ListStoresResponseDto } from '../dto/list-stores-response.dto';
@@ -86,6 +88,10 @@ import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detai
 import { GetPartnerOnboardingResponseDto } from '../dto/get-partner-onboarding.dto';
 import { GetStoreDetailResponseDto } from '../dto/get-store-detail.dto';
 import { ToggleFavoriteStoreResponseDto } from '../dto/toggle-favorite-store.dto';
+import {
+    ListFavoriteStoresQueryDto,
+    ListFavoriteStoresResponseDto,
+} from '../dto/list-favorite-stores.dto';
 import { ListStoreProgramsResponseDto } from '../dto/list-store-programs.dto';
 import {
     GetPartnerCurrentStoreResponseDto,
@@ -122,6 +128,7 @@ export class StoreController {
         private readonly listStoreProgramsUseCase: ListStoreProgramsUseCase,
         private readonly listStoreReviewsUseCase: ListStoreReviewsUseCase,
         private readonly toggleFavoriteStoreUseCase: ToggleFavoriteStoreUseCase,
+        private readonly listFavoriteStoresUseCase: ListFavoriteStoresUseCase,
         private readonly getPartnerCurrentStoreUseCase: GetPartnerCurrentStoreUseCase,
         private readonly updatePartnerCurrentStoreUseCase: UpdatePartnerCurrentStoreUseCase,
     ) {}
@@ -437,5 +444,33 @@ export class StoreController {
         @Param('storeId') storeId: string,
     ): Promise<ToggleFavoriteStoreResponseDto> {
         return this.toggleFavoriteStoreUseCase.execute(user.id, storeId);
+    }
+
+    @Get('users/me/favorite-stores')
+    @HttpCode(HttpStatus.OK)
+    // 찜한 공방 목록. User 이상 인증 필수(미인증 401 UNAUTHORIZED).
+    // PUBLISHED 공방만 반환, 최신 찜순(createdAt desc, id desc), keyset 커서 페이지네이션.
+    @UseGuards(AuthGuard)
+    @ResponseMessage('찜한 공방 목록이 성공적으로 조회되었습니다.')
+    @ApiOkResponse({ description: '찜한 공방 목록 조회 성공', type: ListFavoriteStoresResponseDto })
+    @ApiQuery({
+        name: 'cursor',
+        type: String,
+        required: false,
+        description: '이전 응답의 nextCursor (opaque base64url)',
+    })
+    @ApiQuery({
+        name: 'limit',
+        type: Number,
+        required: false,
+        example: 20,
+        description: '한 번에 가져올 항목 수 (기본 20)',
+    })
+    async listFavoriteStores(
+        @CurrentUser() user: RequestUser,
+        @Query(new QueryZodValidationPipe(favoriteStoresQuerySchema))
+        query: ListFavoriteStoresQueryDto,
+    ): Promise<ListFavoriteStoresResponseDto> {
+        return this.listFavoriteStoresUseCase.execute(user.id, query);
     }
 }

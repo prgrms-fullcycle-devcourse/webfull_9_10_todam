@@ -347,6 +347,13 @@ describe('API route baseline', () => {
                 guards: ['AuthGuard'],
             },
             {
+                controller: 'StoreController',
+                handler: 'listFavoriteStores',
+                method: 'GET',
+                path: '/users/me/favorite-stores',
+                guards: ['AuthGuard'],
+            },
+            {
                 controller: 'ProgramController',
                 handler: 'createProgram',
                 method: 'POST',

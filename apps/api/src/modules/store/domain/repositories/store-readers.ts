@@ -204,6 +204,32 @@ export abstract class StoreReviewsReader {
 export abstract class StoresReader {
     abstract execute(query: ListStoresQuery): Promise<ListStoresResult>;
 }
+
+// ─── 찜한 공방 목록 (GET /users/me/favorite-stores) ──────────────────────────
+export interface ListFavoriteStoresQuery {
+    userId: string;
+    cursor?: string;
+    limit: number;
+}
+
+export interface FavoriteStoreListItem {
+    favoriteId: string;
+    storeId: string;
+    name: string;
+    imageUrl: string;
+    address: string;
+    createdAt: string; // ISO 8601
+}
+
+export interface ListFavoriteStoresResult {
+    favoriteStores: FavoriteStoreListItem[];
+    nextCursor: string | null;
+}
+
+export abstract class FavoriteStoresReader {
+    abstract execute(query: ListFavoriteStoresQuery): Promise<ListFavoriteStoresResult>;
+}
+
 import type {
     OcrStatus,
     PartnerDashboardStoresResult,
