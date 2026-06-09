@@ -136,5 +136,5 @@
 
 ## Outcome
 
-- Status: 결정 확정, FE 구현 대기
-- Follow-up: `/impl partner-qr-pdf fe` 로 구현 착수. (BE 착수 불필요)
+- Status: 완료 (FE 구현·실 API 연동 완료, reviewer drift 0)
+- Follow-up: 모바일 실기기 PDF 저장 UX + 출력물 QR 스캔 라운드트립 수동 검증(plan Validation 참고). 일괄 출력은 MVP 이후.
