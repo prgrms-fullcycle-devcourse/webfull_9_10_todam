@@ -7,6 +7,7 @@ const nextConfig = {
             // 디자인 확인용 placeholder 호스트 (S3 연동 단계에서 실 CDN 호스트로 교체).
             { protocol: 'https' as const, hostname: 'via.placeholder.com' },
             { protocol: 'https' as const, hostname: 'placehold.co' },
+            { protocol: 'https' as const, hostname: 'cdn.todam.app' },
         ],
     },
 };
