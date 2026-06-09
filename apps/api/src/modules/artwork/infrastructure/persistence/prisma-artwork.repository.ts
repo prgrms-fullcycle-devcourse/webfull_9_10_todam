@@ -27,6 +27,8 @@ import type {
     UpdateArtworkStatusRequest,
     UpdateArtworkStatusResult,
     ArtworkAvailableAction,
+    ArtworkStatusGroup,
+    ArtworkDetailStatus,
 } from '@todam/shared';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { buildObjectKey, CDN_BASE, keyFromImageUrl } from '../../../../common/s3/s3-object.util';
@@ -42,6 +44,92 @@ const TERMINAL_RESERVATION_STATUSES = [
     ReservationStatus.PICKUP_READY,
     ReservationStatus.PICKUP_DONE,
 ];
+
+// statusView 가 reservation 상태(배송/픽업)를 artwork 상태보다 우선 평가하므로,
+// group → DB where 변환도 동일 우선순위를 미러링한다.
+const SHIPPING_RES = [ReservationStatus.SHIPPED, ReservationStatus.PICKUP_READY];
+const RECEIVED_RES = [ReservationStatus.DELIVERED, ReservationStatus.PICKUP_DONE];
+// 이 reservation 상태들은 artwork 상태와 무관하게 그룹을 RECEIVING/RECEIVED 로 고정한다.
+const OVERRIDE_RES = [...SHIPPING_RES, ...RECEIVED_RES];
+
+function groupArtworkWhere(group: ArtworkStatusGroup): Prisma.ArtworkWhereInput {
+    switch (group) {
+        case 'WAITING':
+            return {
+                status: { in: [ArtworkStatus.RESERVED, ArtworkStatus.VISITED] },
+                reservation: { status: { notIn: OVERRIDE_RES } },
+            };
+        case 'IN_PROGRESS':
+            return {
+                status: {
+                    in: [
+                        ArtworkStatus.DRYING,
+                        ArtworkStatus.BISQUE_FIRING,
+                        ArtworkStatus.GLAZING,
+                        ArtworkStatus.GLAZE_FIRING,
+                    ],
+                },
+                reservation: { status: { notIn: OVERRIDE_RES } },
+            };
+        case 'RECEIVING':
+            return {
+                OR: [
+                    { reservation: { status: { in: SHIPPING_RES } } },
+                    {
+                        status: ArtworkStatus.COMPLETED,
+                        reservation: { status: { notIn: OVERRIDE_RES } },
+                    },
+                ],
+            };
+        case 'RECEIVED':
+            return { reservation: { status: { in: RECEIVED_RES } } };
+    }
+}
+
+// 단계 칩 필터(detailStatus) → DB where. statusView 의 detail 산출 로직을 역방향으로 미러링한다.
+function detailStatusArtworkWhere(detail: ArtworkDetailStatus): Prisma.ArtworkWhereInput {
+    const notOverridden = { status: { notIn: OVERRIDE_RES } };
+    switch (detail) {
+        // WAITING / IN_PROGRESS — detail 이 곧 artwork.status. reservation 이 배송/픽업으로
+        // 넘어가지 않은(=override 아님) 경우에만 해당 단계로 분류된다.
+        case 'RESERVED':
+        case 'VISITED':
+        case 'DRYING':
+        case 'BISQUE_FIRING':
+        case 'GLAZING':
+        case 'GLAZE_FIRING':
+            return { status: detail as ArtworkStatus, reservation: notOverridden };
+        // COMPLETED + 택배 → 수령 대기.
+        case 'DELIVERY_READY':
+            return {
+                status: ArtworkStatus.COMPLETED,
+                reservation: {
+                    status: { notIn: OVERRIDE_RES },
+                    deliveryMethod: ReservationDeliveryMethod.DELIVERY,
+                },
+            };
+        // 픽업 가능 = reservation PICKUP_READY 또는 COMPLETED + 픽업(아직 처리 전).
+        case 'PICKUP_READY':
+            return {
+                OR: [
+                    { reservation: { status: ReservationStatus.PICKUP_READY } },
+                    {
+                        status: ArtworkStatus.COMPLETED,
+                        reservation: {
+                            status: { notIn: OVERRIDE_RES },
+                            deliveryMethod: ReservationDeliveryMethod.PICKUP,
+                        },
+                    },
+                ],
+            };
+        case 'SHIPPED':
+            return { reservation: { status: ReservationStatus.SHIPPED } };
+        case 'DELIVERED':
+            return { reservation: { status: ReservationStatus.DELIVERED } };
+        case 'PICKUP_DONE':
+            return { reservation: { status: ReservationStatus.PICKUP_DONE } };
+    }
+}
 
 type ArtworkLogWithUserPhotos = Prisma.ArtworkLogGetPayload<{
     include: {
@@ -70,6 +158,10 @@ export class PrismaArtworkRepository extends ArtworkRepository {
             where: {
                 reservation: { storeId, status: { not: ReservationStatus.CANCELED } },
                 status: query.status ? query.status : { not: ArtworkStatus.CANCELED },
+                AND: [
+                    ...(query.group ? [groupArtworkWhere(query.group)] : []),
+                    ...(query.detailStatus ? [detailStatusArtworkWhere(query.detailStatus)] : []),
+                ],
             },
             orderBy: [{ reservation: { scheduledAt: 'desc' } }, { id: 'desc' }],
             cursor: query.cursor ? { id: query.cursor } : undefined,
@@ -156,8 +248,8 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                 row.reservation.deliveryMethod,
             );
             if (view) {
-                const key = this.camel(view.detail);
-                steps[key] = (steps[key] ?? 0) + 1;
+                // 키 = ArtworkDetailStatus enum값(계약 고정).
+                steps[view.detail] = (steps[view.detail] ?? 0) + 1;
             }
         }
         return { group: query.group ?? null, total: filtered.length, steps };
@@ -585,7 +677,6 @@ export class PrismaArtworkRepository extends ArtworkRepository {
         artworkId: string,
         include: Prisma.ArtworkInclude = {},
     ): Promise<any> {
-        // eslint-disable-line @typescript-eslint/no-explicit-any
         const row = await this.prisma.artwork.findUnique({
             where: { id: artworkId },
             include: {
@@ -697,12 +788,6 @@ export class PrismaArtworkRepository extends ArtworkRepository {
             carrier: delivery.carrier,
             shippedAt: delivery.shippedAt?.toISOString().slice(0, 10) ?? null,
         };
-    }
-
-    private camel(value: string) {
-        return value
-            .toLowerCase()
-            .replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
     }
 
     private error(code: string, message: string, status: number) {
