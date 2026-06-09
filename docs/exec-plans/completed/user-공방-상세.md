@@ -273,5 +273,8 @@
 
 ## Outcome
 
-- Status: **UI 기준 Decisions #1~3 확정.** Contract 고정(코어 확장 필드·programs difficulty·reviews 미리보기 정렬). 남은 일 = `GET /stores/{slug}`·`/programs`(difficulty)·`isFavorite` 등 Notion 명세 갱신 → implementer 인계.
-- Follow-up: `GET /stores/{slug}` Notion 명세 갱신(`images`/`rating`/`reviewCount`/`location`/`isFavorite` + programs `difficulty`). `rating` 규칙은 목록 DTO와 동기.
+- Status: **완료 (2026-06-09).** API 구현 + UI 구현 + API 연동 3단계 모두 충족. Contract A/B/C/E drift 0(reviewer 검증). 실 BE round-trip E2E 검증 완료(로컬 PG, A/B/C/E + 404 STORE_NOT_FOUND). FE 커밋 `cce66fd`(#118).
+- Follow-up:
+  - (권고·비차단) `StoreDetailClient.tsx` 로컬 `formatPrice`/`formatDuration` → `@todam/shared` 기존 유틸로 교체 가능(출력 동일).
+  - 잔여 #5(`autoConfirm` 퍼블릭 노출 적절성) 저우선 미정.
+  - `GET /stores/{slug}` Notion 명세 갱신(`images`/`rating`/`reviewCount`/`location`/`isFavorite` + programs `difficulty`) — `rating` 규칙은 목록 DTO와 동기.
