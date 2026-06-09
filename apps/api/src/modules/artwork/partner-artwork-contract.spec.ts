@@ -65,6 +65,10 @@ describe('partner artwork shared contracts', () => {
                     currentStagePhotos: [],
                     logs: [],
                     deliveryMethod: 'PICKUP',
+                    reservationStatus: 'CONFIRMED',
+                    pickupReadyAt: null,
+                    pickupDoneAt: null,
+                    deliveredAt: null,
                     delivery: null,
                     timeline: [],
                     reservation: {

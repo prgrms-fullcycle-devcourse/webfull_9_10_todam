@@ -13,10 +13,22 @@ interface KakaoGeocoderResult {
     x: string; // longitude
     y: string; // latitude
 }
+// coord2RegionCode 응답 항목 (행정구역). region_type: 'H'=행정동, 'B'=법정동.
+interface KakaoRegionResult {
+    region_type: string;
+    region_1depth_name: string; // 시/도
+    region_2depth_name: string; // 시/군/구
+    region_3depth_name: string; // 읍/면/동
+}
 interface KakaoGeocoder {
     addressSearch: (
         addr: string,
         cb: (result: KakaoGeocoderResult[], status: string) => void,
+    ) => void;
+    coord2RegionCode: (
+        lng: number,
+        lat: number,
+        cb: (result: KakaoRegionResult[], status: string) => void,
     ) => void;
 }
 // ── 지도 렌더용 최소 타입 ─────────────────────────────────────────
@@ -101,6 +113,35 @@ function loadSdk(): Promise<void> {
         document.head.appendChild(script);
     });
     return loading;
+}
+
+export interface RegionLabel {
+    sido: string;
+    sigungu: string;
+    dong: string;
+}
+
+// 좌표 → 행정구역(시/구/동). 근처 공방 헤더의 현재 위치 라벨용.
+// 변환 실패/결과 없음 시 throw (호출측에서 폴백 처리).
+export async function reverseGeocodeRegion(coords: GeocodeCoords): Promise<RegionLabel> {
+    await loadSdk();
+    const maps = window.kakao!.maps!;
+    return new Promise<RegionLabel>((resolve, reject) => {
+        const geocoder = new maps.services.Geocoder();
+        geocoder.coord2RegionCode(coords.longitude, coords.latitude, (result, status) => {
+            // 행정동('H') 우선, 없으면 첫 항목
+            const region = result.find((r) => r.region_type === 'H') ?? result[0];
+            if (status === maps.services.Status.OK && region) {
+                resolve({
+                    sido: region.region_1depth_name,
+                    sigungu: region.region_2depth_name,
+                    dong: region.region_3depth_name,
+                });
+                return;
+            }
+            reject(new Error('좌표 행정구역 변환 실패'));
+        });
+    });
 }
 
 // 주소 문자열 → 좌표. 변환 실패/결과 없음 시 throw (호출측에서 토스트 처리).

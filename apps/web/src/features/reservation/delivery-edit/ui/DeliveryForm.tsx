@@ -3,7 +3,7 @@
 import { TextInput } from '@todam/ui';
 import type { DeliveryEditRequest } from '@todam/shared';
 
-import { AddressSearchInput } from './AddressSearchInput';
+import { AddressSearchInput } from '@/shared/ui';
 
 // 폼 필드 5개를 한 군데에서 표현. 부모(DeliveryEditClient)가 state·errors·핸들러를 주입.
 // Figma 정본 (8505:17378 / 8505:19175):
