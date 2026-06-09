@@ -11,6 +11,8 @@ import {
     createUserReservationRequestSchema,
     ReservationCreateErrorCode,
     AUTOCOMPLETE_ERROR_CODES,
+    ProgramDifficulty,
+    ProgramStatus,
     type DeliveryEditResult,
     type ArtworkDetailResult,
     type GeocodeResult,
@@ -35,6 +37,7 @@ import {
     type CreateUserReservationResult,
     type StoreListResult,
     type AutocompleteResult,
+    type PublicProgramListResult,
     StoreStatus,
 } from '@todam/shared';
 import { http, HttpResponse } from 'msw';
@@ -58,6 +61,10 @@ import {
     nowIso,
     toggleFavorite,
     upsertDeliveryEdit,
+    MOCK_STORE_SLUG,
+    MOCK_STORE_ID,
+    seededPrograms,
+    seededProgramImages,
 } from './db';
 
 const FAVORITE_LIST_DEFAULT_LIMIT = 10;
@@ -130,6 +137,46 @@ export const handlers = [
         }
 
         return ok(path, { store }, '공방 상세가 조회되었습니다.');
+    }),
+
+    // GET /stores/{slug}/programs — 퍼블릭 운영 클래스 목록 (Contract B)
+    // plan: docs/exec-plans/active/user-공방-상세.md § Contract B
+    // ACTIVE 프로그램만, sortOrder·id asc. 빈 목록 → programs:[] 200.
+    http.get(`${API}/stores/:slug/programs`, ({ params }) => {
+        const slug = String(params.slug);
+        const path = `/api/v1/stores/${slug}/programs`;
+
+        if (slug !== MOCK_STORE_SLUG) {
+            return fail(path, 404, 'STORE_NOT_FOUND', '공방을 찾을 수 없습니다.');
+        }
+
+        // ACTIVE 프로그램만 필터링 → Contract B: status=ACTIVE 만 퍼블릭 노출
+        const activePrograms = seededPrograms
+            .filter((p) => p.status === ProgramStatus.ACTIVE && p.storeId === MOCK_STORE_ID)
+            .sort((a, b) => a.id.localeCompare(b.id)); // sortOrder 없으면 id asc
+
+        const programs: PublicProgramListResult['programs'] = activePrograms.map((p, idx) => {
+            const img = seededProgramImages.find(
+                (i) => i.programId === p.id && i.status === 'UPLOADED' && i.isThumbnail,
+            );
+            return {
+                id: p.id,
+                title: p.title,
+                difficulty:
+                    p.difficulty as (typeof ProgramDifficulty)[keyof typeof ProgramDifficulty],
+                description: p.description ?? '',
+                price: p.price,
+                durationMinutes: p.durationMinutes,
+                leadTimeDays: p.leadTimeDays,
+                deliverable: p.deliverable,
+                thumbnailUrl: img?.thumbnailUrl ?? null,
+                status: ProgramStatus.ACTIVE,
+                sortOrder: idx,
+            };
+        });
+
+        const result: PublicProgramListResult = { programs };
+        return ok(path, result, '운영 클래스 목록이 성공적으로 조회되었습니다.');
     }),
 
     // GET /stores/{slug}/reviews

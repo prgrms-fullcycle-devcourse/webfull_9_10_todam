@@ -65,6 +65,7 @@ export * from './contracts/partner-dashboard';
 export * from './contracts/partner-termination';
 export * from './contracts/user-me';
 export * from './contracts/store-search';
+export * from './contracts/store-detail';
 
 export * from './utils/date';
 export * from './utils/format-scheduled';

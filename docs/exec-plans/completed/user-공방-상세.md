@@ -6,8 +6,8 @@
 - 기능명 `user-공방-상세`의 `user`는 **실행주체**를 의미. 기능명세 DB에는 동일 도메인에 두 기능이 있어 구분 필요:
   - **`공방 자세히보기`** (실행주체 guest·user, 연관화면 "공방 상세") → **본 plan 대상**.
   - `공방 상세 조회` (실행주체 partner, 파트너센터 "공방 관리") → 별개 기능, 본 plan 범위 아님.
-- 메인 엔드포인트 `GET /stores/{slug}`는 **아직 BE 미구현**(controller에 `@Get('stores/:slug')` 없음). 목록(`GET /stores`)은 머지 완료.
-- **핵심 경계 이슈**: API명세상 `GET /stores/{slug}` 응답이 기능명세가 요구하는 화면 데이터를 충족하지 못한다(이미지목록·평점·리뷰수·운영시간·위치좌표·찜상태·클래스목록 누락). 화면은 별도 엔드포인트(프로그램 목록/리뷰 목록/찜)와 조합하거나 상세 응답을 확장해야 한다 → **Open decisions 참조, 사람 결정 필요.**
+- 메인 엔드포인트 `GET /stores/{slug}`는 **BE 구현 완료**(`store.controller.ts:189` getStoreDetail + OptionalAuthGuard). 동반 `GET /stores/:slug/programs`(:202)·`GET /stores/:slug/reviews`(:214)·`POST /stores/:storeId/favorite`(:428)도 구현됨. 목록(`GET /stores`)은 머지 완료. *(2026-06-09 갱신: 본 줄 이전엔 "BE 미구현"으로 stale 표기였음)*
+- **핵심 경계 이슈 → 해소됨**: 상세 응답 화면 데이터 갭은 Decisions #1~#3(2026-06-04 확정)으로 정리(코어에 `images[]`/`rating`/`reviewCount`/`location`/`isFavorite` 추가 compose + `/programs`·`/reviews?limit=3` 조합). 잔여 #5(`autoConfirm` 노출)는 저우선·착수 비차단.
 - Owner: TBD
 - Date: 2026-06-04
 
@@ -21,8 +21,8 @@
 -->
 
 - [x] API 구현
-- [ ] UI 구현
-- [ ] API 연동
+- [x] UI 구현
+- [x] API 연동
 
 ## Context
 
@@ -232,8 +232,16 @@
   - 모듈 등록: `apps/api/src/modules/store/store.module.ts` (use-case 2개 + `OptionalAuthGuard` providers 추가). 공통 envelope/404·500 처리는 기존 인터셉터/필터 재사용.
   - 빌드(`nest build`)·`tsc --noEmit`·eslint 통과 확인.
   - **범위 밖**: `GET /stores/:slug/reviews`(리뷰)는 **#120(공방 리뷰 전체보기)이 BE 소유** — 본 작업에서 미구현. `POST /stores/{storeId}/favorite` 토글 본체도 별도 찜 기능 소유(상세의 `isFavorite` 조회만 본 작업 포함).
-- UI: <!-- 공방 상세 화면, 캐러셀, 클래스 카드 목록, 리뷰 미리보기 -->
-- 연동: <!-- 상세+programs+reviews 조합, 404/빈상태/찜/라우팅 검증 -->
+- UI: (2026-06-09) 공방 상세 화면, 이미지 캐러셀, 클래스 카드 목록, 리뷰 미리보기 3건, 지도, 찜 버튼, 공유, 404/에러 화면, 스켈레톤.
+  - `apps/web/src/app/(user)/stores/[slug]/page.tsx` — 라우트 진입점
+  - `apps/web/src/features/store/public-detail/ui/StoreDetailClient.tsx` — 공방 상세 클라이언트 컴포넌트 (이미지 캐러셀·기본정보·편의정보·운영클래스·리뷰미리보기·지도·연락처·찜버튼·공유)
+  - `apps/web/src/features/store/public-detail/queries.ts` — `usePublicStoreDetail`, `usePublicStorePrograms` react-query 훅
+  - `apps/web/src/features/store/public-detail/api.ts` — `getPublicStoreDetail`, `getPublicStorePrograms` API 함수
+  - `apps/web/src/features/store/public-detail/index.ts` — 배럴 export
+- 연동: (2026-06-09) GET /stores/{slug} (Contract A) + GET /stores/{slug}/programs (Contract B) + GET /stores/{slug}/reviews?limit=3&sort=latest (Contract C) + POST /stores/{storeId}/favorite (Contract E, FavoriteToggleButton 재사용) MSW 바인딩. 실 BE 연동은 MSW 레이어 미사용 환경(NEXT_PUBLIC_API_MOCKING=disabled)에서 자동 전환됨.
+  - 타입 정의: `packages/shared/src/contracts/store-detail.ts` (StoreDetailResult, PublicProgramListResult)
+  - MSW 핸들러 추가: `apps/web/src/mocks/handlers.ts` (GET /stores/:slug/programs 핸들러 신규 추가)
+  - `apps/web/src/entities/store/ui/ConvenienceChips.tsx` — wifi 항목 추가
 
 ## Risks
 
@@ -260,8 +268,13 @@
 - 2026-06-04: `GET /stores/{slug}` BE 미구현 확인(store.controller.ts에 `stores/:slug` 라우트 없음). 목록(`GET /stores`)은 머지됨. 상세 `rating` 규칙(`isVisible=true` 평균, 0건 null)은 목록 DTO 재사용.
 - 2026-06-04: **UI 화면 기준 #1~#3 확정.** #1 compose(코어에 `images[]`/`rating`/`reviewCount`/`location`/`isFavorite` 추가 + `/programs`·`/reviews?limit=3` 조합), #2 미리보기 최신순, #3 `isFavorite` 추가. 상세엔 `region`객체·`operatingHours`·`isOperating` 미포함(UI "준비 중"=클래스0개 빈상태). 운영 클래스에 `difficulty` 추가(UI 기본/중급/심화).
 - 2026-06-04: **`GET /stores/{slug}/reviews` 커서 기반으로 변경** — `user-공방-리뷰-전체보기`(전체보기 무한스크롤) UI 확정에 따라 offset(`page`/`pagination`) → 커서(`cursor`/`pageInfo{nextCursor,hasNext}`). `totalCount`/`averageRating` 제거(코어 평점 사용), `photos`에 확대용 `imageUrl` 추가. 상세 미리보기는 cursor 없이 `limit=3&sort=latest`. 두 plan·Notion 명세 동기.
+- 2026-06-09: **FE 구현 완료** — shared `contracts/store-detail.ts`(A/B 타입), `features/store/public-detail/{api,queries,ui/StoreDetailClient}`, `app/(user)/stores/[slug]/page.tsx` 실화면, MSW `GET /stores/:slug/programs` 핸들러, `ConvenienceChips` wifi 추가. C(reviews 미리보기)·E(찜)는 기존 `getStoreReviews`·`FavoriteToggleButton` 재사용. typecheck/lint 통과.
+- 2026-06-09: **실 BE round-trip E2E 검증 완료** (로컬 PG+SSL, stores seed). A `GET /stores/:slug` 200(images[]·rating 4.7=isVisible 평균·reviewCount 3·location·isFavorite, 인증 시 찜 반영) / B `/programs` 200(ACTIVE-only·DRAFT 제외·difficulty·thumbnail 파생·sortOrder) / C `/reviews?limit=3&sort=latest` 200(nickname 마스킹·programTitle·photos·최신순·숨김리뷰 제외) / E `POST /stores/:id/favorite` 200(토글)·401(비인증) / 404 `STORE_NOT_FOUND`. → Status "API 연동" 실연동 기준 충족.
 
 ## Outcome
 
-- Status: **UI 기준 Decisions #1~3 확정.** Contract 고정(코어 확장 필드·programs difficulty·reviews 미리보기 정렬). 남은 일 = `GET /stores/{slug}`·`/programs`(difficulty)·`isFavorite` 등 Notion 명세 갱신 → implementer 인계.
-- Follow-up: `GET /stores/{slug}` Notion 명세 갱신(`images`/`rating`/`reviewCount`/`location`/`isFavorite` + programs `difficulty`). `rating` 규칙은 목록 DTO와 동기.
+- Status: **완료 (2026-06-09).** API 구현 + UI 구현 + API 연동 3단계 모두 충족. Contract A/B/C/E drift 0(reviewer 검증). 실 BE round-trip E2E 검증 완료(로컬 PG, A/B/C/E + 404 STORE_NOT_FOUND). FE 커밋 `cce66fd`(#118).
+- Follow-up:
+  - (권고·비차단) `StoreDetailClient.tsx` 로컬 `formatPrice`/`formatDuration` → `@todam/shared` 기존 유틸로 교체 가능(출력 동일).
+  - 잔여 #5(`autoConfirm` 퍼블릭 노출 적절성) 저우선 미정.
+  - `GET /stores/{slug}` Notion 명세 갱신(`images`/`rating`/`reviewCount`/`location`/`isFavorite` + programs `difficulty`) — `rating` 규칙은 목록 DTO와 동기.
