@@ -17,7 +17,8 @@ describe('PrismaPartnerReservationRepository artwork logs', () => {
     it('creates an initial RESERVED log when confirmation creates an artwork', async () => {
         const tx = {
             reservation: {
-                update: jest.fn().mockResolvedValue({
+                updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+                findUniqueOrThrow: jest.fn().mockResolvedValue({
                     id: reservation.id,
                     status: ReservationStatus.CONFIRMED,
                     updatedAt: new Date(),
@@ -55,7 +56,8 @@ describe('PrismaPartnerReservationRepository artwork logs', () => {
         };
         const tx = {
             reservation: {
-                update: jest.fn().mockResolvedValue({
+                updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+                findUniqueOrThrow: jest.fn().mockResolvedValue({
                     id: reservation.id,
                     status: ReservationStatus.IN_PROGRESS,
                     updatedAt: new Date(),
