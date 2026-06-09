@@ -32,6 +32,33 @@ export const partnerProgramListResultSchema = z.object({
 });
 export type PartnerProgramListResult = z.infer<typeof partnerProgramListResultSchema>;
 
+// ─── 공개 공방 클래스 목록 ──────────────────────────────────────────
+// GET /stores/{slug}/programs — 공개 노출(status ACTIVE 고정). 형태 SSOT = BE 응답(prisma-store-programs.reader).
+// 파트너 목록과 달리 description·thumbnailUrl·sortOrder 포함(유저 카드 노출용).
+//  - thumbnailUrl: 대표 이미지 없으면 null
+export const storeProgramListItemSchema = z.object({
+    id: z.string().meta({ example: 'program-uuid-001' }),
+    title: z.string().meta({ example: '머그컵 만들기' }),
+    difficulty: z.nativeEnum(ProgramDifficulty).meta({ example: ProgramDifficulty.BASIC }),
+    description: z.string().meta({ example: '나만의 머그컵을 빚어보는 원데이 클래스' }),
+    price: z.number().meta({ example: 45000 }),
+    durationMinutes: z.number().meta({ example: 120 }),
+    leadTimeDays: z.number().meta({ example: 28 }),
+    deliverable: z.boolean().meta({ example: true }),
+    thumbnailUrl: z
+        .string()
+        .meta({ example: 'https://cdn.todam.example/programs/mug-thumb.jpg' })
+        .nullable(),
+    status: z.nativeEnum(ProgramStatus).meta({ example: ProgramStatus.ACTIVE }),
+    sortOrder: z.number().meta({ example: 1 }),
+});
+export type StoreProgramListItem = z.infer<typeof storeProgramListItemSchema>;
+
+export const storeProgramListResultSchema = z.object({
+    programs: z.array(storeProgramListItemSchema),
+});
+export type StoreProgramListResult = z.infer<typeof storeProgramListResultSchema>;
+
 // ─── 파트너센터 운영 클래스 순서 변경 ────────────────────────────
 // PATCH /api/v1/partner/stores/{storeId}/programs/order  (CONTRACT-2 순서 변경)
 // body: { programs: [{ id, sortOrder }] }. 응답은 재정렬된 전체 목록(partnerProgramListResultSchema 재사용).
