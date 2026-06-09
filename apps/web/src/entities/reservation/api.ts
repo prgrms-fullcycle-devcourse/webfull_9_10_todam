@@ -8,6 +8,7 @@ import type {
     ListTimeSlotsResult,
     PartnerReservationDetailResponse,
     PartnerReservationStatusResponse,
+    PendingReservationSummary,
     ProgramReservationCountsResult,
     ReservationDetailResponse,
     ReservationListData,
@@ -48,6 +49,15 @@ export function getPartnerReservationsByDate(storeId: string, date: string) {
 
     return clientApiFetch<ReservationListData>(
         `${PARTNER_BASE}/stores/${encodeURIComponent(storeId)}/reservations?${params}`,
+        { method: 'GET' },
+    );
+}
+
+// 대기 중인 예약 일자별 요약 (확정 대기 PENDING 건 날짜별 집계).
+// GET /partner/stores/{storeId}/reservations/pending-summary
+export function getPartnerPendingReservations(storeId: string) {
+    return clientApiFetch<PendingReservationSummary>(
+        `${PARTNER_BASE}/stores/${encodeURIComponent(storeId)}/reservations/pending-summary`,
         { method: 'GET' },
     );
 }
