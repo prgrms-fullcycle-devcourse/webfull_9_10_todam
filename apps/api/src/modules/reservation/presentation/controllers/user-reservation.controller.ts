@@ -26,10 +26,12 @@ import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../../../common/decorators/response-message.decorator';
 import type { RequestUser } from '../../../../common/types/request-user.type';
+import { CancelUserReservationUseCase } from '../../application/use-cases/cancel-user-reservation.use-case';
 import { CreateUserReservationUseCase } from '../../application/use-cases/create-user-reservation.use-case';
 import { GetReservationDetailUseCase } from '../../application/use-cases/get-reservation-detail.use-case';
 import { ListUserReservationsUseCase } from '../../application/use-cases/list-user-reservations.use-case';
 import {
+    CancelReservationResponseDto,
     CreateUserReservationDto,
     CreateUserReservationResponseDto,
     MyReservationsResponseDto,
@@ -44,6 +46,7 @@ export class UserReservationController {
         private readonly createUseCase: CreateUserReservationUseCase,
         private readonly listUseCase: ListUserReservationsUseCase,
         private readonly detailUseCase: GetReservationDetailUseCase,
+        private readonly cancelUseCase: CancelUserReservationUseCase,
     ) {}
 
     @Get('reservations/me')
@@ -87,5 +90,18 @@ export class UserReservationController {
         @Param('reservationId') reservationId: string,
     ): Promise<ReservationDetailResponseDto> {
         return this.detailUseCase.execute(user.id, reservationId);
+    }
+
+    @Post('reservations/:reservationId/cancel')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ResponseMessage('예약이 성공적으로 취소되었습니다.')
+    @ApiOkResponse({ type: CancelReservationResponseDto })
+    @ApiParam({ name: 'reservationId', type: String, description: 'UUID' })
+    async cancelReservation(
+        @CurrentUser() user: RequestUser,
+        @Param('reservationId') reservationId: string,
+    ): Promise<CancelReservationResponseDto> {
+        return this.cancelUseCase.execute(user.id, reservationId);
     }
 }

@@ -46,6 +46,30 @@ export interface UserReservationListQuery {
     limit: number;
 }
 
+/** POST /reservations/:reservationId/cancel 취소 처리용 행 */
+export interface UserReservationCancelRow {
+    id: string;
+    userId: string | null;
+    status: ReservationStatus;
+    source: ReservationSource;
+    scheduledAt: Date;
+    participantCount: number;
+    storeTimeSlotId: string;
+    cancelDeadlineDays: number | null;
+    artworkId: string | null;
+    artworkStatus: ArtworkStatus | null;
+}
+
+/** POST /reservations/:reservationId/cancel 취소 결과 */
+export interface CancelUserReservationResult {
+    id: string;
+    /** 취소 후 status는 항상 'CANCELED' 리터럴 (plan §2 contract 명시). */
+    status: 'CANCELED';
+    canceledBy: string | null;
+    cancelReason: string | null;
+    canceledAt: Date | null;
+}
+
 /** GET /reservations/:reservationId 상세 조회용 행 */
 export interface UserReservationDetailRow {
     id: string;
@@ -93,4 +117,11 @@ export abstract class UserReservationRepository {
     ): Promise<UserReservationListRow[]>;
 
     abstract findDetail(reservationId: string): Promise<UserReservationDetailRow | null>;
+
+    abstract findForCancel(reservationId: string): Promise<UserReservationCancelRow | null>;
+
+    abstract cancelReservation(
+        row: UserReservationCancelRow,
+        userId: string,
+    ): Promise<CancelUserReservationResult>;
 }
