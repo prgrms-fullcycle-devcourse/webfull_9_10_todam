@@ -11,11 +11,10 @@ import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useToast } from '@/shared/model';
 import { resetPassword } from '@/features/auth/reset-password';
 
-// Figma frame 8474:10754: 재설정 확정 페이지.
-// 비밀번호 TextInput 1개 (confirm 필드 없음 — Figma 정본 기준).
-// Fixed-bottom "재설정 완료" 버튼. 비밀번호 유효 시 활성화.
-// 성공: 로그인 화면 redirect + Toast "비밀번호가 안전하게 변경되었어요".
-// 401 INVALID_OR_EXPIRED_TOKEN: 인라인 "링크 만료" 안내.
+// Figma frame 8474:10754: 재설정 링크 진입 페이지.
+// 메일의 재설정 링크(/reset-password?email=&code=)로 진입 → 새 비밀번호 1개만 입력.
+// BE는 코드 방식이라 링크가 email+code를 URL로 전달, 화면에선 코드 노출/입력 없이 그대로 전송.
+// 성공: 로그인 화면 redirect + Toast. 400(코드 불일치/만료): 인라인 "링크 만료/무효" 안내.
 
 export default function ResetPasswordPage() {
     return (
@@ -30,7 +29,10 @@ function ResetPasswordContent() {
     const searchParams = useSearchParams();
     const { push } = useToast();
 
-    const token = searchParams.get('token') ?? '';
+    // 메일 링크가 실어 보내는 값. 화면엔 노출하지 않고 재설정 요청에만 사용.
+    const email = searchParams.get('email') ?? '';
+    const code = searchParams.get('code') ?? '';
+    const linkValid = !!email && !!code;
 
     const [password, setPassword] = useState('');
     const [pending, setPending] = useState(false);
@@ -39,17 +41,16 @@ function ResetPasswordContent() {
 
     const passwordValid = passwordSchema.safeParse(password).success;
 
-    // 전역 Header override: sub 타입, 타이틀 "비밀번호 재설정" (Figma frame 8474:10754 header).
+    // 전역 Header override: 타이틀 "비밀번호 재설정", 우측 액션 없음.
     useHeaderOverride({ title: '비밀번호 재설정', hideRightAction: true });
 
     const handleSubmit = async () => {
-        if (pending || !passwordValid || !token) return;
+        if (pending || !passwordValid || !linkValid) return;
         setPending(true);
         setPasswordError(null);
         setExpiredError(false);
         try {
-            await resetPassword(token, password);
-            // Figma frame 8474:10302: 성공 후 로그인 화면 + Toast (type=icon, dark bg).
+            await resetPassword(email, code, password);
             router.replace('/login');
             push({
                 type: 'icon',
@@ -58,21 +59,11 @@ function ResetPasswordContent() {
             });
         } catch (err) {
             if (err instanceof ApiError) {
-                if (err.code === 'INVALID_OR_EXPIRED_TOKEN') {
-                    // 401: 링크 만료 — 인라인 안내
-                    setExpiredError(true);
-                } else if (err.code === 'PASSWORD_ALREADY_USED') {
-                    setPasswordError(
-                        '기존에 사용하던 비밀번호와 동일한 비밀번호로는 변경할 수 없어요.',
-                    );
-                } else if (err.code === 'INVALID_PASSWORD_FORMAT') {
+                if (err.code === 'INVALID_PASSWORD_FORMAT') {
                     setPasswordError('영문, 숫자, 특수문자를 포함해 8~32자로 입력해 주세요.');
                 } else {
-                    push({
-                        type: 'icon',
-                        icon: <InformationIcon />,
-                        message: err.message,
-                    });
+                    // 코드 불일치/만료/미가입 등 단일 400 → 링크 만료 안내.
+                    setExpiredError(true);
                 }
             } else {
                 push({
@@ -89,11 +80,11 @@ function ResetPasswordContent() {
     return (
         <div className="flex h-full flex-col bg-background">
             <main className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-2">
-                {/* 토큰 없거나 링크 만료 시 인라인 안내 */}
-                {(!token || expiredError) && (
+                {/* 링크 무효/만료 시 인라인 안내 */}
+                {(!linkValid || expiredError) && (
                     <div className="rounded-xl bg-danger-subtle px-4 py-3">
                         <p className="text-sm text-danger">
-                            {!token
+                            {!linkValid
                                 ? '재설정 링크가 유효하지 않아요. 다시 비밀번호 재설정을 요청해 주세요.'
                                 : '재설정 링크가 만료되었어요. 로그인 화면에서 다시 비밀번호 재설정을 요청해 주세요.'}
                         </p>
@@ -113,17 +104,16 @@ function ResetPasswordContent() {
                         setPassword(e.target.value);
                         setPasswordError(null);
                     }}
-                    disabled={!token || expiredError}
+                    disabled={!linkValid || expiredError}
                 />
             </main>
 
-            {/* Figma: fixed-bottom ButtonSection — white bg, top border, padding-top 16, padding-bottom 28 */}
             <BottomBar>
                 <Button
                     variant="filled"
                     size="lg"
                     className="w-full"
-                    disabled={!passwordValid || pending || !token || expiredError}
+                    disabled={!passwordValid || pending || !linkValid || expiredError}
                     onClick={() => void handleSubmit()}
                 >
                     재설정 완료
