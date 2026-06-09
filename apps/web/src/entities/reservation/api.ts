@@ -17,18 +17,16 @@ import type {
 
 import { clientApiFetch } from '@/shared/api';
 
-const BASE = '/api/v1';
-
 const PARTNER_BASE = '/partner';
 
 export function getReservationDetail(reservationId: string) {
-    return clientApiFetch<ReservationDetailResponse>(`${BASE}/reservations/${reservationId}`, {
+    return clientApiFetch<ReservationDetailResponse>(`/reservations/${reservationId}`, {
         method: 'GET',
     });
 }
 
 export function getReservationReview(reservationId: string) {
-    return clientApiFetch<ReviewDetailResponse>(`${BASE}/reservations/${reservationId}/review`, {
+    return clientApiFetch<ReviewDetailResponse>(`/reservations/${reservationId}/review`, {
         method: 'GET',
     });
 }
