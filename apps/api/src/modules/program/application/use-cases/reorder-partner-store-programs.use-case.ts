@@ -4,7 +4,7 @@ import { BusinessException } from '../../../../common/exceptions/business.except
 import { ProgramRepository } from '../../domain/repositories/program.repository';
 import { PartnerStoreProgramsReader } from '../../domain/repositories/program-readers';
 import type { ReorderPartnerStoreProgramsDto } from '../../presentation/dto/reorder-partner-store-programs.dto';
-import type { ListPartnerStoreProgramsResponseDto } from '../../presentation/dto/list-partner-store-programs.dto';
+import type { PartnerProgramListResult } from '@todam/shared';
 
 @Injectable()
 export class ReorderPartnerStoreProgramsUseCase {
@@ -18,7 +18,7 @@ export class ReorderPartnerStoreProgramsUseCase {
         userId: string,
         storeId: string,
         dto: ReorderPartnerStoreProgramsDto,
-    ): Promise<ListPartnerStoreProgramsResponseDto> {
+    ): Promise<PartnerProgramListResult> {
         // 공방 존재(404) + 소유 권한(403) 검증. 파트너센터 문구는 공방 단위 접근 권한 기준.
         await this.ownership.verify(userId, storeId, {
             notFound: 'STORE_NOT_FOUND',
@@ -49,6 +49,7 @@ export class ReorderPartnerStoreProgramsUseCase {
         );
 
         // 재정렬된 전체 목록을 GET use-case 와 동일하게 재조회하여 반환한다.
-        return this.reader.execute(storeId);
+        // reader 는 difficulty/status 를 string union 으로 반환 → shared enum 응답 계약으로 정규화.
+        return this.reader.execute(storeId) as Promise<PartnerProgramListResult>;
     }
 }
