@@ -1,6 +1,11 @@
+import { createHash } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
-import { UserProfileRow, UserRepository } from '../../domain/repositories/user.repository';
+import {
+    UserProfileRow,
+    UserRepository,
+    WithdrawTargetRow,
+} from '../../domain/repositories/user.repository';
 
 const USER_PROFILE_SELECT = {
     id: true,
@@ -64,5 +69,80 @@ export class PrismaUserRepository extends UserRepository {
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
         };
+    }
+
+    // ─── 회원탈퇴 ─────────────────────────────────────────────────────────────
+
+    async findWithdrawTarget(userId: string): Promise<WithdrawTargetRow | null> {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, password: true, status: true },
+        });
+
+        return user ?? null;
+    }
+
+    async hasActivePartner(userId: string): Promise<boolean> {
+        const count = await this.prisma.partner.count({
+            where: {
+                userId,
+                status: 'APPROVED',
+                terminatedAt: null,
+            },
+        });
+
+        return count > 0;
+    }
+
+    async hasActiveReservations(userId: string): Promise<boolean> {
+        const count = await this.prisma.reservation.count({
+            where: {
+                userId,
+                status: {
+                    notIn: ['CANCELED', 'DELIVERED', 'PICKUP_DONE'],
+                },
+            },
+        });
+
+        return count > 0;
+    }
+
+    async hasActiveArtworks(userId: string): Promise<boolean> {
+        const count = await this.prisma.artwork.count({
+            where: {
+                reservation: { userId },
+                status: {
+                    notIn: ['COMPLETED', 'CANCELED'],
+                },
+            },
+        });
+
+        return count > 0;
+    }
+
+    async withdraw(userId: string): Promise<void> {
+        const now = new Date();
+        // 결정적 유니크 해시: sha256(userId) — Math.random/Date.now 금지
+        const hash = createHash('sha256').update(userId).digest('hex');
+        const emailPrefix = hash.slice(0, 16);
+        const nicknamePrefix = hash.slice(0, 8);
+
+        const anonymizedEmail = `withdrawn_${emailPrefix}@anonymized.todam`;
+        const anonymizedNickname = `탈퇴회원_${nicknamePrefix}`;
+
+        await this.prisma.$transaction([
+            this.prisma.user.update({
+                where: { id: userId },
+                data: {
+                    status: 'WITHDRAWN',
+                    withdrawnAt: now,
+                    email: anonymizedEmail,
+                    nickname: anonymizedNickname,
+                    password: null,
+                },
+            }),
+            this.prisma.oAuthAccount.deleteMany({ where: { userId } }),
+            this.prisma.refreshToken.deleteMany({ where: { userId } }),
+        ]);
     }
 }
