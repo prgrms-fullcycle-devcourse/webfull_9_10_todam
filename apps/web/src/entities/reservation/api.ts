@@ -14,6 +14,8 @@ import type {
     ReservationListData,
     RejectPartnerReservationRequest,
     ReviewDetailResponse,
+    UpdateInternalMemoRequest,
+    UpdateInternalMemoResponse,
 } from '@todam/shared';
 
 import { clientApiFetch } from '@/shared/api';
@@ -132,6 +134,16 @@ export function completePartnerReservation(reservationId: string) {
     return clientApiFetch<PartnerReservationStatusResponse>(
         `${PARTNER_BASE}/reservations/${encodeURIComponent(reservationId)}/complete`,
         { method: 'PATCH' },
+    );
+}
+
+export function updatePartnerReservationInternalMemo(
+    reservationId: string,
+    body: UpdateInternalMemoRequest,
+) {
+    return clientApiFetch<UpdateInternalMemoResponse>(
+        `${PARTNER_BASE}/reservations/${encodeURIComponent(reservationId)}/internal-memo`,
+        { method: 'PATCH', body },
     );
 }
 
