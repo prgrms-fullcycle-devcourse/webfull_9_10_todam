@@ -1040,8 +1040,8 @@ export const handlers = [
             filtered = MOCK_STORES.filter(
                 (s) =>
                     s.name.toLowerCase().includes(kw) ||
-                    s.region.dong.toLowerCase().includes(kw) ||
-                    s.region.sigungu.toLowerCase().includes(kw) ||
+                    (s.region.dong?.toLowerCase().includes(kw) ?? false) ||
+                    (s.region.sigungu?.toLowerCase().includes(kw) ?? false) ||
                     (s.representativeClass?.name.toLowerCase().includes(kw) ?? false) ||
                     (s.matchedClass?.name.toLowerCase().includes(kw) ?? false),
             );

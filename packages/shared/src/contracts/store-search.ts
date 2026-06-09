@@ -6,9 +6,9 @@ import { z } from 'zod';
 // ──── GET /stores — keyword 확장 (A) ─────────────────────────────
 // region 구조화 (시/구/동) — 기존 string에서 객체로 변경.
 export const storeRegionSchema = z.object({
-    sido: z.string(),
-    sigungu: z.string(),
-    dong: z.string(),
+    sido: z.string().nullable(),
+    sigungu: z.string().nullable(),
+    dong: z.string().nullable(),
 });
 export type StoreRegion = z.infer<typeof storeRegionSchema>;
 
@@ -32,10 +32,11 @@ export const storeListItemSchema = z.object({
     slug: z.string(),
     name: z.string(),
     region: storeRegionSchema,
-    thumbnailUrl: z.string(),
-    rating: z.number(),
+    // BE list-stores-response.dto 기준 nullable (썸네일 없음 / 리뷰0건 rating=null / 위치 미제공 distance=null)
+    thumbnailUrl: z.string().nullable(),
+    rating: z.number().nullable(),
     reviewCount: z.number(),
-    distance: z.number(),
+    distance: z.number().nullable(),
     representativeClass: representativeClassSchema.nullable(),
     matchedClass: matchedClassSchema,
     isOperating: z.boolean(),
