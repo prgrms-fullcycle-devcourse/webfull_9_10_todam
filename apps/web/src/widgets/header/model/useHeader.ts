@@ -22,12 +22,12 @@ const routeConfig: Record<string, HeaderConfig> = {
     '/': { type: 'home' },
     '/my': { type: 'main', title: '마이페이지' },
     '/my/profile': { type: 'sub', title: '개인 정보 수정' },
-    '/my/reservations': { type: 'sub', title: '예약' },
+    '/my/reservations': { type: 'sub', title: '나의 예약' },
     '/partner': { type: 'home' },
     '/partner/classes': { type: 'sub', title: '클래스 관리' },
     '/partner/reservations': { type: 'main', title: '예약 관리' },
-    '/partner/reservations/new': { type: 'sub', title: '흙과 사람 예약 등록하기' },
-    '/partner/artworks': { type: 'sub', title: '작품' },
+    '/partner/reservations/new': { type: 'sub', title: '예약 등록하기' },
+    '/partner/artworks': { type: 'main', title: '작품 관리' },
     '/partner/settings': { type: 'sub', title: '설정' },
 };
 
