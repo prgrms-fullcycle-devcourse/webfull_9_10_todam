@@ -303,7 +303,7 @@ Query Parameters:
 
 - [x] API 구현
 - [x] UI 구현
-- [ ] API 연동
+- [x] API 연동
 
 ---
 
@@ -328,8 +328,9 @@ Query Parameters:
   - 화면: `apps/web/src/app/(user)/my/reservations/page.tsx` + `_components/ReservationsListClient.tsx`
   - 카드: `apps/web/src/app/(user)/my/reservations/_components/ReservationCard.tsx`
 - 연동:
-  - [ ] MSW 비활성화 후 실서버 연결 확인
-  - [ ] E2E 검증 완료
+  - [x] MSW 비활성화 후 실서버 연결 확인 — api.ts의 `/api/v1` 하드코딩 제거 → `/reservations/me` 무prefix 경로로 수정. `clientApiFetch.resolveUrl` 실모드(`NEXT_PUBLIC_API_MOCKING=disabled`)에서 `/api/proxy/reservations/me`로 변환 → Next.js proxy → `API_BASE_URL/reservations/me` (BE `@Controller()` 무prefix, `@Get('reservations/me')`). proxy ALLOWED_PREFIXES에 `/reservations/` 포함 확인.
+  - [x] shared `reservation-list.ts` `reservationListItemSchema`에서 `category` 필드 제거. MSW mock DB(`mocks/db.ts`) SEEDED_RESERVATIONS 11개 항목 `category: '도자기'` 제거. 카드 meta line은 `ReservationCard.tsx`에 이미 `{storeName}・{time}` 형태로 구현됨.
+  - [ ] E2E 검증 완료 — 실 BE 미기동으로 round-trip 미검증. typecheck/lint pass 확인.
 
 ---
 
