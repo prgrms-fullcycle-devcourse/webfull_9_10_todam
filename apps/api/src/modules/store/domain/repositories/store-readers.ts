@@ -68,10 +68,9 @@ export interface AutocompleteStoresResult {
     suggestions: StoreSuggestion[];
 }
 
-export interface PartnerOnboardingResult {
-    partnerStatus: `${PartnerStatus}` | null;
-    store: { id: string; status: `${StoreStatus}`; rejectedReason: string | null } | null;
-}
+// 응답 형태 SSOT = @todam/shared(zod). infra(Prisma reader)가 경계에서 Prisma enum → shared enum 매핑.
+// 타입 정의는 하단 @todam/shared import 블록에서 가져와 재노출(export type).
+export type { PartnerOnboardingResult };
 
 export interface PartnerStoreDetailResult {
     store: {
@@ -208,7 +207,7 @@ export abstract class StoresReader {
 import type {
     OcrStatus,
     PartnerDashboardStoresResult,
-    PartnerStatus,
+    PartnerOnboardingResult,
     ProgramDifficulty,
     ProgramStatus,
     StoreStatus,
