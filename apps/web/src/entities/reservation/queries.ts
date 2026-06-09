@@ -7,6 +7,7 @@ import type {
     CreateReservationRestrictionsRequest,
     DeleteReservationRestrictionsRequest,
     RejectPartnerReservationRequest,
+    UpdateInternalMemoRequest,
 } from '@todam/shared';
 
 import { ApiError } from '@/shared/api';
@@ -27,6 +28,7 @@ import {
     getReservationDetail,
     getReservationReview,
     rejectPartnerReservation,
+    updatePartnerReservationInternalMemo,
 } from './api';
 
 const KEY = ['reservations', 'detail'] as const;
@@ -202,6 +204,16 @@ export function useCancelPartnerReservationMutation(reservationId: string) {
         mutationFn: (body: CancelPartnerReservationRequest) =>
             cancelPartnerReservation(reservationId, body),
         onSuccess: invalidate,
+    });
+}
+
+export function useUpdatePartnerReservationInternalMemoMutation(reservationId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: UpdateInternalMemoRequest) =>
+            updatePartnerReservationInternalMemo(reservationId, body),
+        onSuccess: () =>
+            queryClient.invalidateQueries({ queryKey: [...PARTNER_DETAIL_KEY, reservationId] }),
     });
 }
 

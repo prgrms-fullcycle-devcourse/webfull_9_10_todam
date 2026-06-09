@@ -36,6 +36,7 @@ import {
     useConfirmPartnerReservationMutation,
     usePartnerReservationDetail,
     useRejectPartnerReservationMutation,
+    useUpdatePartnerReservationInternalMemoMutation,
 } from '@/entities/reservation';
 
 type PartnerReservationDetailClientProps = {
@@ -188,6 +189,7 @@ export function PartnerReservationDetailClient({
     const rejectMutation = useRejectPartnerReservationMutation(reservationId);
     const cancelMutation = useCancelPartnerReservationMutation(reservationId);
     const completeMutation = useCompletePartnerReservationMutation(reservationId);
+    const updateMemoMutation = useUpdatePartnerReservationInternalMemoMutation(reservationId);
 
     const initialMemo = reservation?.internalMemo ?? '';
     const currentMemoDraft =
@@ -260,7 +262,25 @@ export function PartnerReservationDetailClient({
     };
 
     const handleSaveMemo = () => {
-        pushToast({ message: '메모 저장 API 연결 후 저장됩니다.' });
+        if (!reservation || updateMemoMutation.isPending) return;
+        // OD-1: 빈 문자열은 null 로 정규화해 전송.
+        const trimmed = memo.trim();
+        updateMemoMutation.mutate(
+            { internalMemo: trimmed === '' ? null : memo },
+            {
+                onSuccess: () => {
+                    setMemoDraft((current) =>
+                        current && current.reservationId === reservationId
+                            ? { ...current, saved: current.value }
+                            : current,
+                    );
+                    pushToast({ message: '내부 메모가 저장되었어요.' });
+                },
+                onError: () => {
+                    pushToast({ message: '메모 저장에 실패했습니다.' });
+                },
+            },
+        );
     };
 
     const handleCall = () => {
@@ -357,7 +377,13 @@ export function PartnerReservationDetailClient({
 
                     <TextArea
                         label="내부 메모"
-                        actionLabel={isMemoDirty ? '저장하기' : undefined}
+                        actionLabel={
+                            isMemoDirty
+                                ? updateMemoMutation.isPending
+                                    ? '저장 중...'
+                                    : '저장하기'
+                                : undefined
+                        }
                         onActionClick={handleSaveMemo}
                         value={memo}
                         maxLength={200}
