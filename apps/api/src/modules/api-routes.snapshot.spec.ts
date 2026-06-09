@@ -51,6 +51,9 @@ function controllers(): ControllerClass[] {
     const { PartnerController } = jest.requireActual<
         typeof import('./partner/presentation/controllers/partner.controller')
     >('./partner/presentation/controllers/partner.controller');
+    const { UserController } = jest.requireActual<
+        typeof import('./user/presentation/controllers/user.controller')
+    >('./user/presentation/controllers/user.controller');
 
     return [
         AuthController,
@@ -62,6 +65,7 @@ function controllers(): ControllerClass[] {
         UserReservationController,
         PartnerArtworkController,
         PartnerController,
+        UserController,
     ];
 }
 
@@ -620,6 +624,20 @@ describe('API route baseline', () => {
                 handler: 'terminate',
                 method: 'DELETE',
                 path: '/partners/me',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'UserController',
+                handler: 'getProfile',
+                method: 'GET',
+                path: '/users/me',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'UserController',
+                handler: 'patchProfile',
+                method: 'PATCH',
+                path: '/users/me',
                 guards: ['AuthGuard'],
             },
         ]);
