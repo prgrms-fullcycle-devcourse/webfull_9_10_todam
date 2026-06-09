@@ -25,6 +25,11 @@ import {
     PendingReservationDateCount,
     RejectReservationResult,
 } from '../../domain/repositories/partner-reservation.repository';
+import {
+    assertReservationStatusTransition,
+    decrementReservedCount,
+    tryIncrementReservedCount,
+} from './reservation-slot-count';
 
 @Injectable()
 export class PrismaPartnerReservationRepository extends PartnerReservationRepository {
@@ -241,16 +246,14 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 },
             });
 
-            const updateResult = await tx.storeTimeSlot.updateMany({
-                where: {
-                    id: slot.id,
-                    status: StoreTimeSlotStatus.OPEN,
-                    reservedCount: { lte: maxCapacity - input.participantCount },
-                },
-                data: { reservedCount: { increment: input.participantCount } },
-            });
+            const incremented = await tryIncrementReservedCount(
+                tx,
+                slot.id,
+                input.participantCount,
+                maxCapacity,
+            );
 
-            if (updateResult.count === 0) {
+            if (!incremented) {
                 throw new BusinessException(
                     'INSUFFICIENT_CAPACITY',
                     '잔여 정원이 부족합니다.',
@@ -324,9 +327,12 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
 
     async confirm(reservation: PartnerReservationActionRow): Promise<ConfirmReservationResult> {
         return this.prisma.$transaction(async (tx) => {
-            const row = await tx.reservation.update({
+            await assertReservationStatusTransition(tx, reservation.id, reservation.status, {
+                status: ReservationStatus.CONFIRMED,
+            });
+
+            const row = await tx.reservation.findUniqueOrThrow({
                 where: { id: reservation.id },
-                data: { status: ReservationStatus.CONFIRMED },
                 select: { id: true, status: true, updatedAt: true },
             });
 
@@ -368,18 +374,19 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
         rejectReason: string | null,
     ): Promise<RejectReservationResult> {
         return this.prisma.$transaction(async (tx) => {
-            const row = await tx.reservation.update({
+            await assertReservationStatusTransition(tx, reservation.id, reservation.status, {
+                status: ReservationStatus.CANCELED,
+                canceledBy: userId,
+                cancelReason: rejectReason,
+                canceledAt: new Date(),
+            });
+
+            const row = await tx.reservation.findUniqueOrThrow({
                 where: { id: reservation.id },
-                data: {
-                    status: ReservationStatus.CANCELED,
-                    canceledBy: userId,
-                    cancelReason: rejectReason,
-                    canceledAt: new Date(),
-                },
                 select: { id: true, status: true, updatedAt: true },
             });
 
-            await this.decrementReservedCount(
+            await decrementReservedCount(
                 tx,
                 reservation.storeTimeSlotId,
                 reservation.participantCount,
@@ -395,14 +402,15 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
         cancelReason: string,
     ): Promise<CancelReservationResult> {
         return this.prisma.$transaction(async (tx) => {
-            const row = await tx.reservation.update({
+            await assertReservationStatusTransition(tx, reservation.id, reservation.status, {
+                status: ReservationStatus.CANCELED,
+                canceledBy: userId,
+                cancelReason,
+                canceledAt: new Date(),
+            });
+
+            const row = await tx.reservation.findUniqueOrThrow({
                 where: { id: reservation.id },
-                data: {
-                    status: ReservationStatus.CANCELED,
-                    canceledBy: userId,
-                    cancelReason,
-                    canceledAt: new Date(),
-                },
                 select: {
                     id: true,
                     status: true,
@@ -419,7 +427,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 });
             }
 
-            await this.decrementReservedCount(
+            await decrementReservedCount(
                 tx,
                 reservation.storeTimeSlotId,
                 reservation.participantCount,
@@ -431,9 +439,12 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
 
     async complete(reservation: PartnerReservationActionRow): Promise<CompleteReservationResult> {
         return this.prisma.$transaction(async (tx) => {
-            const row = await tx.reservation.update({
+            await assertReservationStatusTransition(tx, reservation.id, reservation.status, {
+                status: ReservationStatus.IN_PROGRESS,
+            });
+
+            const row = await tx.reservation.findUniqueOrThrow({
                 where: { id: reservation.id },
-                data: { status: ReservationStatus.IN_PROGRESS },
                 select: { id: true, status: true, updatedAt: true },
             });
 
@@ -484,22 +495,5 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
 
     private createQrToken(artworkId: string): string {
         return `artwork:${artworkId}:${randomUUID()}`;
-    }
-
-    private async decrementReservedCount(
-        tx: Prisma.TransactionClient,
-        storeTimeSlotId: string,
-        amount: number,
-    ): Promise<void> {
-        const slot = await tx.storeTimeSlot.findUnique({
-            where: { id: storeTimeSlotId },
-            select: { reservedCount: true },
-        });
-        if (!slot) return;
-
-        await tx.storeTimeSlot.update({
-            where: { id: storeTimeSlotId },
-            data: { reservedCount: Math.max(0, slot.reservedCount - amount) },
-        });
     }
 }
