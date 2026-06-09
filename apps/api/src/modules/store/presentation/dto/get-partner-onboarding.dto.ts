@@ -1,19 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { PartnerStatus, StoreStatus } from '@prisma/client';
+import { partnerOnboardingResultSchema } from '@todam/shared';
+import { createZodDto } from 'nestjs-zod';
 
-export class GetPartnerOnboardingStoreDto {
-    @ApiProperty() id!: string;
-    @ApiProperty({ enum: StoreStatus }) status!: StoreStatus;
-    // store.status === REJECTED 일 때만 값, 그 외 null.
-    @ApiProperty({ type: String, nullable: true }) rejectedReason!: string | null;
-}
-
-export class GetPartnerOnboardingResponseDto {
-    // partner 없으면 null.
-    @ApiProperty({ enum: PartnerStatus, nullable: true })
-    partnerStatus!: PartnerStatus | null;
-
-    // 최신 생성순 온보딩 store 1건. 없으면 null.
-    @ApiProperty({ type: GetPartnerOnboardingStoreDto, nullable: true })
-    store!: GetPartnerOnboardingStoreDto | null;
-}
+// 응답 SSOT = @todam/shared(zod). 파트너 온보딩 상태 조회 응답.
+export class GetPartnerOnboardingResponseDto extends createZodDto(partnerOnboardingResultSchema) {}

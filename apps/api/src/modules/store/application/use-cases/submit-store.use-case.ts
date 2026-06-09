@@ -2,7 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { StoreRepository } from '../../domain/repositories/store.repository';
-import type { SubmitStoreResult } from '../dto/store-application.dto';
+import { StoreStatus, type SubmitStoreResult } from '@todam/shared';
 
 @Injectable()
 export class SubmitStoreUseCase {
@@ -44,7 +44,8 @@ export class SubmitStoreUseCase {
         return {
             store: {
                 id: updated.id,
-                status: updated.status,
+                // repository 는 `${StoreStatus}` string union 으로 반환 → shared enum 계약으로 정규화.
+                status: updated.status as StoreStatus,
                 updatedAt: updated.updatedAt.toISOString(),
             },
         };

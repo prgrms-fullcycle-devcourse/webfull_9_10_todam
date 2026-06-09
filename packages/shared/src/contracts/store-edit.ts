@@ -26,7 +26,8 @@ export const storeImageSchema = z.object({
     imageUrl: z.string().meta({ example: 'https://cdn.todam.app/stores/todam-studio/01.jpg' }),
     thumbnailUrl: z
         .string()
-        .meta({ example: 'https://cdn.todam.app/stores/todam-studio/01_thumb.jpg' }),
+        .meta({ example: 'https://cdn.todam.app/stores/todam-studio/01_thumb.jpg' })
+        .nullable(),
     isThumbnail: z.boolean().meta({ example: true }),
     sortOrder: z.number().meta({ example: 1 }),
 });
@@ -35,11 +36,11 @@ export type StoreImage = z.infer<typeof storeImageSchema>;
 // ─── 사업자 서류 (수정 화면 비대상, 참조용) ──────────────────────
 export const storeBusinessDocumentSchema = z.object({
     ownerName: z.string().meta({ example: '김리듬' }),
-    email: z.string().meta({ example: 'leadem@studio.com' }),
+    email: z.string().meta({ example: 'leadem@studio.com' }).nullable(),
     businessName: z.string().meta({ example: '흙담' }),
     businessNumber: z.string().meta({ example: '555-55-55555' }),
     businessAddress: z.string().meta({ example: '서울특별시 성동구 둑섬로 273(성수동)' }),
-    ocrStatus: z.nativeEnum(OcrStatus).meta({ example: OcrStatus.VERIFIED }),
+    ocrStatus: z.nativeEnum(OcrStatus).meta({ example: OcrStatus.VERIFIED }).nullable(),
 });
 export type StoreBusinessDocument = z.infer<typeof storeBusinessDocumentSchema>;
 
@@ -50,10 +51,10 @@ export const partnerStoreDetailSchema = z.object({
     name: z.string().meta({ example: '토담 공방' }),
     slug: z.string().meta({ example: 'todam-studio' }),
     description: z.string().meta({ example: '흙과 함께하는 도자기 체험 공방입니다.' }).nullable(),
-    phone: z.string().meta({ example: '02-1234-5678' }),
-    address: z.string().meta({ example: '서울특별시 성동구 성수이로 12길 34' }),
-    latitude: z.number().meta({ example: 37.5446 }),
-    longitude: z.number().meta({ example: 127.0556 }),
+    phone: z.string().meta({ example: '02-1234-5678' }).nullable(),
+    address: z.string().meta({ example: '서울특별시 성동구 성수이로 12길 34' }).nullable(),
+    latitude: z.number().meta({ example: 37.5446 }).nullable(),
+    longitude: z.number().meta({ example: 127.0556 }).nullable(),
     convenienceInfo: convenienceInfoSchema,
     autoConfirm: z.boolean().meta({ example: false }),
     cancelDeadlineDays: z.number().meta({ example: 1 }),
@@ -79,7 +80,8 @@ export const partnerStoreDetailSchema = z.object({
     }),
     operatingHours: z.array(operatingHourInputSchema),
     images: z.array(storeImageSchema),
-    businessDocument: storeBusinessDocumentSchema,
+    // 사업자 서류 미등록 공방은 null.
+    businessDocument: storeBusinessDocumentSchema.nullable(),
     publishedAt: z.string().meta({ example: '2026-05-20T10:00:00.000Z' }).nullable(),
     createdAt: z.string().meta({ example: '2026-05-18T12:00:00.000Z' }),
 });

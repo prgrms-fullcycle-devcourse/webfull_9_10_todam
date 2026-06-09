@@ -59,7 +59,7 @@ export function detailToForm(detail: PartnerStoreDetail): StoreEditForm {
                 })),
             name: detail.name,
             slug: detail.slug,
-            phone: detail.phone,
+            phone: detail.phone ?? '',
             description: detail.description ?? '',
             convenienceInfo: { ...detail.convenienceInfo },
         },

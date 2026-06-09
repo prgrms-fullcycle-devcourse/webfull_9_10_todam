@@ -1,7 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { StoreStatus } from '@prisma/client';
+import {
+    PartnerStatus as SharedPartnerStatus,
+    StoreStatus as SharedStoreStatus,
+} from '@todam/shared';
 import { PrismaService } from '../../../../database/prisma.service';
 import type { PartnerOnboardingResult } from '../../domain/repositories/store-readers';
+
+// Prisma enum과 @todam/shared enum은 값은 같지만 별개의 nominal 타입이다.
+// infra 경계에서 shared 응답 계약(enum)으로 변환한다(anti-corruption).
 
 // GET /partner/onboarding — 온보딩 상태 조회 (검수중/반려 영속화).
 // AuthGuard 만 적용(무파트너/PENDING/REJECTED 도 자기 상태 조회). 정상상태는 모두 200.
@@ -28,14 +35,14 @@ export class PrismaPartnerOnboardingReader {
         });
 
         if (!store) {
-            return { partnerStatus: partner.status, store: null };
+            return { partnerStatus: partner.status as SharedPartnerStatus, store: null };
         }
 
         return {
-            partnerStatus: partner.status,
+            partnerStatus: partner.status as SharedPartnerStatus,
             store: {
                 id: store.id,
-                status: store.status,
+                status: store.status as SharedStoreStatus,
                 // rejectedReason 은 store.status === REJECTED 일 때만 노출.
                 rejectedReason: store.status === StoreStatus.REJECTED ? store.rejectedReason : null,
             },
