@@ -138,7 +138,6 @@ export function FavoritesListClient() {
                             key={item.favoriteId}
                             storeId={item.storeId}
                             name={item.name}
-                            category={item.category}
                             imageUrl={item.imageUrl}
                             address={item.address}
                             action={
