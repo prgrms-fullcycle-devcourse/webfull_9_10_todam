@@ -17,6 +17,8 @@ const apiSchema = z.object({
     REDIS_URL: z.string().default('redis://localhost:6379'),
     S3_BUCKET_NAME: z.string(),
     S3_REGION: z.string().default('ap-northeast-2'),
+    SES_REGION: z.string().default('ap-northeast-2'),
+    SES_FROM_EMAIL: z.string(),
     CORS_ORIGINS: z
         .string()
         .default('http://localhost:3000,https://todam.app,https://www.todam.app'),
