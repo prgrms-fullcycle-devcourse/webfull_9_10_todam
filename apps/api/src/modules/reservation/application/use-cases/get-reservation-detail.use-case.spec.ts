@@ -10,6 +10,8 @@ import { BusinessException } from '../../../../common/exceptions/business.except
 import {
     UserReservationRepository,
     UserReservationDetailRow,
+    UserReservationCancelRow,
+    CancelUserReservationResult,
 } from '../../domain/repositories/user-reservation.repository';
 import { GetReservationDetailUseCase } from './get-reservation-detail.use-case';
 
@@ -62,6 +64,12 @@ class MockRepository extends UserReservationRepository {
     }
     override async findDetail(): Promise<UserReservationDetailRow | null> {
         return this.row;
+    }
+    override async findForCancel(): Promise<UserReservationCancelRow | null> {
+        return null;
+    }
+    override async cancelReservation(): Promise<CancelUserReservationResult> {
+        throw new Error('not impl');
     }
 }
 

@@ -1,5 +1,21 @@
 export const KST_OFFSET_MINUTES = 9 * 60;
 
+/** Date → KST 기준 YYYYMMDD 정수 (날짜 대소 비교 전용) */
+export function toKSTDateNum(date: Date): number {
+    const kst = new Date(date.getTime() + KST_OFFSET_MINUTES * 60 * 1000);
+    return kst.getUTCFullYear() * 10000 + (kst.getUTCMonth() + 1) * 100 + kst.getUTCDate();
+}
+
+/** YYYYMMDD 정수에서 days일을 뺀 YYYYMMDD 정수 반환 */
+export function subDaysNum(baseDateNum: number, days: number): number {
+    const year = Math.floor(baseDateNum / 10000);
+    const month = Math.floor((baseDateNum % 10000) / 100) - 1;
+    const day = baseDateNum % 100;
+    const d = new Date(Date.UTC(year, month, day));
+    d.setUTCDate(d.getUTCDate() - days);
+    return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+}
+
 export function parseDateOnly(value: string): { year: number; month: number; day: number } | null {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
     if (!match) return null;
