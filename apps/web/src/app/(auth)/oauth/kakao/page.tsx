@@ -9,7 +9,7 @@
 //   res 200: { accessToken, user: { userId, email, nickname, isPartner } }
 //   err:  400 INVALID_REQUEST / 500 EXTERNAL_AUTH_SERVER_ERROR
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { InformationIcon } from '@todam/ui';
@@ -38,6 +38,14 @@ function getKakaoErrorMessage(err: unknown): string {
 }
 
 export default function KakaoOAuthCallbackPage() {
+    return (
+        <Suspense fallback={<OAuthLoadingMessage provider="카카오" />}>
+            <KakaoOAuthCallbackContent />
+        </Suspense>
+    );
+}
+
+function KakaoOAuthCallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { push } = useToast();
@@ -73,9 +81,13 @@ export default function KakaoOAuthCallbackPage() {
 
     if (status === 'error') return null;
 
+    return <OAuthLoadingMessage provider="카카오" />;
+}
+
+function OAuthLoadingMessage({ provider }: { provider: string }) {
     return (
         <div className="flex h-full items-center justify-center bg-background">
-            <p className="text-sm text-foreground-secondary">카카오 로그인 처리 중...</p>
+            <p className="text-sm text-foreground-secondary">{provider} 로그인 처리 중...</p>
         </div>
     );
 }

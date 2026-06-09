@@ -9,7 +9,7 @@
 //   res 200: { accessToken, user: { userId, email, nickname, isPartner } }
 //   err:  400 INVALID_REQUEST / 403 GOOGLE_EMAIL_UNVERIFIED / 500 EXTERNAL_AUTH_SERVER_ERROR
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { InformationIcon } from '@todam/ui';
@@ -39,6 +39,14 @@ function getGoogleErrorMessage(err: unknown): string {
 }
 
 export default function GoogleOAuthCallbackPage() {
+    return (
+        <Suspense fallback={<OAuthLoadingMessage provider="구글" />}>
+            <GoogleOAuthCallbackContent />
+        </Suspense>
+    );
+}
+
+function GoogleOAuthCallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { push } = useToast();
@@ -74,9 +82,13 @@ export default function GoogleOAuthCallbackPage() {
 
     if (status === 'error') return null;
 
+    return <OAuthLoadingMessage provider="구글" />;
+}
+
+function OAuthLoadingMessage({ provider }: { provider: string }) {
     return (
         <div className="flex h-full items-center justify-center bg-background">
-            <p className="text-sm text-foreground-secondary">구글 로그인 처리 중...</p>
+            <p className="text-sm text-foreground-secondary">{provider} 로그인 처리 중...</p>
         </div>
     );
 }
