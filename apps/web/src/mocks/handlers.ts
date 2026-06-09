@@ -23,8 +23,6 @@ import {
     type ReviewUpdateResult,
     type ReviewImageUploadRequest,
     type ReviewImageUploadResult,
-    type ToggleFavoriteResult,
-    type FavoriteStoreListResult,
     type ProgramDetailResult,
     type ProgramReviewListResult,
     type StoreReviewListResult,
@@ -54,20 +52,16 @@ import {
     createReview,
     updateReview,
     createReviewImageUpload,
-    listFavoriteStores,
     listStoreReviews,
     listMyReservations,
     mockGeocode,
     nowIso,
-    toggleFavorite,
     upsertDeliveryEdit,
     MOCK_STORE_SLUG,
     MOCK_STORE_ID,
     seededPrograms,
     seededProgramImages,
 } from './db';
-
-const FAVORITE_LIST_DEFAULT_LIMIT = 10;
 
 // 봉투 빌더 — apps/api 응답 형태와 일치.
 function ok<T>(path: string, data: T, message = '요청이 처리되었습니다.', statusCode = 200) {
@@ -297,58 +291,6 @@ export const handlers = [
             return ok(path, result, '프로그램이 성공적으로 수정되었습니다.');
         },
     ),
-
-    // 공방 찜 등록/해제 (토글). Request body 없음 — path param storeId 만.
-    // plan: docs/exec-plans/active/유저 마이 - 찜한 공방 목록 조회, 공방 찜 등록_해제.md
-    // 실 BE 연동: 토글은 root 경로(/stores/...)로 실연동 → mock 핸들러도 prefix 없이 매칭. 시뮬: ?unauth=1 → 401.
-    http.post(`*/stores/:storeId/favorite`, ({ params, request }) => {
-        const storeId = String(params.storeId);
-        const path = `/stores/${storeId}/favorite`;
-        const url = new URL(request.url);
-
-        if (url.searchParams.get('unauth') === '1') {
-            return fail(path, 401, 'UNAUTHORIZED', '찜하기 기능을 이용하려면 로그인이 필요합니다.');
-        }
-
-        const isFavorite = toggleFavorite(storeId);
-        const result: ToggleFavoriteResult = { storeId, isFavorite };
-        return ok(path, result, isFavorite ? '찜했습니다.' : '찜을 해제했습니다.');
-    }),
-
-    // 찜한 공방 목록 조회 (인증 필요, 본인 찜만, 커서 페이지네이션, PUBLISHED·최신 찜순).
-    // plan: docs/exec-plans/active/유저 마이 - 찜한 공방 목록 조회, 공방 찜 등록_해제.md
-    // 실 BE 연동: BE 글로벌 prefix 없음 → root 경로로 realign(토글 핸들러와 동일 패턴).
-    // 시뮬: ?unauth=1 → 401, ?empty=1 → 빈 목록, ?simulate=500 → 500.
-    http.get(`*/users/me/favorite-stores`, ({ request }) => {
-        const path = '/users/me/favorite-stores';
-        const url = new URL(request.url);
-
-        if (url.searchParams.get('unauth') === '1') {
-            return fail(path, 401, 'UNAUTHORIZED', '찜하기 기능을 이용하려면 로그인이 필요합니다.');
-        }
-        if (url.searchParams.get('simulate') === '500') {
-            return fail(
-                path,
-                500,
-                'INTERNAL_SERVER_ERROR',
-                '찜한 공방 조회 중 서버 오류가 발생했습니다.',
-            );
-        }
-        if (url.searchParams.get('empty') === '1') {
-            const result: FavoriteStoreListResult = { favoriteStores: [], nextCursor: null };
-            return ok(path, result, '찜한 공방 목록이 성공적으로 조회되었습니다.');
-        }
-
-        const cursor = url.searchParams.get('cursor');
-        const limitParam = Number(url.searchParams.get('limit'));
-        const limit =
-            Number.isFinite(limitParam) && limitParam > 0
-                ? limitParam
-                : FAVORITE_LIST_DEFAULT_LIMIT;
-
-        const result: FavoriteStoreListResult = listFavoriteStores(cursor, limit);
-        return ok(path, result, '찜한 공방 목록이 성공적으로 조회되었습니다.');
-    }),
 
     // ─── 예약 가능 슬롯 조회 ───────────────────────────────────────────
     // GET /programs/{programId}/available-slots?year=&month=
