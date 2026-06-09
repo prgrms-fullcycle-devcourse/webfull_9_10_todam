@@ -10,7 +10,7 @@ import { ProgramStatus } from '../enums/program-status';
 
 export const storeDetailImageSchema = z.object({
     imageUrl: z.string(),
-    thumbnailUrl: z.string(),
+    thumbnailUrl: z.string().nullable(), // Prisma StoreImage.thumbnailUrl 은 nullable
 });
 export type StoreDetailImage = z.infer<typeof storeDetailImageSchema>;
 

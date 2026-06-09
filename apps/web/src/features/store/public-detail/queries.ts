@@ -6,7 +6,7 @@ import { ApiError } from '@/shared/api';
 
 import { getPublicStoreDetail, getPublicStorePrograms } from './api';
 
-function retryExceptNotFound(failureCount: number, error: unknown): boolean {
+export function retryExceptNotFound(failureCount: number, error: unknown): boolean {
     if (error instanceof ApiError && [401, 403, 404].includes(error.statusCode)) return false;
     return failureCount < 1;
 }

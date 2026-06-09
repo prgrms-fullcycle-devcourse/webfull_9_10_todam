@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ProgramDifficulty } from '@todam/shared';
+import { formatPrice, formatDuration } from '@todam/shared';
 import { Button, Divider, RightIcon, SectionTitle, Rating, ShareIcon } from '@todam/ui';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -20,18 +20,7 @@ import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useToast } from '@/shared/model';
 
-import { usePublicStoreDetail, usePublicStorePrograms } from '../queries';
-
-function formatPrice(price: number): string {
-    return `${price.toLocaleString('ko-KR')}원`;
-}
-
-function formatDuration(minutes: number): string {
-    if (minutes < 60) return `${minutes}분`;
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
-}
+import { retryExceptNotFound, usePublicStoreDetail, usePublicStorePrograms } from '../queries';
 
 // 리뷰 미리보기 쿼리 (limit=3, sort=latest — Contract C)
 function useStoreReviewsPreview(slug: string) {
@@ -39,11 +28,7 @@ function useStoreReviewsPreview(slug: string) {
         queryKey: ['public', 'stores', slug, 'reviews-preview'],
         queryFn: () => getStoreReviews(slug, { limit: 3, sort: 'latest' }),
         enabled: Boolean(slug),
-        retry: (count, error) => {
-            if (error instanceof ApiError && [401, 403, 404].includes(error.statusCode))
-                return false;
-            return count < 1;
-        },
+        retry: retryExceptNotFound,
         staleTime: 60_000,
     });
 }
@@ -129,7 +114,7 @@ export function StoreDetailClient() {
     const carouselImages = store.images.map((img, idx) => ({
         id: `img-${idx}`,
         imageUrl: img.imageUrl,
-        thumbnailUrl: img.thumbnailUrl,
+        thumbnailUrl: img.thumbnailUrl ?? img.imageUrl, // thumbnail 없으면 원본으로 폴백
         isThumbnail: idx === 0,
         sortOrder: idx,
     }));
@@ -189,7 +174,7 @@ export function StoreDetailClient() {
                         <div className="flex flex-col gap-3">
                             {programs.map((program) => {
                                 const metaItems = [
-                                    getDifficultyLabel(program.difficulty as ProgramDifficulty),
+                                    getDifficultyLabel(program.difficulty),
                                     formatDuration(program.durationMinutes),
                                     `평균 ${program.leadTimeDays}일`,
                                 ];
@@ -242,7 +227,22 @@ export function StoreDetailClient() {
                         </div>
                     )}
 
-                    {!reviewsQuery.isLoading && reviews.length === 0 && (
+                    {!reviewsQuery.isLoading && reviewsQuery.isError && (
+                        <div className="flex min-h-16 items-center justify-center gap-3">
+                            <p className="text-sm text-foreground-tertiary">
+                                리뷰를 불러오지 못했어요.
+                            </p>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => reviewsQuery.refetch()}
+                            >
+                                다시 시도
+                            </Button>
+                        </div>
+                    )}
+
+                    {!reviewsQuery.isLoading && !reviewsQuery.isError && reviews.length === 0 && (
                         <div className="flex min-h-16 items-center justify-center">
                             <p className="text-sm text-foreground-tertiary">
                                 아직 등록된 리뷰가 없어요.
@@ -250,7 +250,7 @@ export function StoreDetailClient() {
                         </div>
                     )}
 
-                    {!reviewsQuery.isLoading && reviews.length > 0 && (
+                    {!reviewsQuery.isLoading && !reviewsQuery.isError && reviews.length > 0 && (
                         <div className="divide-y divide-border-subtle">
                             {reviews.map((review) => (
                                 <ReviewPreviewCard key={review.id} review={review} />
