@@ -10,6 +10,7 @@ import {
     ProgramEditErrorCode,
     createUserReservationRequestSchema,
     ReservationCreateErrorCode,
+    AUTOCOMPLETE_ERROR_CODES,
     type DeliveryEditResult,
     type ArtworkDetailResult,
     type GeocodeResult,
@@ -32,6 +33,8 @@ import {
     type PatchNotificationSettingsResponse,
     type AvailableSlotsResult,
     type CreateUserReservationResult,
+    type StoreListResult,
+    type AutocompleteResult,
 } from '@todam/shared';
 import { http, HttpResponse } from 'msw';
 
@@ -940,6 +943,188 @@ export const handlers = [
             },
         };
         return ok(path, result, '알림 설정이 성공적으로 조회되었습니다.');
+    }),
+
+    // ─── 공방 검색 결과 (GET /api/v1/stores) ───────────────────────────────────
+    // contract: docs/exec-plans/active/user-stores-keyword.md API Contract A
+    // 인증 불필요(공개). keyword 매칭(name/address/program title), matchedClass 포함.
+    // 시뮬: ?simulate=500 → 500 / ?empty=1 → 빈 결과.
+    // 주의: /stores/:slug 보다 먼저 등록해야 하지만 MSW는 등록 순서대로 매칭하므로
+    //       /stores/search/autocomplete 를 /stores/:slug 보다 먼저 위치시킴.
+    http.get(`${API}/stores`, ({ request }) => {
+        const path = '/api/v1/stores';
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('simulate') === '500') {
+            return fail(
+                path,
+                500,
+                'INTERNAL_SERVER_ERROR',
+                '공방 검색 중 서버 오류가 발생했습니다.',
+            );
+        }
+        if (url.searchParams.get('empty') === '1') {
+            const result: StoreListResult = {
+                stores: [],
+                pageInfo: { nextCursor: null, hasNext: false },
+            };
+            return ok(path, result, '공방 목록이 성공적으로 조회되었습니다.');
+        }
+
+        const keyword = url.searchParams.get('keyword') ?? '';
+        const cursor = url.searchParams.get('cursor');
+        const limitParam = Number(url.searchParams.get('limit'));
+        const limit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 10;
+
+        // mock 데이터 — plan API Contract A 스냅샷 형태
+        const MOCK_STORES: StoreListResult['stores'] = [
+            {
+                id: 'store-uuid-001',
+                slug: 'plus-doja',
+                name: '플러스 도자기',
+                region: { sido: '서울', sigungu: '성동구', dong: '성수동' },
+                thumbnailUrl: 'https://placehold.co/80x80?text=pottery',
+                rating: 4.9,
+                reviewCount: 253,
+                distance: 1200,
+                representativeClass: { name: '머그컵 만들기', price: 30000, hasMore: true },
+                matchedClass: null,
+                isOperating: true,
+            },
+            {
+                id: 'store-uuid-002',
+                slug: 'todam-pottery',
+                name: '흙과 사람',
+                region: { sido: '서울', sigungu: '성동구', dong: '성수동' },
+                thumbnailUrl: 'https://placehold.co/80x80?text=clay',
+                rating: 4.8,
+                reviewCount: 180,
+                distance: 2300,
+                representativeClass: { name: '물레 체험 기초반', price: 45000, hasMore: false },
+                matchedClass: null,
+                isOperating: true,
+            },
+            {
+                id: 'store-uuid-003',
+                slug: 'clay-seoul',
+                name: '클레이 서울',
+                region: { sido: '서울', sigungu: '종로구', dong: '통인동' },
+                thumbnailUrl: 'https://placehold.co/80x80?text=craft',
+                rating: 4.7,
+                reviewCount: 92,
+                distance: 5600,
+                representativeClass: { name: '핸드빌딩 기초', price: 35000, hasMore: false },
+                matchedClass: null,
+                isOperating: false,
+            },
+            {
+                id: 'store-uuid-004',
+                slug: 'seongsu-vintage',
+                name: '성수동 작은 공방',
+                region: { sido: '서울', sigungu: '성동구', dong: '성수동' },
+                thumbnailUrl: 'https://placehold.co/80x80?text=vintage',
+                rating: 4.6,
+                reviewCount: 47,
+                distance: 16400,
+                representativeClass: null,
+                // 키워드가 프로그램명에 매칭된 경우 matchedClass 세팅 예시
+                matchedClass: { name: '성수동 감성 빈티지 볼 그릇', price: 45000 },
+                isOperating: true,
+            },
+        ];
+
+        // keyword 부분 매칭 필터 (mock — name/region/program title)
+        let filtered = MOCK_STORES;
+        if (keyword.trim()) {
+            const kw = keyword.trim().toLowerCase();
+            filtered = MOCK_STORES.filter(
+                (s) =>
+                    s.name.toLowerCase().includes(kw) ||
+                    s.region.dong.toLowerCase().includes(kw) ||
+                    s.region.sigungu.toLowerCase().includes(kw) ||
+                    (s.representativeClass?.name.toLowerCase().includes(kw) ?? false) ||
+                    (s.matchedClass?.name.toLowerCase().includes(kw) ?? false),
+            );
+        }
+
+        // 커서 기반 페이지네이션
+        let startIdx = 0;
+        if (cursor) {
+            const idx = filtered.findIndex((s) => s.id === cursor);
+            startIdx = idx >= 0 ? idx + 1 : filtered.length;
+        }
+        const window = filtered.slice(startIdx, startIdx + limit + 1);
+        const hasNext = window.length > limit;
+        const stores = window.slice(0, limit);
+        const nextCursor = hasNext ? (stores[stores.length - 1]?.id ?? null) : null;
+
+        const result: StoreListResult = { stores, pageInfo: { nextCursor, hasNext } };
+        return ok(path, result, '공방 목록이 성공적으로 조회되었습니다.');
+    }),
+
+    // ─── 공방 자동완성 (GET /api/v1/stores/search/autocomplete) ─────────────
+    // contract: docs/exec-plans/active/user-stores-keyword.md API Contract B
+    // keyword 필수(공백 불가) → 없으면 400 KEYWORD_REQUIRED.
+    // REGION ≤ 3 / STORE ≤ 5 / PROGRAM ≤ 5.
+    // 주의: /stores/:slug 패턴보다 먼저 배치 (MSW 순서 매칭).
+    http.get(`${API}/stores/search/autocomplete`, ({ request }) => {
+        const path = '/api/v1/stores/search/autocomplete';
+        const url = new URL(request.url);
+        const keyword = url.searchParams.get('keyword') ?? '';
+
+        if (!keyword.trim()) {
+            return fail(
+                path,
+                400,
+                AUTOCOMPLETE_ERROR_CODES.KEYWORD_REQUIRED,
+                'keyword는 필수이며 공백일 수 없습니다.',
+            );
+        }
+
+        const kw = keyword.trim().toLowerCase();
+
+        // mock 자동완성 후보
+        const ALL_REGIONS = [
+            { id: 'seongdong-seongsu', text: '성수동', subtitle: '서울 성동구 성수동' },
+            { id: 'jongno-tongin', text: '통인동', subtitle: '서울 종로구 통인동' },
+            { id: 'mapo-yeonnam', text: '연남동', subtitle: '서울 마포구 연남동' },
+            { id: 'seongbuk-anam', text: '안암동', subtitle: '서울 성북구 안암동' },
+        ];
+        const ALL_STORES = [
+            { id: 'store-uuid-001', text: '플러스 도자기', subtitle: '서울 성동구 성수동' },
+            { id: 'store-uuid-002', text: '흙과 사람', subtitle: '서울 성동구 성수동' },
+            { id: 'store-uuid-003', text: '클레이 서울', subtitle: '서울 종로구 통인동' },
+            { id: 'store-uuid-004', text: '성수동 작은 공방', subtitle: '서울 성동구 성수동' },
+            { id: 'store-uuid-005', text: '성수 도예원', subtitle: '서울 성동구 성수동' },
+            { id: 'store-uuid-006', text: '온도 스튜디오', subtitle: '서울 용산구 이태원동' },
+        ];
+        const ALL_PROGRAMS = [
+            { id: 'prog-uuid-001', text: '성수동 감성 머그컵', subtitle: null },
+            { id: 'prog-uuid-002', text: '물레 체험 기초반', subtitle: null },
+            { id: 'prog-uuid-003', text: '핸드빌딩 머그컵 만들기', subtitle: null },
+            { id: 'prog-uuid-004', text: '성수동 감성 빈티지 볼 그릇', subtitle: null },
+            { id: 'prog-uuid-005', text: '커플 도자기 클래스', subtitle: null },
+            { id: 'prog-uuid-006', text: '화병 클래스', subtitle: null },
+        ];
+
+        const matchRegions = ALL_REGIONS.filter((r) => r.text.toLowerCase().includes(kw)).slice(
+            0,
+            3,
+        );
+        const matchStores = ALL_STORES.filter((s) => s.text.toLowerCase().includes(kw)).slice(0, 5);
+        const matchPrograms = ALL_PROGRAMS.filter((p) => p.text.toLowerCase().includes(kw)).slice(
+            0,
+            5,
+        );
+
+        const suggestions: AutocompleteResult['suggestions'] = [
+            ...matchRegions.map((r) => ({ type: 'REGION' as const, ...r })),
+            ...matchStores.map((s) => ({ type: 'STORE' as const, ...s })),
+            ...matchPrograms.map((p) => ({ type: 'PROGRAM' as const, ...p })),
+        ];
+
+        const result: AutocompleteResult = { suggestions };
+        return ok(path, result, '자동완성 목록 조회가 완료되었습니다.');
     }),
 
     // ─── 알림 설정 수정 (PATCH /api/v1/users/me/notification-settings) ────────
