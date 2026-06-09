@@ -9,6 +9,7 @@ import { CreateUserReservationUseCase } from './application/use-cases/create-use
 import { ListUserReservationsUseCase } from './application/use-cases/list-user-reservations.use-case';
 import { GetPartnerReservationCalendarUseCase } from './application/use-cases/get-partner-reservation-calendar.use-case';
 import { GetPartnerReservationDetailUseCase } from './application/use-cases/get-partner-reservation-detail.use-case';
+import { GetPendingReservationSummaryUseCase } from './application/use-cases/get-pending-reservation-summary.use-case';
 import { ListPartnerReservationsUseCase } from './application/use-cases/list-partner-reservations.use-case';
 import { RejectPartnerReservationUseCase } from './application/use-cases/reject-partner-reservation.use-case';
 import { PartnerReservationRepository } from './domain/repositories/partner-reservation.repository';
@@ -28,6 +29,7 @@ import { UserReservationController } from './presentation/controllers/user-reser
         CreateUserReservationUseCase,
         ListUserReservationsUseCase,
         GetPartnerReservationDetailUseCase,
+        GetPendingReservationSummaryUseCase,
         ConfirmPartnerReservationUseCase,
         RejectPartnerReservationUseCase,
         CancelPartnerReservationUseCase,

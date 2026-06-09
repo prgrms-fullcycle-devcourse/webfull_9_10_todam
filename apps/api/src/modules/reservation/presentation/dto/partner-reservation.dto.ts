@@ -7,6 +7,7 @@ import {
     partnerReservationCalendarQuerySchema,
     partnerReservationDetailResponseSchema,
     partnerReservationStatusResponseSchema,
+    pendingReservationSummarySchema,
     reservationListDataSchema,
     rejectPartnerReservationRequestSchema,
 } from '@todam/shared';
@@ -24,6 +25,10 @@ export class ListPartnerReservationsQueryDto extends createZodDto(
 ) {}
 
 export class ListPartnerReservationsResponseDto extends createZodDto(reservationListDataSchema) {}
+
+export class PendingReservationSummaryResponseDto extends createZodDto(
+    pendingReservationSummarySchema,
+) {}
 
 export class GetPartnerReservationDetailResponseDto extends createZodDto(
     partnerReservationDetailResponseSchema,

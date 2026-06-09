@@ -45,6 +45,7 @@ import { ConfirmPartnerReservationUseCase } from '../../application/use-cases/co
 import { CreatePartnerReservationUseCase } from '../../application/use-cases/create-partner-reservation.use-case';
 import { GetPartnerReservationCalendarUseCase } from '../../application/use-cases/get-partner-reservation-calendar.use-case';
 import { GetPartnerReservationDetailUseCase } from '../../application/use-cases/get-partner-reservation-detail.use-case';
+import { GetPendingReservationSummaryUseCase } from '../../application/use-cases/get-pending-reservation-summary.use-case';
 import { ListPartnerReservationsUseCase } from '../../application/use-cases/list-partner-reservations.use-case';
 import { RejectPartnerReservationUseCase } from '../../application/use-cases/reject-partner-reservation.use-case';
 import {
@@ -55,6 +56,7 @@ import {
     ListPartnerReservationsResponseDto,
     PartnerReservationCalendarResponseDto,
     PartnerReservationStatusResponseDto,
+    PendingReservationSummaryResponseDto,
     RejectPartnerReservationDto,
 } from '../dto/partner-reservation.dto';
 
@@ -65,6 +67,7 @@ export class PartnerReservationController {
     constructor(
         private readonly getCalendarUseCase: GetPartnerReservationCalendarUseCase,
         private readonly listUseCase: ListPartnerReservationsUseCase,
+        private readonly pendingSummaryUseCase: GetPendingReservationSummaryUseCase,
         private readonly createUseCase: CreatePartnerReservationUseCase,
         private readonly getDetailUseCase: GetPartnerReservationDetailUseCase,
         private readonly confirmUseCase: ConfirmPartnerReservationUseCase,
@@ -106,6 +109,18 @@ export class PartnerReservationController {
         query: ListPartnerReservationsQuery,
     ): Promise<ListPartnerReservationsResponseDto> {
         return this.listUseCase.execute(user.id, storeId, query);
+    }
+
+    @Get('partner/stores/:storeId/reservations/pending-summary')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('Pending reservation summary loaded.')
+    @ApiOkResponse({ type: PendingReservationSummaryResponseDto })
+    async pendingSummary(
+        @CurrentUser() user: RequestUser,
+        @Param('storeId') storeId: string,
+    ): Promise<PendingReservationSummaryResponseDto> {
+        return this.pendingSummaryUseCase.execute(user.id, storeId);
     }
 
     @Post('partner/stores/:storeId/reservations')
