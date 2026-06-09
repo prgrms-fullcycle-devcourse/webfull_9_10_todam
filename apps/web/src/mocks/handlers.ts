@@ -11,6 +11,8 @@ import {
     createUserReservationRequestSchema,
     ReservationCreateErrorCode,
     AUTOCOMPLETE_ERROR_CODES,
+    ProgramDifficulty,
+    ProgramStatus,
     type DeliveryEditResult,
     type ArtworkDetailResult,
     type GeocodeResult,
@@ -35,6 +37,8 @@ import {
     type CreateUserReservationResult,
     type StoreListResult,
     type AutocompleteResult,
+    type PublicProgramListResult,
+    StoreStatus,
 } from '@todam/shared';
 import { http, HttpResponse } from 'msw';
 
@@ -57,6 +61,10 @@ import {
     nowIso,
     toggleFavorite,
     upsertDeliveryEdit,
+    MOCK_STORE_SLUG,
+    MOCK_STORE_ID,
+    seededPrograms,
+    seededProgramImages,
 } from './db';
 
 const FAVORITE_LIST_DEFAULT_LIMIT = 10;
@@ -129,6 +137,46 @@ export const handlers = [
         }
 
         return ok(path, { store }, '공방 상세가 조회되었습니다.');
+    }),
+
+    // GET /stores/{slug}/programs — 퍼블릭 운영 클래스 목록 (Contract B)
+    // plan: docs/exec-plans/active/user-공방-상세.md § Contract B
+    // ACTIVE 프로그램만, sortOrder·id asc. 빈 목록 → programs:[] 200.
+    http.get(`${API}/stores/:slug/programs`, ({ params }) => {
+        const slug = String(params.slug);
+        const path = `/api/v1/stores/${slug}/programs`;
+
+        if (slug !== MOCK_STORE_SLUG) {
+            return fail(path, 404, 'STORE_NOT_FOUND', '공방을 찾을 수 없습니다.');
+        }
+
+        // ACTIVE 프로그램만 필터링 → Contract B: status=ACTIVE 만 퍼블릭 노출
+        const activePrograms = seededPrograms
+            .filter((p) => p.status === ProgramStatus.ACTIVE && p.storeId === MOCK_STORE_ID)
+            .sort((a, b) => a.id.localeCompare(b.id)); // sortOrder 없으면 id asc
+
+        const programs: PublicProgramListResult['programs'] = activePrograms.map((p, idx) => {
+            const img = seededProgramImages.find(
+                (i) => i.programId === p.id && i.status === 'UPLOADED' && i.isThumbnail,
+            );
+            return {
+                id: p.id,
+                title: p.title,
+                difficulty:
+                    p.difficulty as (typeof ProgramDifficulty)[keyof typeof ProgramDifficulty],
+                description: p.description ?? '',
+                price: p.price,
+                durationMinutes: p.durationMinutes,
+                leadTimeDays: p.leadTimeDays,
+                deliverable: p.deliverable,
+                thumbnailUrl: img?.thumbnailUrl ?? null,
+                status: ProgramStatus.ACTIVE,
+                sortOrder: idx,
+            };
+        });
+
+        const result: PublicProgramListResult = { programs };
+        return ok(path, result, '운영 클래스 목록이 성공적으로 조회되었습니다.');
     }),
 
     // GET /stores/{slug}/reviews
@@ -977,8 +1025,21 @@ export const handlers = [
         const limit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 10;
 
         // mock 데이터 — plan API Contract A 스냅샷 형태
+        // BE 응답 정합용 공통 필드(목록 카드에는 미사용이나 계약상 필수).
+        const STORE_COMMON = {
+            partnerId: 'partner-uuid-001',
+            description: '도자기 체험 공방입니다.',
+            phone: '02-1234-5678',
+            address: '서울 성동구 성수동',
+            status: StoreStatus.PUBLISHED,
+            convenienceInfo: { parking: true, pet: false, wifi: true },
+            autoConfirm: false,
+            publishedAt: '2026-05-25T10:00:00.000Z',
+            createdAt: '2026-05-24T12:00:00.000Z',
+        };
         const MOCK_STORES: StoreListResult['stores'] = [
             {
+                ...STORE_COMMON,
                 id: 'store-uuid-001',
                 slug: 'plus-doja',
                 name: '플러스 도자기',
@@ -992,6 +1053,7 @@ export const handlers = [
                 isOperating: true,
             },
             {
+                ...STORE_COMMON,
                 id: 'store-uuid-002',
                 slug: 'todam-pottery',
                 name: '흙과 사람',
@@ -1005,6 +1067,7 @@ export const handlers = [
                 isOperating: true,
             },
             {
+                ...STORE_COMMON,
                 id: 'store-uuid-003',
                 slug: 'clay-seoul',
                 name: '클레이 서울',
@@ -1018,6 +1081,7 @@ export const handlers = [
                 isOperating: false,
             },
             {
+                ...STORE_COMMON,
                 id: 'store-uuid-004',
                 slug: 'seongsu-vintage',
                 name: '성수동 작은 공방',
@@ -1040,8 +1104,8 @@ export const handlers = [
             filtered = MOCK_STORES.filter(
                 (s) =>
                     s.name.toLowerCase().includes(kw) ||
-                    s.region.dong.toLowerCase().includes(kw) ||
-                    s.region.sigungu.toLowerCase().includes(kw) ||
+                    (s.region.dong?.toLowerCase().includes(kw) ?? false) ||
+                    (s.region.sigungu?.toLowerCase().includes(kw) ?? false) ||
                     (s.representativeClass?.name.toLowerCase().includes(kw) ?? false) ||
                     (s.matchedClass?.name.toLowerCase().includes(kw) ?? false),
             );

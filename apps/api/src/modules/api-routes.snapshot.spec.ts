@@ -347,6 +347,13 @@ describe('API route baseline', () => {
                 guards: ['AuthGuard'],
             },
             {
+                controller: 'StoreController',
+                handler: 'listFavoriteStores',
+                method: 'GET',
+                path: '/users/me/favorite-stores',
+                guards: ['AuthGuard'],
+            },
+            {
                 controller: 'ProgramController',
                 handler: 'createProgram',
                 method: 'POST',
@@ -529,6 +536,13 @@ describe('API route baseline', () => {
                 guards: ['AuthGuard', 'PartnerGuard'],
             },
             {
+                controller: 'PartnerReservationController',
+                guards: ['AuthGuard', 'PartnerGuard'],
+                handler: 'updateInternalMemo',
+                method: 'PATCH',
+                path: '/partner/reservations/:reservationId/internal-memo',
+            },
+            {
                 controller: 'UserReservationController',
                 handler: 'listMyReservations',
                 method: 'GET',
@@ -644,6 +658,13 @@ describe('API route baseline', () => {
                 controller: 'UserController',
                 handler: 'patchProfile',
                 method: 'PATCH',
+                path: '/users/me',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'UserController',
+                handler: 'withdraw',
+                method: 'DELETE',
                 path: '/users/me',
                 guards: ['AuthGuard'],
             },

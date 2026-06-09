@@ -27,10 +27,5 @@ export interface ConfirmStoreImageResult {
     };
 }
 
-export interface SubmitStoreResult {
-    store: {
-        id: string;
-        status: string;
-        updatedAt: string;
-    };
-}
+// SubmitStoreResult 는 @todam/shared(submitStoreResultSchema) 가 SSOT.
+// use-case 에서 직접 import 한다.

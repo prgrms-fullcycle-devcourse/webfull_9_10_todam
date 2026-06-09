@@ -21,6 +21,8 @@ export function buildKakaoAuthUrl(): string {
         response_type: 'code',
         client_id: clientId,
         redirect_uri: redirectUri,
+        // 이메일 동의항목만 명시적으로 요청. 닉네임은 미수집(가입 시 랜덤 생성).
+        scope: 'account_email',
     });
     return `https://kauth.kakao.com/oauth/authorize?${params.toString()}`;
 }

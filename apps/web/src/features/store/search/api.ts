@@ -2,7 +2,8 @@ import type { AutocompleteResult, StoreListResult } from '@todam/shared';
 
 import { clientApiFetch } from '@/shared/api';
 
-const BASE = '/api/v1';
+// 경로는 prefix 없이(`/stores`) — `/api/v1`/proxy/실BE 매핑은 resolveUrl + BASE_URL이 처리.
+// (entities/program 등 다른 피처와 동일 컨벤션. MSW·실 BE 양쪽 정상.)
 
 // 성수동 기본 좌표 — 위치 권한 거부 시 폴백 (plan decision #6)
 export const DEFAULT_LAT = 37.5446;
@@ -26,7 +27,7 @@ export function getStores({ lat, lng, keyword, cursor, limit }: GetStoresParams 
     if (cursor) params.set('cursor', cursor);
     if (typeof limit === 'number') params.set('limit', String(limit));
     const qs = params.toString();
-    return clientApiFetch<StoreListResult>(`${BASE}/stores${qs ? `?${qs}` : ''}`, {
+    return clientApiFetch<StoreListResult>(`/stores${qs ? `?${qs}` : ''}`, {
         method: 'GET',
     });
 }
@@ -40,8 +41,7 @@ export type GetAutocompleteParams = {
 // keyword 필수 (공백 불가). 빈 keyword 전달 시 400 KEYWORD_REQUIRED.
 export function getAutocomplete({ keyword }: GetAutocompleteParams) {
     const params = new URLSearchParams({ keyword });
-    return clientApiFetch<AutocompleteResult>(
-        `${BASE}/stores/search/autocomplete?${params.toString()}`,
-        { method: 'GET' },
-    );
+    return clientApiFetch<AutocompleteResult>(`/stores/search/autocomplete?${params.toString()}`, {
+        method: 'GET',
+    });
 }

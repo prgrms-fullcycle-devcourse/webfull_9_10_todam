@@ -7,12 +7,30 @@ export const toggleFavoriteResultSchema = z.object({
 });
 export type ToggleFavoriteResult = z.infer<typeof toggleFavoriteResultSchema>;
 
+// 찜한 공방 목록 쿼리 (GET /users/me/favorite-stores?cursor&limit).
+// getMyReservationsQuerySchema 스타일을 따른다.
+export const favoriteStoresQuerySchema = z.object({
+    cursor: z
+        .string()
+        .meta({
+            description: '이전 응답의 nextCursor (opaque base64url)',
+            example: 'eyJjcmVhdGVkQXQi...',
+        })
+        .optional(),
+    limit: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .meta({ description: '한 번에 가져올 항목 수 (기본 20)', example: 20 })
+        .optional(),
+});
+export type FavoriteStoresQuery = z.infer<typeof favoriteStoresQuerySchema>;
+
 // 찜한 공방 목록 (GET /users/me/favorite-stores).
 export const favoriteStoreItemSchema = z.object({
     favoriteId: z.string(),
     storeId: z.string(),
     name: z.string(),
-    category: z.string(), // D2-b: 카드 카테고리 태그(예 "도자기"). reservation-list.category 와 동일 컨벤션.
     imageUrl: z.string(),
     address: z.string(),
     createdAt: z.string(), // ISO 8601

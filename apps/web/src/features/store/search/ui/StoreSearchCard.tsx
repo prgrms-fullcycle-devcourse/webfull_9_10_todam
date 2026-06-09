@@ -25,10 +25,18 @@ export function StoreSearchCard({ store }: { store: StoreListItem }) {
     const displayClass = matchedClass ?? representativeClass;
     const showHasMore = !matchedClass && representativeClass?.hasMore === true;
 
-    // 거리 표기: 1000m 이상이면 km, 미만이면 m
-    const distanceLabel = distance >= 1000 ? `${(distance / 1000).toFixed(1)}km` : `${distance}m`;
+    // 거리 표기: 1000m 이상이면 km, 미만이면 m. 위치 미제공 시 distance=null → 표기 생략
+    const distanceLabel =
+        distance == null
+            ? null
+            : distance >= 1000
+              ? `${(distance / 1000).toFixed(1)}km`
+              : `${distance}m`;
 
-    // region 풀표기
+    // 평점: 신규/리뷰 없음(rating=null)은 0.0으로 노출
+    const ratingLabel = (rating ?? 0).toFixed(1);
+
+    // region 풀표기 (각 필드 nullable)
     const regionLabel = [region.sido, region.sigungu, region.dong].filter(Boolean).join(' ');
 
     return (
@@ -63,14 +71,15 @@ export function StoreSearchCard({ store }: { store: StoreListItem }) {
                     </p>
                     <span className="flex shrink-0 items-center gap-1 text-sm text-foreground-secondary">
                         <StarFillIcon size={12} className="text-foreground-secondary" />
-                        <span>{rating.toFixed(1)}</span>
+                        {/* 리뷰 0건이면 rating=null → 0.0 노출 (#111 정합). */}
+                        <span>{ratingLabel}</span>
                         <span className="text-foreground-tertiary">({reviewCount})</span>
                     </span>
                 </div>
 
                 {/* 지역・거리 (한 줄, 중점 구분) */}
                 <p className="truncate text-xs text-foreground-tertiary">
-                    {regionLabel}・{distanceLabel}
+                    {[regionLabel, distanceLabel].filter(Boolean).join('・')}
                 </p>
 
                 {/* 클래스 정보 — matchedClass는 정확가(`45,000원`), representativeClass 다건은 `~`(최저가부터). plan decision #3 */}

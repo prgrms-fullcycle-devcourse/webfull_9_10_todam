@@ -18,6 +18,7 @@ import { GetStoreDetailUseCase } from './application/use-cases/get-store-detail.
 import { ListStoreProgramsUseCase } from './application/use-cases/list-store-programs.use-case';
 import { ListStoreReviewsUseCase } from './application/use-cases/list-store-reviews.use-case';
 import { ToggleFavoriteStoreUseCase } from './application/use-cases/toggle-favorite-store.use-case';
+import { ListFavoriteStoresUseCase } from './application/use-cases/list-favorite-stores.use-case';
 import { GetPartnerCurrentStoreUseCase } from './application/use-cases/get-partner-current-store.use-case';
 import { UpdatePartnerCurrentStoreUseCase } from './application/use-cases/update-partner-current-store.use-case';
 import { PartnerGuard } from '../../common/guards/partner.guard';
@@ -26,6 +27,7 @@ import { StoreImageRepository } from './domain/repositories/store-image.reposito
 import { StoreRepository } from './domain/repositories/store.repository';
 import {
     AutocompleteStoresReader,
+    FavoriteStoresReader,
     PartnerOnboardingReader,
     PartnerStoreDetailReader,
     PartnerStoresReader,
@@ -54,6 +56,7 @@ import { PrismaStoreReviewsReader } from './infrastructure/persistence/prisma-st
 import { PrismaStoresReader } from './infrastructure/persistence/prisma-stores.reader';
 import { PrismaCreateStoreCommand } from './infrastructure/persistence/prisma-create-store.command';
 import { PrismaToggleFavoriteStoreCommand } from './infrastructure/persistence/prisma-toggle-favorite-store.command';
+import { PrismaFavoriteStoresReader } from './infrastructure/persistence/prisma-favorite-stores.reader';
 import { PrismaUpdateBusinessDocumentCommand } from './infrastructure/persistence/prisma-update-business-document.command';
 import { PrismaUpdateStoreCommand } from './infrastructure/persistence/prisma-update-store.command';
 import { StoreController } from './presentation/controllers/store.controller';
@@ -80,6 +83,7 @@ import { StoreController } from './presentation/controllers/store.controller';
         ListStoreProgramsUseCase,
         ListStoreReviewsUseCase,
         ToggleFavoriteStoreUseCase,
+        ListFavoriteStoresUseCase,
         GetPartnerCurrentStoreUseCase,
         UpdatePartnerCurrentStoreUseCase,
         { provide: StoreImageRepository, useClass: PrismaStoreImageRepository },
@@ -91,6 +95,7 @@ import { StoreController } from './presentation/controllers/store.controller';
             useClass: PrismaUpdateBusinessDocumentCommand,
         },
         { provide: UpdateStoreWriter, useClass: PrismaUpdateStoreCommand },
+        { provide: FavoriteStoresReader, useClass: PrismaFavoriteStoresReader },
         { provide: AutocompleteStoresReader, useClass: PrismaAutocompleteStoresReader },
         { provide: PartnerOnboardingReader, useClass: PrismaPartnerOnboardingReader },
         { provide: PartnerStoreDetailReader, useClass: PrismaPartnerStoreDetailReader },

@@ -68,7 +68,7 @@ export function formatKstDate(value: Date): string {
     return `${year}-${month}-${day}`;
 }
 
-const DAY_OF_WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const;
+export const DAY_OF_WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const;
 export type DayOfWeekValue = (typeof DAY_OF_WEEK)[number];
 
 export function kstDayOfWeek(value: DateParts | string): DayOfWeekValue {
