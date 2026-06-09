@@ -236,6 +236,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 );
             }
 
+            // 체험완료(IN_PROGRESS)로 직접 등록하면 제작 시작 상태(건조)로 둔다.
             const artwork = await tx.artwork.create({
                 data: {
                     reservationId: reservation.id,
@@ -243,7 +244,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                     internalMemo: input.internalMemo ?? null,
                     status:
                         input.initialStatus === ReservationStatus.IN_PROGRESS
-                            ? ArtworkStatus.VISITED
+                            ? ArtworkStatus.DRYING
                             : ArtworkStatus.RESERVED,
                 },
                 select: { id: true },
@@ -256,7 +257,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                     fromStatus: null,
                     toStatus:
                         input.initialStatus === ReservationStatus.IN_PROGRESS
-                            ? ArtworkStatus.VISITED
+                            ? ArtworkStatus.DRYING
                             : ArtworkStatus.RESERVED,
                 },
             });
@@ -414,35 +415,37 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 select: { id: true, status: true, updatedAt: true },
             });
 
-            const artwork = reservation.artwork
-                ? reservation.artwork
+            // 체험완료 = 제작 시작(건조). 작품 상태를 바로 DRYING 으로 두어
+            // statusView 가 IN_PROGRESS(제작 중) 그룹·건조 단계로 노출한다.
+            // 기존 작품 있으면 update, 없으면 create — 둘 중 1회 write.
+            const existing = reservation.artwork;
+            const artwork = existing
+                ? await tx.artwork.update({
+                      where: { id: existing.id },
+                      data: { status: ArtworkStatus.DRYING },
+                      select: { id: true, status: true },
+                  })
                 : await tx.artwork.create({
                       data: {
                           reservationId: reservation.id,
                           title: reservation.programTitle,
-                          status: ArtworkStatus.VISITED,
+                          status: ArtworkStatus.DRYING,
                       },
                       select: { id: true, status: true },
                   });
 
-            const artworkRow = await tx.artwork.update({
-                where: { id: artwork.id },
-                data: { status: ArtworkStatus.VISITED },
-                select: { status: true },
-            });
-
-            if (!reservation.artwork || reservation.artwork.status !== ArtworkStatus.VISITED) {
+            if (!existing || existing.status !== ArtworkStatus.DRYING) {
                 await tx.artworkLog.create({
                     data: {
                         artworkId: artwork.id,
                         changedBy: reservation.partnerUserId,
-                        fromStatus: reservation.artwork?.status ?? null,
-                        toStatus: ArtworkStatus.VISITED,
+                        fromStatus: existing?.status ?? null,
+                        toStatus: ArtworkStatus.DRYING,
                     },
                 });
             }
 
-            return { reservation: row, artwork: artworkRow };
+            return { reservation: row, artwork };
         });
     }
 
