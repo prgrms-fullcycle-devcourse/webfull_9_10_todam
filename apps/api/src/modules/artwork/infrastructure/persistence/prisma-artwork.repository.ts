@@ -35,7 +35,10 @@ import { buildObjectKey, CDN_BASE, keyFromImageUrl } from '../../../../common/s3
 import { S3Service } from '../../../../common/s3/s3.service';
 import { PrismaService } from '../../../../database/prisma.service';
 import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
-import { ArtworkRepository } from '../../domain/repositories/artwork.repository';
+import {
+    ArtworkRepository,
+    type UserArtworkDetailRow,
+} from '../../domain/repositories/artwork.repository';
 import { ARTWORK_SEQUENCE, ArtworkPolicy } from '../../domain/services/artwork-policy.service';
 
 const TERMINAL_RESERVATION_STATUSES = [
@@ -788,6 +791,36 @@ export class PrismaArtworkRepository extends ArtworkRepository {
             carrier: delivery.carrier,
             shippedAt: delivery.shippedAt?.toISOString().slice(0, 10) ?? null,
         };
+    }
+
+    async findUserArtworkDetail(artworkId: string): Promise<UserArtworkDetailRow | null> {
+        return this.prisma.artwork.findUnique({
+            where: { id: artworkId },
+            select: {
+                id: true,
+                status: true,
+                estimatedCompletedAt: true,
+                reservation: {
+                    select: { userId: true },
+                },
+                logs: {
+                    orderBy: { createdAt: 'asc' },
+                    select: {
+                        id: true,
+                        toStatus: true,
+                        createdAt: true,
+                        photos: {
+                            select: {
+                                id: true,
+                                imageUrl: true,
+                                thumbnailUrl: true,
+                                status: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
     }
 
     private error(code: string, message: string, status: number) {

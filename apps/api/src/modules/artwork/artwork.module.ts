@@ -6,6 +6,7 @@ import { ConfirmArtworkPhotoUseCase } from './application/use-cases/confirm-artw
 import { CountPartnerArtworksUseCase } from './application/use-cases/count-partner-artworks.use-case';
 import { CreateArtworkPhotosUseCase } from './application/use-cases/create-artwork-photos.use-case';
 import { DeleteArtworkPhotoUseCase } from './application/use-cases/delete-artwork-photo.use-case';
+import { GetArtworkDetailUseCase } from './application/use-cases/get-artwork-detail.use-case';
 import { GetPartnerArtworkDetailUseCase } from './application/use-cases/get-partner-artwork-detail.use-case';
 import { ListPartnerArtworksUseCase } from './application/use-cases/list-partner-artworks.use-case';
 import { UpdateArtworkDeliveryInfoUseCase } from './application/use-cases/update-artwork-delivery-info.use-case';
@@ -13,15 +14,17 @@ import { UpdateArtworkDeliveryUseCase } from './application/use-cases/update-art
 import { UpdateArtworkStatusUseCase } from './application/use-cases/update-artwork-status.use-case';
 import { ArtworkRepository } from './domain/repositories/artwork.repository';
 import { PrismaArtworkRepository } from './infrastructure/persistence/prisma-artwork.repository';
+import { ArtworkController } from './presentation/controllers/artwork.controller';
 import { PartnerArtworkController } from './presentation/controllers/partner-artwork.controller';
 
 @Module({
     imports: [AuthModule],
-    controllers: [PartnerArtworkController],
+    controllers: [PartnerArtworkController, ArtworkController],
     providers: [
         ListPartnerArtworksUseCase,
         CountPartnerArtworksUseCase,
         GetPartnerArtworkDetailUseCase,
+        GetArtworkDetailUseCase,
         BulkUpdateArtworkStatusUseCase,
         UpdateArtworkStatusUseCase,
         CreateArtworkPhotosUseCase,
