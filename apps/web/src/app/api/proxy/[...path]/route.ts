@@ -5,7 +5,7 @@ const ALLOWED_PREFIXES = [
     '/api/v1/',
     '/auth/',
     '/partner/',
-    '/stores/',
+    '/stores', // 컬렉션(`/stores`, `/stores?...`) + 하위(`/stores/search/...`, `/stores/:slug`) 모두 허용
     '/users/',
     '/reservations/',
     '/reviews/',
