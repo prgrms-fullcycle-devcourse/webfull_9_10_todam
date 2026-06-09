@@ -1,3 +1,5 @@
+import { StoreDetailClient } from '@/features/store/public-detail';
+
 export default function StoreDetailPage() {
-    return <div>공방 상세</div>;
+    return <StoreDetailClient />;
 }
