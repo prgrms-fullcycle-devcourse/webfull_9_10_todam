@@ -5,6 +5,7 @@ import type {
     UpdateArtworkStatusRequest,
     CreateArtworkPhotosRequest,
     UpdateArtworkDeliveryRequest,
+    UpdateArtworkDeliveryInfoRequest,
 } from '@todam/shared';
 
 import { ApiError } from '@/shared/api';
@@ -17,6 +18,7 @@ import {
     confirmArtworkPhoto,
     deleteArtworkPhoto,
     updateArtworkDelivery,
+    updateArtworkDeliveryInfo,
 } from './api';
 
 const KEY = ['artworks', 'partner', 'detail'] as const;
@@ -100,6 +102,19 @@ export function useUpdateArtworkDelivery(artworkId: string) {
         onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: detailQueryKey(artworkId) });
             push({ message: '작품 상태가 변경되었습니다.' });
+        },
+    });
+}
+
+// 작품 수령 방식·배송 정보 입력 mutation.
+export function useUpdateArtworkDeliveryInfo(artworkId: string) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (body: UpdateArtworkDeliveryInfoRequest) =>
+            updateArtworkDeliveryInfo(artworkId, body),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: detailQueryKey(artworkId) });
         },
     });
 }
