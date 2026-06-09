@@ -654,6 +654,13 @@ describe('API route baseline', () => {
                 path: '/users/me',
                 guards: ['AuthGuard'],
             },
+            {
+                controller: 'UserController',
+                handler: 'withdraw',
+                method: 'DELETE',
+                path: '/users/me',
+                guards: ['AuthGuard'],
+            },
         ]);
     });
 });
