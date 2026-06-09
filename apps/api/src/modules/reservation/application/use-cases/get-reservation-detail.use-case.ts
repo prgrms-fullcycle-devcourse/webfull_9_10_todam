@@ -1,14 +1,14 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ArtworkStatus, ReservationSource, ReservationStatus } from '@prisma/client';
+import { ArtworkStatus, ReservationStatus } from '@prisma/client';
 import {
     ReservationDeliveryMethod,
     type ReservationDeliveryMethod as ReservationDeliveryMethodValue,
     type ReservationDetailArtwork,
     type ReservationDetailDelivery,
 } from '@todam/shared';
-import { KST_OFFSET_MINUTES } from '../../../../common/date/kst-date.util';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { calcDisplayState } from '../../domain/display-state.util';
+import { canCancelReservation } from '../../domain/cancellation-policy';
 import { UserReservationRepository } from '../../domain/repositories/user-reservation.repository';
 import type { ReservationDetailResponseDto } from '../../presentation/dto/user-reservation.dto';
 
@@ -21,24 +21,6 @@ const STAGE_INDEX: Partial<Record<ArtworkStatus, number>> = {
     [ArtworkStatus.GLAZE_FIRING]: 4,
 } as const;
 const FIRING_TOTAL = 4;
-
-/** Date → KST 기준 "YYYY-MM-DD" 날짜 숫자 (비교 전용) */
-function toKSTDateNum(date: Date): number {
-    const kst = new Date(date.getTime() + KST_OFFSET_MINUTES * 60 * 1000);
-    // YYYYMMDD 정수로 만들어 대소 비교
-    return kst.getUTCFullYear() * 10000 + (kst.getUTCMonth() + 1) * 100 + kst.getUTCDate();
-}
-
-/** subDateNum(base, days): base 날짜에서 days일을 뺀 날짜 숫자 반환 */
-function subDaysNum(baseDateNum: number, days: number): number {
-    // YYYYMMDD → Date(UTC 자정) → minus days → YYYYMMDD
-    const year = Math.floor(baseDateNum / 10000);
-    const month = Math.floor((baseDateNum % 10000) / 100) - 1;
-    const day = baseDateNum % 100;
-    const d = new Date(Date.UTC(year, month, day));
-    d.setUTCDate(d.getUTCDate() - days);
-    return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
-}
 
 @Injectable()
 export class GetReservationDetailUseCase {
@@ -74,8 +56,8 @@ export class GetReservationDetailUseCase {
         // 4. totalPrice
         const totalPrice = row.programSnapshotPrice * row.participantCount;
 
-        // 5. canCancel (plan §canCancel 계산 규칙 의사코드 그대로)
-        const canCancel = this.calcCanCancel(
+        // 5. canCancel — 공용 도메인 정책(cancellation-policy.ts) 사용
+        const canCancel = canCancelReservation(
             row.status,
             row.source,
             row.scheduledAt,
@@ -126,36 +108,6 @@ export class GetReservationDetailUseCase {
                 reviewId,
             },
         };
-    }
-
-    private calcCanCancel(
-        status: ReservationStatus,
-        source: ReservationSource,
-        scheduledAt: Date,
-        cancelDeadlineDays: number | null,
-    ): boolean {
-        // status 전제 조건
-        if (status !== ReservationStatus.PENDING && status !== ReservationStatus.CONFIRMED) {
-            return false;
-        }
-        // source 전제 조건
-        if (source !== ReservationSource.CUSTOMER) {
-            return false;
-        }
-
-        const nowKST = new Date();
-        const todayNum = toKSTDateNum(nowKST);
-        const scheduledNum = toKSTDateNum(scheduledAt);
-
-        // 당일 취소 불가 baseline
-        if (todayNum >= scheduledNum) {
-            return false;
-        }
-
-        const effectiveN = Math.max(cancelDeadlineDays ?? 1, 1);
-        const deadlineNum = subDaysNum(scheduledNum, effectiveN);
-
-        return todayNum <= deadlineNum;
     }
 
     private calcArtwork(
