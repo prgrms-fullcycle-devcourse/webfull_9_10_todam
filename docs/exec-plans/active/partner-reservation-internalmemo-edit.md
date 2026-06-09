@@ -9,8 +9,8 @@
 ## Status
 
 - [x] API 구현
-- [ ] UI 구현
-- [ ] API 연동
+- [x] UI 구현
+- [x] API 연동
 
 ## Context
 
