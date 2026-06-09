@@ -25,6 +25,15 @@ const STATUS_CONFIG: Partial<Record<ReservationStatus, { label: string; classNam
         label: '체험완료',
         className: 'bg-muted text-foreground-tertiary',
     },
+    // 배송/픽업까지 끝난 건 = 종료.
+    [ReservationStatus.DELIVERED]: {
+        label: '종료',
+        className: 'bg-muted text-foreground-tertiary',
+    },
+    [ReservationStatus.PICKUP_DONE]: {
+        label: '종료',
+        className: 'bg-muted text-foreground-tertiary',
+    },
 };
 
 // ─── ReservationManagementCardItem ───────────────────────────────────────────
