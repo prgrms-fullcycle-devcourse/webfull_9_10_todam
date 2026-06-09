@@ -317,9 +317,10 @@ export const handlers = [
 
     // 찜한 공방 목록 조회 (인증 필요, 본인 찜만, 커서 페이지네이션, PUBLISHED·최신 찜순).
     // plan: docs/exec-plans/active/유저 마이 - 찜한 공방 목록 조회, 공방 찜 등록_해제.md
+    // 실 BE 연동: BE 글로벌 prefix 없음 → root 경로로 realign(토글 핸들러와 동일 패턴).
     // 시뮬: ?unauth=1 → 401, ?empty=1 → 빈 목록, ?simulate=500 → 500.
-    http.get(`${API}/users/me/favorite-stores`, ({ request }) => {
-        const path = '/api/v1/users/me/favorite-stores';
+    http.get(`*/users/me/favorite-stores`, ({ request }) => {
+        const path = '/users/me/favorite-stores';
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
