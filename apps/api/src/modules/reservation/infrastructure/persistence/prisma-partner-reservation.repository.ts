@@ -471,6 +471,17 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
         });
     }
 
+    async updateInternalMemo(
+        reservationId: string,
+        memo: string | null,
+    ): Promise<{ id: string; internalMemo: string | null }> {
+        return this.prisma.reservation.update({
+            where: { id: reservationId },
+            data: { internalMemo: memo },
+            select: { id: true, internalMemo: true },
+        });
+    }
+
     private createQrToken(artworkId: string): string {
         return `artwork:${artworkId}:${randomUUID()}`;
     }
