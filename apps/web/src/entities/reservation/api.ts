@@ -3,6 +3,8 @@ import type {
     CancelPartnerReservationRequest,
     CreatePartnerReservationRequest,
     CreatePartnerReservationResponse,
+    CreateReservationRestrictionsRequest,
+    DeleteReservationRestrictionsRequest,
     ListTimeSlotsResult,
     PartnerReservationDetailResponse,
     PartnerReservationStatusResponse,
@@ -122,5 +124,25 @@ export function completePartnerReservation(reservationId: string) {
     return clientApiFetch<PartnerReservationStatusResponse>(
         `${PARTNER_BASE}/reservations/${encodeURIComponent(reservationId)}/complete`,
         { method: 'PATCH' },
+    );
+}
+
+export function createPartnerReservationRestrictions(
+    storeId: string,
+    body: CreateReservationRestrictionsRequest,
+) {
+    return clientApiFetch<{ message: string }>(
+        `${PARTNER_BASE}/stores/${encodeURIComponent(storeId)}/reservation-restrictions`,
+        { method: 'POST', body },
+    );
+}
+
+export function deletePartnerReservationRestrictions(
+    storeId: string,
+    body: DeleteReservationRestrictionsRequest,
+) {
+    return clientApiFetch<{ message: string }>(
+        `${PARTNER_BASE}/stores/${encodeURIComponent(storeId)}/reservation-restrictions`,
+        { method: 'DELETE', body },
     );
 }
