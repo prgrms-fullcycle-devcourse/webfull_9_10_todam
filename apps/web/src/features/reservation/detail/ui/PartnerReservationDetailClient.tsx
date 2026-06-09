@@ -121,7 +121,8 @@ function getDetailVisibility(reservation: PartnerReservationDetail): DetailVisib
     const isCanceled = reservation.status === ReservationStatus.CANCELED;
     const isConfirmed = reservation.status === ReservationStatus.CONFIRMED;
 
-    const showQrAction = !isPending && !isCanceled;
+    // QR 라벨은 artwork(=artworkId)가 있어야 생성 가능 → 없으면 진입점 비표시(plan 결정4).
+    const showQrAction = !isPending && !isCanceled && Boolean(reservation.artworkId);
     const showRejectAction = hasAction(reservation, 'REJECT');
     const showConfirmAction = hasAction(reservation, 'CONFIRM');
     const showCancelAction = !isPending && hasAction(reservation, 'CANCEL');
