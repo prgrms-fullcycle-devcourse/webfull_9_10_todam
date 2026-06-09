@@ -10,6 +10,7 @@ import { ReservationModule } from './modules/reservation/reservation.module';
 import { S3Module } from './common/s3/s3.module';
 import { RedisModule } from './redis/redis.module';
 import { ArtworkModule } from './modules/artwork/artwork.module';
+import { PartnerModule } from './modules/partner/partner.module';
 
 @Module({
     imports: [
@@ -24,6 +25,7 @@ import { ArtworkModule } from './modules/artwork/artwork.module';
         ProgramModule,
         ReservationModule,
         ArtworkModule,
+        PartnerModule,
     ],
 })
 export class AppModule {}

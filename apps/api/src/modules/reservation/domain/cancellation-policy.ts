@@ -1,5 +1,21 @@
 import { ReservationSource, ReservationStatus } from '@prisma/client';
-import { subDaysNum, toKSTDateNum } from './date.util';
+import { KST_OFFSET_MINUTES } from '../../../common/date/kst-date.util';
+
+/** Date → KST 기준 YYYYMMDD 정수 (날짜 대소 비교 전용) */
+function toKSTDateNum(date: Date): number {
+    const kst = new Date(date.getTime() + KST_OFFSET_MINUTES * 60 * 1000);
+    return kst.getUTCFullYear() * 10000 + (kst.getUTCMonth() + 1) * 100 + kst.getUTCDate();
+}
+
+/** YYYYMMDD 정수에서 days일을 뺀 YYYYMMDD 정수 반환 */
+function subDaysNum(baseDateNum: number, days: number): number {
+    const year = Math.floor(baseDateNum / 10000);
+    const month = Math.floor((baseDateNum % 10000) / 100) - 1;
+    const day = baseDateNum % 100;
+    const d = new Date(Date.UTC(year, month, day));
+    d.setUTCDate(d.getUTCDate() - days);
+    return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+}
 
 /**
  * 유저 예약 취소 가능 여부 판정 (SSOT: 예약 상세조회 plan § canCancel 계산 규칙).
@@ -11,7 +27,7 @@ import { subDaysNum, toKSTDateNum } from './date.util';
  *
  * 주의: 취소 use-case에서는 "왜 불가인지"(이미취소/상태불가/시한초과)를
  * 개별로 분기해야 하므로, 이 함수는 boolean 플래그 전용이다.
- * 시한 계산 공용 헬퍼(toKSTDateNum, subDaysNum)는 date.util.ts 참조.
+ * 시한 계산 헬퍼(toKSTDateNum, subDaysNum)는 본 파일 상단 로컬 정의(KST_OFFSET_MINUTES는 common/date 재사용).
  */
 export function canCancelReservation(
     status: ReservationStatus,

@@ -7,7 +7,7 @@ import {
     ReservationRestrictionRepository,
 } from '../../domain/repositories/reservation-restriction.repository';
 import { TimeslotSupportReader } from '../../domain/repositories/timeslot-support.reader';
-import { kstDayRange, parseDateOnly } from '../../domain/time.util';
+import { kstDayRange, parseDateOnly } from '../../../../common/date/kst-date.util';
 import type {
     CreateReservationRestrictionsDto,
     CreateReservationRestrictionsResponseDto,

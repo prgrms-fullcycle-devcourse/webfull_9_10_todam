@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { kstDayRange, parseDateOnly } from '../../domain/date.util';
+import { kstDayRange, parseDateOnly } from '../../../../common/date/kst-date.util';
 import { PartnerReservationRepository } from '../../domain/repositories/partner-reservation.repository';
 import type {
     ListPartnerReservationsQueryDto,
@@ -45,6 +45,7 @@ export class ListPartnerReservationsUseCase {
             reservations: page.map((row) => ({
                 id: row.id,
                 programTitle: row.programTitle,
+                durationMinutes: row.durationMinutes,
                 scheduledAt: row.scheduledAt.toISOString(),
                 reserverName: row.reserverName,
                 participantCount: row.participantCount,

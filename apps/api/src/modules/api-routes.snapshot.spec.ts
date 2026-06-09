@@ -48,6 +48,9 @@ function controllers(): ControllerClass[] {
     const { PartnerArtworkController } = jest.requireActual<
         typeof import('./artwork/presentation/controllers/partner-artwork.controller')
     >('./artwork/presentation/controllers/partner-artwork.controller');
+    const { PartnerController } = jest.requireActual<
+        typeof import('./partner/presentation/controllers/partner.controller')
+    >('./partner/presentation/controllers/partner.controller');
 
     return [
         AuthController,
@@ -58,6 +61,7 @@ function controllers(): ControllerClass[] {
         PartnerReservationController,
         UserReservationController,
         PartnerArtworkController,
+        PartnerController,
     ];
 }
 
@@ -473,6 +477,13 @@ describe('API route baseline', () => {
             },
             {
                 controller: 'PartnerReservationController',
+                handler: 'pendingSummary',
+                method: 'GET',
+                path: '/partner/stores/:storeId/reservations/pending-summary',
+                guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerReservationController',
                 handler: 'createManual',
                 method: 'POST',
                 path: '/partner/stores/:storeId/reservations',
@@ -610,6 +621,13 @@ describe('API route baseline', () => {
                 method: 'PATCH',
                 path: '/partner/artworks/:artworkId/delivery',
                 guards: ['AuthGuard', 'PartnerGuard'],
+            },
+            {
+                controller: 'PartnerController',
+                handler: 'terminate',
+                method: 'DELETE',
+                path: '/partners/me',
+                guards: ['AuthGuard'],
             },
         ]);
     });
