@@ -3,6 +3,7 @@
 // 파트너 작품 상세 클라이언트.
 // Plan step 10: FE 상세 — 타임라인, 수령방식카드, 예약정보 바텀시트, 현재 상태별 CTA.
 
+import { useRouter } from 'next/navigation';
 import { RightIcon, BottomBar, Button, Modal } from '@todam/ui';
 import {
     ArtworkAvailableAction,
@@ -42,6 +43,7 @@ const NEXT_STATUS_MAP: Partial<Record<string, { label: string; nextStatus: Artwo
 };
 
 export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailClientProps) {
+    const router = useRouter();
     const { data, error, isLoading, isError } = usePartnerArtworkDetail(artworkId);
     const { open } = useSheet();
     const { push } = useToast();
@@ -155,6 +157,11 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
         open(<PartnerReservationInfoSheet reservation={safeArtwork.reservation} />);
     }
 
+    // 수령 방식·배송 정보 입력 화면으로 이동.
+    function goToDeliveryInfo() {
+        router.push(`/partner/artworks/${artworkId}/shipping`);
+    }
+
     // CTA 핸들러
     function handleCtaClick() {
         if (!ctaInfo) return;
@@ -172,8 +179,7 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
                         message: '작품 수령 정보가 필요합니다.',
                         type: 'button',
                         actionLabel: '입력하기',
-                        // TODO: 수령 방식 입력 화면으로 이동 (step 11)
-                        onAction: () => {},
+                        onAction: goToDeliveryInfo,
                     });
                     return;
                 }
@@ -244,9 +250,7 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
                             <button
                                 type="button"
                                 className="flex w-full cursor-pointer items-center justify-between"
-                                onClick={() => {
-                                    // TODO: 수령 방식 선택 화면으로 이동 (step 11)
-                                }}
+                                onClick={goToDeliveryInfo}
                             >
                                 <div className="flex flex-col gap-0.5 text-left">
                                     <span className="text-xs text-foreground-tertiary">

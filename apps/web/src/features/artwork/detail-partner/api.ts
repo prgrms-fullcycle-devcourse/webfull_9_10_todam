@@ -8,6 +8,8 @@ import type {
     UpdateArtworkStatusRequest,
     CreateArtworkPhotosRequest,
     UpdateArtworkDeliveryRequest,
+    UpdateArtworkDeliveryInfoRequest,
+    UpdateArtworkDeliveryInfoResult,
 } from '@todam/shared';
 
 import { clientApiFetch } from '@/shared/api';
@@ -65,4 +67,16 @@ export function updateArtworkDelivery(artworkId: string, body: UpdateArtworkDeli
         method: 'PATCH',
         body,
     });
+}
+
+// 작품 수령 방식·배송 정보 입력.
+// PATCH /partner/artworks/{artworkId}/delivery-info
+export function updateArtworkDeliveryInfo(
+    artworkId: string,
+    body: UpdateArtworkDeliveryInfoRequest,
+) {
+    return clientApiFetch<UpdateArtworkDeliveryInfoResult>(
+        `${BASE}/artworks/${artworkId}/delivery-info`,
+        { method: 'PATCH', body },
+    );
 }
