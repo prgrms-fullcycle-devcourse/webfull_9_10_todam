@@ -1,19 +1,7 @@
 'use client';
 
 import { CheckIcon, StandardBottomSheet } from '@todam/ui';
-import { DeliveryCarrier } from '@todam/shared';
-
-// 택배사 enum → 한글 라벨. contract DeliveryCarrier(6종) 기준.
-export const CARRIER_LABEL: Record<DeliveryCarrierValue, string> = {
-    CJ_LOGISTICS: 'CJ대한통운',
-    LOTTE: '롯데택배',
-    HANJIN: '한진택배',
-    KOREA_POST: '우체국 택배',
-    LOGEN: '로젠택배',
-    COUPANG_LOGISTICS: '쿠팡로지스틱스',
-};
-
-export type DeliveryCarrierValue = (typeof DeliveryCarrier)[keyof typeof DeliveryCarrier];
+import { DeliveryCarrier, DELIVERY_CARRIER_LABEL, type DeliveryCarrierValue } from '@todam/shared';
 
 const CARRIERS = Object.values(DeliveryCarrier) as DeliveryCarrierValue[];
 
@@ -40,7 +28,7 @@ function CarrierRow({
         >
             <span className="flex min-w-0 flex-1 items-center py-4">
                 <span className="text-base font-medium text-foreground">
-                    {CARRIER_LABEL[carrier]}
+                    {DELIVERY_CARRIER_LABEL[carrier]}
                 </span>
             </span>
             {selected && <CheckIcon size={16} className="shrink-0 text-primary" />}

@@ -6,6 +6,7 @@ export * from './StepperItem';
 export * from './StepperItemChild';
 export * from './MenuTable';
 export * from './EmptyState';
+export * from './AddressSearchInput';
 export * from './ImageUploadCell';
 export * from './ImageUploadGrid';
 export * from './ImageUploadField';

@@ -12,6 +12,7 @@ export type AddressSearchInputProps = {
     value: string;
     helperText?: string;
     error?: boolean;
+    disabled?: boolean;
     onResolved: (next: { postalCode: string; address: string }) => void;
 };
 
@@ -20,6 +21,7 @@ export function AddressSearchInput({
     value,
     helperText,
     error,
+    disabled,
     onResolved,
 }: AddressSearchInputProps) {
     const handleClick = useCallback(async () => {
@@ -45,7 +47,8 @@ export function AddressSearchInput({
             <button
                 type="button"
                 onClick={handleClick}
-                className={`flex h-12 w-full items-center rounded-xl border bg-surface px-4 text-left text-base transition-colors duration-200 ease-in-out focus:border-primary focus:outline-none ${borderClass} ${
+                disabled={disabled}
+                className={`flex h-12 w-full items-center rounded-xl border bg-surface px-4 text-left text-base transition-colors duration-200 ease-in-out focus:border-primary focus:outline-none disabled:cursor-not-allowed disabled:bg-muted disabled:text-foreground-secondary ${borderClass} ${
                     value ? 'text-foreground' : 'text-foreground-tertiary'
                 }`}
             >

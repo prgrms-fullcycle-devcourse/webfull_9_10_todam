@@ -37,6 +37,11 @@ export {
 
 export * from './constants/regex';
 
+export {
+    DELIVERY_CARRIER_LABEL,
+    type DeliveryCarrierValue,
+} from './constants/delivery-carrier-label';
+
 export * from './contracts/auth';
 export * from './contracts/fields';
 export * from './contracts/store-registration';

@@ -5,20 +5,22 @@ import { useRouter } from 'next/navigation';
 
 import {
     DeliveryCarrier,
+    DELIVERY_CARRIER_LABEL,
     ReservationDeliveryMethod,
     updateArtworkDeliveryInfoRequestSchema,
+    type DeliveryCarrierValue,
     type GetPartnerArtworkDetailResult,
     type UpdateArtworkDeliveryInfoRequest,
 } from '@todam/shared';
 import { BottomBar, Button, DownIcon, RadioInput, SectionTitle, TextInput } from '@todam/ui';
 
 import { ApiError } from '@/shared/api';
-import { openPostcode } from '@/shared/lib/daumPostcode';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useSheet, useToast } from '@/shared/model';
+import { AddressSearchInput } from '@/shared/ui';
 
 import { usePartnerArtworkDetail, useUpdateArtworkDeliveryInfo } from '../queries';
-import { CARRIER_LABEL, CarrierSelectSheet, type DeliveryCarrierValue } from './CarrierSelectSheet';
+import { CarrierSelectSheet } from './CarrierSelectSheet';
 
 export type PartnerDeliveryInfoClientProps = {
     artworkId: string;
@@ -179,19 +181,16 @@ function PartnerDeliveryInfoForm({ artworkId, artwork }: { artworkId: string; ar
         if (submitted) setErrors({});
     };
 
-    const handleAddressSearch = async () => {
-        try {
-            const result = await openPostcode();
-            setValues((prev) => ({
-                ...prev,
-                postalCode: result.zonecode,
-                address: result.roadAddress,
-            }));
-            if (submitted) {
-                setErrors((prev) => ({ ...prev, postalCode: undefined, address: undefined }));
-            }
-        } catch {
-            // 팝업 닫기/스크립트 로드 실패 — 폼 상태 유지.
+    const handleAddressResolved = ({
+        postalCode,
+        address,
+    }: {
+        postalCode: string;
+        address: string;
+    }) => {
+        setValues((prev) => ({ ...prev, postalCode, address }));
+        if (submitted) {
+            setErrors((prev) => ({ ...prev, postalCode: undefined, address: undefined }));
         }
     };
 
@@ -311,32 +310,14 @@ function PartnerDeliveryInfoForm({ artworkId, artwork }: { artworkId: string; ar
 
                             {/* 주소 + (조건부)상세주소 */}
                             <div className="flex w-full flex-col gap-1">
-                                <div className="flex w-full flex-col gap-2">
-                                    <label className="px-1 text-sm font-semibold text-foreground-tertiary">
-                                        주소
-                                    </label>
-                                    <button
-                                        type="button"
-                                        onClick={handleAddressSearch}
-                                        disabled={disabled}
-                                        className={[
-                                            'flex h-12 w-full items-center rounded-xl border bg-surface px-4 text-left text-base transition-colors duration-200 ease-in-out focus:border-primary focus:outline-none',
-                                            (errors.address ?? errors.postalCode)
-                                                ? 'border-danger'
-                                                : 'border-border-subtle',
-                                            values.address
-                                                ? 'text-foreground'
-                                                : 'text-foreground-tertiary',
-                                        ].join(' ')}
-                                    >
-                                        {values.address || '도로명 또는 지번 주소를 검색해 주세요'}
-                                    </button>
-                                    {(errors.address ?? errors.postalCode) && (
-                                        <p className="px-1 text-xs text-danger">
-                                            {errors.address ?? errors.postalCode}
-                                        </p>
-                                    )}
-                                </div>
+                                <AddressSearchInput
+                                    label="주소"
+                                    value={values.address}
+                                    helperText={errors.address ?? errors.postalCode}
+                                    error={Boolean(errors.address ?? errors.postalCode)}
+                                    disabled={disabled}
+                                    onResolved={handleAddressResolved}
+                                />
                                 {hasAddress && (
                                     <TextInput
                                         id="delivery-address-detail"
@@ -373,7 +354,7 @@ function PartnerDeliveryInfoForm({ artworkId, artwork }: { artworkId: string; ar
                                 ].join(' ')}
                             >
                                 {values.carrier
-                                    ? CARRIER_LABEL[values.carrier]
+                                    ? DELIVERY_CARRIER_LABEL[values.carrier]
                                     : '택배사를 선택해 주세요'}
                                 <DownIcon size={16} className="shrink-0 text-foreground" />
                             </button>
