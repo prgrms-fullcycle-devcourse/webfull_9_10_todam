@@ -67,7 +67,7 @@ export function StoreDetailClient() {
                 pushToast({ message: '링크 복사에 실패했어요.' });
             }
         }
-    }, [store?.name, pushToast]);
+    }, [store, pushToast]);
 
     // 404 상태
     const is404 =
