@@ -25,6 +25,7 @@ import {
     listPartnerReservationsQuerySchema,
     partnerReservationCalendarQuerySchema,
     rejectPartnerReservationRequestSchema,
+    updateInternalMemoRequestSchema,
 } from '@todam/shared';
 import type {
     CancelPartnerReservationRequest,
@@ -32,6 +33,7 @@ import type {
     ListPartnerReservationsQuery,
     PartnerReservationCalendarQuery,
     RejectPartnerReservationRequest,
+    UpdateInternalMemoRequest,
 } from '@todam/shared';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
@@ -48,6 +50,7 @@ import { GetPartnerReservationDetailUseCase } from '../../application/use-cases/
 import { GetPendingReservationSummaryUseCase } from '../../application/use-cases/get-pending-reservation-summary.use-case';
 import { ListPartnerReservationsUseCase } from '../../application/use-cases/list-partner-reservations.use-case';
 import { RejectPartnerReservationUseCase } from '../../application/use-cases/reject-partner-reservation.use-case';
+import { UpdatePartnerReservationInternalMemoUseCase } from '../../application/use-cases/update-partner-reservation-internal-memo.use-case';
 import {
     CancelPartnerReservationDto,
     CreatePartnerReservationDto,
@@ -58,6 +61,8 @@ import {
     PartnerReservationStatusResponseDto,
     PendingReservationSummaryResponseDto,
     RejectPartnerReservationDto,
+    UpdateInternalMemoDto,
+    UpdateInternalMemoResponseDto,
 } from '../dto/partner-reservation.dto';
 
 @ApiTags('partner-reservations')
@@ -74,6 +79,7 @@ export class PartnerReservationController {
         private readonly rejectUseCase: RejectPartnerReservationUseCase,
         private readonly cancelUseCase: CancelPartnerReservationUseCase,
         private readonly completeUseCase: CompletePartnerReservationUseCase,
+        private readonly updateInternalMemoUseCase: UpdatePartnerReservationInternalMemoUseCase,
     ) {}
 
     @Get('partner/stores/:storeId/reservations/calendar')
@@ -201,5 +207,20 @@ export class PartnerReservationController {
         @Param('reservationId') reservationId: string,
     ): Promise<PartnerReservationStatusResponseDto> {
         return this.completeUseCase.execute(user.id, reservationId);
+    }
+
+    @Patch('partner/reservations/:reservationId/internal-memo')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, PartnerGuard)
+    @ResponseMessage('내부 메모가 저장되었습니다.')
+    @ApiOkResponse({ type: UpdateInternalMemoResponseDto })
+    @ApiBody({ type: UpdateInternalMemoDto })
+    async updateInternalMemo(
+        @CurrentUser() user: RequestUser,
+        @Param('reservationId') reservationId: string,
+        @Body(new ZodValidationPipe(updateInternalMemoRequestSchema))
+        dto: UpdateInternalMemoRequest,
+    ): Promise<UpdateInternalMemoResponseDto> {
+        return this.updateInternalMemoUseCase.execute(user.id, reservationId, dto.internalMemo);
     }
 }

@@ -8,7 +8,7 @@
 
 ## Status
 
-- [ ] API 구현
+- [x] API 구현
 - [ ] UI 구현
 - [ ] API 연동
 
@@ -217,7 +217,21 @@ export type UpdateInternalMemoResponse = z.infer<typeof updateInternalMemoRespon
 
 ## Out (단계별 완료물)
 
-- API: `PATCH /partner/reservations/:reservationId/internal-memo` — `UpdatePartnerReservationInternalMemoUseCase`, `prisma-partner-reservation.repository.ts`
+### API 구현 완료 (2026-06-09)
+
+- `packages/shared/src/contracts/reservation-detail.ts` — `updateInternalMemoRequestSchema`, `updateInternalMemoResponseSchema`, `UpdateInternalMemoRequest`, `UpdateInternalMemoResponse` 추가
+- `apps/api/src/modules/reservation/domain/repositories/partner-reservation.repository.ts` — `updateInternalMemo(reservationId, memo)` 추상 메서드 추가
+- `apps/api/src/modules/reservation/infrastructure/persistence/prisma-partner-reservation.repository.ts` — `updateInternalMemo` 구현 (`prisma.reservation.update`)
+- `apps/api/src/modules/reservation/application/use-cases/update-partner-reservation-internal-memo.use-case.ts` — UseCase 신규 생성 (findDetail → FORBIDDEN 검증 → OD-1 정규화 → updateInternalMemo)
+- `apps/api/src/modules/reservation/presentation/dto/partner-reservation.dto.ts` — `UpdateInternalMemoDto`, `UpdateInternalMemoResponseDto` 추가
+- `apps/api/src/modules/reservation/presentation/controllers/partner-reservation.controller.ts` — `PATCH partner/reservations/:reservationId/internal-memo` 핸들러 추가
+- `apps/api/src/modules/reservation/reservation.module.ts` — `UpdatePartnerReservationInternalMemoUseCase` provider 등록
+- `apps/api/src/modules/reservation/application/use-cases/update-partner-reservation-internal-memo.use-case.spec.ts` — 단위 테스트 8개 (404/403/200/OD-1/OD-2) 모두 통과
+- `apps/api/src/modules/api-routes.snapshot.spec.ts` — 신규 라우트 스냅샷 등록
+- 전체 테스트: 187/187 통과
+
+---
+
 - UI: `PartnerReservationDetailClient` — `handleSaveMemo` 실 API 연결, `isPending` 비활성화, 성공/실패 toast
 - 연동: `updateInternalMemoRequestSchema` / `updateInternalMemoResponseSchema`로 req/res 타입 검증, `PARTNER_DETAIL_KEY` 캐시 갱신으로 상세 조회와 internalMemo 정합성 유지
 
