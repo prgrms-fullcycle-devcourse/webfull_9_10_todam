@@ -155,3 +155,21 @@ export const partnerReservationDetailResponseSchema = z.object({
 export type PartnerReservationDetailResponse = z.infer<
     typeof partnerReservationDetailResponseSchema
 >;
+
+// ─── 파트너 예약 내부 메모 수정 (PATCH /partner/reservations/{reservationId}/internal-memo) ─────
+// contract SSOT: docs/exec-plans/active/partner-reservation-internalmemo-edit.md
+
+// 내부 메모 수정 요청
+export const updateInternalMemoRequestSchema = z.object({
+    internalMemo: z.string().max(200).nullable(),
+});
+export type UpdateInternalMemoRequest = z.infer<typeof updateInternalMemoRequestSchema>;
+
+// 내부 메모 수정 응답 data 페이로드
+export const updateInternalMemoResponseSchema = z.object({
+    reservation: z.object({
+        id: z.string(),
+        internalMemo: z.string().nullable(),
+    }),
+});
+export type UpdateInternalMemoResponse = z.infer<typeof updateInternalMemoResponseSchema>;
