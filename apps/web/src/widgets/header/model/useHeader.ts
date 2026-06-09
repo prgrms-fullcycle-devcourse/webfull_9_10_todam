@@ -28,7 +28,9 @@ const routeConfig: Record<string, HeaderConfig> = {
     '/partner/reservations': { type: 'main', title: '예약 관리' },
     '/partner/reservations/new': { type: 'sub', title: '예약 등록하기' },
     '/partner/artworks': { type: 'main', title: '작품 관리' },
-    '/partner/settings': { type: 'sub', title: '설정' },
+    '/partner/settings': { type: 'main', title: '설정' },
+    '/partner/settings/profile': { type: 'sub', title: '개인 정보 수정' },
+    '/partner/settings/business': { type: 'sub', title: '사업자 정보' },
 };
 
 // 동적 경로(파라미터 포함)는 정확 일치로 못 잡으므로 패턴으로 매칭.
