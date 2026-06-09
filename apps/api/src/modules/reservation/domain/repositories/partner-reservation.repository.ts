@@ -154,4 +154,9 @@ export abstract class PartnerReservationRepository {
     ): Promise<CancelReservationResult>;
 
     abstract complete(reservation: PartnerReservationActionRow): Promise<CompleteReservationResult>;
+
+    abstract updateInternalMemo(
+        reservationId: string,
+        memo: string | null,
+    ): Promise<{ id: string; internalMemo: string | null }>;
 }

@@ -38,6 +38,7 @@ import {
     type StoreListResult,
     type AutocompleteResult,
     type PublicProgramListResult,
+    StoreStatus,
 } from '@todam/shared';
 import { http, HttpResponse } from 'msw';
 
@@ -1024,8 +1025,21 @@ export const handlers = [
         const limit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 10;
 
         // mock 데이터 — plan API Contract A 스냅샷 형태
+        // BE 응답 정합용 공통 필드(목록 카드에는 미사용이나 계약상 필수).
+        const STORE_COMMON = {
+            partnerId: 'partner-uuid-001',
+            description: '도자기 체험 공방입니다.',
+            phone: '02-1234-5678',
+            address: '서울 성동구 성수동',
+            status: StoreStatus.PUBLISHED,
+            convenienceInfo: { parking: true, pet: false, wifi: true },
+            autoConfirm: false,
+            publishedAt: '2026-05-25T10:00:00.000Z',
+            createdAt: '2026-05-24T12:00:00.000Z',
+        };
         const MOCK_STORES: StoreListResult['stores'] = [
             {
+                ...STORE_COMMON,
                 id: 'store-uuid-001',
                 slug: 'plus-doja',
                 name: '플러스 도자기',
@@ -1039,6 +1053,7 @@ export const handlers = [
                 isOperating: true,
             },
             {
+                ...STORE_COMMON,
                 id: 'store-uuid-002',
                 slug: 'todam-pottery',
                 name: '흙과 사람',
@@ -1052,6 +1067,7 @@ export const handlers = [
                 isOperating: true,
             },
             {
+                ...STORE_COMMON,
                 id: 'store-uuid-003',
                 slug: 'clay-seoul',
                 name: '클레이 서울',
@@ -1065,6 +1081,7 @@ export const handlers = [
                 isOperating: false,
             },
             {
+                ...STORE_COMMON,
                 id: 'store-uuid-004',
                 slug: 'seongsu-vintage',
                 name: '성수동 작은 공방',

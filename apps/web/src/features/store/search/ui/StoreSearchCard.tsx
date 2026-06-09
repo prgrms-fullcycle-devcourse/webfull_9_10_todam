@@ -71,6 +71,7 @@ export function StoreSearchCard({ store }: { store: StoreListItem }) {
                     </p>
                     <span className="flex shrink-0 items-center gap-1 text-sm text-foreground-secondary">
                         <StarFillIcon size={12} className="text-foreground-secondary" />
+                        {/* 리뷰 0건이면 rating=null → 0.0 노출 (#111 정합). */}
                         <span>{ratingLabel}</span>
                         <span className="text-foreground-tertiary">({reviewCount})</span>
                     </span>

@@ -96,7 +96,7 @@ export function StoreRegistrationComplete({
                     {/* 공방 요약 */}
                     <ResultTable
                         title={store?.name ?? '-'}
-                        location={store?.address}
+                        location={store?.address ?? undefined}
                         rows={[
                             {
                                 label: '사업자 등록번호',

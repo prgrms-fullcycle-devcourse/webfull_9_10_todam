@@ -1,11 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { confirmStoreImageResultSchema } from '@todam/shared';
+import { createZodDto } from 'nestjs-zod';
 
-export class ConfirmStoreImageDto {
-    @ApiProperty() id!: string;
-    @ApiProperty() status!: string;
-}
-
-export class ConfirmStoreImageResponseDto {
-    @ApiProperty({ type: ConfirmStoreImageDto })
-    image!: ConfirmStoreImageDto;
-}
+// 응답 SSOT = @todam/shared(zod). 공방 이미지 업로드 확정 응답.
+export class ConfirmStoreImageResponseDto extends createZodDto(confirmStoreImageResultSchema) {}

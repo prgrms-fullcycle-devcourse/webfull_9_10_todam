@@ -529,6 +529,13 @@ describe('API route baseline', () => {
                 guards: ['AuthGuard', 'PartnerGuard'],
             },
             {
+                controller: 'PartnerReservationController',
+                guards: ['AuthGuard', 'PartnerGuard'],
+                handler: 'updateInternalMemo',
+                method: 'PATCH',
+                path: '/partner/reservations/:reservationId/internal-memo',
+            },
+            {
                 controller: 'UserReservationController',
                 handler: 'listMyReservations',
                 method: 'GET',
