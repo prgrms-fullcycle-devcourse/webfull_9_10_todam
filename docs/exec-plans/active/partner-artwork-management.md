@@ -336,6 +336,13 @@
   - `features/artwork/list/ui/ArtworkGroupSheet.tsx` — StandardBottomSheet 패턴 그룹 선택 시트.
   - `features/artwork/list/ui/ArtworkListClient.tsx` — 그룹/상태 필터 바, 무한스크롤, 로딩/에러/빈 상태, 카드 리스트.
   - `app/partner/artworks/page.tsx` — useCurrentStoreId + ArtworkListClient 조립.
+- 수령 정보 입력 화면 완료(step 11, 2026-06-09):
+  - `features/artwork/detail-partner/api.ts` — `updateArtworkDeliveryInfo`(PATCH `/partner/artworks/{id}/delivery-info`) 추가.
+  - `features/artwork/detail-partner/queries.ts` — `useUpdateArtworkDeliveryInfo`(useMutation, detail invalidate).
+  - `features/artwork/detail-partner/ui/CarrierSelectSheet.tsx` — StandardBottomSheet 택배사 선택 시트 + `CARRIER_LABEL`(DeliveryCarrier 6종 한글 매핑).
+  - `features/artwork/detail-partner/ui/PartnerDeliveryInfoClient.tsx` — 상세 fetch + pre-fill(저장값 우선, 없으면 예약자 fallback), 택배/직접수령 RadioInput 분기, 조건부 이름·연락처·주소(Daum 검색)·상세주소, 택배사 시트, 운송장(선택, 숫자 5~100), contract schema 검증 + isDirty 기반 저장 버튼 활성.
+  - `app/partner/artworks/[id]/shipping/page.tsx` — use(params) + PartnerDeliveryInfoClient 조립(기존 placeholder 대체).
+  - `PartnerArtworkDetailClient.tsx` — 수령방식 카드 클릭 + SHIP CTA '입력하기' 토스트 액션을 `/partner/artworks/{id}/shipping` 라우팅으로 연결(기존 TODO 해소).
 
 ## Risks
 
