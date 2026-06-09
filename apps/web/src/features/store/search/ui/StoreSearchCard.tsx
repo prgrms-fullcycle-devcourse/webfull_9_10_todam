@@ -4,10 +4,17 @@ import Link from 'next/link';
 import { StarFillIcon } from '@todam/ui';
 import { formatPrice, type StoreListItem } from '@todam/shared';
 
-// 검색 결과 공방 카드.
+// 공방 카드 (검색·근처 공유).
 // matchedClass 있으면 그것 렌더, 없으면 representativeClass 렌더 (plan decision #3).
-// region subtitle = "{sido} {sigungu} {dong}" (plan decision #1).
-export function StoreSearchCard({ store }: { store: StoreListItem }) {
+// region 표기: 검색 카드='{sido} {sigungu} {dong}' / 근처 카드=`dong`만
+// (근처 공방 plan contract — 근처 카드=dong, 검색 카드=전체 문자열).
+export function StoreSearchCard({
+    store,
+    regionFormat = 'full',
+}: {
+    store: StoreListItem;
+    regionFormat?: 'full' | 'dong';
+}) {
     const {
         slug,
         name,
@@ -36,8 +43,11 @@ export function StoreSearchCard({ store }: { store: StoreListItem }) {
     // 평점: 신규/리뷰 없음(rating=null)은 0.0으로 노출
     const ratingLabel = (rating ?? 0).toFixed(1);
 
-    // region 풀표기 (각 필드 nullable)
-    const regionLabel = [region.sido, region.sigungu, region.dong].filter(Boolean).join(' ');
+    // region 표기: 근처 카드는 dong만, 검색 카드는 시·구·동 풀표기 (각 필드 nullable)
+    const regionLabel =
+        regionFormat === 'dong'
+            ? (region.dong ?? '')
+            : [region.sido, region.sigungu, region.dong].filter(Boolean).join(' ');
 
     return (
         <Link

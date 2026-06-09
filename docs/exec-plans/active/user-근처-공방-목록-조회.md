@@ -16,8 +16,8 @@
 -->
 
 - [x] API 구현
-- [ ] UI 구현
-- [ ] API 연동
+- [x] UI 구현
+- [x] API 연동
 
 ## Context
 
@@ -180,8 +180,14 @@
   - 스키마: `Store`에 `regionSido`/`regionSigungu`/`regionDong` 컬럼 추가 — `apps/api/prisma/schema.prisma` + 마이그레이션 `apps/api/prisma/migrations/20260602130000_add_store_region_columns/migration.sql`
   - 빌드/타입체크: `nest build`·`tsc --noEmit` 통과. 신규 파일 lint 클린.
   - **별도 작업(미완·골격만)**: 기존 데이터 region 백필 스크립트 `apps/api/prisma/scripts/backfill-store-region.ts` (카카오 coord2regioncode 호출부 TODO). 운영 작업으로 분리.
-- UI: <!-- 메인 공방 목록 섹션, 공방 카드 컴포넌트 -->
-- 연동: <!-- 실 GET /stores 바인딩, 권한 허용/거부 경로 검증 결과 -->
+- UI: `NearbyStoresSection` — 메인 화면 "근처 공방" 섹션. 위치 로딩/빈 상태/에러 상태 처리. 무한스크롤(IntersectionObserver sentinel). 공방 카드는 기존 `StoreSearchCard` 재사용(slug → `/stores/[slug]`, `isOperating` "준비 중" 뱃지, `representativeClass.hasMore` "~" 표기 포함).
+  - `apps/web/src/features/store/nearby-list/ui/NearbyStoresSection.tsx`
+- 연동:
+  - API 클라이언트: `features/store/search/api.ts`의 `getStores` 재사용 (이미 contract 완전 구현). `DEFAULT_LAT=37.5446`, `DEFAULT_LNG=127.0560` 상수 공유.
+  - 타입: `@todam/shared`의 `StoreListItem`, `StoreListResult`, `StoreListPageInfo` (contract 1:1 정합).
+  - React Query hook: `features/store/nearby-list/queries.ts` — `useNearbyStores` (위치 기반 전용, `enabled` 게이트, 커서 `pageInfo.hasNext`/`pageInfo.nextCursor` 기반).
+  - 메인 페이지 `apps/web/src/app/page.tsx`에 `NearbyStoresSection` 마운트. 서버 컴포넌트 page → 클라이언트 컴포넌트 위임 패턴 유지.
+  - 위치 권한 거부/타임아웃(5s) → 성수동 폴백 자동 실행 확인.
 
 ## Risks
 
