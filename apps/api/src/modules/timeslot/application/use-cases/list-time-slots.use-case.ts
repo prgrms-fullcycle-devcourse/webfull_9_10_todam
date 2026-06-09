@@ -5,7 +5,7 @@ import { TimeSlotStatus } from '../../domain/entities/store-time-slot.entity';
 import { StoreTimeSlotRepository } from '../../domain/repositories/store-time-slot.repository';
 import { ReservationRestrictionRepository } from '../../domain/repositories/reservation-restriction.repository';
 import { TimeslotSupportReader } from '../../domain/repositories/timeslot-support.reader';
-import { kstDayRange, parseDateOnly } from '../../domain/time.util';
+import { kstDayRange, parseDateOnly } from '../../../../common/date/kst-date.util';
 import type {
     ListTimeSlotsQueryDto,
     ListTimeSlotsResponseDto,

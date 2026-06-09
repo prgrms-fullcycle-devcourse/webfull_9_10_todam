@@ -5,7 +5,7 @@ import {
     DeleteRestrictionConditions,
     ReservationRestrictionRepository,
 } from '../../domain/repositories/reservation-restriction.repository';
-import { kstDayRange, parseDateOnly } from '../../domain/time.util';
+import { kstDayRange, parseDateOnly } from '../../../../common/date/kst-date.util';
 import type {
     DeleteReservationRestrictionsDto,
     DeleteReservationRestrictionsResponseDto,

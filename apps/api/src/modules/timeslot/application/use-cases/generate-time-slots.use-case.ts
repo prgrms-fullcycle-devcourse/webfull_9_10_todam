@@ -4,7 +4,7 @@ import { StoreOwnershipService } from '../../../../common/access/store-ownership
 import { StoreTimeSlotRepository } from '../../domain/repositories/store-time-slot.repository';
 import { TimeslotSupportReader } from '../../domain/repositories/timeslot-support.reader';
 import { TimeSlotGenerationService } from '../../domain/services/time-slot-generation.service';
-import { kstWallClockToInstant, parseDateOnly } from '../../domain/time.util';
+import { kstWallClockToInstant, parseDateOnly } from '../../../../common/date/kst-date.util';
 import type {
     GenerateTimeSlotsDto,
     GenerateTimeSlotsResponseDto,

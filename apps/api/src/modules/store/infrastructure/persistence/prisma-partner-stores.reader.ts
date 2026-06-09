@@ -1,7 +1,9 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { StoreStatus } from '@todam/shared';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import type { PartnerStoresResult } from '../../domain/repositories/store-readers';
+import { currentKstDayRange } from '../../../../common/date/kst-date.util';
 
 @Injectable()
 export class PrismaPartnerStoresReader {
@@ -23,6 +25,8 @@ export class PrismaPartnerStoresReader {
         }
 
         // partner_id 소속 공방 전체 조회 (상태 무관) → 최신 생성순
+        const { start: todayStart, end: tomorrowStart } = currentKstDayRange();
+
         const stores = await this.prisma.store.findMany({
             where: { partnerId: partner.id },
             orderBy: { createdAt: 'desc' },
@@ -36,6 +40,13 @@ export class PrismaPartnerStoresReader {
                     take: 1,
                     select: { ownerName: true },
                 },
+                _count: {
+                    select: {
+                        reservations: {
+                            where: { scheduledAt: { gte: todayStart, lt: tomorrowStart } },
+                        },
+                    },
+                },
             },
         });
 
@@ -44,7 +55,8 @@ export class PrismaPartnerStoresReader {
                 id: store.id,
                 name: store.name,
                 ownerName: store.businessDocs[0]?.ownerName ?? '',
-                status: store.status,
+                status: StoreStatus[store.status],
+                todayReservationCount: store._count.reservations,
                 createdAt: store.createdAt.toISOString(),
             })),
         };

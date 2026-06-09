@@ -143,15 +143,7 @@ export interface PublicStoreDetailResult {
     };
 }
 
-export interface PartnerStoresResult {
-    stores: {
-        id: string;
-        name: string;
-        ownerName: string;
-        status: `${StoreStatus}`;
-        createdAt: string;
-    }[];
-}
+export type PartnerStoresResult = PartnerDashboardStoresResult;
 
 export interface StoreProgramsResult {
     programs: {
@@ -215,6 +207,7 @@ export abstract class StoresReader {
 }
 import type {
     OcrStatus,
+    PartnerDashboardStoresResult,
     PartnerStatus,
     ProgramDifficulty,
     ProgramStatus,

@@ -3,7 +3,7 @@ import { BusinessException } from '../../../../common/exceptions/business.except
 import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
 import { StoreTimeSlotRepository } from '../../domain/repositories/store-time-slot.repository';
 import { TimeslotSupportReader } from '../../domain/repositories/timeslot-support.reader';
-import { kstDayRange, parseDateOnly } from '../../domain/time.util';
+import { kstDayRange, parseDateOnly } from '../../../../common/date/kst-date.util';
 import type {
     ProgramReservationCountsQueryDto,
     ProgramReservationCountsResponseDto,

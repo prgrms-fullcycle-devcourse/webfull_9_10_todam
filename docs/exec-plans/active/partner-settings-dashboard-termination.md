@@ -8,7 +8,7 @@
 
 ## Status
 
-- [ ] API 구현
+- [x] API 구현
 - [ ] UI 구현
 - [ ] API 연동
 
@@ -195,12 +195,12 @@
 ## Out (단계별 완료물)
 
 - API:
-  - `GET /partner/artworks/count-by-step` 계약 정렬/회귀 검증.
-  - `GET /partner/stores/{storeId}/reservations` 오늘 일정 조회 + `durationMinutes`.
-  - `GET /partner/stores/{storeId}/reservations/pending-summary` 날짜별 전체 대기 예약 집계.
-  - `GET /partner/stores` item의 `todayReservationCount`.
-  - `POST /partner/stores/{storeId}/reservations` 기존 구현 재사용.
-  - `DELETE /partners/me` partner 모듈 구현.
+  - [x] `GET /partner/artworks/count-by-step` 계약 정렬/회귀 검증.
+  - [x] `GET /partner/stores/{storeId}/reservations` 오늘 일정 조회 + `durationMinutes`.
+  - [x] `GET /partner/stores/{storeId}/reservations/pending-summary` 날짜별 전체 대기 예약 집계.
+  - [x] `GET /partner/stores` item의 `todayReservationCount`.
+  - [x] `POST /partner/stores/{storeId}/reservations` 기존 구현 재사용.
+  - [x] `DELETE /partners/me` partner 모듈 구현.
 - UI:
   - `/partner` 현재 공방 카드, 대기 예약 날짜 카드, 오늘 일정, 제작 단계 현황과 상태 화면.
   - 공방 전환 바텀시트와 오늘 일정 empty state.
@@ -234,6 +234,13 @@
   - 정상 해지 후 파트너 센터 접근이 차단되고 확정 목적지로 이동한다.
 - Observability:
   - 파트너 해지 성공/거부 로그에 `userId`, `partnerId`, 차단 사유, `terminatedAt` 기록. 개인정보/토큰은 기록하지 않는다.
+- 실행 결과(2026-06-08, BE):
+  - `corepack pnpm --filter @todam/api test -- --runInBand` — 25 suites, 112 tests 통과.
+  - `corepack pnpm --filter @todam/api typecheck` — 통과.
+  - `corepack pnpm --filter @todam/api lint` — 오류 없음, 기존 경고 4건.
+  - `corepack pnpm --filter @todam/shared typecheck` / `lint` / `build` — 통과.
+  - `TEST_DATABASE_URL=...integration corepack pnpm --filter @todam/api test:integration` — 실제 PostgreSQL KST 대기 예약 집계 테스트 통과.
+  - `git diff --check` — 통과.
 
 ## Decision Log
 
@@ -251,5 +258,6 @@
 
 ## Outcome
 
-- Status: planning. 대시보드/API/파트너 자격 해지 계약 결정 완료. `/issue` 및 구현 진행 가능.
-- Follow-up: API Contract 승인 후 계획을 커밋하고 PR을 먼저 연 뒤 `/impl be|fe`로 진행한다.
+- Status: BE 구현 완료. 대시보드 UI와 API 연동은 미완료.
+- BE 결과: 예약 목록 `durationMinutes`, KST 미래 대기 예약 날짜 집계, 공방별 KST 오늘 예약 수, 파트너 자격 해지 transaction/cascade/session 만료와 shared 계약을 구현했다. API의 KST 날짜 계산은 `common/date/kst-date.util.ts`로 공통화했다. 해지 transaction은 Serializable + 충돌 재시도를 적용했고, 대기 예약 날짜 집계는 PostgreSQL KST `GROUP BY`로 이동했다. 공방 목록/해지 성공 DTO는 shared Zod 계약을 직접 사용한다.
+- Follow-up: `/impl partner-settings-dashboard-termination fe`로 UI/API 연동을 진행한다.

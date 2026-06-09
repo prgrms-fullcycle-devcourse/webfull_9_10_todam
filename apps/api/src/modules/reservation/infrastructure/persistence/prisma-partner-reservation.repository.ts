@@ -22,6 +22,7 @@ import {
     PartnerReservationListQuery,
     PartnerReservationListRow,
     PartnerReservationRepository,
+    PendingReservationDateCount,
     RejectReservationResult,
 } from '../../domain/repositories/partner-reservation.repository';
 
@@ -86,11 +87,32 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 status: true,
                 source: true,
                 createdAt: true,
-                program: { select: { title: true } },
+                program: { select: { title: true, durationMinutes: true } },
             },
         });
 
-        return rows.map((row) => ({ ...row, programTitle: row.program.title }));
+        return rows.map((row) => ({
+            ...row,
+            programTitle: row.program.title,
+            durationMinutes: row.program.durationMinutes,
+        }));
+    }
+
+    async countPendingByKstDate(
+        storeId: string,
+        start: Date,
+    ): Promise<PendingReservationDateCount[]> {
+        return this.prisma.$queryRaw<PendingReservationDateCount[]>(Prisma.sql`
+            SELECT
+                TO_CHAR(("scheduled_at" AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD') AS "date",
+                COUNT(*)::int AS "reservationCount"
+            FROM "reservations"
+            WHERE "store_id" = ${storeId}::uuid
+              AND "status" = ${ReservationStatus.PENDING}::"ReservationStatus"
+              AND "scheduled_at" >= ${start}
+            GROUP BY ("scheduled_at" AT TIME ZONE 'Asia/Seoul')::date
+            ORDER BY ("scheduled_at" AT TIME ZONE 'Asia/Seoul')::date ASC
+        `);
     }
 
     async findDetail(reservationId: string): Promise<PartnerReservationDetailRow | null> {

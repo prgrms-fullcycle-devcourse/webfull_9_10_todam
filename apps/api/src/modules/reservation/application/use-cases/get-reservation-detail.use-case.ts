@@ -1,15 +1,15 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { ArtworkStatus, ReservationSource, ReservationStatus } from '@prisma/client';
 import {
-    ArtworkStatus,
     ReservationDeliveryMethod,
-    ReservationSource,
-    ReservationStatus,
-} from '@prisma/client';
+    type ReservationDeliveryMethod as ReservationDeliveryMethodValue,
+    type ReservationDetailArtwork,
+    type ReservationDetailDelivery,
+} from '@todam/shared';
+import { KST_OFFSET_MINUTES } from '../../../../common/date/kst-date.util';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { calcDisplayState } from '../../domain/display-state.util';
-import { KST_OFFSET_MINUTES } from '../../domain/date.util';
 import { UserReservationRepository } from '../../domain/repositories/user-reservation.repository';
-import type { ReservationDetailArtwork, ReservationDetailDelivery } from '@todam/shared';
 import type { ReservationDetailResponseDto } from '../../presentation/dto/user-reservation.dto';
 
 // 4단계(firing) 순서. ARTWORK_SEQUENCE import 대신 직접 정의해 인덱스 기반 계산.
@@ -86,11 +86,12 @@ export class GetReservationDetailUseCase {
         const artwork = this.calcArtwork(row.status, row.artworkId, row.artworkStatus);
 
         // 7. delivery
-        const delivery = this.calcDelivery(row.deliveryMethod, row.delivery);
+        const deliveryMethod = ReservationDeliveryMethod[row.deliveryMethod];
+        const delivery = this.calcDelivery(deliveryMethod, row.delivery);
 
         // 8. shippingAddress (legacy 호환 — Delivery.shippingAddress, PICKUP이면 null)
         const shippingAddress =
-            row.deliveryMethod === ReservationDeliveryMethod.DELIVERY
+            deliveryMethod === ReservationDeliveryMethod.DELIVERY
                 ? (row.delivery?.shippingAddress ?? null)
                 : null;
 
@@ -109,7 +110,7 @@ export class GetReservationDetailUseCase {
                 reserverName: row.reserverName,
                 reserverPhone: row.reserverPhone,
                 participantCount: row.participantCount,
-                deliveryMethod: row.deliveryMethod,
+                deliveryMethod,
                 shippingAddress,
                 requestMemo: row.requestMemo ?? null,
                 status: row.status,
@@ -176,7 +177,7 @@ export class GetReservationDetailUseCase {
     }
 
     private calcDelivery(
-        deliveryMethod: ReservationDeliveryMethod,
+        deliveryMethod: ReservationDeliveryMethodValue,
         delivery: {
             recipientName: string | null;
             recipientPhone: string | null;
