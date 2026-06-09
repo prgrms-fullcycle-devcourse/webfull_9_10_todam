@@ -3,6 +3,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
     CancelPartnerReservationRequest,
+    CreatePartnerReservationRequest,
+    CreateReservationRestrictionsRequest,
+    DeleteReservationRestrictionsRequest,
     RejectPartnerReservationRequest,
 } from '@todam/shared';
 
@@ -12,9 +15,14 @@ import {
     cancelPartnerReservation,
     completePartnerReservation,
     confirmPartnerReservation,
+    createPartnerReservation,
+    createPartnerReservationRestrictions,
+    deletePartnerReservationRestrictions,
+    getPartnerProgramReservationCounts,
     getPartnerReservationCalendar,
     getPartnerReservationDetail,
     getPartnerReservationsByDate,
+    getPartnerTimeSlotsByDate,
     getReservationDetail,
     getReservationReview,
     rejectPartnerReservation,
@@ -25,6 +33,8 @@ const REVIEW_KEY = ['reservations', 'review'] as const;
 const PARTNER_CALENDAR_KEY = ['partner', 'reservations', 'calendar'] as const;
 const PARTNER_LIST_KEY = ['partner', 'reservations', 'list'] as const;
 const PARTNER_DETAIL_KEY = ['partner', 'reservations', 'detail'] as const;
+const PARTNER_TIMESLOTS_KEY = ['partner', 'time-slots'] as const;
+const PARTNER_PROGRAM_COUNTS_KEY = ['partner', 'programs', 'reservation-counts'] as const;
 
 function retryExceptAuthOrNotFound(failureCount: number, error: unknown): boolean {
     if (error instanceof ApiError && [401, 403, 404].includes(error.statusCode)) {
@@ -75,6 +85,75 @@ export function usePartnerReservationDetail(reservationId: string) {
         queryFn: () => getPartnerReservationDetail(reservationId),
         retry: retryExceptAuthOrNotFound,
         enabled: Boolean(reservationId),
+    });
+}
+
+export function usePartnerTimeSlotsByDate(storeId: string, date: string) {
+    return useQuery({
+        queryKey: [...PARTNER_TIMESLOTS_KEY, storeId, date] as const,
+        queryFn: () => getPartnerTimeSlotsByDate(storeId, date),
+        retry: retryExceptAuthOrNotFound,
+        enabled: Boolean(storeId) && Boolean(date),
+    });
+}
+
+export function usePartnerProgramReservationCounts(
+    storeId: string,
+    date: string,
+    timeSlotIds: string[],
+    enabled = true,
+    // true 면 timeSlotIds가 빈 배열일 때도 쿼리 활성화 (ALL_DAY 경로: date 전체 슬롯 집계)
+    allowEmpty = false,
+) {
+    return useQuery({
+        queryKey: [...PARTNER_PROGRAM_COUNTS_KEY, storeId, date, timeSlotIds.join(',')] as const,
+        queryFn: () => getPartnerProgramReservationCounts(storeId, date, timeSlotIds),
+        retry: retryExceptAuthOrNotFound,
+        enabled:
+            enabled &&
+            Boolean(storeId) &&
+            Boolean(date) &&
+            (allowEmpty ? true : timeSlotIds.length > 0),
+    });
+}
+
+export function useCreatePartnerReservationMutation(storeId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreatePartnerReservationRequest) =>
+            createPartnerReservation(storeId, body),
+        onSuccess: () =>
+            Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['partner', 'reservations'] }),
+                queryClient.invalidateQueries({ queryKey: PARTNER_TIMESLOTS_KEY }),
+                queryClient.invalidateQueries({ queryKey: PARTNER_PROGRAM_COUNTS_KEY }),
+            ]),
+    });
+}
+
+export function useCreatePartnerReservationRestrictionsMutation(storeId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreateReservationRestrictionsRequest) =>
+            createPartnerReservationRestrictions(storeId, body),
+        onSuccess: () =>
+            Promise.all([
+                queryClient.invalidateQueries({ queryKey: PARTNER_CALENDAR_KEY }),
+                queryClient.invalidateQueries({ queryKey: PARTNER_TIMESLOTS_KEY }),
+            ]),
+    });
+}
+
+export function useDeletePartnerReservationRestrictionsMutation(storeId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: DeleteReservationRestrictionsRequest) =>
+            deletePartnerReservationRestrictions(storeId, body),
+        onSuccess: () =>
+            Promise.all([
+                queryClient.invalidateQueries({ queryKey: PARTNER_CALENDAR_KEY }),
+                queryClient.invalidateQueries({ queryKey: PARTNER_TIMESLOTS_KEY }),
+            ]),
     });
 }
 

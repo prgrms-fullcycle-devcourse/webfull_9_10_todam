@@ -1,4 +1,9 @@
-import { ArtworkStatus, ReservationDeliveryMethod, ReservationStatus } from '@prisma/client';
+import {
+    ArtworkStatus,
+    ReservationDeliveryMethod,
+    ReservationSource,
+    ReservationStatus,
+} from '@prisma/client';
 
 export interface CreateCustomerReservationInput {
     programId: string;
@@ -41,6 +46,41 @@ export interface UserReservationListQuery {
     limit: number;
 }
 
+/** GET /reservations/:reservationId 상세 조회용 행 */
+export interface UserReservationDetailRow {
+    id: string;
+    userId: string | null;
+    storeId: string;
+    storeName: string;
+    /** Store.cancelDeadlineDays 원본 (null 허용) */
+    cancelDeadlineDays: number | null;
+    programId: string;
+    programTitle: string;
+    /** ProgramSnapshot.price */
+    programSnapshotPrice: number;
+    scheduledAt: Date;
+    reserverName: string;
+    reserverPhone: string;
+    participantCount: number;
+    deliveryMethod: ReservationDeliveryMethod;
+    shippingAddress: string | null;
+    requestMemo: string | null;
+    status: ReservationStatus;
+    source: ReservationSource;
+    artworkId: string | null;
+    artworkStatus: ArtworkStatus | null;
+    createdAt: Date;
+    delivery: {
+        recipientName: string | null;
+        recipientPhone: string | null;
+        shippingAddress: string | null;
+        addressDetail: string | null;
+        carrier: string | null;
+        trackingNumber: string | null;
+    } | null;
+    review: { id: string } | null;
+}
+
 export abstract class UserReservationRepository {
     abstract createCustomer(
         userId: string,
@@ -51,4 +91,6 @@ export abstract class UserReservationRepository {
         userId: string,
         query: UserReservationListQuery,
     ): Promise<UserReservationListRow[]>;
+
+    abstract findDetail(reservationId: string): Promise<UserReservationDetailRow | null>;
 }

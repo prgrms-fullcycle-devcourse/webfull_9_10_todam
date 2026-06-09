@@ -45,6 +45,7 @@ export * from './contracts/timeslot';
 export * from './contracts/favorite';
 export * from './contracts/store-list';
 export * from './contracts/store-query';
+export * from './contracts/store-reviews';
 export * from './contracts/current-store';
 export * from './contracts/program-edit';
 export * from './contracts/program-registration';

@@ -51,7 +51,7 @@ export function ReservationManagementCardItem({
         <button
             type="button"
             onClick={onClick}
-            className="flex w-full items-center rounded-2xl border border-border-subtle bg-surface p-4 text-left transition-colors hover:bg-muted"
+            className="flex cursor-pointer w-full items-center rounded-2xl border border-border-subtle bg-surface p-4 text-left transition-colors hover:bg-muted"
         >
             <div className="flex h-11 w-full min-w-0 items-start">
                 <div className="flex flex-col gap-1 border-r border-border-subtle pr-4">

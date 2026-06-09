@@ -24,6 +24,7 @@ import {
     type FavoriteStoreListResult,
     type ProgramDetailResult,
     type ProgramReviewListResult,
+    type StoreReviewListResult,
     type ProgramEditResult,
     type GetMyProfileResponse,
     type UpdateMyProfileResponse,
@@ -38,6 +39,7 @@ import {
     findArtworkDetail,
     findProgramBySlugAndId,
     findProgramByStoreAndId,
+    findPublicStoreBySlug,
     updateProgram,
     programToApiShape,
     findReservationDetail,
@@ -46,6 +48,7 @@ import {
     updateReview,
     createReviewImageUpload,
     listFavoriteStores,
+    listStoreReviews,
     listMyReservations,
     mockGeocode,
     nowIso,
@@ -110,6 +113,41 @@ export const handlers = [
             program: programToApiShape(program) as ProgramDetailResult['program'],
         };
         return ok(path, result, '프로그램 상세가 조회되었습니다.');
+    }),
+
+    // GET /stores/{slug}
+    http.get(`${API}/stores/:slug`, ({ params }) => {
+        const slug = String(params.slug);
+        const path = `/api/v1/stores/${slug}`;
+        const store = findPublicStoreBySlug(slug);
+
+        if (!store) {
+            return fail(path, 404, 'STORE_NOT_FOUND', '공방을 찾을 수 없습니다.');
+        }
+
+        return ok(path, { store }, '공방 상세가 조회되었습니다.');
+    }),
+
+    // GET /stores/{slug}/reviews
+    http.get(`${API}/stores/:slug/reviews`, ({ request, params }) => {
+        const slug = String(params.slug);
+        const path = `/api/v1/stores/${slug}/reviews`;
+        const url = new URL(request.url);
+        const cursor = url.searchParams.get('cursor');
+        const limitParam = Number(url.searchParams.get('limit'));
+        const limit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 10;
+        const sort = url.searchParams.get('sort') === 'rating_high' ? 'rating_high' : 'latest';
+
+        const result = listStoreReviews(slug, cursor, limit, sort);
+        if (!result) {
+            return fail(path, 404, 'STORE_NOT_FOUND', '공방을 찾을 수 없습니다.');
+        }
+
+        return ok<StoreReviewListResult>(
+            path,
+            result,
+            '공방 리뷰 목록이 성공적으로 조회되었습니다.',
+        );
     }),
 
     // GET /stores/{slug}/programs/{programId}/reviews
@@ -322,7 +360,7 @@ export const handlers = [
     // plan: docs/exec-plans/active/user-예약-신청.md API Contract (스냅샷).
     // 시뮬: slotId 에 'blocked' 포함→SLOT_BLOCKED, 'full' 포함→INSUFFICIENT_CAPACITY,
     //       'auto' 포함→CONFIRMED, 그 외 PENDING.
-    http.post('*/reservations', async ({ request }) => {
+    http.post(/^https?:\/\/[^/]+\/reservations(\?.*)?$/, async ({ request }) => {
         const path = '/reservations';
 
         const parsed = createUserReservationRequestSchema.safeParse(await request.json());

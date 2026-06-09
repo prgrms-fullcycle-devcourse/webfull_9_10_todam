@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { Button, PlusIcon, SectionTitle } from '@todam/ui';
 import { formatKoreanMonthDayWithWeekday, getTodayDateKey, isFutureDateKey } from '@todam/shared';
@@ -30,14 +30,16 @@ function emptyReservationListData() {
 
 export function ReservationCalendarView({ storeId }: ReservationCalendarViewProps) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const today = getTodayDateKey();
+    const initialDate = searchParams.get('date') ?? today;
     const currentYear = Number(today.slice(0, 4));
     const currentMonth = Number(today.slice(5, 7));
 
-    const [year, setYear] = useState(currentYear);
-    const [month, setMonth] = useState(currentMonth);
+    const [year, setYear] = useState(Number(initialDate.slice(0, 4)) || currentYear);
+    const [month, setMonth] = useState(Number(initialDate.slice(5, 7)) || currentMonth);
 
-    const [selectedDate, setSelectedDate] = useState<string>(today);
+    const [selectedDate, setSelectedDate] = useState<string>(initialDate);
 
     useHeaderOverride({
         rightAction: (
@@ -47,7 +49,7 @@ export function ReservationCalendarView({ storeId }: ReservationCalendarViewProp
                 size="lg"
                 icon={<PlusIcon />}
                 aria-label="신규 예약"
-                onClick={() => router.push('/partner/reservations/new')}
+                onClick={() => router.push(`/partner/reservations/new?date=${selectedDate}`)}
                 className="hover:!bg-transparent hover:!text-foreground"
             />
         ),
@@ -113,7 +115,9 @@ export function ReservationCalendarView({ storeId }: ReservationCalendarViewProp
                         size="sm"
                         className="w-full"
                         disabled={!canRestrictReservation}
-                        onClick={() => router.push('/partner/reservations/restrict')}
+                        onClick={() =>
+                            router.push(`/partner/reservations/restrict?date=${selectedDate}`)
+                        }
                     >
                         {canRestrictReservation
                             ? '예약 제한'

@@ -38,6 +38,7 @@ export interface PartnerStoreProgramListItem {
     durationMinutes: number;
     difficulty: ProgramDifficulty;
     leadTimeDays: number;
+    deliverable: boolean;
     status: ProgramStatus;
 }
 

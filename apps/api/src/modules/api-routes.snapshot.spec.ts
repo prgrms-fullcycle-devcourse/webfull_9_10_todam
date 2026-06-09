@@ -539,6 +539,13 @@ describe('API route baseline', () => {
                 guards: ['AuthGuard'],
             },
             {
+                controller: 'UserReservationController',
+                handler: 'getReservationDetail',
+                method: 'GET',
+                path: '/reservations/:reservationId',
+                guards: ['AuthGuard'],
+            },
+            {
                 controller: 'PartnerArtworkController',
                 handler: 'list',
                 method: 'GET',

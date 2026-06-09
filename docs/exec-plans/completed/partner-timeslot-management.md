@@ -17,8 +17,8 @@
 - [x] API: 클래스별 예약 막기 적용 (POST `.../reservation-restrictions`)
 - [x] API: 클래스별 예약 막기 해제 (DELETE `.../reservation-restrictions`)
 - [x] API: 프로그램별 확정건수 조회 (GET `.../programs/reservation-counts`)
-- [ ] FE: 타임슬롯 생성/목록/슬롯 막기·취소·재오픈 + 클래스별 막기/해제 UI (DESIGN.md 준수)
-- [ ] API 연동
+- [x] FE: 타임슬롯 생성/목록/슬롯 막기·취소·재오픈 + 클래스별 막기/해제 UI (DESIGN.md 준수)
+- [x] API 연동
 
 ## Context
 
