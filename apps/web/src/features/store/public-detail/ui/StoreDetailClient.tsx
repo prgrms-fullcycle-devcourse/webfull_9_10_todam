@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatPrice, formatDuration } from '@todam/shared';
 import { Button, Divider, RightIcon, SectionTitle, Rating, ShareIcon } from '@todam/ui';
 import Image from 'next/image';
@@ -15,6 +15,7 @@ import { StoreImageCarousel } from '@/entities/store/ui/StoreImageCarousel';
 import { StoreInfoSummary } from '@/entities/store/ui/StoreInfoSummary';
 import { StoreLocation } from '@/entities/store/ui/StoreLocation';
 import { FavoriteToggleButton } from '@/features/store/toggle-favorite/ui/FavoriteToggleButton';
+import { FAVORITE_STORES_QUERY_KEY } from '@/features/store/favorite-list';
 import { getStoreReviews } from '@/features/store/reviews/api';
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
@@ -38,6 +39,7 @@ export function StoreDetailClient() {
     const slug = params.slug;
     const router = useRouter();
     const { push: pushToast } = useToast();
+    const queryClient = useQueryClient();
 
     const detailQuery = usePublicStoreDetail(slug);
     const programsQuery = usePublicStorePrograms(slug);
@@ -126,7 +128,18 @@ export function StoreDetailClient() {
                 <StoreImageCarousel images={carouselImages} />
                 {/* 찜 버튼 (캐러셀 우하단 오버레이) */}
                 <div className="absolute bottom-3 right-3 z-10">
-                    <FavoriteToggleButton storeId={store.id} initialFavorite={store.isFavorite} />
+                    <FavoriteToggleButton
+                        storeId={store.id}
+                        initialFavorite={store.isFavorite}
+                        onAfterSuccess={() => {
+                            // 공방 상세 토글 성공 → 찜 목록 쿼리 무효화
+                            // (재진입 시 목록 상태 동기화. 목록 화면의 낙관적 setQueryData와 충돌 없음
+                            //  — 목록 화면에서 직접 호출하지 않으므로 이 invalidate는 발동되지 않음.)
+                            void queryClient.invalidateQueries({
+                                queryKey: FAVORITE_STORES_QUERY_KEY,
+                            });
+                        }}
+                    />
                 </div>
             </div>
 
