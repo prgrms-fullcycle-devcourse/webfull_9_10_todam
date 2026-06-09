@@ -403,6 +403,117 @@ export const handlers = [
         return ok(path, result, '예약이 성공적으로 접수되었습니다.', 201);
     }),
 
+    // ─── 예약 가능 슬롯 조회 ───────────────────────────────────────────
+    // GET /programs/{programId}/available-slots?year=&month=
+    // plan: docs/exec-plans/active/user-예약-신청.md API Contract (스냅샷).
+    // 시뮬: ?year&month 의 5·12·20일에 10:00/14:00 슬롯 생성. 12일 14시=CLOSED, 20일 14시=만석(isAvailable=false).
+    http.get('*/programs/:programId/available-slots', ({ request, params }) => {
+        const programId = String(params.programId);
+        const path = `/programs/${programId}/available-slots`;
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('simulate') === '404') {
+            return fail(
+                path,
+                404,
+                ReservationCreateErrorCode.PROGRAM_NOT_FOUND,
+                '프로그램을 찾을 수 없습니다.',
+            );
+        }
+
+        const now = new Date();
+        const year = Number(url.searchParams.get('year')) || now.getFullYear();
+        const month = Number(url.searchParams.get('month')) || now.getMonth() + 1;
+        const max = 4; // mock Store.maxCapacityPerSlot
+
+        const iso = (day: number, hour: number) =>
+            new Date(Date.UTC(year, month - 1, day, hour, 0, 0)).toISOString();
+        const slot = (
+            id: string,
+            day: number,
+            hour: number,
+            reserved: number,
+            status: StoreTimeSlotStatus,
+        ) => {
+            const remainingCount = Math.max(0, max - reserved);
+            return {
+                slotId: id,
+                startAt: iso(day, hour),
+                endAt: iso(day, hour + 2),
+                reservedCount: reserved,
+                remainingCount,
+                status,
+                isAvailable: status === StoreTimeSlotStatus.OPEN && remainingCount > 0,
+            };
+        };
+
+        const result: AvailableSlotsResult = {
+            slots: [
+                slot('slot-05-10', 5, 10, 1, StoreTimeSlotStatus.OPEN),
+                slot('slot-05-14', 5, 14, 2, StoreTimeSlotStatus.OPEN),
+                slot('slot-12-10', 12, 10, 0, StoreTimeSlotStatus.OPEN),
+                slot('slot-12-14-blocked', 12, 14, 2, StoreTimeSlotStatus.CLOSED),
+                slot('slot-20-10', 20, 10, 3, StoreTimeSlotStatus.OPEN),
+                slot('slot-20-14-full', 20, 14, 4, StoreTimeSlotStatus.OPEN),
+            ],
+        };
+        return ok(path, result, '예약 가능 시간 목록이 성공적으로 조회되었습니다.');
+    }),
+
+    // ─── 예약 생성 ─────────────────────────────────────────────────────
+    // POST /reservations
+    // plan: docs/exec-plans/active/user-예약-신청.md API Contract (스냅샷).
+    // 시뮬: slotId 에 'blocked' 포함→SLOT_BLOCKED, 'full' 포함→INSUFFICIENT_CAPACITY,
+    //       'auto' 포함→CONFIRMED, 그 외 PENDING.
+    http.post(/^https?:\/\/[^/]+\/reservations(\?.*)?$/, async ({ request }) => {
+        const path = '/reservations';
+
+        const parsed = createUserReservationRequestSchema.safeParse(await request.json());
+        if (!parsed.success) {
+            return fail(path, 400, 'VALIDATION_ERROR', '요청 형식이 올바르지 않습니다.');
+        }
+        const body = parsed.data;
+
+        if (body.slotId.includes('blocked')) {
+            return fail(
+                path,
+                409,
+                ReservationCreateErrorCode.SLOT_BLOCKED,
+                '예약이 불가한 슬롯입니다.',
+            );
+        }
+        if (body.slotId.includes('full')) {
+            return fail(
+                path,
+                400,
+                ReservationCreateErrorCode.INSUFFICIENT_CAPACITY,
+                '잔여 정원이 부족합니다.',
+            );
+        }
+
+        const confirmed = body.slotId.includes('auto');
+        const status = confirmed ? ReservationStatus.CONFIRMED : ReservationStatus.PENDING;
+        const result: CreateUserReservationResult = {
+            reservation: {
+                id: `res-${Date.now()}`,
+                programId: body.programId,
+                slotId: body.slotId,
+                reserverName: body.reserverName,
+                participantCount: body.participantCount,
+                status,
+                displayState: confirmed
+                    ? { label: '예약확정', description: '예약이 확정되었어요.', subLabel: null }
+                    : {
+                          label: '예약신청',
+                          description: '작가님이 예약 내용을 확인하고 있어요.',
+                          subLabel: null,
+                      },
+                createdAt: nowIso(),
+            },
+        };
+        return ok(path, result, '예약이 성공적으로 접수되었습니다.', 201);
+    }),
+
     // 나의 예약 목록 조회 (인증 필요, 본인 예약만, 커서 페이지네이션)
     // plan: docs/exec-plans/active/user-예약-나의 예약조회.md API Contract (스냅샷) 기준.
     // 시뮬: 헤더에 Authorization 없으면 401. ?empty=1 이면 빈 결과. ?simulate=500 이면 서버오류.
