@@ -14,6 +14,7 @@ export const storeReviewListItemSchema = z.object({
     rating: z.number(),
     content: z.string(),
     photos: z.array(storeReviewPhotoSchema),
+    programId: z.string(),
     programTitle: z.string(),
     createdAt: z.string(),
 });
