@@ -258,6 +258,10 @@ export const getPartnerArtworkDetailResultSchema = z.object({
             }),
         ),
         deliveryMethod: reservationDeliveryMethodValueSchema,
+        reservationStatus: reservationStatusValueSchema,
+        pickupReadyAt: z.string().nullable(),
+        pickupDoneAt: z.string().nullable(),
+        deliveredAt: z.string().nullable(),
         delivery: artworkDeliverySchema.nullable(),
         timeline: z.array(
             z.object({

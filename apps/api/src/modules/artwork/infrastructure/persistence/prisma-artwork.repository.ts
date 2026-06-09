@@ -301,6 +301,10 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                     createdAt: log.createdAt.toISOString(),
                 })),
                 deliveryMethod: row.reservation.deliveryMethod,
+                reservationStatus: row.reservation.status,
+                pickupReadyAt: row.reservation.pickupReadyAt?.toISOString() ?? null,
+                pickupDoneAt: row.reservation.pickupDoneAt?.toISOString() ?? null,
+                deliveredAt: row.reservation.deliveredAt?.toISOString() ?? null,
                 delivery: this.deliveryResponse(row.reservation.delivery),
                 timeline: ARTWORK_SEQUENCE.map((stage) => {
                     const log = row.logs.find(
@@ -468,13 +472,17 @@ export class PrismaArtworkRepository extends ArtworkRepository {
         });
         if (row.status === ArtworkStatus.CANCELED)
             throw this.error('ARTWORK_CANCELED', 'Artwork is canceled.', HttpStatus.CONFLICT);
+        // 도달 단계(완료/현재) 로그에 업로드 허용. 미래(아직 안 온) 단계만 거부.
+        // 도자기 제작은 비동기라 파트너가 지난 단계 사진을 나중에 보강하는 흐름을 지원한다.
         const log = row.logs[0];
-        if (!log || log.toStatus !== row.status)
-            throw this.error(
-                'FORBIDDEN',
-                'Artwork log is not the current stage.',
-                HttpStatus.FORBIDDEN,
-            );
+        const logIndex = log
+            ? ARTWORK_SEQUENCE.indexOf(log.toStatus as (typeof ARTWORK_SEQUENCE)[number])
+            : -1;
+        const currentIndex = ARTWORK_SEQUENCE.indexOf(
+            row.status as (typeof ARTWORK_SEQUENCE)[number],
+        );
+        if (!log || logIndex === -1 || currentIndex === -1 || logIndex > currentIndex)
+            throw this.error('FORBIDDEN', 'Artwork log is a future stage.', HttpStatus.FORBIDDEN);
         if (log.photos.length + dto.files.length > 5)
             throw this.error(
                 'INVALID_FILE_SPEC',
@@ -644,9 +652,16 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                     },
                 });
             }
+            // 전이 시각 기록(타임라인 날짜 소스). SHIP 은 delivery.shippedAt 사용.
+            const now = new Date();
             const updated = await tx.reservation.update({
                 where: { id: row.reservationId },
-                data: { status },
+                data: {
+                    status,
+                    ...(dto.action === 'PICKUP_READY' ? { pickupReadyAt: now } : {}),
+                    ...(dto.action === 'PICKUP_DONE' ? { pickupDoneAt: now } : {}),
+                    ...(dto.action === 'DELIVERED' ? { deliveredAt: now } : {}),
+                },
                 include: { delivery: true },
             });
             await this.createNotification(
@@ -744,11 +759,15 @@ export class PrismaArtworkRepository extends ArtworkRepository {
     }): ArtworkAvailableAction[] {
         if (row.status !== ArtworkStatus.COMPLETED) return ['UPDATE_STATUS'];
         if (row.reservation.deliveryMethod === ReservationDeliveryMethod.DELIVERY) {
-            return row.reservation.status === ReservationStatus.SHIPPED ? ['DELIVERED'] : ['SHIP'];
+            // IN_PROGRESS → 배송 시작 / SHIPPED → 배송 완료 / DELIVERED(종료) → 없음
+            if (row.reservation.status === ReservationStatus.SHIPPED) return ['DELIVERED'];
+            if (row.reservation.status === ReservationStatus.IN_PROGRESS) return ['SHIP'];
+            return [];
         }
-        return row.reservation.status === ReservationStatus.PICKUP_READY
-            ? ['PICKUP_DONE']
-            : ['PICKUP_READY'];
+        // IN_PROGRESS → 픽업 준비 / PICKUP_READY → 픽업 완료 / PICKUP_DONE(종료) → 없음
+        if (row.reservation.status === ReservationStatus.PICKUP_READY) return ['PICKUP_DONE'];
+        if (row.reservation.status === ReservationStatus.IN_PROGRESS) return ['PICKUP_READY'];
+        return [];
     }
 
     private displayState(group?: string, detail?: string) {
