@@ -17,8 +17,8 @@
 -->
 
 - [x] API 구현
-- [ ] UI 구현
-- [ ] API 연동
+- [x] UI 구현
+- [x] API 연동
 
 ## Context
 
@@ -169,8 +169,21 @@
     - 파일: `apps/api/src/modules/store/application/use-cases/autocomplete-stores.use-case.ts`, `apps/api/src/modules/store/presentation/dto/autocomplete-stores-response.dto.ts`, 라우트·DI 추가 = `apps/api/src/modules/store/presentation/controllers/store.controller.ts`, `apps/api/src/modules/store/store.module.ts`.
   - **별도 완료(범위 밖, 이번 작업 미변경)**: `GET /stores`의 keyword 클래스 매칭·`matchedClass`·`region` 구조화(시/구/동)는 PR #135로 이미 dev 머지됨(`list-stores.use-case.ts`/`list-stores-response.dto.ts`). 본 작업에서 `GET /stores` 측은 건드리지 않음.
   - **폐기**: `GET /stores/search`(결과 제출) — 미구현. 최근 검색어는 localStorage(FE)로 BE 작업 없음.
-- UI: <!-- 검색 화면, 자동완성 드롭다운, 결과(공방 카드 재사용), 최근 검색어 컴포넌트 -->
-- 연동: <!-- 실 API 바인딩, debounce/빈검색 차단/빈결과/에러/최근검색 검증 -->
+- UI:
+  - `apps/web/src/app/(user)/search/page.tsx` — 검색 페이지 (서버 컴포넌트 셸)
+  - `apps/web/src/app/(user)/search/_components/SearchClient.tsx` — 검색 화면 클라이언트 (검색창·자동완성·결과·최근검색·무한스크롤)
+  - `apps/web/src/features/store/search/ui/StoreSearchCard.tsx` — 검색 결과 공방 카드 (matchedClass 우선 렌더)
+  - `apps/web/src/features/store/search/ui/AutocompleteDropdown.tsx` — 자동완성 드롭다운 (REGION/STORE/PROGRAM, subtitle 포함)
+  - `apps/web/src/features/store/search/ui/RecentSearches.tsx` — 최근 검색어 목록 (빈상태·개별삭제·전체삭제)
+- 연동:
+  - `packages/shared/src/contracts/store-search.ts` — Suggestion/StoreListItem/AutocompleteResult 타입 (contract 바인딩)
+  - `apps/web/src/features/store/search/api.ts` — getStores / getAutocomplete 클라이언트 함수
+  - `apps/web/src/features/store/search/queries.ts` — useStoreSearch(무한스크롤) / useAutocomplete(debounce enabled 게이트)
+  - `apps/web/src/shared/lib/useRecentSearches.ts` — localStorage 최근검색어 훅 (최대 10건, dedup, 개별/전체삭제)
+  - `apps/web/src/mocks/handlers.ts` — GET /stores + GET /stores/search/autocomplete MSW 핸들러 추가
+  - 결정: debounce 300ms / 자동완성 enabled = trimmed.length>0 **且 미완성 자모로 끝나지 않을 때**(디자인 spec #10 받침 게이트) / 성수동 기본좌표 폴백(위치거부 시)
+  - 디자인 일치(검수 후): 검색창 placeholder "공방, 지역, 클래스 검색" + "닫기"(router.back) / 자동완성 32px 원형아이콘(REGION=pin·STORE=store·PROGRAM=box) + 16px / 결과카드=공방명+평점 한 줄·`주소・거리`·클래스+가격 좌우, 준비중 딤오버레이 / 최근검색어 폴백(자동완성 미노출 시), 가격: matchedClass `~` 없음·representative hasMore `~`
+  - **STORE suggestion 탭**: 현재 `handleSubmit(text)`(검색 결과行). 상세 직접 이동은 `Suggestion`에 `slug` 부재로 보류 → BE follow-up.
 
 ## Risks
 
@@ -198,5 +211,9 @@
 
 ## Outcome
 
-- Status: UI 기준 통합 설계 + Open decisions 전부 확정. 남은 일 = Notion 명세 갱신(`GET /stores` keyword 확장·matchedClass·region 객체화, autocomplete REGION/subtitle/건수, `/stores/search` 폐기) + `user-근처-공방-목록-조회.md` 동기화 → implementer 인계.
-- Follow-up: `GET /stores`(머지됨) 계약 변경분(region 객체화·keyword 확장·matchedClass)을 `user-근처-공방-목록-조회.md`와 동기화.
+- Status: **완료** — API(autocomplete 신규 + GET /stores keyword 확장 머지) / UI(검색 화면·자동완성·결과·최근검색어) / 연동(실 clientApiFetch 경로) 3단계 확정. 디자인 검수 일치화 + caveman-review 차단건 0 반영. MSW mock 브라우저 검증 완료(IDLE/받침게이트/자동완성/결과카드).
+- Follow-up:
+  - **BE: autocomplete `suggestions[]`에 `slug` 추가** → STORE suggestion 탭 시 공방 상세 직접 이동 복구(현재 검색 결과行로 우회). contract B 갱신 필요.
+  - `GET /stores`(머지됨) 계약 변경분(region 객체화·keyword 확장·matchedClass)을 `user-근처-공방-목록-조회.md`와 동기화.
+  - 디자인 `preparing`(오픈전) vs 폐업 구분 — 현재 `isOperating=false`를 일괄 "준비 중" 렌더. BE 상태 모델 확인 후 라벨 분기 검토.
+  - `/search` BottomNav 노출(`customerVisiblePaths`에 추가) — '찾기' 탭 활성화 필요 시.
