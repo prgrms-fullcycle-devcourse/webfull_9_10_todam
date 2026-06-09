@@ -5,4 +5,5 @@ export {
     usePartnerStorePrograms,
 } from '@/entities/store';
 export { StoreEditSheet } from './ui/StoreEditSheet';
+export { StoreReviewPreview } from './ui/StoreReviewPreview';
 export { StoreReviewResult } from './ui/StoreReviewResult';

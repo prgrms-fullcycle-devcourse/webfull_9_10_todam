@@ -24,7 +24,7 @@ import {
 } from '@/entities/store';
 import { useReviewStore } from '@/entities/store';
 import { PartnerClassListItem } from '@/features/program/list';
-import { StoreEditSheet, StoreReviewResult } from '@/features/store/detail';
+import { StoreEditSheet, StoreReviewPreview, StoreReviewResult } from '@/features/store/detail';
 import { ApiError } from '@/shared/api';
 import { useCurrentStoreId } from '@/entities/store';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
@@ -239,6 +239,8 @@ export default function PartnerStorePage() {
                             }
                         />
                     </div>
+
+                    <StoreReviewPreview slug={store.slug} />
 
                     <Divider />
 

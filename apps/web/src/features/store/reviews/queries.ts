@@ -29,6 +29,21 @@ export function usePublicStoreName(slug: string) {
     });
 }
 
+// 미리보기(파트너 공방 상세 등): 단일 페이지만 조회. 무한스크롤 불필요.
+export function useStoreReviewsPreview(
+    slug: string,
+    sort: StoreReviewSort = 'rating_high',
+    limit = STORE_REVIEWS_PAGE_SIZE,
+) {
+    return useQuery({
+        queryKey: [...storeReviewsKey(slug, sort, limit), 'preview'] as const,
+        queryFn: () => getStoreReviews(slug, { limit, sort }),
+        enabled: Boolean(slug),
+        retry: retryExceptNotFound,
+        staleTime: 30_000,
+    });
+}
+
 export function useStoreReviewsInfinite(
     slug: string,
     sort: StoreReviewSort = STORE_REVIEW_SORT_DEFAULT,
