@@ -48,6 +48,7 @@ export interface StoreReviewListItem {
     rating: number;
     content: string;
     photos: { imageUrl: string; thumbnailUrl: string }[];
+    programId: string;
     programTitle: string;
     createdAt: string;
 }
