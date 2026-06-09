@@ -31,7 +31,6 @@ export const favoriteStoreItemSchema = z.object({
     favoriteId: z.string(),
     storeId: z.string(),
     name: z.string(),
-    category: z.string(), // D2-b: 카드 카테고리 태그(예 "도자기"). reservation-list.category 와 동일 컨벤션.
     imageUrl: z.string(),
     address: z.string(),
     createdAt: z.string(), // ISO 8601
