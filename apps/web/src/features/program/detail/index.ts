@@ -1,6 +1,8 @@
 export { ClassInfoTable } from './ui/ClassInfoTable';
 export { ClassEditSheet } from './ui/ClassEditSheet';
 export { ClassDescription } from './ui/ClassDescription';
+export { PublicClassDetailClient } from './ui/PublicClassDetailClient';
+export { PartnerClassDetailClient } from './ui/PartnerClassDetailClient';
 export {
     getPartnerProgramDetail,
     updateProgramStatus,
