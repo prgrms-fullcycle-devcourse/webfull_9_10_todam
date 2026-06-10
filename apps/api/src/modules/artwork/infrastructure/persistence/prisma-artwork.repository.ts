@@ -199,7 +199,7 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                     reserverName: row.reservation.reserverName,
                     status: row.status,
                     estimatedCompletedAt: row.estimatedCompletedAt?.toISOString() ?? null,
-                    thumbnailUrl: row.logs[0]?.photos[0]?.thumbnailUrl ?? null,
+                    imageUrl: row.logs[0]?.photos[0]?.imageUrl ?? null,
                     updatedAt: row.updatedAt.toISOString(),
                     scheduledAt: row.reservation.scheduledAt.toISOString(),
                     programTitle: row.reservation.program.title,
@@ -548,7 +548,7 @@ export class PrismaArtworkRepository extends ArtworkRepository {
     ): Promise<DeleteArtworkPhotoResult> {
         const photo = await this.findOwnedPhoto(userId, artworkId, photoId);
         await this.prisma.artworkPhoto.delete({ where: { id: photoId } });
-        await this.s3.deleteImageObjects([photo.imageUrl, photo.thumbnailUrl]);
+        await this.s3.deleteImageObjects([photo.imageUrl]);
         return { deletedPhotoId: photoId };
     }
 
@@ -781,8 +781,8 @@ export class PrismaArtworkRepository extends ArtworkRepository {
         };
     }
 
-    private photoResponse(photo: { id: string; thumbnailUrl: string | null; imageUrl: string }) {
-        return { id: photo.id, thumbnailUrl: photo.thumbnailUrl, imageUrl: photo.imageUrl };
+    private photoResponse(photo: { id: string; imageUrl: string }) {
+        return { id: photo.id, imageUrl: photo.imageUrl };
     }
 
     private deliveryResponse(
@@ -832,7 +832,6 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                             select: {
                                 id: true,
                                 imageUrl: true,
-                                thumbnailUrl: true,
                                 status: true,
                             },
                         },

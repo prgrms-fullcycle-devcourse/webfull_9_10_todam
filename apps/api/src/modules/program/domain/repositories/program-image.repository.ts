@@ -3,7 +3,6 @@ export type ProgramImageStatus = 'PENDING' | 'UPLOADED' | 'FAILED';
 export interface ProgramImage {
     id: string;
     imageUrl: string;
-    thumbnailUrl: string | null;
     status: ProgramImageStatus;
 }
 

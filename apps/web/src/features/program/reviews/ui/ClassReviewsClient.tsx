@@ -212,13 +212,13 @@ function ClassReviewCard({
                 <div className="flex gap-2 overflow-x-auto pb-1">
                     {review.photos.slice(0, 3).map((photo, index) => (
                         <button
-                            key={`${review.id}-${photo.thumbnailUrl}-${index}`}
+                            key={`${review.id}-${photo.imageUrl}-${index}`}
                             type="button"
                             className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted"
-                            onClick={() => onOpenImage(photo.thumbnailUrl)}
+                            onClick={() => onOpenImage(photo.imageUrl)}
                         >
                             <Image
-                                src={photo.thumbnailUrl}
+                                src={photo.imageUrl}
                                 alt=""
                                 fill
                                 sizes="96px"

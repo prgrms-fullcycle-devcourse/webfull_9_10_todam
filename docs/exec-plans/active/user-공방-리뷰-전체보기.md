@@ -53,7 +53,7 @@ ReviewListItem: {
   nickname: string             // 마스킹된 작성자명 (예: "use*****")
   rating: number               // 1~5 (UI는 5.0/3.0처럼 .0 표기)
   content: string              // 본문 (빈 문자열 가능 — 선택 입력)
-  photos: { imageUrl: string, thumbnailUrl: string }[]   // 0~3장. thumbnailUrl=목록 썸네일, imageUrl=확대보기 원본
+  photos: { imageUrl: string }[]   // 0~3장. imageUrl=원본(목록·확대 공용, next/image 리사이즈)
   programTitle: string         // 작성 대상 클래스명 (예약→프로그램 title)
   createdAt: string            // ISO 8601
 }
@@ -89,8 +89,7 @@ ReviewListItem: {
                     "content": "물레 만지는 것은 처음인데도 사장님께서 친절하게 알려주셔서 ...",
                     "photos": [
                         {
-                            "imageUrl": "https://cdn.todam.example/reviews/review-uuid-001/1.jpg",
-                            "thumbnailUrl": "https://cdn.todam.example/reviews/review-uuid-001/1-thumb.jpg"
+                            "imageUrl": "https://cdn.todam.example/reviews/review-uuid-001/1.jpg"
                         }
                     ],
                     "programTitle": "머그컵 만들기",

@@ -24,10 +24,6 @@ export type StoreEditErrorCode = (typeof StoreEditErrorCode)[keyof typeof StoreE
 export const storeImageSchema = z.object({
     id: z.string().meta({ example: 'img-uuid-001' }),
     imageUrl: z.string().meta({ example: 'https://cdn.todam.app/stores/todam-studio/01.jpg' }),
-    thumbnailUrl: z
-        .string()
-        .meta({ example: 'https://cdn.todam.app/stores/todam-studio/01_thumb.jpg' })
-        .nullable(),
     isThumbnail: z.boolean().meta({ example: true }),
     sortOrder: z.number().meta({ example: 1 }),
 });

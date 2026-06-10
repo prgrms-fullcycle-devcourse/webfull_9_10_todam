@@ -164,7 +164,7 @@ export const handlers = [
                 durationMinutes: p.durationMinutes,
                 leadTimeDays: p.leadTimeDays,
                 deliverable: p.deliverable,
-                thumbnailUrl: img?.thumbnailUrl ?? null,
+                imageUrl: img?.imageUrl ?? null,
                 status: ProgramStatus.ACTIVE,
                 sortOrder: idx,
             };
@@ -222,7 +222,7 @@ export const handlers = [
                 nickname: '토담이',
                 rating: 5,
                 content: '차분하게 알려주셔서 처음인데도 즐겁게 만들었어요.',
-                photos: [{ thumbnailUrl: 'https://placehold.co/240x240?text=review' }],
+                photos: [{ imageUrl: 'https://placehold.co/240x240?text=review' }],
                 createdAt: '2026-05-10T12:00:00.000Z',
             },
             {
@@ -990,12 +990,7 @@ export const handlers = [
             );
         }
         if (simulate === '400') {
-            return fail(
-                path,
-                400,
-                'INVALID_REQUEST',
-                '닉네임은 특수문자를 제외한 2자 이상 10자 이내여야 합니다.',
-            );
+            return fail(path, 400, 'INVALID_REQUEST', '닉네임은 한글·영문·숫자 2~10자여야 합니다.');
         }
 
         const body = (await request.json()) as { nickname?: string };
@@ -1099,7 +1094,7 @@ export const handlers = [
                 slug: 'plus-doja',
                 name: '플러스 도자기',
                 region: { sido: '서울', sigungu: '성동구', dong: '성수동' },
-                thumbnailUrl: 'https://placehold.co/80x80?text=pottery',
+                imageUrl: 'https://placehold.co/80x80?text=pottery',
                 rating: 4.9,
                 reviewCount: 253,
                 distance: 1200,
@@ -1113,7 +1108,7 @@ export const handlers = [
                 slug: 'todam-pottery',
                 name: '흙과 사람',
                 region: { sido: '서울', sigungu: '성동구', dong: '성수동' },
-                thumbnailUrl: 'https://placehold.co/80x80?text=clay',
+                imageUrl: 'https://placehold.co/80x80?text=clay',
                 rating: 4.8,
                 reviewCount: 180,
                 distance: 2300,
@@ -1127,7 +1122,7 @@ export const handlers = [
                 slug: 'clay-seoul',
                 name: '클레이 서울',
                 region: { sido: '서울', sigungu: '종로구', dong: '통인동' },
-                thumbnailUrl: 'https://placehold.co/80x80?text=craft',
+                imageUrl: 'https://placehold.co/80x80?text=craft',
                 rating: 4.7,
                 reviewCount: 92,
                 distance: 5600,
@@ -1141,7 +1136,7 @@ export const handlers = [
                 slug: 'seongsu-vintage',
                 name: '성수동 작은 공방',
                 region: { sido: '서울', sigungu: '성동구', dong: '성수동' },
-                thumbnailUrl: 'https://placehold.co/80x80?text=vintage',
+                imageUrl: 'https://placehold.co/80x80?text=vintage',
                 rating: 4.6,
                 reviewCount: 47,
                 distance: 16400,

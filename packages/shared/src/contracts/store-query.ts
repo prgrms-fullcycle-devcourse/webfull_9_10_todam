@@ -48,14 +48,9 @@ export type SlugAvailabilityQuery = z.infer<typeof slugAvailabilityQuerySchema>;
 
 // ─── 공개 공방 상세 (GET /stores/:slug 응답, SSOT) ───────────────────
 // 형태 SSOT = BE 응답(prisma-store-detail.reader). PUBLISHED 공방만 노출.
-//  - images[].thumbnailUrl: 썸네일 미생성 시 null
 //  - rating: 노출 리뷰 0건이면 null
 export const publicStoreDetailImageSchema = z.object({
     imageUrl: z.string().meta({ example: 'https://cdn.todam.example/stores/todam-jeonju/1.jpg' }),
-    thumbnailUrl: z
-        .string()
-        .meta({ example: 'https://cdn.todam.example/stores/todam-jeonju/1-thumb.jpg' })
-        .nullable(),
 });
 export type PublicStoreDetailImage = z.infer<typeof publicStoreDetailImageSchema>;
 

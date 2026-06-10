@@ -86,7 +86,6 @@ export class PrismaPartnerStoreDetailReader {
                     select: {
                         id: true,
                         imageUrl: true,
-                        thumbnailUrl: true,
                         isThumbnail: true,
                         sortOrder: true,
                     },
@@ -178,7 +177,6 @@ export class PrismaPartnerStoreDetailReader {
                 images: store.images.map((image) => ({
                     id: image.id,
                     imageUrl: image.imageUrl,
-                    thumbnailUrl: image.thumbnailUrl,
                     isThumbnail: image.isThumbnail,
                     sortOrder: image.sortOrder,
                 })),

@@ -70,7 +70,6 @@ export function StudioDetailClient() {
     const carouselImages = store.images.map((img, idx) => ({
         id: `img-${idx}`,
         imageUrl: img.imageUrl,
-        thumbnailUrl: img.thumbnailUrl ?? img.imageUrl, // thumbnail 없으면 원본으로 폴백
         isThumbnail: idx === 0,
         sortOrder: idx,
     }));

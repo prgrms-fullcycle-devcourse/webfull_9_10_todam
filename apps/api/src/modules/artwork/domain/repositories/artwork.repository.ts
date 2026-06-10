@@ -34,7 +34,6 @@ export interface UserArtworkDetailRow {
         photos: Array<{
             id: string;
             imageUrl: string;
-            thumbnailUrl: string | null;
             status: ImageUploadStatus;
         }>;
     }>;
