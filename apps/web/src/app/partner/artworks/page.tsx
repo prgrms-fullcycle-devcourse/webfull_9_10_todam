@@ -1,10 +1,10 @@
 'use client';
 
-import { useCurrentStoreId } from '@/entities/store';
+import { useCurrentStudioId } from '@/entities/studio';
 import { ArtworkListClient } from '@/features/artwork/list';
 
 export default function PartnerArtworksPage() {
-    const storeId = useCurrentStoreId();
+    const storeId = useCurrentStudioId();
 
     if (!storeId) return null;
 

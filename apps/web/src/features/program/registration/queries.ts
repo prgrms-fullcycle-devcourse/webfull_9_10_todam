@@ -63,7 +63,7 @@ export function useSubmitProgramRegistration(storeId: string) {
         onSuccess: () => {
             // 클래스 관리 목록 캐시 무효화 → 복귀 시 신규 카드 반영. (list/queries KEY 와 동일 prefix)
             queryClient.invalidateQueries({
-                queryKey: ['partner', 'stores', storeId, 'programs'],
+                queryKey: ['partner', 'studios', storeId, 'programs'],
             });
         },
     });

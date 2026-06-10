@@ -13,6 +13,7 @@ import {
     AUTOCOMPLETE_ERROR_CODES,
     ProgramDifficulty,
     ProgramStatus,
+    WithdrawErrorCode,
     type DeliveryEditResult,
     type ArtworkDetailResult,
     type GeocodeResult,
@@ -42,7 +43,7 @@ import { http, HttpResponse } from 'msw';
 
 import {
     findArtworkDetail,
-    findProgramBySlugAndId,
+    findProgramById,
     findProgramByStoreAndId,
     findPublicStoreBySlug,
     updateProgram,
@@ -99,12 +100,11 @@ export const handlers = [
 
     // ─── 프로그램 상세 조회 (퍼블릭, preload용) ─────────────────────────
     // GET /stores/{slug}/programs/{programId}
-    http.get(`${API}/stores/:slug/programs/:programId`, ({ params }) => {
-        const slug = String(params.slug);
+    http.get(`${API}/programs/:programId`, ({ params }) => {
         const programId = String(params.programId);
-        const path = `/api/v1/stores/${slug}/programs/${programId}`;
+        const path = `/api/v1/programs/${programId}`;
 
-        const program = findProgramBySlugAndId(slug, programId);
+        const program = findProgramById(programId);
         if (!program) {
             return fail(
                 path,
@@ -163,7 +163,7 @@ export const handlers = [
                 durationMinutes: p.durationMinutes,
                 leadTimeDays: p.leadTimeDays,
                 deliverable: p.deliverable,
-                thumbnailUrl: img?.thumbnailUrl ?? null,
+                imageUrl: img?.imageUrl ?? null,
                 status: ProgramStatus.ACTIVE,
                 sortOrder: idx,
             };
@@ -195,16 +195,15 @@ export const handlers = [
         );
     }),
 
-    // GET /stores/{slug}/programs/{programId}/reviews
-    http.get(`${API}/stores/:slug/programs/:programId/reviews`, ({ request, params }) => {
-        const slug = String(params.slug);
+    // GET /programs/{programId}/reviews
+    http.get(`${API}/programs/:programId/reviews`, ({ request, params }) => {
         const programId = String(params.programId);
         const url = new URL(request.url);
         const page = Number(url.searchParams.get('page') ?? '1');
         const limit = Number(url.searchParams.get('limit') ?? '10');
-        const path = `/api/v1/stores/${slug}/programs/${programId}/reviews`;
+        const path = `/api/v1/programs/${programId}/reviews`;
 
-        const program = findProgramBySlugAndId(slug, programId);
+        const program = findProgramById(programId);
         if (!program) {
             return fail(
                 path,
@@ -221,7 +220,7 @@ export const handlers = [
                 nickname: '토담이',
                 rating: 5,
                 content: '차분하게 알려주셔서 처음인데도 즐겁게 만들었어요.',
-                photos: [{ thumbnailUrl: 'https://placehold.co/240x240?text=review' }],
+                photos: [{ imageUrl: 'https://placehold.co/240x240?text=review' }],
                 createdAt: '2026-05-10T12:00:00.000Z',
             },
             {
@@ -616,11 +615,14 @@ export const handlers = [
         return ok(path, result, '예약 상세 정보가 성공적으로 조회되었습니다.');
     }),
 
-    // 예약별 리뷰 상세 조회 (D4 가정 endpoint — BE 채택 패턴 결정 대기).
+    // 예약별 리뷰 상세 조회 (BE 확정 경로: GET /reservations/{reservationId}/review).
     // hasReview=true 인 예약만 200, 외엔 404 REVIEW_NOT_FOUND.
-    http.get(`${API}/reservations/:reservationId/review`, ({ params, request }) => {
+    // MSW 패턴을 `*/reservations/:reservationId/review`(no /api/v1)로 유지:
+    // 호출자 entities/reservation/api.ts 의 getReservationReview 가
+    // `/reservations/${id}/review` 상대경로로 호출하므로 MSW 인터셉트에 일치.
+    http.get(`*/reservations/:reservationId/review`, ({ params, request }) => {
         const reservationId = String(params.reservationId);
-        const path = `/api/v1/reservations/${reservationId}/review`;
+        const path = `/reservations/${reservationId}/review`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -638,9 +640,9 @@ export const handlers = [
 
     // 리뷰 작성 — POST /reservations/{reservationId}/review (201).
     // ?unauth=1 → 401, ?simulate=403|404|409|500 토글, 그 외 201.
-    http.post(`${API}/reservations/:reservationId/review`, async ({ params, request }) => {
+    http.post(`*/reservations/:reservationId/review`, async ({ params, request }) => {
         const reservationId = String(params.reservationId);
-        const path = `/api/v1/reservations/${reservationId}/review`;
+        const path = `/reservations/${reservationId}/review`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -682,9 +684,9 @@ export const handlers = [
 
     // 리뷰 수정 — PATCH /reviews/{reviewId} (200). 응답 shape: D15(photos URL[] + updatedAt).
     // ?unauth=1 → 401, ?simulate=400|403|500 토글, 미존재 → 404.
-    http.patch(`${API}/reviews/:reviewId`, async ({ params, request }) => {
+    http.patch(`*/reviews/:reviewId`, async ({ params, request }) => {
         const reviewId = String(params.reviewId);
-        const path = `/api/v1/reviews/${reviewId}`;
+        const path = `/reviews/${reviewId}`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -735,8 +737,8 @@ export const handlers = [
     }),
 
     // 리뷰 사진 presigned — POST /review/images/presigned (D14 추론 mock). 응답에 S3 key 포함.
-    http.post(`${API}/review/images/presigned`, async ({ request }) => {
-        const path = '/api/v1/review/images/presigned';
+    http.post(`*/review/images/presigned`, async ({ request }) => {
+        const path = '/review/images/presigned';
         const body = (await request.json()) as ReviewImageUploadRequest;
         const result: ReviewImageUploadResult = createReviewImageUpload(body.fileName);
         return ok(
@@ -754,9 +756,11 @@ export const handlers = [
     //   ?simulate=404 → 404 REVIEW_NOT_FOUND (이미 삭제됨)
     //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
     //   정상 → 200 data:null
-    http.delete(`${API}/reviews/:reviewId`, ({ params, request }) => {
+    // MSW 패턴을 `*/reviews/:reviewId`(no /api/v1)로 유지: entities/review/api.ts 의
+    // deleteReview 가 `/reviews/${reviewId}` 상대경로로 호출하므로 MSW 인터셉트에 일치.
+    http.delete(`*/reviews/:reviewId`, ({ params, request }) => {
         const reviewId = String(params.reviewId);
-        const path = `/api/v1/reviews/${reviewId}`;
+        const path = `/reviews/${reviewId}`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -790,9 +794,9 @@ export const handlers = [
     //   ?simulate=404 → 404 RESERVATION_NOT_FOUND
     //   ?simulate=409 → 409 DELIVERY_NOT_EDITABLE
     //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
-    http.patch(`${API}/reservations/:reservationId/delivery`, async ({ params, request }) => {
+    http.patch(`*/reservations/:reservationId/delivery`, async ({ params, request }) => {
         const reservationId = String(params.reservationId);
-        const path = `/api/v1/reservations/${reservationId}/delivery`;
+        const path = `/reservations/${reservationId}/delivery`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -847,7 +851,7 @@ export const handlers = [
             return fail(
                 path,
                 409,
-                DeliveryEditErrorCode.DELIVERY_NOT_EDITABLE,
+                DeliveryEditErrorCode.PICKUP_NOT_ALLOWED,
                 '픽업 예약은 배송 정보를 수정할 수 없습니다.',
             );
         }
@@ -890,9 +894,9 @@ export const handlers = [
     //   ?simulate=404 → 404 ARTWORK_NOT_FOUND
     //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
     //   ?empty=1 → timeline 빈 배열 (등록 단계 없음)
-    http.get(`${API}/artworks/:artworkId`, ({ params, request }) => {
+    http.get(`*/artworks/:artworkId`, ({ params, request }) => {
         const artworkId = String(params.artworkId);
-        const path = `/api/v1/artworks/${artworkId}`;
+        const path = `/artworks/${artworkId}`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -989,12 +993,7 @@ export const handlers = [
             );
         }
         if (simulate === '400') {
-            return fail(
-                path,
-                400,
-                'INVALID_REQUEST',
-                '닉네임은 특수문자를 제외한 2자 이상 10자 이내여야 합니다.',
-            );
+            return fail(path, 400, 'INVALID_REQUEST', '닉네임은 한글·영문·숫자 2~10자여야 합니다.');
         }
 
         const body = (await request.json()) as { nickname?: string };
@@ -1011,11 +1010,11 @@ export const handlers = [
         return ok(path, result, '프로필이 성공적으로 수정되었습니다.');
     }),
 
-    // ─── 알림 설정 조회 (GET /api/v1/users/me/notification-settings) ──────────
+    // ─── 알림 설정 조회 (GET /users/me/notification-settings) ──────────
     // contract: docs/exec-plans/active/마이페이지.md
     // 시뮬: ?unauth=1 → 401, ?simulate=500 → 500
-    http.get(`${API}/users/me/notification-settings`, ({ request }) => {
-        const path = '/api/v1/users/me/notification-settings';
+    http.get(`*/users/me/notification-settings`, ({ request }) => {
+        const path = '/users/me/notification-settings';
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -1098,7 +1097,7 @@ export const handlers = [
                 slug: 'plus-doja',
                 name: '플러스 도자기',
                 region: { sido: '서울', sigungu: '성동구', dong: '성수동' },
-                thumbnailUrl: 'https://placehold.co/80x80?text=pottery',
+                imageUrl: 'https://placehold.co/80x80?text=pottery',
                 rating: 4.9,
                 reviewCount: 253,
                 distance: 1200,
@@ -1112,7 +1111,7 @@ export const handlers = [
                 slug: 'todam-pottery',
                 name: '흙과 사람',
                 region: { sido: '서울', sigungu: '성동구', dong: '성수동' },
-                thumbnailUrl: 'https://placehold.co/80x80?text=clay',
+                imageUrl: 'https://placehold.co/80x80?text=clay',
                 rating: 4.8,
                 reviewCount: 180,
                 distance: 2300,
@@ -1126,7 +1125,7 @@ export const handlers = [
                 slug: 'clay-seoul',
                 name: '클레이 서울',
                 region: { sido: '서울', sigungu: '종로구', dong: '통인동' },
-                thumbnailUrl: 'https://placehold.co/80x80?text=craft',
+                imageUrl: 'https://placehold.co/80x80?text=craft',
                 rating: 4.7,
                 reviewCount: 92,
                 distance: 5600,
@@ -1140,7 +1139,7 @@ export const handlers = [
                 slug: 'seongsu-vintage',
                 name: '성수동 작은 공방',
                 region: { sido: '서울', sigungu: '성동구', dong: '성수동' },
-                thumbnailUrl: 'https://placehold.co/80x80?text=vintage',
+                imageUrl: 'https://placehold.co/80x80?text=vintage',
                 rating: 4.6,
                 reviewCount: 47,
                 distance: 16400,
@@ -1245,11 +1244,11 @@ export const handlers = [
         return ok(path, result, '자동완성 목록 조회가 완료되었습니다.');
     }),
 
-    // ─── 알림 설정 수정 (PATCH /api/v1/users/me/notification-settings) ────────
+    // ─── 알림 설정 수정 (PATCH /users/me/notification-settings) ────────
     // contract: docs/exec-plans/active/마이페이지.md
     // 시뮬: ?unauth=1 → 401
-    http.patch(`${API}/users/me/notification-settings`, async ({ request }) => {
-        const path = '/api/v1/users/me/notification-settings';
+    http.patch(`*/users/me/notification-settings`, async ({ request }) => {
+        const path = '/users/me/notification-settings';
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -1274,5 +1273,73 @@ export const handlers = [
             },
         };
         return ok(path, result, '알림 설정이 성공적으로 수정되었습니다.');
+    }),
+
+    // ─── 회원탈퇴 (DELETE /api/v1/users/me) ─────────────────────────────────
+    // contract: docs/exec-plans/active/마이 - 회원탈퇴.md API Contract (스냅샷) 기준
+    // 시뮬 토글:
+    //   ?unauth=1 → 401 UNAUTHORIZED
+    //   ?simulate=partner → 400 ACTIVE_PARTNER_EXISTS
+    //   ?simulate=reservations → 400 ACTIVE_RESERVATIONS_OR_ARTWORKS_EXIST
+    //   ?simulate=password → 400 PASSWORD_MISMATCH
+    //   ?simulate=404 → 404 USER_NOT_FOUND
+    //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
+    //   정상 → 200 data:null
+    http.delete(`${API}/users/me`, ({ request }) => {
+        const path = '/api/v1/users/me';
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(
+                path,
+                401,
+                WithdrawErrorCode.UNAUTHORIZED,
+                '인증 정보가 유효하지 않거나 만료되었습니다.',
+            );
+        }
+
+        const simulate = url.searchParams.get('simulate');
+        if (simulate === 'partner') {
+            return fail(
+                path,
+                400,
+                WithdrawErrorCode.ACTIVE_PARTNER_EXISTS,
+                '파트너 해지 후 탈퇴가 가능합니다.',
+            );
+        }
+        if (simulate === 'reservations') {
+            return fail(
+                path,
+                400,
+                WithdrawErrorCode.ACTIVE_RESERVATIONS_OR_ARTWORKS_EXIST,
+                '진행 중인 클래스 예약 또는 제작 중인 도자기 작품이 남아있어 탈퇴가 불가능합니다.',
+            );
+        }
+        if (simulate === 'password') {
+            return fail(
+                path,
+                400,
+                WithdrawErrorCode.PASSWORD_MISMATCH,
+                '본인 확인을 위한 인증 정보가 일치하지 않습니다.',
+            );
+        }
+        if (simulate === '404') {
+            return fail(
+                path,
+                404,
+                WithdrawErrorCode.USER_NOT_FOUND,
+                '존재하지 않거나 탈퇴 처리된 회원입니다.',
+            );
+        }
+        if (simulate === '500') {
+            return fail(
+                path,
+                500,
+                WithdrawErrorCode.INTERNAL_SERVER_ERROR,
+                '회원 탈퇴 처리 중 서버 내부 오류가 발생했습니다.',
+            );
+        }
+
+        return ok(path, null, '회원 탈퇴가 정상적으로 처리되었습니다.');
     }),
 ];

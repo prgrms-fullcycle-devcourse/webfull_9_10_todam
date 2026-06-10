@@ -25,7 +25,7 @@ export function AppModal() {
                 <motion.div
                     role="dialog"
                     aria-modal="true"
-                    className="absolute inset-0 flex items-center justify-center bg-inverse/80 px-5"
+                    className="absolute inset-0 z-[60] flex items-center justify-center bg-inverse/80 px-5"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}

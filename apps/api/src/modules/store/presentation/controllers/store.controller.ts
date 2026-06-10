@@ -21,11 +21,13 @@ import {
 } from '@nestjs/swagger';
 import {
     businessDocumentImageRequestSchema,
+    businessDocumentOcrRequestSchema,
     businessDocumentUpdateRequestSchema,
     createStoreImageRequestSchema,
     createStoreRequestSchema,
     favoriteStoresQuerySchema,
     listStoreReviewsQuerySchema,
+    programReviewListQuerySchema,
     listStoresQuerySchema,
     slugAvailabilityQuerySchema,
     storeReviewSortSchema,
@@ -34,10 +36,12 @@ import {
 } from '@todam/shared';
 import type {
     BusinessDocumentImageRequest,
+    BusinessDocumentOcrRequest,
     BusinessDocumentUpdateRequest,
     CreateStoreImageRequest,
     CreateStoreRequest,
     ListStoreReviewsQuery,
+    ProgramReviewListQuery,
     ListStoresQuery,
     SlugAvailabilityQuery,
     StoreUpdateRequest,
@@ -54,6 +58,7 @@ import type { RequestUser } from '../../../../common/types/request-user.type';
 import { CreateStoreUseCase } from '../../application/use-cases/create-store.use-case';
 import { CreateStoreImageUseCase } from '../../application/use-cases/create-store-image.use-case';
 import { CreateBusinessDocumentImageUseCase } from '../../application/use-cases/create-business-document-image.use-case';
+import { OcrBusinessDocumentUseCase } from '../../application/use-cases/ocr-business-document.use-case';
 import { ConfirmStoreImageUseCase } from '../../application/use-cases/confirm-store-image.use-case';
 import { SubmitStoreUseCase } from '../../application/use-cases/submit-store.use-case';
 import { ListPartnerStoresUseCase } from '../../application/use-cases/list-partner-stores.use-case';
@@ -68,6 +73,7 @@ import { GetSlugAvailabilityUseCase } from '../../application/use-cases/get-slug
 import { GetStoreDetailUseCase } from '../../application/use-cases/get-store-detail.use-case';
 import { ListStoreProgramsUseCase } from '../../application/use-cases/list-store-programs.use-case';
 import { ListStoreReviewsUseCase } from '../../application/use-cases/list-store-reviews.use-case';
+import { ListProgramReviewsUseCase } from '../../application/use-cases/list-program-reviews.use-case';
 import { ToggleFavoriteStoreUseCase } from '../../application/use-cases/toggle-favorite-store.use-case';
 import { ListFavoriteStoresUseCase } from '../../application/use-cases/list-favorite-stores.use-case';
 import { GetPartnerCurrentStoreUseCase } from '../../application/use-cases/get-partner-current-store.use-case';
@@ -82,6 +88,10 @@ import {
     CreateBusinessDocumentImageDto,
     CreateBusinessDocumentImageResponseDto,
 } from '../dto/business-document-image.dto';
+import {
+    OcrBusinessDocumentDto,
+    OcrBusinessDocumentResponseDto,
+} from '../dto/ocr-business-document.dto';
 import { SubmitStoreResponseDto } from '../dto/submit-store.dto';
 import { ListPartnerStoresResponseDto } from '../dto/list-partner-stores.dto';
 import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detail.dto';
@@ -93,6 +103,7 @@ import {
     ListFavoriteStoresResponseDto,
 } from '../dto/list-favorite-stores.dto';
 import { ListStoreProgramsResponseDto } from '../dto/list-store-programs.dto';
+import { ListProgramReviewsResponseDto } from '../dto/list-program-reviews.dto';
 import {
     GetPartnerCurrentStoreResponseDto,
     UpdatePartnerCurrentStoreDto,
@@ -104,6 +115,13 @@ import {
     UpdateBusinessDocumentResponseDto,
 } from '../dto/update-business-document.dto';
 import { ConfirmStoreImageResponseDto } from '../dto/confirm-store-image.dto';
+// 응답 DTO는 Swagger 문서용(@ApiOkResponse). 실제 반환 타입은 도메인 결과 타입을 쓴다
+// (status는 도메인에서 string 유니온, contract DTO는 StoreStatus enum — 문서는 더 정밀하게 enum 노출).
+import type {
+    CreateStoreResult,
+    UpdateStoreResult,
+    UpdateBusinessDocumentResult,
+} from '../../domain/repositories/store-writers';
 
 @ApiTags('stores')
 @ApiBearerAuth()
@@ -113,6 +131,7 @@ export class StoreController {
         private readonly createStoreUseCase: CreateStoreUseCase,
         private readonly createStoreImageUseCase: CreateStoreImageUseCase,
         private readonly createBusinessDocumentImageUseCase: CreateBusinessDocumentImageUseCase,
+        private readonly ocrBusinessDocumentUseCase: OcrBusinessDocumentUseCase,
         private readonly confirmStoreImageUseCase: ConfirmStoreImageUseCase,
         private readonly submitStoreUseCase: SubmitStoreUseCase,
         private readonly listPartnerStoresUseCase: ListPartnerStoresUseCase,
@@ -127,6 +146,7 @@ export class StoreController {
         private readonly getStoreDetailUseCase: GetStoreDetailUseCase,
         private readonly listStoreProgramsUseCase: ListStoreProgramsUseCase,
         private readonly listStoreReviewsUseCase: ListStoreReviewsUseCase,
+        private readonly listProgramReviewsUseCase: ListProgramReviewsUseCase,
         private readonly toggleFavoriteStoreUseCase: ToggleFavoriteStoreUseCase,
         private readonly listFavoriteStoresUseCase: ListFavoriteStoresUseCase,
         private readonly getPartnerCurrentStoreUseCase: GetPartnerCurrentStoreUseCase,
@@ -216,6 +236,25 @@ export class StoreController {
     })
     async listStorePrograms(@Param('slug') slug: string): Promise<ListStoreProgramsResponseDto> {
         return this.listStoreProgramsUseCase.execute(slug);
+    }
+
+    @Get('programs/:programId/reviews')
+    @HttpCode(HttpStatus.OK)
+    // 퍼블릭(Guest·User 공통). programId 단독 식별. PUBLISHED 공방의 특정 클래스 노출 리뷰 목록. 페이지 기반.
+    @ResponseMessage('리뷰 목록이 성공적으로 조회되었습니다.')
+    @ApiOkResponse({
+        description: '클래스 리뷰 목록 조회 성공',
+        type: ListProgramReviewsResponseDto,
+    })
+    @ApiQuery({ name: 'page', type: Number, required: false, example: 1 })
+    @ApiQuery({ name: 'limit', type: Number, required: false, example: 10 })
+    @ApiQuery({ name: 'sort', enum: ['latest', 'rating_high'], required: false })
+    async listProgramReviews(
+        @Param('programId') programId: string,
+        @Query(new QueryZodValidationPipe(programReviewListQuerySchema))
+        query: ProgramReviewListQuery,
+    ): Promise<ListProgramReviewsResponseDto> {
+        return this.listProgramReviewsUseCase.execute(programId, query);
     }
 
     @Get('stores/:slug/reviews')
@@ -317,7 +356,7 @@ export class StoreController {
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
         @Body(new ZodValidationPipe(storeUpdateRequestSchema)) dto: StoreUpdateRequest,
-    ): Promise<UpdateStoreResponseDto> {
+    ): Promise<UpdateStoreResult> {
         return this.updateStoreUseCase.execute(user.id, storeId, dto);
     }
 
@@ -336,7 +375,7 @@ export class StoreController {
         @Param('storeId') storeId: string,
         @Body(new ZodValidationPipe(businessDocumentUpdateRequestSchema))
         dto: BusinessDocumentUpdateRequest,
-    ): Promise<UpdateBusinessDocumentResponseDto> {
+    ): Promise<UpdateBusinessDocumentResult> {
         return this.updateBusinessDocumentUseCase.execute(user.id, storeId, dto);
     }
 
@@ -348,7 +387,7 @@ export class StoreController {
     async createStore(
         @CurrentUser() user: RequestUser,
         @Body(new ZodValidationPipe(createStoreRequestSchema)) dto: CreateStoreRequest,
-    ): Promise<CreateStoreResponseDto> {
+    ): Promise<CreateStoreResult> {
         return this.createStoreUseCase.execute(user.id, dto);
     }
 
@@ -369,6 +408,24 @@ export class StoreController {
         dto: BusinessDocumentImageRequest,
     ): Promise<CreateBusinessDocumentImageResponseDto> {
         return this.createBusinessDocumentImageUseCase.execute(user.id, dto);
+    }
+
+    @Post('partner/business-documents/ocr')
+    @HttpCode(HttpStatus.OK)
+    // store-비종속. 공방 등록 전 단계라 Partner 레코드 미존재 가능 → AuthGuard만 (PartnerGuard 미적용).
+    @UseGuards(AuthGuard)
+    @ResponseMessage('사업자등록증 OCR이 완료되었습니다.')
+    @ApiOkResponse({
+        description: '사업자등록증 OCR 성공',
+        type: OcrBusinessDocumentResponseDto,
+    })
+    @ApiBody({ type: OcrBusinessDocumentDto })
+    async ocrBusinessDocument(
+        @CurrentUser() user: RequestUser,
+        @Body(new ZodValidationPipe(businessDocumentOcrRequestSchema))
+        dto: BusinessDocumentOcrRequest,
+    ): Promise<OcrBusinessDocumentResponseDto> {
+        return this.ocrBusinessDocumentUseCase.execute(user.id, dto.documentUrl);
     }
 
     @Post('partner/stores/:storeId/images')

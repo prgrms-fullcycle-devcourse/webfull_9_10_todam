@@ -139,19 +139,18 @@ export class ProgramController {
         return this.getProgramDetailUseCase.execute(user.id, storeId, programId);
     }
 
-    @Get('stores/:slug/programs/:programId')
+    @Get('programs/:programId')
     @HttpCode(HttpStatus.OK)
-    // 퍼블릭 조회(비인증) — ACTIVE 클래스만 노출. 가시성은 use-case 에서 처리.
+    // 퍼블릭 조회(비인증) — programId 단독 식별. ACTIVE 클래스 + store PUBLISHED 가드는 reader 에서 처리.
     @ResponseMessage('클래스 상세 정보가 성공적으로 조회되었습니다.')
     @ApiOkResponse({
         description: '클래스 상세 조회 성공',
         type: GetProgramDetailResponseDto,
     })
     async getPublicProgramDetail(
-        @Param('slug') slug: string,
         @Param('programId') programId: string,
     ): Promise<GetProgramDetailResponseDto> {
-        return this.getPublicProgramDetailUseCase.execute(slug, programId);
+        return this.getPublicProgramDetailUseCase.execute(programId);
     }
 
     @Patch('partner/stores/:storeId/programs/:programId')

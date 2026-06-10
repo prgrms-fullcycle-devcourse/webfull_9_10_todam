@@ -32,7 +32,7 @@ export const matchedClassSchema = z
 export type MatchedClass = z.infer<typeof matchedClassSchema>;
 
 // 형태 SSOT = BE 응답(prisma-stores.reader). nullable 은 실제 BE 반환과 1:1 정합.
-//  - thumbnailUrl: 이미지 0장이면 null
+//  - imageUrl: 이미지 0장이면 null
 //  - rating: 리뷰 0건이면 null
 //  - distance: 사용자 좌표(lat/lng) 미전송이면 null
 export const storeListItemSchema = z.object({
@@ -47,7 +47,7 @@ export const storeListItemSchema = z.object({
     convenienceInfo: convenienceInfoSchema,
     autoConfirm: z.boolean(),
     region: storeRegionSchema,
-    thumbnailUrl: z.string().nullable(),
+    imageUrl: z.string().nullable(),
     rating: z.number().nullable(),
     reviewCount: z.number(),
     distance: z.number().nullable(),

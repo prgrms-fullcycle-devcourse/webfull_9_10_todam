@@ -2,7 +2,6 @@ import type { ProgramDifficulty, ProgramStatus } from './program.repository';
 
 export interface ProgramDetailImage {
     imageUrl: string;
-    thumbnailUrl: string | null;
     // 파트너 상세에서만 채워진다(편집 화면 이미지 삭제·대표지정용). 퍼블릭 상세는 생략.
     programImageId?: string;
     isThumbnail?: boolean;
@@ -11,6 +10,8 @@ export interface ProgramDetailImage {
 export interface ProgramDetail {
     id: string;
     storeId: string;
+    // 퍼블릭 상세에서만 채워진다(헤더/공유 텍스트용). 파트너 상세는 생략.
+    storeName?: string;
     title: string;
     description: string | null;
     materials: string | null;
@@ -59,10 +60,10 @@ export abstract class PartnerProgramDetailReader {
 }
 
 /**
- * 퍼블릭 클래스 상세 조회 — 공방 slug 로 식별하고 ACTIVE 클래스만 노출한다(인가 없음).
+ * 퍼블릭 클래스 상세 조회 — programId 단독 식별, ACTIVE 클래스 + store.status=PUBLISHED 만 노출(인가 없음).
  */
 export abstract class PublicProgramDetailReader {
-    abstract execute(slug: string, programId: string): Promise<ProgramDetailResult>;
+    abstract execute(programId: string): Promise<ProgramDetailResult>;
 }
 
 /**

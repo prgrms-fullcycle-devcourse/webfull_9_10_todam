@@ -17,18 +17,17 @@ export type ProgramEditErrorCode = (typeof ProgramEditErrorCode)[keyof typeof Pr
 export const programImageSchema = z.object({
     programImageId: z.string().meta({ example: 'program-image-uuid-001' }).optional(),
     imageUrl: z.string().meta({ example: 'https://cdn.todam.app/programs/pottery-01.png' }),
-    thumbnailUrl: z
-        .string()
-        .meta({ example: 'https://cdn.todam.app/programs/pottery-01-thumb.png' })
-        .nullable(),
     isThumbnail: z.boolean().meta({ example: true }).optional(),
 });
 export type ProgramImage = z.infer<typeof programImageSchema>;
 
-// ─── 프로그램 상세 (GET /stores/{slug}/programs/{programId}) ─────
+// ─── 프로그램 상세 (GET /programs/{programId}) ─────
+// programId 가 PK 라 단독 식별 가능. 비공개 store 은폐는 store.status=PUBLISHED 가드가 담당.
+// storeName 은 상세 헤더/공유 텍스트용(클래스 라우트 /classes/[id] 에 slug 미포함).
 export const programDetailSchema = z.object({
     id: z.string().meta({ example: 'program-uuid-001' }),
     storeId: z.string().meta({ example: 'store-uuid-001' }),
+    storeName: z.string().meta({ example: '흙과 사람' }),
     title: z.string().meta({ example: '물레 체험 기초반' }),
     description: z
         .string()
@@ -56,12 +55,12 @@ export const programDetailResultSchema = z.object({
 });
 export type ProgramDetailResult = z.infer<typeof programDetailResultSchema>;
 
-// ─── 프로그램 리뷰 목록 (GET /stores/{slug}/programs/{programId}/reviews) ─────
+// ─── 프로그램 리뷰 목록 (GET /programs/{programId}/reviews) ─────
 export const programReviewSortSchema = z.enum(['latest', 'rating_high']);
 export type ProgramReviewSort = z.infer<typeof programReviewSortSchema>;
 
 export const programReviewPhotoSchema = z.object({
-    thumbnailUrl: z.string().meta({ example: 'https://cdn.todam.app/reviews/review-01-thumb.jpg' }),
+    imageUrl: z.string().meta({ example: 'https://cdn.todam.app/reviews/review-01.jpg' }),
 });
 export type ProgramReviewPhoto = z.infer<typeof programReviewPhotoSchema>;
 
@@ -87,6 +86,14 @@ export const programReviewListResultSchema = z.object({
     }),
 });
 export type ProgramReviewListResult = z.infer<typeof programReviewListResultSchema>;
+
+// GET /stores/{slug}/programs/{programId}/reviews 쿼리 파라미터.
+export const programReviewListQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).default(10),
+    sort: programReviewSortSchema.default('latest'),
+});
+export type ProgramReviewListQuery = z.infer<typeof programReviewListQuerySchema>;
 
 // ─── PATCH /partner/stores/{storeId}/programs/{programId} ────────
 export const programEditRequestSchema = z.object({

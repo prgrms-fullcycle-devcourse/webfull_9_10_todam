@@ -86,7 +86,6 @@ export class PrismaPartnerStoreDetailReader {
                     select: {
                         id: true,
                         imageUrl: true,
-                        thumbnailUrl: true,
                         isThumbnail: true,
                         sortOrder: true,
                     },
@@ -100,7 +99,7 @@ export class PrismaPartnerStoreDetailReader {
                         businessName: true,
                         businessNumber: true,
                         businessAddress: true,
-                        ocrStatus: true,
+                        startDate: true,
                     },
                 },
             },
@@ -178,7 +177,6 @@ export class PrismaPartnerStoreDetailReader {
                 images: store.images.map((image) => ({
                     id: image.id,
                     imageUrl: image.imageUrl,
-                    thumbnailUrl: image.thumbnailUrl,
                     isThumbnail: image.isThumbnail,
                     sortOrder: image.sortOrder,
                 })),
@@ -189,7 +187,7 @@ export class PrismaPartnerStoreDetailReader {
                           businessName: businessDoc.businessName,
                           businessNumber: businessDoc.businessNumber,
                           businessAddress: businessDoc.businessAddress,
-                          ocrStatus: businessDoc.ocrStatus,
+                          startDate: businessDoc.startDate,
                       }
                     : null,
                 publishedAt: store.publishedAt?.toISOString() ?? null,

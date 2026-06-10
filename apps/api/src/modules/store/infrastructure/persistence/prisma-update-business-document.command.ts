@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
 import { S3Service } from '../../../../common/s3/s3.service';
-import { keyFromImageUrl } from '../../../../common/s3/s3-object.util';
+import { assertOwnedBusinessDocumentImage } from '../../../../common/s3/business-document.util';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import type {
     UpdateBusinessDocumentInput,
@@ -62,16 +62,9 @@ export class PrismaUpdateBusinessDocumentCommand {
             );
         }
 
-        // documentUrl 이 non-null 로 전달되면 실제 업로드 완료 여부 검증.
+        // documentUrl 이 non-null 로 전달되면 소유권(IDOR)·업로드 완료·이미지 타입을 검증.
         if (dto.documentUrl) {
-            const exists = await this.s3.objectExists(keyFromImageUrl(dto.documentUrl));
-            if (!exists) {
-                throw new BusinessException(
-                    'BAD_REQUEST',
-                    '사업자등록증 파일이 업로드되지 않았습니다.',
-                    HttpStatus.BAD_REQUEST,
-                );
-            }
+            await assertOwnedBusinessDocumentImage(this.s3, userId, dto.documentUrl);
         }
 
         // 전달된 필드만 부분 갱신. business_documents 는 storeId(+partnerId)로 식별.
@@ -82,6 +75,7 @@ export class PrismaUpdateBusinessDocumentCommand {
             businessAddress?: string;
             email?: string;
             documentUrl?: string | null;
+            startDate?: string | null;
         } = {};
 
         if (dto.businessNumber !== undefined) {
@@ -93,6 +87,7 @@ export class PrismaUpdateBusinessDocumentCommand {
         if (dto.businessAddress !== undefined) data.businessAddress = dto.businessAddress;
         if (dto.email !== undefined) data.email = dto.email;
         if (dto.documentUrl !== undefined) data.documentUrl = dto.documentUrl;
+        if (dto.startDate !== undefined) data.startDate = dto.startDate;
 
         if (Object.keys(data).length > 0) {
             await this.prisma.businessDocument.updateMany({

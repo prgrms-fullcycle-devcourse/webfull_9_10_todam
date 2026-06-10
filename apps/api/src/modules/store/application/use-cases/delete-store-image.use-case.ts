@@ -24,7 +24,7 @@ export class DeleteStoreImageUseCase {
             );
         }
 
-        await this.s3.deleteImageObjects([image.imageUrl, image.thumbnailUrl]);
+        await this.s3.deleteImageObjects([image.imageUrl]);
         await this.images.delete(imageId);
     }
 }

@@ -4,6 +4,9 @@
 
 export const DAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
+// 캘린더 연/월 드롭다운 연도 선택 범위(현재 기준 ±N년).
+export const CALENDAR_YEAR_RANGE = 5;
+
 const pad = (n: number): string => String(n).padStart(2, '0');
 
 function parseDateKey(dateKey: string): Date | null {

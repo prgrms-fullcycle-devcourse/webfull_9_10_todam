@@ -112,8 +112,7 @@ model BusinessDocument {
   businessName    String     @map("business_name") @db.VarChar(200)
   businessNumber  String     @map("business_number") @db.VarChar(20)
   businessAddress String     @map("business_address") @db.VarChar(500)
-  ocrStatus       OcrStatus? @map("ocr_status")
-  ocrRaw          Json?      @map("ocr_raw")
+  startDate       String?    @map("start_date") @db.VarChar(8)  // "YYYYMMDD", OCR prefill + 사용자 수정
   verifiedAt      DateTime?  @map("verified_at") @db.Timestamptz(6)
   createdAt       DateTime?  @map("created_at") @db.Timestamptz(6)
   partner         Partner    @relation(fields: [partnerId], references: [id])
@@ -181,7 +180,6 @@ model StoreImage {
   id           String            @id @default(uuid()) @db.Uuid
   storeId      String            @map("store_id") @db.Uuid
   imageUrl     String            @map("image_url") @db.VarChar(1000)
-  thumbnailUrl String?           @map("thumbnail_url") @db.VarChar(1000)
   sortOrder    Int               @default(0) @map("sort_order")
   isThumbnail  Boolean           @default(false) @map("is_thumbnail") // [S-3] isPrimary → isThumbnail
   status       ImageUploadStatus @default(PENDING) @map("status")
@@ -234,7 +232,6 @@ model ProgramImage {
   id           String            @id @default(uuid()) @db.Uuid
   programId    String            @map("program_id") @db.Uuid
   imageUrl     String            @map("image_url") @db.VarChar(1000)
-  thumbnailUrl String?           @map("thumbnail_url") @db.VarChar(1000)
   sortOrder    Int               @default(0) @map("sort_order")
   isThumbnail  Boolean           @default(false) @map("is_thumbnail")
   status       ImageUploadStatus @default(PENDING) @map("status")
@@ -386,7 +383,6 @@ model ArtworkPhoto {
   id           String            @id @default(uuid()) @db.Uuid
   artworkLogId String            @map("artwork_log_id") @db.Uuid
   imageUrl     String            @map("image_url") @db.VarChar(1000)
-  thumbnailUrl String?           @map("thumbnail_url") @db.VarChar(1000)
   status       ImageUploadStatus @default(PENDING) @map("status")
   createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   artworkLog   ArtworkLog        @relation(fields: [artworkLogId], references: [id])
@@ -471,7 +467,6 @@ model ReviewPhoto {
   id           String   @id @default(uuid()) @db.Uuid
   reviewId     String   @map("review_id") @db.Uuid
   imageUrl     String   @map("image_url") @db.VarChar(1000)
-  thumbnailUrl String?  @map("thumbnail_url") @db.VarChar(1000)
   sortOrder    Int      @default(0) @map("sort_order")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   review       Review   @relation(fields: [reviewId], references: [id])
@@ -537,12 +532,6 @@ enum PartnerStatus {
   REJECTED
   SUSPENDED
   TERMINATED
-}
-
-enum OcrStatus {
-  PENDING
-  VERIFIED
-  FAILED // [S-8]
 }
 
 enum StoreStatus {

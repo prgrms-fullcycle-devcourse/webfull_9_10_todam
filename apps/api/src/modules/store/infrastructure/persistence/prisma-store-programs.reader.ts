@@ -43,7 +43,7 @@ export class PrismaStoreProgramsReader {
                     where: { status: ImageUploadStatus.UPLOADED },
                     orderBy: { sortOrder: 'asc' },
                     take: 1,
-                    select: { imageUrl: true, thumbnailUrl: true },
+                    select: { imageUrl: true },
                 },
             },
         });
@@ -51,7 +51,7 @@ export class PrismaStoreProgramsReader {
         return {
             programs: programs.map((program) => {
                 const image = program.images[0];
-                const thumbnailUrl = image ? (image.thumbnailUrl ?? image.imageUrl ?? null) : null;
+                const imageUrl = image ? (image.imageUrl ?? null) : null;
                 return {
                     id: program.id,
                     title: program.title,
@@ -61,7 +61,7 @@ export class PrismaStoreProgramsReader {
                     durationMinutes: program.durationMinutes,
                     leadTimeDays: program.leadTimeDays,
                     deliverable: program.deliverable,
-                    thumbnailUrl,
+                    imageUrl,
                     status: program.status,
                     sortOrder: program.sortOrder,
                 };

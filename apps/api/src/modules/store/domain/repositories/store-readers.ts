@@ -18,7 +18,7 @@ export interface StoreListItem {
     convenienceInfo: { parking: boolean; pet: boolean; wifi: boolean };
     autoConfirm: boolean;
     region: { sido: string | null; sigungu: string | null; dong: string | null };
-    thumbnailUrl: string | null;
+    imageUrl: string | null;
     rating: number | null;
     reviewCount: number;
     distance: number | null;
@@ -47,7 +47,7 @@ export interface StoreReviewListItem {
     nickname: string;
     rating: number;
     content: string;
-    photos: { imageUrl: string; thumbnailUrl: string }[];
+    photos: { imageUrl: string }[];
     programId: string;
     programTitle: string;
     createdAt: string;
@@ -105,7 +105,6 @@ export interface PartnerStoreDetailResult {
         images: {
             id: string;
             imageUrl: string;
-            thumbnailUrl: string | null;
             isThumbnail: boolean;
             sortOrder: number;
         }[];
@@ -115,7 +114,7 @@ export interface PartnerStoreDetailResult {
             businessName: string;
             businessNumber: string;
             businessAddress: string;
-            ocrStatus: `${OcrStatus}` | null;
+            startDate: string | null;
         } | null;
         publishedAt: string | null;
         createdAt: string;
@@ -135,7 +134,7 @@ export interface PublicStoreDetailResult {
         convenienceInfo: { parking: boolean; pet: boolean; wifi: boolean };
         autoConfirm: boolean;
         publishedAt: string;
-        images: { imageUrl: string; thumbnailUrl: string | null }[];
+        images: { imageUrl: string }[];
         rating: number | null;
         reviewCount: number;
         location: { lat: number; lng: number };
@@ -155,7 +154,7 @@ export interface StoreProgramsResult {
         durationMinutes: number;
         leadTimeDays: number;
         deliverable: boolean;
-        thumbnailUrl: string | null;
+        imageUrl: string | null;
         status: `${ProgramStatus}`;
         sortOrder: number;
     }[];
@@ -231,8 +230,44 @@ export abstract class FavoriteStoresReader {
     abstract execute(query: ListFavoriteStoresQuery): Promise<ListFavoriteStoresResult>;
 }
 
+// ─── 클래스 리뷰 목록 (GET /stores/{slug}/programs/{programId}/reviews) ─────────
+export type ProgramReviewSort = 'latest' | 'rating_high';
+
+export interface ListProgramReviewsQuery {
+    page: number;
+    limit: number;
+    sort: ProgramReviewSort;
+}
+
+export interface ProgramReviewListItem {
+    id: string;
+    userId: string;
+    nickname: string;
+    rating: number;
+    content: string;
+    photos: { imageUrl: string }[];
+    createdAt: string;
+}
+
+export interface ListProgramReviewsResult {
+    totalCount: number;
+    averageRating: number;
+    reviews: ProgramReviewListItem[];
+    pagination: {
+        currentPage: number;
+        totalPages: number;
+        limit: number;
+    };
+}
+
+export abstract class ProgramReviewsReader {
+    abstract execute(
+        programId: string,
+        query: ListProgramReviewsQuery,
+    ): Promise<ListProgramReviewsResult>;
+}
+
 import type {
-    OcrStatus,
     PartnerDashboardStoresResult,
     PartnerOnboardingResult,
     ProgramDifficulty,

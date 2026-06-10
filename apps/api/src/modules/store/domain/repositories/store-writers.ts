@@ -33,6 +33,7 @@ export interface CreateStoreInput {
         businessAddress: string;
         email?: string | null;
         documentUrl?: string | null;
+        startDate?: string | null;
     };
 }
 
@@ -57,6 +58,7 @@ export interface UpdateBusinessDocumentInput {
     businessAddress?: string;
     email?: string;
     documentUrl?: string | null;
+    startDate?: string | null;
 }
 
 export interface CreateStoreResult {

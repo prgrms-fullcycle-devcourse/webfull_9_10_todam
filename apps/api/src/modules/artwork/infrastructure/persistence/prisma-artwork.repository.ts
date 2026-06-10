@@ -35,7 +35,10 @@ import { buildObjectKey, CDN_BASE, keyFromImageUrl } from '../../../../common/s3
 import { S3Service } from '../../../../common/s3/s3.service';
 import { PrismaService } from '../../../../database/prisma.service';
 import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
-import { ArtworkRepository } from '../../domain/repositories/artwork.repository';
+import {
+    ArtworkRepository,
+    type UserArtworkDetailRow,
+} from '../../domain/repositories/artwork.repository';
 import { ARTWORK_SEQUENCE, ArtworkPolicy } from '../../domain/services/artwork-policy.service';
 
 const TERMINAL_RESERVATION_STATUSES = [
@@ -196,7 +199,7 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                     reserverName: row.reservation.reserverName,
                     status: row.status,
                     estimatedCompletedAt: row.estimatedCompletedAt?.toISOString() ?? null,
-                    thumbnailUrl: row.logs[0]?.photos[0]?.thumbnailUrl ?? null,
+                    imageUrl: row.logs[0]?.photos[0]?.imageUrl ?? null,
                     updatedAt: row.updatedAt.toISOString(),
                     scheduledAt: row.reservation.scheduledAt.toISOString(),
                     programTitle: row.reservation.program.title,
@@ -545,7 +548,7 @@ export class PrismaArtworkRepository extends ArtworkRepository {
     ): Promise<DeleteArtworkPhotoResult> {
         const photo = await this.findOwnedPhoto(userId, artworkId, photoId);
         await this.prisma.artworkPhoto.delete({ where: { id: photoId } });
-        await this.s3.deleteImageObjects([photo.imageUrl, photo.thumbnailUrl]);
+        await this.s3.deleteImageObjects([photo.imageUrl]);
         return { deletedPhotoId: photoId };
     }
 
@@ -778,8 +781,8 @@ export class PrismaArtworkRepository extends ArtworkRepository {
         };
     }
 
-    private photoResponse(photo: { id: string; thumbnailUrl: string | null; imageUrl: string }) {
-        return { id: photo.id, thumbnailUrl: photo.thumbnailUrl, imageUrl: photo.imageUrl };
+    private photoResponse(photo: { id: string; imageUrl: string }) {
+        return { id: photo.id, imageUrl: photo.imageUrl };
     }
 
     private deliveryResponse(
@@ -807,6 +810,35 @@ export class PrismaArtworkRepository extends ArtworkRepository {
             carrier: delivery.carrier,
             shippedAt: delivery.shippedAt?.toISOString().slice(0, 10) ?? null,
         };
+    }
+
+    async findUserArtworkDetail(artworkId: string): Promise<UserArtworkDetailRow | null> {
+        return this.prisma.artwork.findUnique({
+            where: { id: artworkId },
+            select: {
+                id: true,
+                status: true,
+                estimatedCompletedAt: true,
+                reservation: {
+                    select: { userId: true },
+                },
+                logs: {
+                    orderBy: { createdAt: 'asc' },
+                    select: {
+                        id: true,
+                        toStatus: true,
+                        createdAt: true,
+                        photos: {
+                            select: {
+                                id: true,
+                                imageUrl: true,
+                                status: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
     }
 
     private error(code: string, message: string, status: number) {

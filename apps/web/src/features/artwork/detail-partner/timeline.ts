@@ -34,13 +34,9 @@ function beStateToFe(state: 'CURRENT' | 'COMPLETED' | 'UPCOMING'): TimelineRowSt
     return state.toLowerCase() as TimelineRowState;
 }
 
-function photoToImage(photo: {
-    id: string;
-    thumbnailUrl: string | null;
-    imageUrl: string;
-}): TimelineImage {
+function photoToImage(photo: { id: string; imageUrl: string }): TimelineImage {
     return {
-        src: photo.thumbnailUrl ?? photo.imageUrl,
+        src: photo.imageUrl,
         alt: '작품 사진',
     };
 }

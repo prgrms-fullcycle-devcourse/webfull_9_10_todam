@@ -54,6 +54,9 @@ function controllers(): ControllerClass[] {
     const { UserController } = jest.requireActual<
         typeof import('./user/presentation/controllers/user.controller')
     >('./user/presentation/controllers/user.controller');
+    const { ReviewController } = jest.requireActual<
+        typeof import('./review/presentation/controllers/review.controller')
+    >('./review/presentation/controllers/review.controller');
 
     return [
         AuthController,
@@ -66,6 +69,7 @@ function controllers(): ControllerClass[] {
         PartnerArtworkController,
         PartnerController,
         UserController,
+        ReviewController,
     ];
 }
 
@@ -243,6 +247,13 @@ describe('API route baseline', () => {
             },
             {
                 controller: 'StoreController',
+                handler: 'listProgramReviews',
+                method: 'GET',
+                path: '/programs/:programId/reviews',
+                guards: [],
+            },
+            {
+                controller: 'StoreController',
                 handler: 'listStoreReviews',
                 method: 'GET',
                 path: '/stores/:slug/reviews',
@@ -309,6 +320,13 @@ describe('API route baseline', () => {
                 handler: 'createBusinessDocumentImage',
                 method: 'POST',
                 path: '/partner/business-documents/images',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'StoreController',
+                handler: 'ocrBusinessDocument',
+                method: 'POST',
+                path: '/partner/business-documents/ocr',
                 guards: ['AuthGuard'],
             },
             {
@@ -385,7 +403,7 @@ describe('API route baseline', () => {
                 controller: 'ProgramController',
                 handler: 'getPublicProgramDetail',
                 method: 'GET',
-                path: '/stores/:slug/programs/:programId',
+                path: '/programs/:programId',
                 guards: [],
             },
             {
@@ -571,6 +589,13 @@ describe('API route baseline', () => {
                 guards: ['AuthGuard'],
             },
             {
+                controller: 'UserReservationController',
+                handler: 'updateDelivery',
+                method: 'PATCH',
+                path: '/reservations/:reservationId/delivery',
+                guards: ['AuthGuard'],
+            },
+            {
                 controller: 'PartnerArtworkController',
                 handler: 'list',
                 method: 'GET',
@@ -666,6 +691,41 @@ describe('API route baseline', () => {
                 handler: 'withdraw',
                 method: 'DELETE',
                 path: '/users/me',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'ReviewController',
+                handler: 'createReviewHandler',
+                method: 'POST',
+                path: '/reservations/:reservationId/review',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'ReviewController',
+                handler: 'updateReviewHandler',
+                method: 'PATCH',
+                path: '/reviews/:reviewId',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'ReviewController',
+                handler: 'issuePresignedHandler',
+                method: 'POST',
+                path: '/review/images/presigned',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'ReviewController',
+                handler: 'getReviewDetailHandler',
+                method: 'GET',
+                path: '/reservations/:reservationId/review',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'ReviewController',
+                handler: 'deleteReviewHandler',
+                method: 'DELETE',
+                path: '/reviews/:reviewId',
                 guards: ['AuthGuard'],
             },
         ]);

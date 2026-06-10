@@ -34,8 +34,8 @@ export type PartnerProgramListResult = z.infer<typeof partnerProgramListResultSc
 
 // ─── 공개 공방 클래스 목록 ──────────────────────────────────────────
 // GET /stores/{slug}/programs — 공개 노출(status ACTIVE 고정). 형태 SSOT = BE 응답(prisma-store-programs.reader).
-// 파트너 목록과 달리 description·thumbnailUrl·sortOrder 포함(유저 카드 노출용).
-//  - thumbnailUrl: 대표 이미지 없으면 null
+// 파트너 목록과 달리 description·imageUrl·sortOrder 포함(유저 카드 노출용).
+//  - imageUrl: 대표 이미지 없으면 null
 export const storeProgramListItemSchema = z.object({
     id: z.string().meta({ example: 'program-uuid-001' }),
     title: z.string().meta({ example: '머그컵 만들기' }),
@@ -45,10 +45,7 @@ export const storeProgramListItemSchema = z.object({
     durationMinutes: z.number().meta({ example: 120 }),
     leadTimeDays: z.number().meta({ example: 28 }),
     deliverable: z.boolean().meta({ example: true }),
-    thumbnailUrl: z
-        .string()
-        .meta({ example: 'https://cdn.todam.example/programs/mug-thumb.jpg' })
-        .nullable(),
+    imageUrl: z.string().meta({ example: 'https://cdn.todam.example/programs/mug.jpg' }).nullable(),
     status: z.nativeEnum(ProgramStatus).meta({ example: ProgramStatus.ACTIVE }),
     sortOrder: z.number().meta({ example: 1 }),
 });
@@ -86,16 +83,12 @@ export type PartnerProgramReorderRequest = z.infer<typeof partnerProgramReorderR
 // ─── 파트너센터 운영 클래스 상세 ──────────────────────────────────
 // GET /partner/stores/{storeId}/programs/{programId}  (AuthGuard, PartnerGuard)
 // API Contract 스냅샷(docs/exec-plans/completed/partner-class-detail.md) SSOT.
-// 퍼블릭 상세(program-edit programDetailSchema)와 달리 이미지가 { imageUrl, thumbnailUrl|null }만,
+// 퍼블릭 상세(program-edit programDetailSchema)와 달리 이미지가 { imageUrl }만,
 // status enum 전체(DRAFT/ACTIVE/INACTIVE) 반환. serve-UPLOADED-only.
 
 export const partnerProgramDetailImageSchema = z.object({
     programImageId: z.string().meta({ example: 'program-image-uuid-001' }),
     imageUrl: z.string().meta({ example: 'https://cdn.todam.app/programs/pottery-01.png' }),
-    thumbnailUrl: z
-        .string()
-        .meta({ example: 'https://cdn.todam.app/programs/pottery-01-thumb.png' })
-        .nullable(),
     isThumbnail: z.boolean().meta({ example: true }),
 });
 export type PartnerProgramDetailImage = z.infer<typeof partnerProgramDetailImageSchema>;

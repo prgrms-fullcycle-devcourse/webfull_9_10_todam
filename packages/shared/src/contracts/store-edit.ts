@@ -1,9 +1,14 @@
 import { z } from 'zod';
 
-import { OcrStatus } from '../enums/ocr-status';
 import { StoreStatus } from '../enums/store-status';
 
-import { businessNumberSchema, emailSchema, phoneSchema, slugSchema } from './fields';
+import {
+    businessNumberSchema,
+    businessStartDateSchema,
+    emailSchema,
+    phoneSchema,
+    slugSchema,
+} from './fields';
 import { convenienceInfoSchema, operatingHourInputSchema } from './store-registration';
 
 // ─── 에러 코드 (web mock·api 공통 계약) ──────────────────────────
@@ -24,10 +29,6 @@ export type StoreEditErrorCode = (typeof StoreEditErrorCode)[keyof typeof StoreE
 export const storeImageSchema = z.object({
     id: z.string().meta({ example: 'img-uuid-001' }),
     imageUrl: z.string().meta({ example: 'https://cdn.todam.app/stores/todam-studio/01.jpg' }),
-    thumbnailUrl: z
-        .string()
-        .meta({ example: 'https://cdn.todam.app/stores/todam-studio/01_thumb.jpg' })
-        .nullable(),
     isThumbnail: z.boolean().meta({ example: true }),
     sortOrder: z.number().meta({ example: 1 }),
 });
@@ -40,7 +41,10 @@ export const storeBusinessDocumentSchema = z.object({
     businessName: z.string().meta({ example: '흙담' }),
     businessNumber: z.string().meta({ example: '555-55-55555' }),
     businessAddress: z.string().meta({ example: '서울특별시 성동구 둑섬로 273(성수동)' }),
-    ocrStatus: z.nativeEnum(OcrStatus).meta({ example: OcrStatus.VERIFIED }).nullable(),
+    startDate: z
+        .string()
+        .meta({ example: '20190315', description: '개업일자 YYYYMMDD. 미입력 시 null.' })
+        .nullable(),
 });
 export type StoreBusinessDocument = z.infer<typeof storeBusinessDocumentSchema>;
 
@@ -203,6 +207,10 @@ export const businessDocumentUpdateRequestSchema = z.object({
                 'https://todam-prod-assets.s3.ap-northeast-2.amazonaws.com/business-documents/uuid.pdf',
             description: '사업자등록증 파일 S3 URL. null 전달 시 파일 제거.',
         })
+        .nullable()
+        .optional(),
+    startDate: businessStartDateSchema
+        .meta({ example: '20190315', description: '개업일자 YYYYMMDD. 반려 후 재수정 가능.' })
         .nullable()
         .optional(),
 });

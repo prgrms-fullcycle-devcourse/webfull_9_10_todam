@@ -95,7 +95,7 @@ export const partnerArtworkListItemSchema = z.object({
     reserverName: z.string(),
     status: artworkStatusValueSchema,
     estimatedCompletedAt: z.string().nullable(),
-    thumbnailUrl: z.string().nullable(),
+    imageUrl: z.string().nullable(),
     updatedAt: z.string(),
     scheduledAt: z.string(),
     programTitle: z.string(),
@@ -231,7 +231,6 @@ const artworkDeliverySchema = z.object({
 
 const artworkPhotoSchema = z.object({
     id: z.string(),
-    thumbnailUrl: z.string().nullable(),
     imageUrl: z.string(),
 });
 

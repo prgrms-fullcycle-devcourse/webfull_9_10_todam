@@ -1,12 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { createStoreImageRequestSchema } from '@todam/shared';
+import { createStoreImageRequestSchema, createStoreImageResultSchema } from '@todam/shared';
 import { createZodDto } from 'nestjs-zod';
 
-// 요청 SSOT = @todam/shared(zod). 검증은 컨트롤러 param ZodValidationPipe.
+// 요청·응답 SSOT = @todam/shared(zod). 요청 검증은 컨트롤러 ZodValidationPipe, 응답은 Swagger 문서화.
 export class CreateStoreImageDto extends createZodDto(createStoreImageRequestSchema) {}
-
-export class CreateStoreImageResponseDto {
-    @ApiProperty() imageId!: string;
-    @ApiProperty() uploadUrl!: string;
-    @ApiProperty() imageUrl!: string;
-}
+export class CreateStoreImageResponseDto extends createZodDto(createStoreImageResultSchema) {}
