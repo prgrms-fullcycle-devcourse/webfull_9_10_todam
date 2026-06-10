@@ -84,6 +84,14 @@ export const programReviewListResultSchema = z.object({
 });
 export type ProgramReviewListResult = z.infer<typeof programReviewListResultSchema>;
 
+// GET /stores/{slug}/programs/{programId}/reviews 쿼리 파라미터.
+export const programReviewListQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).default(10),
+    sort: programReviewSortSchema.default('latest'),
+});
+export type ProgramReviewListQuery = z.infer<typeof programReviewListQuerySchema>;
+
 // ─── PATCH /partner/stores/{storeId}/programs/{programId} ────────
 export const programEditRequestSchema = z.object({
     title: z
