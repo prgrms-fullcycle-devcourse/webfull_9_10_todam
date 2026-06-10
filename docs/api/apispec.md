@@ -414,8 +414,7 @@
         "email": "partner@example.com",
         "businessName": "토담 공방",
         "businessNumber": "123-45-67890",
-        "businessAddress": "서울특별시 성동구 성수이로 12길 34",
-        "ocrStatus": "VERIFIED"
+        "businessAddress": "서울특별시 성동구 성수이로 12길 34"
       },
       "publishedAt": "2026-05-20T10:00:00.000Z",
       "createdAt": "2026-05-18T12:00:00.000Z"
@@ -1423,8 +1422,7 @@
           "businessNumber": "123-45-67890",
           "ownerName": "김파트너",
           "email": "partner@example.com",
-          "documentUrl": "https://cdn.todam.app/documents/business-license_01.jpg",
-          "ocrStatus": "VERIFIED"
+          "documentUrl": "https://cdn.todam.app/documents/business-license_01.jpg"
         }
       }
     ],
@@ -4058,7 +4056,6 @@ documentImage: (파일, JPG/PNG/PDF, 최대 5MB)
     "document": {
       "id": "doc-uuid-001",
       "documentUrl": "https://s3.amazonaws.com/todam/docs/business-license.jpg",
-      "ocrStatus": "VERIFIED",
       "extractedData": {
         "ownerName": "김토담",
         "businessName": "토담 공방",
