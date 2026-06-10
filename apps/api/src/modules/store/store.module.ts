@@ -17,6 +17,7 @@ import { GetSlugAvailabilityUseCase } from './application/use-cases/get-slug-ava
 import { GetStoreDetailUseCase } from './application/use-cases/get-store-detail.use-case';
 import { ListStoreProgramsUseCase } from './application/use-cases/list-store-programs.use-case';
 import { ListStoreReviewsUseCase } from './application/use-cases/list-store-reviews.use-case';
+import { ListProgramReviewsUseCase } from './application/use-cases/list-program-reviews.use-case';
 import { ToggleFavoriteStoreUseCase } from './application/use-cases/toggle-favorite-store.use-case';
 import { ListFavoriteStoresUseCase } from './application/use-cases/list-favorite-stores.use-case';
 import { GetPartnerCurrentStoreUseCase } from './application/use-cases/get-partner-current-store.use-case';
@@ -31,6 +32,7 @@ import {
     PartnerOnboardingReader,
     PartnerStoreDetailReader,
     PartnerStoresReader,
+    ProgramReviewsReader,
     SlugAvailabilityReader,
     StoreDetailReader,
     StoreProgramsReader,
@@ -53,6 +55,7 @@ import { PrismaSlugAvailabilityReader } from './infrastructure/persistence/prism
 import { PrismaStoreDetailReader } from './infrastructure/persistence/prisma-store-detail.reader';
 import { PrismaStoreProgramsReader } from './infrastructure/persistence/prisma-store-programs.reader';
 import { PrismaStoreReviewsReader } from './infrastructure/persistence/prisma-store-reviews.reader';
+import { PrismaProgramReviewsReader } from './infrastructure/persistence/prisma-program-reviews.reader';
 import { PrismaStoresReader } from './infrastructure/persistence/prisma-stores.reader';
 import { PrismaCreateStoreCommand } from './infrastructure/persistence/prisma-create-store.command';
 import { PrismaToggleFavoriteStoreCommand } from './infrastructure/persistence/prisma-toggle-favorite-store.command';
@@ -82,6 +85,7 @@ import { StoreController } from './presentation/controllers/store.controller';
         GetStoreDetailUseCase,
         ListStoreProgramsUseCase,
         ListStoreReviewsUseCase,
+        ListProgramReviewsUseCase,
         ToggleFavoriteStoreUseCase,
         ListFavoriteStoresUseCase,
         GetPartnerCurrentStoreUseCase,
@@ -104,6 +108,7 @@ import { StoreController } from './presentation/controllers/store.controller';
         { provide: StoreDetailReader, useClass: PrismaStoreDetailReader },
         { provide: StoreProgramsReader, useClass: PrismaStoreProgramsReader },
         { provide: StoreReviewsReader, useClass: PrismaStoreReviewsReader },
+        { provide: ProgramReviewsReader, useClass: PrismaProgramReviewsReader },
         { provide: StoresReader, useClass: PrismaStoresReader },
         PartnerGuard,
         OptionalAuthGuard,

@@ -14,6 +14,7 @@ import {
     isRatingHighCursor,
     type ReviewCursorPayload,
 } from './store-reviews-cursor';
+import { maskNickname } from './review-author-mask.util';
 
 const DEFAULT_LIMIT = 10;
 const DEFAULT_SORT: StoreReviewSort = 'latest';
@@ -155,7 +156,7 @@ export class PrismaStoreReviewsReader {
     private toDto(row: ReviewRow): StoreReviewListItem {
         return {
             id: row.id,
-            nickname: this.maskNickname(row.user.nickname),
+            nickname: maskNickname(row.user.nickname),
             rating: row.rating,
             content: row.content ?? '',
             photos: this.toPhotos(row.photos),
@@ -176,20 +177,5 @@ export class PrismaStoreReviewsReader {
             .map((p) => ({
                 imageUrl: p.imageUrl,
             }));
-    }
-
-    // 작성자명 마스킹: 앞 3글자만 노출, 나머지는 길이만큼 '*'.
-    // 3글자 이하면 첫 글자만 노출하고 나머지 '*' (최소 1개). 빈 문자열이면 '*'.
-    private maskNickname(nickname: string): string {
-        const name = nickname ?? '';
-        if (name.length === 0) {
-            return '*';
-        }
-        if (name.length <= 3) {
-            const visible = name.slice(0, 1);
-            return visible + '*'.repeat(Math.max(name.length - 1, 1));
-        }
-        const visible = name.slice(0, 3);
-        return visible + '*'.repeat(name.length - 3);
     }
 }

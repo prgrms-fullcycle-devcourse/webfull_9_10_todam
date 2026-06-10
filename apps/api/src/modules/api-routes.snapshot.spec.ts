@@ -247,6 +247,13 @@ describe('API route baseline', () => {
             },
             {
                 controller: 'StoreController',
+                handler: 'listProgramReviews',
+                method: 'GET',
+                path: '/stores/:slug/programs/:programId/reviews',
+                guards: [],
+            },
+            {
+                controller: 'StoreController',
                 handler: 'listStoreReviews',
                 method: 'GET',
                 path: '/stores/:slug/reviews',
