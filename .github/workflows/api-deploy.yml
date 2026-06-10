@@ -73,6 +73,7 @@ jobs:
               --network todam-net \
               --restart unless-stopped \
               --env-file .env.api \
+              -e FRONTEND_URL=${{ secrets.FRONTEND_URL }} \
               -p 127.0.0.1:4000:4000 \
               "$IMAGE"
 
