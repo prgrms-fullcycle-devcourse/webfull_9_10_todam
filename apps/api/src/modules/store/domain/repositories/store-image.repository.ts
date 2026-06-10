@@ -3,7 +3,6 @@ export type StoreImageStatus = 'PENDING' | 'UPLOADED' | 'FAILED';
 export interface StoreImage {
     id: string;
     imageUrl: string;
-    thumbnailUrl: string | null;
     status: StoreImageStatus;
 }
 

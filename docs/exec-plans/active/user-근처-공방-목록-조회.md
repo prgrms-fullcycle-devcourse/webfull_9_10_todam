@@ -53,7 +53,7 @@
 | `convenienceInfo` | object | `{ parking: boolean, pet: boolean, wifi: boolean }` |
 | `autoConfirm` | boolean | 자동 예약 확정 여부 |
 | `region` | object | `{ sido, sigungu, dong }` (예: `{"서울","성동구","성수동"}`). 카카오 coord2regioncode를 공방 등록·주소수정 시 1회 호출해 Store 컬럼에 저장 — 조회 시 외부 호출 없음. 근처 카드=`dong`, 검색 카드=전체 문자열. |
-| `thumbnailUrl` | string \| null | 공방 대표 이미지(StoreImage, isThumbnail). 없으면 `null` |
+| `imageUrl` | string \| null | 공방 대표 이미지(StoreImage, isThumbnail). 없으면 `null` |
 | `rating` | number \| null | `Review.rating` 평균(`isVisible=true`). 리뷰 0건이면 `null` |
 | `reviewCount` | number | 리뷰 수(`isVisible=true`). 없으면 `0` |
 | `distance` | number | 사용자 좌표 기준 거리, **미터(정수)**. `Store.latitude/longitude` 기준. FE가 km 포맷 |
@@ -106,7 +106,7 @@
         "convenienceInfo": { "parking": true, "pet": false, "wifi": true },
         "autoConfirm": false,
         "region": { "sido": "서울", "sigungu": "성동구", "dong": "성수동" },
-        "thumbnailUrl": "https://cdn.todam.example/stores/plus-doja/thumb.jpg",
+        "imageUrl": "https://cdn.todam.example/stores/plus-doja/01.jpg",
         "rating": 4.9,
         "reviewCount": 253,
         "distance": 1200,

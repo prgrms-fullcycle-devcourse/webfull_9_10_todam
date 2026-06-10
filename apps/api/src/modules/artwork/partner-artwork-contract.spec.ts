@@ -14,7 +14,7 @@ describe('partner artwork shared contracts', () => {
                         reserverName: 'Todam',
                         status: 'DRYING',
                         estimatedCompletedAt: null,
-                        thumbnailUrl: null,
+                        imageUrl: null,
                         updatedAt: '2026-06-08T00:00:00.000Z',
                         scheduledAt: '2026-06-01T00:00:00.000Z',
                         programTitle: 'Pottery',

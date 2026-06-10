@@ -53,7 +53,7 @@
 | `nickname`  | string                       | 작성자 닉네임                          |
 | `rating`    | number (1~5)                 | 별점                                   |
 | `content`   | string \| null               | 리뷰 본문 (최대 500자)                 |
-| `photos`    | `{ thumbnailUrl: string }[]` | 썸네일 이미지 목록 (최대 3장, 240x240) |
+| `photos`    | `{ imageUrl: string }[]`     | 이미지 목록 (최대 3장)                  |
 | `createdAt` | string (ISO 8601)            | 작성일시                               |
 
 #### Pagination
@@ -105,7 +105,7 @@
                 "content": "정말 즐거운 체험이었습니다. 작품도 예쁘게 완성되었어요!",
                 "photos": [
                     {
-                        "thumbnailUrl": "https://cdn.todam.app/reviews/review-uuid-001/01_thumb.jpg"
+                        "imageUrl": "https://cdn.todam.app/reviews/review-uuid-001/01.jpg"
                     }
                 ],
                 "createdAt": "2026-05-10T12:00:00.000Z"

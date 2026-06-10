@@ -44,7 +44,7 @@ export class PrismaPublicProgramDetailReader extends PublicProgramDetailReader {
                 images: {
                     where: { status: 'UPLOADED' },
                     orderBy: { sortOrder: 'asc' },
-                    select: { imageUrl: true, thumbnailUrl: true },
+                    select: { imageUrl: true },
                 },
             },
         });
@@ -75,7 +75,6 @@ export class PrismaPublicProgramDetailReader extends PublicProgramDetailReader {
                 status: program.status as ProgramStatus,
                 images: program.images.map((image) => ({
                     imageUrl: image.imageUrl,
-                    thumbnailUrl: image.thumbnailUrl,
                 })),
             },
         };

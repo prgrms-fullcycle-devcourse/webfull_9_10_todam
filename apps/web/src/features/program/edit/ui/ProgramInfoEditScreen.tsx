@@ -41,7 +41,7 @@ export function ProgramInfoEditScreen({ programId, program }: Props) {
         program.images.map((img) => ({
             ...img,
             id: img.programImageId,
-            src: img.thumbnailUrl ?? img.imageUrl,
+            src: img.imageUrl,
         })),
     );
 

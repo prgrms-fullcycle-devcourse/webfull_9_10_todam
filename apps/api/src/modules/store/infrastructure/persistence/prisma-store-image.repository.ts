@@ -41,7 +41,7 @@ export class PrismaStoreImageRepository extends StoreImageRepository {
     findByStoreAndId(storeId: string, imageId: string): Promise<StoreImage | null> {
         return this.prisma.storeImage.findFirst({
             where: { id: imageId, storeId },
-            select: { id: true, imageUrl: true, thumbnailUrl: true, status: true },
+            select: { id: true, imageUrl: true, status: true },
         });
     }
 

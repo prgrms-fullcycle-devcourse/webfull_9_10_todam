@@ -10,7 +10,6 @@ import { ProgramStatus } from '../enums/program-status';
 
 export const storeDetailImageSchema = z.object({
     imageUrl: z.string(),
-    thumbnailUrl: z.string().nullable(), // Prisma StoreImage.thumbnailUrl 은 nullable
 });
 export type StoreDetailImage = z.infer<typeof storeDetailImageSchema>;
 
@@ -64,7 +63,7 @@ export const publicProgramListItemSchema = z.object({
     durationMinutes: z.number(),
     leadTimeDays: z.number(),
     deliverable: z.boolean(),
-    thumbnailUrl: z.string().nullable(),
+    imageUrl: z.string().nullable(),
     status: z.literal(ProgramStatus.ACTIVE),
     sortOrder: z.number(),
 });

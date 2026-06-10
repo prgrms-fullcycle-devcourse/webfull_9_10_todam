@@ -28,7 +28,7 @@ type ReviewRow = Prisma.ReviewGetPayload<{
         user: { select: { nickname: true } };
         reservation: { select: { program: { select: { id: true; title: true } } } };
         photos: {
-            select: { imageUrl: true; thumbnailUrl: true; sortOrder: true; id: true };
+            select: { imageUrl: true; sortOrder: true; id: true };
         };
     };
 }>;
@@ -41,7 +41,7 @@ const REVIEW_SELECT = {
     user: { select: { nickname: true } },
     reservation: { select: { program: { select: { id: true, title: true } } } },
     photos: {
-        select: { imageUrl: true, thumbnailUrl: true, sortOrder: true, id: true },
+        select: { imageUrl: true, sortOrder: true, id: true },
     },
 } satisfies Prisma.ReviewSelect;
 
@@ -175,8 +175,6 @@ export class PrismaStoreReviewsReader {
             })
             .map((p) => ({
                 imageUrl: p.imageUrl,
-                // thumbnailUrl 미설정 시 원본으로 대체(목록에서 깨진 링크 방지).
-                thumbnailUrl: p.thumbnailUrl ?? p.imageUrl,
             }));
     }
 

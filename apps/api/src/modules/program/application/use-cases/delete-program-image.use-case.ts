@@ -48,8 +48,8 @@ export class DeleteProgramImageUseCase {
             );
         }
 
-        // S3 원본·썸네일 삭제 → 실패해도 row 삭제는 진행(고아 row 방지).
-        await this.s3.deleteImageObjects([image.imageUrl, image.thumbnailUrl]);
+        // S3 원본 삭제 → 실패해도 row 삭제는 진행(고아 row 방지).
+        await this.s3.deleteImageObjects([image.imageUrl]);
 
         await this.images.delete(imageId);
     }

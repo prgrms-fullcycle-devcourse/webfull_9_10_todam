@@ -11,7 +11,6 @@ export interface ReservationForReview {
 // ─── ReviewPhoto 입력(create/update 공통) ────────────────────────────
 export interface ReviewPhotoInput {
     imageUrl: string;
-    thumbnailUrl: null;
     sortOrder: number;
 }
 

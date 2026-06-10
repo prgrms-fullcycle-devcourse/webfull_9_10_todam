@@ -46,7 +46,7 @@ export function StudioReviewPreview({ slug }: { slug: string }) {
     return (
         <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto py-2">
             {previews.map((review) => {
-                const thumbnail = review.photos[0]?.thumbnailUrl;
+                const thumbnail = review.photos[0]?.imageUrl;
                 return (
                     <CardItem
                         key={review.id}

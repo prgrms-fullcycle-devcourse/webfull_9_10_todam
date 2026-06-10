@@ -84,7 +84,7 @@
 
 - `Artwork`: 예약과 1:1. `status`, `internalMemo`, `customerMemo`, `estimatedCompletedAt`.
 - `ArtworkLog`: 상태 변경 감사 로그. `fromStatus`, `toStatus`, `changedBy`, `memo`, `createdAt`.
-- `ArtworkPhoto`: `ArtworkLog`에 종속. `imageUrl`, `thumbnailUrl`, `status`.
+- `ArtworkPhoto`: `ArtworkLog`에 종속. `imageUrl`, `status`.
 - `Delivery`: 예약과 1:1. 수령인/주소/택배사/운송장/발송일.
 - `ArtworkStatus`: `RESERVED → VISITED → DRYING → BISQUE_FIRING → GLAZING → GLAZE_FIRING → COMPLETED`; `CANCELED`는 종료 상태.
 - 수령 이후 상태는 `ReservationStatus.SHIPPED | DELIVERED | PICKUP_READY | PICKUP_DONE`이 담당한다.
@@ -107,7 +107,7 @@
         "reserverName": "김토담",
         "status": "DRYING",
         "estimatedCompletedAt": "2026-07-01T00:00:00.000Z",
-        "thumbnailUrl": "https://cdn.todam.app/artworks/artwork-uuid-001/thumb.jpg",
+        "imageUrl": "https://cdn.todam.app/artworks/artwork-uuid-001/01.jpg",
         "updatedAt": "2026-06-02T10:00:00.000Z"
       }],
       "nextCursor": "artwork-uuid-002",
@@ -158,7 +158,7 @@
         "internalMemo": "물레 성형 완료, 균열 없음",
         "estimatedCompletedAt": "2026-07-01T00:00:00.000Z",
         "elapsedDays": 5,
-        "currentStagePhotos": [{ "id": "photo-uuid-001", "thumbnailUrl": "...", "imageUrl": "..." }],
+        "currentStagePhotos": [{ "id": "photo-uuid-001", "imageUrl": "..." }],
         "logs": [{ "id": "log-uuid-001", "fromStatus": "VISITED", "toStatus": "DRYING", "changedByNickname": "토담공방", "memo": "건조 시작", "createdAt": "2026-06-02T10:00:00.000Z" }]
       }
     }

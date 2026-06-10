@@ -16,7 +16,7 @@ export class PrismaProgramImageRepository extends ProgramImageRepository {
     findByProgramAndId(programId: string, imageId: string): Promise<ProgramImage | null> {
         return this.prisma.programImage.findFirst({
             where: { id: imageId, programId },
-            select: { id: true, imageUrl: true, thumbnailUrl: true, status: true },
+            select: { id: true, imageUrl: true, status: true },
         }) as Promise<ProgramImage | null>;
     }
 

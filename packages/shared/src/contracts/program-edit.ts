@@ -17,10 +17,6 @@ export type ProgramEditErrorCode = (typeof ProgramEditErrorCode)[keyof typeof Pr
 export const programImageSchema = z.object({
     programImageId: z.string().meta({ example: 'program-image-uuid-001' }).optional(),
     imageUrl: z.string().meta({ example: 'https://cdn.todam.app/programs/pottery-01.png' }),
-    thumbnailUrl: z
-        .string()
-        .meta({ example: 'https://cdn.todam.app/programs/pottery-01-thumb.png' })
-        .nullable(),
     isThumbnail: z.boolean().meta({ example: true }).optional(),
 });
 export type ProgramImage = z.infer<typeof programImageSchema>;
@@ -61,7 +57,7 @@ export const programReviewSortSchema = z.enum(['latest', 'rating_high']);
 export type ProgramReviewSort = z.infer<typeof programReviewSortSchema>;
 
 export const programReviewPhotoSchema = z.object({
-    thumbnailUrl: z.string().meta({ example: 'https://cdn.todam.app/reviews/review-01-thumb.jpg' }),
+    imageUrl: z.string().meta({ example: 'https://cdn.todam.app/reviews/review-01.jpg' }),
 });
 export type ProgramReviewPhoto = z.infer<typeof programReviewPhotoSchema>;
 

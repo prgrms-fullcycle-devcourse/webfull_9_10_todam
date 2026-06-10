@@ -116,7 +116,6 @@ export function StudioDetailClient() {
     const carouselImages = store.images.map((img, idx) => ({
         id: `img-${idx}`,
         imageUrl: img.imageUrl,
-        thumbnailUrl: img.thumbnailUrl ?? img.imageUrl, // thumbnail 없으면 원본으로 폴백
         isThumbnail: idx === 0,
         sortOrder: idx,
     }));
@@ -309,7 +308,7 @@ function ReviewPreviewCard({
         nickname: string;
         rating: number;
         content: string;
-        photos: { imageUrl: string; thumbnailUrl: string }[];
+        photos: { imageUrl: string }[];
         programTitle: string;
         createdAt: string;
     };
@@ -342,7 +341,7 @@ function ReviewPreviewCard({
                             className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted"
                         >
                             <Image
-                                src={photo.thumbnailUrl}
+                                src={photo.imageUrl}
                                 alt=""
                                 fill
                                 sizes="80px"

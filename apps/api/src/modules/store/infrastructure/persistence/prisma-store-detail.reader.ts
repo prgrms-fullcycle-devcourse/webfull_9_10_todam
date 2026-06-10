@@ -46,7 +46,7 @@ export class PrismaStoreDetailReader {
                     // S3 업로드 확인(UPLOADED)된 이미지만 노출. PENDING/FAILED 는 깨진 링크가 된다.
                     where: { status: ImageUploadStatus.UPLOADED },
                     orderBy: { sortOrder: 'asc' },
-                    select: { imageUrl: true, thumbnailUrl: true },
+                    select: { imageUrl: true },
                 },
                 reviews: {
                     where: { isVisible: true },
@@ -97,7 +97,6 @@ export class PrismaStoreDetailReader {
                 publishedAt: (store.publishedAt ?? new Date(0)).toISOString(),
                 images: store.images.map((image) => ({
                     imageUrl: image.imageUrl,
-                    thumbnailUrl: image.thumbnailUrl,
                 })),
                 rating,
                 reviewCount,

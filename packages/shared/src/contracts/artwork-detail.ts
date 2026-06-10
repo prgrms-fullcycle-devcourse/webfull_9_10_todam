@@ -8,16 +8,13 @@ import { displayStateSchema } from './reservation-list';
 // 정본(Notion API명세 DB) 기준. docs/exec-plans/active/유저 예약 - 작품 상세 조회.md
 // 의 "API Contract (스냅샷)" 섹션과 1:1로 바인딩한다. 임의 변경 금지.
 //
-// D1 (이미지 확대 원본): 정본 응답엔 `thumbnailUrl`만 명시. Prisma는 `imageUrl` NOT NULL 보유.
-//   본 contract는 `imageUrl`을 optional로 둔다. BE 정본 갱신(필수 전환) 후 required로 전환 예정.
-//   FE는 확대보기 시 `imageUrl ?? thumbnailUrl` 폴백.
+// D1 (이미지 확대 원본): 응답은 `imageUrl`(원본)만 제공. 리사이징은 next/image 위임.
 // D5 (단계별 displayState): 매핑 SSOT는 BE 응답이 직접 제공. FE에서 매핑 로직 작성 금지.
 //   `currentStage.displayState`/`timeline[].displayState`를 그대로 렌더만 한다.
 
-/** 단계별 사진. D1: imageUrl optional(BE 정본 갱신 후 required 전환 예정). */
+/** 단계별 사진. */
 export const artworkPhotoSchema = z.object({
-    thumbnailUrl: z.string(),
-    imageUrl: z.string().optional(),
+    imageUrl: z.string(),
 });
 export type ArtworkPhoto = z.infer<typeof artworkPhotoSchema>;
 

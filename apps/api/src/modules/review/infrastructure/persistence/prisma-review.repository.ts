@@ -66,7 +66,6 @@ export class PrismaReviewRepository extends ReviewRepository {
                     photos: {
                         create: input.photos.map((p) => ({
                             imageUrl: p.imageUrl,
-                            thumbnailUrl: p.thumbnailUrl,
                             sortOrder: p.sortOrder,
                         })),
                     },
@@ -125,7 +124,6 @@ export class PrismaReviewRepository extends ReviewRepository {
                     photos: {
                         create: input.photos.map((p) => ({
                             imageUrl: p.imageUrl,
-                            thumbnailUrl: p.thumbnailUrl,
                             sortOrder: p.sortOrder,
                         })),
                     },

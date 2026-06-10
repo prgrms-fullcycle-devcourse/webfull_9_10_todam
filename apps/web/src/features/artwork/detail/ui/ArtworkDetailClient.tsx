@@ -11,9 +11,9 @@ import { ArtworkDetailEmpty } from './ArtworkDetailEmpty';
 import { ArtworkDetailError } from './ArtworkDetailError';
 
 // 작품 이미지 확대 패널 (Figma `8505:16496`). 오버레이·Esc·닫기는 전역 AppModal 이 처리.
-// D1: BE 정본은 thumbnailUrl 만 보장. imageUrl 있으면 우선.
+// 원본 imageUrl 렌더. 리사이징은 next/image 위임.
 function ArtworkImageView({ photo }: { photo: ArtworkPhoto }) {
-    const src = photo.imageUrl ?? photo.thumbnailUrl;
+    const src = photo.imageUrl;
     return (
         <div
             className="h-80 w-80 overflow-hidden rounded-[32px] bg-muted"
