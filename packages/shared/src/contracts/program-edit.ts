@@ -21,10 +21,13 @@ export const programImageSchema = z.object({
 });
 export type ProgramImage = z.infer<typeof programImageSchema>;
 
-// ─── 프로그램 상세 (GET /stores/{slug}/programs/{programId}) ─────
+// ─── 프로그램 상세 (GET /programs/{programId}) ─────
+// programId 가 PK 라 단독 식별 가능. 비공개 store 은폐는 store.status=PUBLISHED 가드가 담당.
+// storeName 은 상세 헤더/공유 텍스트용(클래스 라우트 /classes/[id] 에 slug 미포함).
 export const programDetailSchema = z.object({
     id: z.string().meta({ example: 'program-uuid-001' }),
     storeId: z.string().meta({ example: 'store-uuid-001' }),
+    storeName: z.string().meta({ example: '흙과 사람' }),
     title: z.string().meta({ example: '물레 체험 기초반' }),
     description: z
         .string()
@@ -52,7 +55,7 @@ export const programDetailResultSchema = z.object({
 });
 export type ProgramDetailResult = z.infer<typeof programDetailResultSchema>;
 
-// ─── 프로그램 리뷰 목록 (GET /stores/{slug}/programs/{programId}/reviews) ─────
+// ─── 프로그램 리뷰 목록 (GET /programs/{programId}/reviews) ─────
 export const programReviewSortSchema = z.enum(['latest', 'rating_high']);
 export type ProgramReviewSort = z.infer<typeof programReviewSortSchema>;
 

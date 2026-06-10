@@ -9,23 +9,14 @@ import { serverApiFetch } from '@/shared/api/server';
 
 type PageParams = {
     params: Promise<{ id: string }>;
-    searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export async function generateMetadata({ params, searchParams }: PageParams): Promise<Metadata> {
+export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
     const { id } = await params;
-    const sp = await searchParams;
-    const storeSlug =
-        (typeof sp.store === 'string' && sp.store) ||
-        (typeof sp.slug === 'string' && sp.slug) ||
-        '';
-
-    // 쿼리에 공방 slug 없으면 상세를 특정 못 함 → 메타 fetch 생략, 기본 타이틀.
-    if (!storeSlug) return { title: '클래스 상세' };
 
     try {
         const { program } = await serverApiFetch<ProgramDetailResult>(
-            `/stores/${encodeURIComponent(storeSlug)}/programs/${encodeURIComponent(id)}`,
+            `/programs/${encodeURIComponent(id)}`,
             { next: { revalidate: 300 } },
         );
         const title = program.title;

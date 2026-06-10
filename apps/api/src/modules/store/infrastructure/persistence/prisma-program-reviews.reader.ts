@@ -15,17 +15,16 @@ export class PrismaProgramReviewsReader {
     constructor(private readonly prisma: PrismaService) {}
 
     async execute(
-        slug: string,
         programId: string,
         query: ListProgramReviewsQuery,
     ): Promise<ListProgramReviewsResult> {
         const { page, limit, sort } = query;
 
-        // 프로그램 존재·소속·공개 검증: slug 공방이 PUBLISHED 이고 해당 프로그램이 소속된 경우만 허용.
+        // 프로그램 존재·공개 검증: 소속 공방이 PUBLISHED 인 경우만 허용(가시성 가드).
         const program = await this.prisma.program.findFirst({
             where: {
                 id: programId,
-                store: { slug, status: StoreStatus.PUBLISHED },
+                store: { status: StoreStatus.PUBLISHED },
             },
             select: { id: true },
         });

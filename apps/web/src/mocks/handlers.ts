@@ -43,7 +43,7 @@ import { http, HttpResponse } from 'msw';
 
 import {
     findArtworkDetail,
-    findProgramBySlugAndId,
+    findProgramById,
     findProgramByStoreAndId,
     findPublicStoreBySlug,
     updateProgram,
@@ -100,12 +100,11 @@ export const handlers = [
 
     // ─── 프로그램 상세 조회 (퍼블릭, preload용) ─────────────────────────
     // GET /stores/{slug}/programs/{programId}
-    http.get(`${API}/stores/:slug/programs/:programId`, ({ params }) => {
-        const slug = String(params.slug);
+    http.get(`${API}/programs/:programId`, ({ params }) => {
         const programId = String(params.programId);
-        const path = `/api/v1/stores/${slug}/programs/${programId}`;
+        const path = `/api/v1/programs/${programId}`;
 
-        const program = findProgramBySlugAndId(slug, programId);
+        const program = findProgramById(programId);
         if (!program) {
             return fail(
                 path,
@@ -196,16 +195,15 @@ export const handlers = [
         );
     }),
 
-    // GET /stores/{slug}/programs/{programId}/reviews
-    http.get(`${API}/stores/:slug/programs/:programId/reviews`, ({ request, params }) => {
-        const slug = String(params.slug);
+    // GET /programs/{programId}/reviews
+    http.get(`${API}/programs/:programId/reviews`, ({ request, params }) => {
         const programId = String(params.programId);
         const url = new URL(request.url);
         const page = Number(url.searchParams.get('page') ?? '1');
         const limit = Number(url.searchParams.get('limit') ?? '10');
-        const path = `/api/v1/stores/${slug}/programs/${programId}/reviews`;
+        const path = `/api/v1/programs/${programId}/reviews`;
 
-        const program = findProgramBySlugAndId(slug, programId);
+        const program = findProgramById(programId);
         if (!program) {
             return fail(
                 path,

@@ -2,7 +2,7 @@
 
 import { BottomBar, Button, RightIcon, ShareIcon, Tag } from '@todam/ui';
 import { formatPrice } from '@todam/shared';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import {
     ClassDetailHero,
@@ -20,17 +20,13 @@ import { ClassInfoTable } from './ClassInfoTable';
 export function PublicClassDetailClient() {
     const router = useRouter();
     const params = useParams<{ id: string }>();
-    const searchParams = useSearchParams();
     const programId = params.id;
 
-    // 클래스 상세는 `?store=<slug>&storeName=<name>` 쿼리로 진입(목록 링크가 부착).
-    // 쿼리 없이 직접 진입 시 slug 없음 → 쿼리 미실행 → !program 분기로 에러 상태 노출.
-    const storeSlug = searchParams.get('store') ?? searchParams.get('slug') ?? '';
-    const storeName = searchParams.get('storeName') ?? '';
-
-    const detailQuery = usePublicProgramDetail(storeSlug, programId);
-    const reviewsQuery = useProgramReviews(storeSlug, programId, { limit: 3 });
+    // programId 단독 조회(라우트에 slug 없음). 공방명은 응답(storeName)에서 파생 → 헤더/공유 텍스트.
+    const detailQuery = usePublicProgramDetail(programId);
+    const reviewsQuery = useProgramReviews(programId, { limit: 3 });
     const program = detailQuery.data?.program;
+    const storeName = program?.storeName ?? '';
     const reviewCount = reviewsQuery.data?.totalCount ?? 0;
 
     // 공유 버튼은 헤더 우측 액션 슬롯(Figma 클래스 상세 = sub 헤더 좌 back / 우 share).
@@ -49,7 +45,7 @@ export function PublicClassDetailClient() {
         ),
     });
 
-    const reviewsHref = `/classes/${programId}/reviews?store=${encodeURIComponent(storeSlug)}&storeName=${encodeURIComponent(storeName)}`;
+    const reviewsHref = `/classes/${programId}/reviews`;
     const reserveHref = program
         ? `/classes/${program.id}/reserve?title=${encodeURIComponent(program.title)}&price=${program.price}&deliverable=${program.deliverable}`
         : '#';

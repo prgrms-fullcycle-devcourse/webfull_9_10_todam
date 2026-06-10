@@ -1,4 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { StoreStatus } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import {
@@ -16,13 +17,14 @@ export class PrismaPublicProgramDetailReader extends PublicProgramDetailReader {
         super();
     }
 
-    async execute(slug: string, programId: string): Promise<ProgramDetailResult> {
-        // 퍼블릭 조회: 공방 slug 로 식별, ACTIVE 클래스만 노출(DRAFT/INACTIVE 은폐).
+    async execute(programId: string): Promise<ProgramDetailResult> {
+        // 퍼블릭 조회: programId 단독 식별. ACTIVE 클래스 + store PUBLISHED 만 노출
+        // (DRAFT/INACTIVE 클래스 및 비공개 store 은폐 — 가시성 가드).
         const program = await this.prisma.program.findFirst({
             where: {
                 id: programId,
                 status: 'ACTIVE',
-                store: { slug },
+                store: { status: StoreStatus.PUBLISHED },
             },
             select: {
                 id: true,
@@ -39,7 +41,8 @@ export class PrismaPublicProgramDetailReader extends PublicProgramDetailReader {
                 difficulty: true,
                 status: true,
                 // 정원은 공방 단위(Store.maxCapacityPerSlot) — 클래스 상세 "정원 최대 N명".
-                store: { select: { maxCapacityPerSlot: true } },
+                // name 은 상세 헤더/공유 텍스트용(라우트에 slug 미포함).
+                store: { select: { maxCapacityPerSlot: true, name: true } },
                 // serve-UPLOADED-only 정책: PENDING/FAILED 이미지는 은폐.
                 images: {
                     where: { status: 'UPLOADED' },
@@ -61,6 +64,7 @@ export class PrismaPublicProgramDetailReader extends PublicProgramDetailReader {
             program: {
                 id: program.id,
                 storeId: program.storeId,
+                storeName: program.store.name,
                 title: program.title,
                 description: program.description,
                 materials: program.materials,

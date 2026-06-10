@@ -146,12 +146,7 @@ export function PublicStudioDetailClient() {
                     {!programsQuery.isLoading && hasPrograms && (
                         <div className="flex flex-col gap-2">
                             {programs.map((program) => (
-                                <PublicClassListItem
-                                    key={program.id}
-                                    program={program}
-                                    slug={slug}
-                                    storeName={store.name}
-                                />
+                                <PublicClassListItem key={program.id} program={program} />
                             ))}
                         </div>
                     )}

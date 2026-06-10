@@ -3,14 +3,13 @@
 import { formatYmd, type ProgramReview, type ProgramReviewSort } from '@todam/shared';
 import { Button, CloseIcon, Rating } from '@todam/ui';
 import Image from 'next/image';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { useProgramReviews } from '@/entities/program';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useModal } from '@/shared/model';
 
-const DEFAULT_STORE_SLUG = 'todam-pottery';
 const REVIEW_PAGE_SIZE = 10;
 
 const SORT_OPTIONS: Array<{ value: ProgramReviewSort; label: string }> = [
@@ -20,15 +19,13 @@ const SORT_OPTIONS: Array<{ value: ProgramReviewSort; label: string }> = [
 
 export function ClassReviewsClient() {
     const params = useParams<{ id: string }>();
-    const searchParams = useSearchParams();
     const programId = params.id;
-    const storeSlug = searchParams.get('store') ?? searchParams.get('slug') ?? DEFAULT_STORE_SLUG;
 
     const [sort, setSort] = useState<ProgramReviewSort>('latest');
     const [page, setPage] = useState(1);
     const { open, close } = useModal();
 
-    const reviewsQuery = useProgramReviews(storeSlug, programId, {
+    const reviewsQuery = useProgramReviews(programId, {
         page,
         limit: REVIEW_PAGE_SIZE,
         sort,
