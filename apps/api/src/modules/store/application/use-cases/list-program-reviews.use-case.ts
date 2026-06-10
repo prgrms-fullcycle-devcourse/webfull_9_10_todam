@@ -9,11 +9,7 @@ import type {
 export class ListProgramReviewsUseCase {
     constructor(private readonly reader: ProgramReviewsReader) {}
 
-    execute(
-        slug: string,
-        programId: string,
-        query: ListProgramReviewsQuery,
-    ): Promise<ListProgramReviewsResult> {
-        return this.reader.execute(slug, programId, query);
+    execute(programId: string, query: ListProgramReviewsQuery): Promise<ListProgramReviewsResult> {
+        return this.reader.execute(programId, query);
     }
 }

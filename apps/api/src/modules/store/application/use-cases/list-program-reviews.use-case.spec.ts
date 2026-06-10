@@ -8,7 +8,6 @@ import type {
     ProgramReviewsReader,
 } from '../../domain/repositories/store-readers';
 
-const SLUG = 'todam-studio';
 const PROGRAM_ID = 'prog-uuid-001';
 
 const BASE_QUERY: ListProgramReviewsQuery = { page: 1, limit: 10, sort: 'latest' };
@@ -24,10 +23,7 @@ function makeResult(overrides: Partial<ListProgramReviewsResult> = {}): ListProg
 }
 
 describe('ListProgramReviewsUseCase', () => {
-    const execute = jest.fn<
-        Promise<ListProgramReviewsResult>,
-        [string, string, ListProgramReviewsQuery]
-    >();
+    const execute = jest.fn<Promise<ListProgramReviewsResult>, [string, ListProgramReviewsQuery]>();
     const useCase = new ListProgramReviewsUseCase({ execute } as unknown as ProgramReviewsReader);
 
     beforeEach(() => {
@@ -43,7 +39,7 @@ describe('ListProgramReviewsUseCase', () => {
             ),
         );
 
-        await expect(useCase.execute(SLUG, PROGRAM_ID, BASE_QUERY)).rejects.toMatchObject({
+        await expect(useCase.execute(PROGRAM_ID, BASE_QUERY)).rejects.toMatchObject({
             errorCode: 'PROGRAM_NOT_FOUND',
         });
     });
@@ -51,9 +47,9 @@ describe('ListProgramReviewsUseCase', () => {
     it('latest 정렬로 reader 호출', async () => {
         execute.mockResolvedValue(makeResult());
 
-        await useCase.execute(SLUG, PROGRAM_ID, { page: 1, limit: 10, sort: 'latest' });
+        await useCase.execute(PROGRAM_ID, { page: 1, limit: 10, sort: 'latest' });
 
-        expect(execute).toHaveBeenCalledWith(SLUG, PROGRAM_ID, {
+        expect(execute).toHaveBeenCalledWith(PROGRAM_ID, {
             page: 1,
             limit: 10,
             sort: 'latest',
@@ -63,9 +59,9 @@ describe('ListProgramReviewsUseCase', () => {
     it('rating_high 정렬로 reader 호출', async () => {
         execute.mockResolvedValue(makeResult());
 
-        await useCase.execute(SLUG, PROGRAM_ID, { page: 1, limit: 10, sort: 'rating_high' });
+        await useCase.execute(PROGRAM_ID, { page: 1, limit: 10, sort: 'rating_high' });
 
-        expect(execute).toHaveBeenCalledWith(SLUG, PROGRAM_ID, {
+        expect(execute).toHaveBeenCalledWith(PROGRAM_ID, {
             page: 1,
             limit: 10,
             sort: 'rating_high',
@@ -82,13 +78,13 @@ describe('ListProgramReviewsUseCase', () => {
             }),
         );
 
-        const result = await useCase.execute(SLUG, PROGRAM_ID, {
+        const result = await useCase.execute(PROGRAM_ID, {
             page: 3,
             limit: 10,
             sort: 'latest',
         });
 
-        expect(execute).toHaveBeenCalledWith(SLUG, PROGRAM_ID, {
+        expect(execute).toHaveBeenCalledWith(PROGRAM_ID, {
             page: 3,
             limit: 10,
             sort: 'latest',
@@ -102,7 +98,7 @@ describe('ListProgramReviewsUseCase', () => {
             makeResult({ totalCount: 0, pagination: { currentPage: 1, totalPages: 0, limit: 10 } }),
         );
 
-        const result = await useCase.execute(SLUG, PROGRAM_ID, BASE_QUERY);
+        const result = await useCase.execute(PROGRAM_ID, BASE_QUERY);
 
         expect(result.pagination.totalPages).toBe(0);
     });
@@ -110,7 +106,7 @@ describe('ListProgramReviewsUseCase', () => {
     it('averageRating: 0건이면 0', async () => {
         execute.mockResolvedValue(makeResult({ totalCount: 0, averageRating: 0 }));
 
-        const result = await useCase.execute(SLUG, PROGRAM_ID, BASE_QUERY);
+        const result = await useCase.execute(PROGRAM_ID, BASE_QUERY);
 
         expect(result.averageRating).toBe(0);
     });
@@ -118,7 +114,7 @@ describe('ListProgramReviewsUseCase', () => {
     it('averageRating: 소수 1자리 반올림 검증(reader에 위임됨)', async () => {
         execute.mockResolvedValue(makeResult({ totalCount: 3, averageRating: 4.7 }));
 
-        const result = await useCase.execute(SLUG, PROGRAM_ID, BASE_QUERY);
+        const result = await useCase.execute(PROGRAM_ID, BASE_QUERY);
 
         expect(result.averageRating).toBe(4.7);
     });
@@ -126,7 +122,7 @@ describe('ListProgramReviewsUseCase', () => {
     it('isVisible 필터: reader 호출됨(필터 위임)', async () => {
         execute.mockResolvedValue(makeResult());
 
-        await useCase.execute(SLUG, PROGRAM_ID, BASE_QUERY);
+        await useCase.execute(PROGRAM_ID, BASE_QUERY);
 
         expect(execute).toHaveBeenCalledTimes(1);
     });
@@ -148,7 +144,7 @@ describe('ListProgramReviewsUseCase', () => {
             }),
         );
 
-        const result = await useCase.execute(SLUG, PROGRAM_ID, BASE_QUERY);
+        const result = await useCase.execute(PROGRAM_ID, BASE_QUERY);
 
         expect(result.reviews[0]!.nickname).toBe('토담***');
     });
@@ -170,7 +166,7 @@ describe('ListProgramReviewsUseCase', () => {
             }),
         );
 
-        const result = await useCase.execute(SLUG, PROGRAM_ID, BASE_QUERY);
+        const result = await useCase.execute(PROGRAM_ID, BASE_QUERY);
 
         expect(result.reviews[0]!.userId).toBe('');
     });
@@ -192,7 +188,7 @@ describe('ListProgramReviewsUseCase', () => {
             }),
         );
 
-        const result = await useCase.execute(SLUG, PROGRAM_ID, BASE_QUERY);
+        const result = await useCase.execute(PROGRAM_ID, BASE_QUERY);
 
         expect(result.reviews[0]!.photos).toEqual([
             { imageUrl: 'https://cdn.todam.app/reviews/01.jpg' },

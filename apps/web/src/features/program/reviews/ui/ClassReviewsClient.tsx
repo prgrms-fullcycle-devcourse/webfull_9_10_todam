@@ -1,51 +1,54 @@
 'use client';
 
 import { formatYmd, type ProgramReview, type ProgramReviewSort } from '@todam/shared';
-import { Button, CloseIcon, Rating } from '@todam/ui';
+import { Button, CloseIcon, Divider, Rating, SegmentedControl } from '@todam/ui';
 import Image from 'next/image';
-import { useParams, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useParams } from 'next/navigation';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useProgramReviews } from '@/entities/program';
+import { useProgramReviewsInfinite } from '@/entities/program';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useModal } from '@/shared/model';
-
-const DEFAULT_STORE_SLUG = 'todam-pottery';
-const REVIEW_PAGE_SIZE = 10;
 
 const SORT_OPTIONS: Array<{ value: ProgramReviewSort; label: string }> = [
     { value: 'latest', label: '최신순' },
     { value: 'rating_high', label: '별점순' },
 ];
 
+// 클래스 리뷰 전체보기. 공방 리뷰 전체보기(StudioReviewsClient)와 동일 구성
 export function ClassReviewsClient() {
     const params = useParams<{ id: string }>();
-    const searchParams = useSearchParams();
     const programId = params.id;
-    const storeSlug = searchParams.get('store') ?? searchParams.get('slug') ?? DEFAULT_STORE_SLUG;
-
     const [sort, setSort] = useState<ProgramReviewSort>('latest');
-    const [page, setPage] = useState(1);
+    const sentinelRef = useRef<HTMLDivElement | null>(null);
     const { open, close } = useModal();
 
-    const reviewsQuery = useProgramReviews(storeSlug, programId, {
-        page,
-        limit: REVIEW_PAGE_SIZE,
-        sort,
-    });
-
-    const data = reviewsQuery.data;
-    const reviews = data?.reviews ?? [];
-    const totalPages = data?.pagination.totalPages ?? 0;
-    const averageRating = data?.averageRating ?? 0;
-    const totalCount = data?.totalCount ?? 0;
+    const reviewsQuery = useProgramReviewsInfinite(programId, sort);
+    const fetchNextPage = reviewsQuery.fetchNextPage;
+    const hasNextPage = reviewsQuery.hasNextPage;
+    const isFetchingNextPage = reviewsQuery.isFetchingNextPage;
+    const reviews = useMemo(
+        () => reviewsQuery.data?.pages.flatMap((page) => page.reviews) ?? [],
+        [reviewsQuery.data],
+    );
 
     useHeaderOverride({ title: '클래스 리뷰', hideRightAction: true });
 
-    const changeSort = (nextSort: ProgramReviewSort) => {
-        setSort(nextSort);
-        setPage(1);
-    };
+    useEffect(() => {
+        const node = sentinelRef.current;
+        if (!node || !hasNextPage) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry?.isIntersecting && !isFetchingNextPage) {
+                    void fetchNextPage();
+                }
+            },
+            { rootMargin: '160px 0px' },
+        );
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
     const openImage = (src: string) => {
         open(
@@ -72,54 +75,25 @@ export function ClassReviewsClient() {
         );
     };
 
-    return (
-        <main className="min-h-full bg-[#FBF8F3] px-4 pb-20 pt-2">
-            <section className="rounded-lg bg-surface px-4 py-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                        <p className="text-xs font-semibold text-foreground-tertiary">총 리뷰</p>
-                        <p className="text-xl font-extrabold leading-7 text-foreground">
-                            {totalCount.toLocaleString('ko-KR')}개
-                        </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                        <div className="flex items-center gap-2">
-                            <Rating scope={Math.round(averageRating)} />
-                            <span className="text-lg font-bold text-foreground">
-                                {averageRating.toFixed(1)}
-                            </span>
-                        </div>
-                        <p className="text-xs text-foreground-tertiary">평균 별점</p>
-                    </div>
-                </div>
-            </section>
+    const isInitialLoading = reviewsQuery.isLoading;
+    const isError = reviewsQuery.isError;
 
-            <div className="sticky top-0 z-10 -mx-4 bg-[#FBF8F3] px-4 py-3">
-                <div className="grid grid-cols-2 rounded-lg bg-surface-secondary p-1">
-                    {SORT_OPTIONS.map((option) => {
-                        const selected = sort === option.value;
-                        return (
-                            <button
-                                key={option.value}
-                                type="button"
-                                className={[
-                                    'h-9 rounded-md text-sm font-semibold',
-                                    selected
-                                        ? 'bg-surface text-foreground shadow-sm'
-                                        : 'text-foreground-tertiary hover:text-foreground',
-                                ].join(' ')}
-                                onClick={() => changeSort(option.value)}
-                            >
-                                {option.label}
-                            </button>
-                        );
-                    })}
-                </div>
+    return (
+        <main className="min-h-full bg-background px-4 pb-16">
+            <div className="sticky top-0 z-10 -mx-4 bg-background px-4 pb-9">
+                <SegmentedControl
+                    options={SORT_OPTIONS.map((option) => option.label)}
+                    selected={SORT_OPTIONS.findIndex((option) => option.value === sort)}
+                    onSelectedChange={(index) => {
+                        const next = SORT_OPTIONS[index];
+                        if (next) setSort(next.value);
+                    }}
+                />
             </div>
 
-            {reviewsQuery.isLoading && <ReviewSkeletonList />}
+            {isInitialLoading && <ReviewSkeletonList />}
 
-            {!reviewsQuery.isLoading && reviewsQuery.isError && (
+            {!isInitialLoading && isError && (
                 <div className="flex min-h-80 flex-col items-center justify-center gap-4 text-center">
                     <p className="text-sm text-foreground-secondary">리뷰를 불러오지 못했어요.</p>
                     <Button variant="outline" size="sm" onClick={() => reviewsQuery.refetch()}>
@@ -128,7 +102,7 @@ export function ClassReviewsClient() {
                 </div>
             )}
 
-            {!reviewsQuery.isLoading && !reviewsQuery.isError && reviews.length === 0 && (
+            {!isInitialLoading && !isError && reviews.length === 0 && (
                 <div className="flex min-h-80 items-center justify-center text-center">
                     <p className="text-sm text-foreground-secondary">
                         아직 등록된 리뷰가 없습니다.
@@ -136,36 +110,22 @@ export function ClassReviewsClient() {
                 </div>
             )}
 
-            {!reviewsQuery.isLoading && !reviewsQuery.isError && reviews.length > 0 && (
-                <div className="divide-y divide-border-subtle">
-                    {reviews.map((review) => (
-                        <ClassReviewCard key={review.id} review={review} onOpenImage={openImage} />
+            {!isInitialLoading && !isError && reviews.length > 0 && (
+                <div className="flex flex-col">
+                    {reviews.map((review, index) => (
+                        <Fragment key={review.id}>
+                            <ClassReviewCard review={review} onOpenImage={openImage} />
+                            {index < reviews.length - 1 && <Divider className="py-9" />}
+                        </Fragment>
                     ))}
                 </div>
             )}
 
-            {!reviewsQuery.isLoading && !reviewsQuery.isError && totalPages > 1 && (
-                <div className="flex items-center justify-center gap-3 pt-6">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={page <= 1}
-                        onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                    >
-                        이전
-                    </Button>
-                    <span className="min-w-16 text-center text-sm font-semibold text-foreground-secondary">
-                        {page} / {totalPages}
-                    </span>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={page >= totalPages}
-                        onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                    >
-                        다음
-                    </Button>
-                </div>
+            <div ref={sentinelRef} className="h-10" />
+            {isFetchingNextPage && (
+                <p className="py-4 text-center text-xs text-foreground-tertiary">
+                    리뷰를 더 불러오는 중...
+                </p>
             )}
         </main>
     );
@@ -184,7 +144,7 @@ function ClassReviewCard({
     const createdAt = formatYmd(review.createdAt);
 
     return (
-        <article className="flex flex-col gap-3 py-5">
+        <article className="flex flex-col gap-4">
             <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
@@ -202,33 +162,35 @@ function ClassReviewCard({
                 )}
             </div>
 
-            {review.content && (
-                <p className="whitespace-pre-wrap text-sm leading-5 text-foreground">
-                    {review.content}
-                </p>
-            )}
+            <section className="flex flex-col gap-3">
+                {review.content && (
+                    <p className="whitespace-pre-wrap text-sm leading-5 text-foreground">
+                        {review.content}
+                    </p>
+                )}
 
-            {review.photos.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                    {review.photos.slice(0, 3).map((photo, index) => (
-                        <button
-                            key={`${review.id}-${photo.imageUrl}-${index}`}
-                            type="button"
-                            className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted"
-                            onClick={() => onOpenImage(photo.imageUrl)}
-                        >
-                            <Image
-                                src={photo.imageUrl}
-                                alt=""
-                                fill
-                                sizes="96px"
-                                className="object-cover"
-                                unoptimized
-                            />
-                        </button>
-                    ))}
-                </div>
-            )}
+                {review.photos.length > 0 && (
+                    <div className="flex gap-3 overflow-x-auto">
+                        {review.photos.slice(0, 3).map((photo, index) => (
+                            <button
+                                key={`${review.id}-${photo.imageUrl}-${index}`}
+                                type="button"
+                                className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted"
+                                onClick={() => onOpenImage(photo.imageUrl)}
+                            >
+                                <Image
+                                    src={photo.imageUrl}
+                                    alt=""
+                                    fill
+                                    sizes="96px"
+                                    className="object-cover"
+                                    unoptimized
+                                />
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </section>
         </article>
     );
 }

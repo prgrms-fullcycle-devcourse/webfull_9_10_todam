@@ -262,7 +262,6 @@ export interface ListProgramReviewsResult {
 
 export abstract class ProgramReviewsReader {
     abstract execute(
-        slug: string,
         programId: string,
         query: ListProgramReviewsQuery,
     ): Promise<ListProgramReviewsResult>;

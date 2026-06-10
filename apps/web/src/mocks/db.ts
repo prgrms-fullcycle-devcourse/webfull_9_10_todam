@@ -315,6 +315,11 @@ export function findProgramByStoreAndId(
     return seededPrograms.find((p) => p.storeId === storeId && p.id === programId);
 }
 
+// programId 단독 조회(퍼블릭 상세·리뷰 — 라우트에 slug 미포함).
+export function findProgramById(programId: string): ProgramRow | undefined {
+    return seededPrograms.find((p) => p.id === programId);
+}
+
 export function getProgramImages(programId: string): ProgramImageRow[] {
     return seededProgramImages.filter((img) => img.programId === programId);
 }
@@ -340,6 +345,7 @@ export function programToApiShape(program: ProgramRow): object {
     return {
         id: program.id,
         storeId: program.storeId,
+        storeName: MOCK_STORE_NAME,
         title: program.title,
         description: program.description,
         materials: program.materials,

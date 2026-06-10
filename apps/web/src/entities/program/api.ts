@@ -18,11 +18,10 @@ export function getPartnerProgramDetail(storeId: string, programId: string) {
     );
 }
 
-export function getPublicProgramDetail(storeSlug: string, programId: string) {
-    return clientApiFetch<ProgramDetailResult>(
-        `/stores/${encodeURIComponent(storeSlug)}/programs/${encodeURIComponent(programId)}`,
-        { method: 'GET' },
-    );
+export function getPublicProgramDetail(programId: string) {
+    return clientApiFetch<ProgramDetailResult>(`/programs/${encodeURIComponent(programId)}`, {
+        method: 'GET',
+    });
 }
 
 export type GetProgramReviewsParams = {
@@ -31,11 +30,7 @@ export type GetProgramReviewsParams = {
     sort?: ProgramReviewSort;
 };
 
-export function getProgramReviews(
-    storeSlug: string,
-    programId: string,
-    params: GetProgramReviewsParams = {},
-) {
+export function getProgramReviews(programId: string, params: GetProgramReviewsParams = {}) {
     const searchParams = new URLSearchParams();
     if (params.page !== undefined) searchParams.set('page', String(params.page));
     if (params.limit !== undefined) searchParams.set('limit', String(params.limit));
@@ -43,7 +38,7 @@ export function getProgramReviews(
     const qs = searchParams.toString();
 
     return clientApiFetch<ProgramReviewListResult>(
-        `/stores/${encodeURIComponent(storeSlug)}/programs/${encodeURIComponent(programId)}/reviews${qs ? `?${qs}` : ''}`,
+        `/programs/${encodeURIComponent(programId)}/reviews${qs ? `?${qs}` : ''}`,
         { method: 'GET' },
     );
 }

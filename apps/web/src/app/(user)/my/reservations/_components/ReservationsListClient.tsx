@@ -9,19 +9,13 @@ import { EmptyState } from '@/shared/ui';
 
 import { ReservationCard } from './ReservationCard';
 
-// 클라이언트 동작(react-query / IntersectionObserver / 401 리다이렉트) 캡슐화.
+// 클라이언트 동작(react-query / IntersectionObserver) 캡슐화.
 // page.tsx 는 서버 컴포넌트로 두고 본 클라이언트 컴포넌트만 렌더.
+// 401 은 AuthProvider 전역 핸들러가 "로그인이 필요해요" 모달로 처리(화면별 리다이렉트 금지).
 export function ReservationsListClient() {
     const router = useRouter();
     const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
         useMyReservations();
-
-    // 401 → 로그인 페이지로. (현재 프로젝트에 공통 401 인터셉터 없음 → 화면별 처리)
-    useEffect(() => {
-        if (isError && error instanceof ApiError && error.statusCode === 401) {
-            router.replace('/login');
-        }
-    }, [isError, error, router]);
 
     // 무한 스크롤: 리스트 하단 sentinel 이 뷰포트에 진입하면 다음 페이지 요청.
     const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -43,7 +37,7 @@ export function ReservationsListClient() {
 
     const items = data?.pages.flatMap((p) => p.reservations) ?? [];
     const isEmpty = !isLoading && !isError && items.length === 0;
-    // 401 은 로그인 페이지로 리다이렉트 되므로 화면 메시지 분기에서 제외.
+    // 401 은 전역 로그인 모달이 안내하므로 네트워크 에러 메시지 분기에서 제외.
     const isNetworkError = isError && !(error instanceof ApiError && error.statusCode === 401);
 
     return (

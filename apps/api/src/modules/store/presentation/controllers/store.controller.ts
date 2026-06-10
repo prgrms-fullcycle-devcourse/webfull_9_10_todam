@@ -223,9 +223,9 @@ export class StoreController {
         return this.listStoreProgramsUseCase.execute(slug);
     }
 
-    @Get('stores/:slug/programs/:programId/reviews')
+    @Get('programs/:programId/reviews')
     @HttpCode(HttpStatus.OK)
-    // 퍼블릭(Guest·User 공통). PUBLISHED 공방의 특정 클래스 노출 리뷰 목록. 페이지 기반.
+    // 퍼블릭(Guest·User 공통). programId 단독 식별. PUBLISHED 공방의 특정 클래스 노출 리뷰 목록. 페이지 기반.
     @ResponseMessage('리뷰 목록이 성공적으로 조회되었습니다.')
     @ApiOkResponse({
         description: '클래스 리뷰 목록 조회 성공',
@@ -235,12 +235,11 @@ export class StoreController {
     @ApiQuery({ name: 'limit', type: Number, required: false, example: 10 })
     @ApiQuery({ name: 'sort', enum: ['latest', 'rating_high'], required: false })
     async listProgramReviews(
-        @Param('slug') slug: string,
         @Param('programId') programId: string,
         @Query(new QueryZodValidationPipe(programReviewListQuerySchema))
         query: ProgramReviewListQuery,
     ): Promise<ListProgramReviewsResponseDto> {
-        return this.listProgramReviewsUseCase.execute(slug, programId, query);
+        return this.listProgramReviewsUseCase.execute(programId, query);
     }
 
     @Get('stores/:slug/reviews')
