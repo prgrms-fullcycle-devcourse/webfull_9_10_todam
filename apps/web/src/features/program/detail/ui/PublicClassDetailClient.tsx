@@ -1,7 +1,6 @@
 'use client';
 
 import { BottomBar, Button, RightIcon, ShareIcon, Tag } from '@todam/ui';
-import { formatPrice } from '@todam/shared';
 import { useParams, useRouter } from 'next/navigation';
 
 import {
@@ -11,7 +10,9 @@ import {
     useProgramReviews,
     usePublicProgramDetail,
 } from '@/entities/program';
+import { ParticipantSheet } from '@/features/reservation/create';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { useSheet, useToast } from '@/shared/model';
 
 import { ClassDescription } from './ClassDescription';
 import { ClassExperienceInfo } from './ClassExperienceInfo';
@@ -21,6 +22,8 @@ export function PublicClassDetailClient() {
     const router = useRouter();
     const params = useParams<{ id: string }>();
     const programId = params.id;
+    const { open, close } = useSheet();
+    const { push } = useToast();
 
     // programId 단독 조회(라우트에 slug 없음). 공방명은 응답(storeName)에서 파생 → 헤더/공유 텍스트.
     const detailQuery = usePublicProgramDetail(programId);
@@ -46,9 +49,33 @@ export function PublicClassDetailClient() {
     });
 
     const reviewsHref = `/classes/${programId}/reviews`;
-    const reserveHref = program
-        ? `/classes/${program.id}/reserve?title=${encodeURIComponent(program.title)}&price=${program.price}&deliverable=${program.deliverable}`
-        : '#';
+
+    // 정원(capacity) 확정 시에만 예약 가능. 미확정이면 시트 대신 토스트로 안내.
+    const capacity = program?.capacity ?? null;
+
+    function openParticipantSheet() {
+        if (!program) return;
+        if (capacity == null || capacity < 1) {
+            push({ message: '아직 예약을 받을 수 없는 클래스예요.' });
+            return;
+        }
+        open(
+            <ParticipantSheet
+                initial={1}
+                max={capacity}
+                onConfirm={(count) => {
+                    close();
+                    const query = new URLSearchParams({
+                        title: program.title,
+                        price: String(program.price),
+                        deliverable: String(program.deliverable),
+                        count: String(count),
+                    });
+                    router.push(`/classes/${program.id}/reserve?${query.toString()}`);
+                }}
+            />,
+        );
+    }
 
     async function handleShare() {
         if (!program || typeof window === 'undefined') return;
@@ -135,8 +162,8 @@ export function PublicClassDetailClient() {
 
             {/* 하단 고정 CTA */}
             <BottomBar>
-                <Button className="w-full" onClick={() => router.push(reserveHref)}>
-                    {formatPrice(program.price)} 예약하기
+                <Button className="w-full" onClick={openParticipantSheet}>
+                    예약하기
                 </Button>
             </BottomBar>
         </>

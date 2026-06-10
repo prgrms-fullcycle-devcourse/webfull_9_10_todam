@@ -18,7 +18,7 @@
 
 - [x] API 구현
 - [x] UI 구현
-- [ ] API 연동
+- [x] API 연동
 
 > API 구현: 2026-06-13 `GET /stores/{slug}/programs/{programId}/reviews` BE 구현 완료(drift 0, reviewer 통과, jest 282). 잔여 = FE 실연동(mock→실 BE) → `API 연동`은 FE turn. (3항목 모두 [x] 전까지 completed/ 미이동.)
 

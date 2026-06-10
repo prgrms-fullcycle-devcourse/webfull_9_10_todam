@@ -1,18 +1,17 @@
 'use client';
 
-import { formatDateKey, type CalendarData, type CalendarDay } from '@todam/shared';
+import {
+    CALENDAR_YEAR_RANGE,
+    DAYS,
+    formatDateKey,
+    type CalendarData,
+    type CalendarDay,
+} from '@todam/shared';
 import { startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday } from 'date-fns';
 import { useState } from 'react';
 
 import { CalendarItem } from './CalendarItem';
 import type { CalendarItemState } from './CalendarItem';
-
-// ─── 상수 ───────────────────────────────────────────────────────────────────
-
-const DOW_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
-
-// 연도 선택 범위: 현재 ±5년
-const YEAR_RANGE = 5;
 
 // ─── state 계산 ─────────────────────────────────────────────────────────────
 
@@ -35,8 +34,8 @@ function YearMonthPicker({ year, month, onChange }: YearMonthPickerProps) {
     const [open, setOpen] = useState(false);
     const currentYear = new Date().getFullYear();
     const years = Array.from(
-        { length: YEAR_RANGE * 2 + 1 },
-        (_, i) => currentYear - YEAR_RANGE + i,
+        { length: CALENDAR_YEAR_RANGE * 2 + 1 },
+        (_, i) => currentYear - CALENDAR_YEAR_RANGE + i,
     );
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
@@ -163,7 +162,7 @@ export function MonthCalendar({
 
             {/* 요일 헤더 */}
             <div className="grid h-6 min-w-0 grid-cols-7 gap-1">
-                {DOW_LABELS.map((label, idx) => (
+                {DAYS.map((label, idx) => (
                     <div
                         key={label}
                         className={[
