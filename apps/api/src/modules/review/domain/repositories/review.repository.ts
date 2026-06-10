@@ -65,4 +65,10 @@ export abstract class ReviewRepository {
 
     /** rating·content 갱신 + review_photos 전량 삭제 후 재생성(트랜잭션). */
     abstract updateReviewWithPhotos(reviewId: string, input: UpdateReviewInput): Promise<ReviewRow>;
+
+    /** reservationId 로 Review + photos(sortOrder ASC)를 조회한다. 상세 조회 전용. */
+    abstract findReviewByReservationWithPhotos(reservationId: string): Promise<ReviewRow | null>;
+
+    /** Review + ReviewPhoto 를 트랜잭션으로 hard-delete 한다. */
+    abstract deleteReviewCascade(reviewId: string): Promise<void>;
 }
