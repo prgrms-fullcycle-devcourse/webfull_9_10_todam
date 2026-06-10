@@ -1,7 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Divider, LeftIcon, SectionTitle, SpaceBlock } from '@todam/ui';
+import { Button, DescriptionBlock, Divider, LeftIcon, SectionTitle, SpaceBlock } from '@todam/ui';
 import { useParams, useRouter } from 'next/navigation';
 
 import {
@@ -139,7 +139,9 @@ export function PublicStudioDetailClient() {
                         </div>
                     )}
                     {!programsQuery.isLoading && !hasPrograms && (
-                        <EmptyState message="아직 등록된 클래스가 없어요." />
+                        <DescriptionBlock title="공방 안내">
+                            새로운 클래스를 정성껏 준비 중이에요.
+                        </DescriptionBlock>
                     )}
                     {!programsQuery.isLoading && hasPrograms && (
                         <div className="flex flex-col gap-2">
