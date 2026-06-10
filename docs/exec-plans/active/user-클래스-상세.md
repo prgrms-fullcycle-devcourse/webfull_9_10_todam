@@ -71,7 +71,6 @@ type ProgramDetail = {
   status: 'ACTIVE';
   images: Array<{
     imageUrl: string;
-    thumbnailUrl: string | null;
   }>;
 };
 ```
@@ -86,7 +85,7 @@ type ProgramReview = {
   rating: number;
   content: string;
   photos: Array<{
-    thumbnailUrl: string;
+    imageUrl: string;
   }>;
   createdAt: string;
 };
