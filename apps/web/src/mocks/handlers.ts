@@ -846,7 +846,7 @@ export const handlers = [
             return fail(
                 path,
                 409,
-                DeliveryEditErrorCode.DELIVERY_NOT_EDITABLE,
+                DeliveryEditErrorCode.PICKUP_NOT_ALLOWED,
                 '픽업 예약은 배송 정보를 수정할 수 없습니다.',
             );
         }
