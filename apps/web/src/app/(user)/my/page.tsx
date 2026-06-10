@@ -1,10 +1,9 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { Modal } from '@todam/ui';
 import { PartnerStatus } from '@todam/shared';
 
-import { logout } from '@/features/auth/logout';
+import { useLogout } from '@/features/auth/logout';
 import { TERMS, type TermsKey } from '@/features/auth/terms';
 import { MyPageHub } from '@/features/user/profile';
 import { usePartnerOnboarding } from '@/features/studio/registration';
@@ -17,10 +16,10 @@ const CUSTOMER_SUPPORT_TERMS: { key: TermsKey; label: string }[] = [
 ];
 
 export default function MyPage() {
-    const router = useRouter();
     const { open: openModal, close: closeModal } = useModal();
     const { data: onboardingData } = usePartnerOnboarding();
     const isPartner = onboardingData?.partnerStatus === PartnerStatus.APPROVED;
+    const runLogout = useLogout();
 
     const handleOpenTerms = (key: string) => {
         const item = TERMS.find((term) => term.key === key);
@@ -29,14 +28,7 @@ export default function MyPage() {
 
     const doLogout = async () => {
         closeModal();
-        try {
-            await logout();
-        } catch (err) {
-            console.warn('[logout] 서버 로그아웃 실패, 클라이언트 토큰만 제거', err);
-        } finally {
-            window.localStorage.removeItem('accessToken');
-            router.push('/login');
-        }
+        await runLogout();
     };
 
     const handleLogout = () => {
