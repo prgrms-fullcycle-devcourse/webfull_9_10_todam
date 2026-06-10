@@ -28,6 +28,11 @@ const apiSchema = z.object({
     GOOGLE_CLIENT_ID: z.string(),
     GOOGLE_CLIENT_SECRET: z.string(),
     GOOGLE_REDIRECT_URI: z.string(),
+    // 사업자등록증 OCR(Google Vision) / 진위확인(국세청). 기능 미배포 단계라 optional.
+    // OCR·verify 서비스 구현 시 사용 지점에서 존재 검증(없으면 503)하고, 그때 required로 좁힌다.
+    GOOGLE_VISION_CLIENT_EMAIL: z.string().email().optional(),
+    GOOGLE_VISION_PRIVATE_KEY: z.string().optional(),
+    NTS_API_KEY: z.string().optional(),
 });
 
 // ─── Web 환경변수 스키마 ──────────────────────────────────

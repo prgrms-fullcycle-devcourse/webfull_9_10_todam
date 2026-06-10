@@ -15,6 +15,7 @@
     "@aws-sdk/client-s3": "^3.1054.0",
     "@aws-sdk/client-ses": "^3.1064.0",
     "@aws-sdk/s3-request-presigner": "^3.1054.0",
+    "@google-cloud/vision": "^5.3.7",
     "@nestjs/common": "^11.1.20",
     "@nestjs/core": "^11.1.20",
     "@nestjs/jwt": "^11.0.2",
