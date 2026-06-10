@@ -1,13 +1,9 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { formatPrice, formatDuration } from '@todam/shared';
 import { Button, Divider, LeftIcon, SectionTitle, SpaceBlock } from '@todam/ui';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { getDifficultyLabel } from '@/entities/program/lib/difficulty';
-import { ClassItem } from '@/entities/program/ui/ClassItem';
 import {
     ConvenienceChips,
     StudioDetailSkeleton,
@@ -16,6 +12,7 @@ import {
     StudioInfoSummary,
     StudioLocation,
 } from '@/entities/studio';
+import { PublicClassListItem } from '@/features/program/list';
 import { FAVORITE_STUDIOS_QUERY_KEY } from '@/features/studio/favorite-list';
 import { StudioReviewPreview } from '@/features/studio/reviews';
 import { FavoriteToggleButton } from '@/features/studio/toggle-favorite/ui/FavoriteToggleButton';
@@ -24,7 +21,7 @@ import { EmptyState } from '@/shared/ui';
 
 import { usePublicStudioDetail, usePublicStudioPrograms } from '../queries';
 
-export function StudioDetailClient() {
+export function PublicStudioDetailClient() {
     const params = useParams<{ slug: string }>();
     const slug = params.slug;
     const router = useRouter();
@@ -79,7 +76,7 @@ export function StudioDetailClient() {
     return (
         <main className="min-h-full overflow-y-auto bg-background pb-20">
             <div className="relative">
-                <StudioImageCarousel images={carouselImages} />
+                <StudioImageCarousel images={carouselImages} paginationClassName="bottom-10" />
                 <div className="absolute inset-x-0 top-0 z-10 pt-safe">
                     <div className="flex items-center justify-between p-2">
                         <Button
@@ -145,27 +142,15 @@ export function StudioDetailClient() {
                         <EmptyState message="아직 등록된 클래스가 없어요." />
                     )}
                     {!programsQuery.isLoading && hasPrograms && (
-                        <div className="flex flex-col gap-3">
-                            {programs.map((program) => {
-                                const metaItems = [
-                                    getDifficultyLabel(program.difficulty),
-                                    formatDuration(program.durationMinutes),
-                                    `평균 ${program.leadTimeDays}일`,
-                                ];
-                                return (
-                                    <Link
-                                        key={program.id}
-                                        href={`/classes/${program.id}?store=${encodeURIComponent(slug)}&storeName=${encodeURIComponent(store.name)}`}
-                                        className="block"
-                                    >
-                                        <ClassItem
-                                            programName={program.title}
-                                            metaItems={metaItems}
-                                            price={formatPrice(program.price)}
-                                        />
-                                    </Link>
-                                );
-                            })}
+                        <div className="flex flex-col gap-2">
+                            {programs.map((program) => (
+                                <PublicClassListItem
+                                    key={program.id}
+                                    program={program}
+                                    slug={slug}
+                                    storeName={store.name}
+                                />
+                            ))}
                         </div>
                     )}
                 </section>

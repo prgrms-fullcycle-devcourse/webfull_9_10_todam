@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/auth/login';
 import { getMyReservations } from '@/features/reservation/list';
 import { ApiError } from '@/shared/api';
+import { useHasMounted } from '@/shared/lib/useHasMounted';
 
 // 최근 예약 1건 조회 훅 (메인 화면 위젯용).
 // contract: docs/exec-plans/active/최근 예약 조회.md
@@ -23,7 +24,10 @@ export type RecentReservationState =
 
 export function useRecentReservation() {
     // 인증 상태 기반 게이트 (BottomNav와 동일 패턴). 비인증이면 쿼리 미실행 → 401/모달 회피.
-    const isAuthenticated = useAuthStore((s) => s.state === 'AUTHENTICATED');
+    // authStore는 localStorage로 초기화돼 SSR(=비인증) ↔ 클라 첫 렌더(=인증) 불일치 → hydration 오류.
+    // 마운트 전엔 비인증으로 취급해 첫 렌더를 서버와 일치시키고, 마운트 후 실제 상태로 전환.
+    const hasMounted = useHasMounted();
+    const isAuthenticated = useAuthStore((s) => s.state === 'AUTHENTICATED') && hasMounted;
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ['reservations', 'me', 'recent'] as const,

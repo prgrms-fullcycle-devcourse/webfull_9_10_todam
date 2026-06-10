@@ -10,13 +10,13 @@ import { clientApiFetch } from '@/shared/api';
 const BASE = '/partner';
 
 export function getCurrentStudio() {
-    return clientApiFetch<GetPartnerCurrentStoreResult>(`${BASE}/me/current-studio`, {
+    return clientApiFetch<GetPartnerCurrentStoreResult>(`${BASE}/me/current-store`, {
         method: 'GET',
     });
 }
 
 export function updateCurrentStudio(storeId: string) {
-    return clientApiFetch<UpdatePartnerCurrentStoreResult>(`${BASE}/me/current-studio`, {
+    return clientApiFetch<UpdatePartnerCurrentStoreResult>(`${BASE}/me/current-store`, {
         method: 'PATCH',
         body: { storeId },
     });
