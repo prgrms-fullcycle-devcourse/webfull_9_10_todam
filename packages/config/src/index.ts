@@ -28,6 +28,7 @@ const apiSchema = z.object({
     GOOGLE_CLIENT_ID: z.string(),
     GOOGLE_CLIENT_SECRET: z.string(),
     GOOGLE_REDIRECT_URI: z.string(),
+    FRONTEND_URL: z.string().default('http://localhost:3000'),
 });
 
 // ─── Web 환경변수 스키마 ──────────────────────────────────
