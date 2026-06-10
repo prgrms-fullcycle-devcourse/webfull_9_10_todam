@@ -102,7 +102,7 @@ export function StudioImageCarousel({ images }: { images: StoreImage[] }) {
                     count={sorted.length}
                     activeIndex={active}
                     onDotClick={scrollToIndex}
-                    className="absolute bottom-3 left-0 right-0 justify-center"
+                    className="absolute bottom-10 left-0 right-0 justify-center"
                 />
             )}
         </div>

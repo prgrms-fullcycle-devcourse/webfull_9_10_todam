@@ -2,6 +2,8 @@ export * from './ui/StudioManagementItem';
 export * from './ui/StudioStatusBadge';
 export * from './ui/StudioImageCarousel';
 export * from './ui/StudioInfoSummary';
+export * from './ui/StudioInfoActions';
+export * from './ui/StudioDetailSkeleton';
 export * from './ui/ConvenienceChips';
 export * from './ui/StudioLocation';
 export * from './ui/FavoriteStudioCard';

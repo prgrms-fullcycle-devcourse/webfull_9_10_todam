@@ -2,33 +2,27 @@
 
 import { useRouter } from 'next/navigation';
 
-import {
-    BottomBar,
-    Button,
-    DescriptionBlock,
-    Divider,
-    PhoneIcon,
-    SectionTitle,
-    ShareIcon,
-    SpaceBlock,
-} from '@todam/ui';
+import { BottomBar, Button, DescriptionBlock, Divider, SectionTitle, SpaceBlock } from '@todam/ui';
 
 import { StoreStatus } from '@todam/shared';
 
 import { usePartnerStudioDetail, usePartnerStudioPrograms } from '@/entities/studio';
 import {
     ConvenienceChips,
+    StudioDetailSkeleton,
     StudioImageCarousel,
+    StudioInfoActions,
     StudioInfoSummary,
     StudioLocation,
 } from '@/entities/studio';
 import { useReviewStore } from '@/entities/studio';
 import { PartnerClassListItem } from '@/features/program/list';
-import { StudioEditSheet, StudioReviewPreview, StudioReviewResult } from '@/features/studio/detail';
+import { StudioEditSheet, StudioReviewResult } from '@/features/studio/detail';
+import { StudioReviewPreview } from '@/features/studio/reviews';
 import { ApiError } from '@/shared/api';
 import { useCurrentStudioId } from '@/entities/studio';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
-import { useSheet, useToast } from '@/shared/model';
+import { useSheet } from '@/shared/model';
 import { EmptyState } from '@/shared/ui';
 
 // 에러 코드 → 안내 문구. 401/403/404/500 분기.
@@ -46,66 +40,6 @@ function errorMessage(error: unknown): string {
         }
     }
     return '공방 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.';
-}
-
-// 평점 행 우측 액션(문의하기/공유하기). 아이콘 + 라벨만 배치.
-// 문의하기 = 공방 전화번호로 tel: 다이얼. 공유하기 = 고객용 공개 페이지(/stores/{slug}) 링크 공유.
-function StoreInfoActions({
-    phone,
-    slug,
-    storeName,
-}: {
-    phone: string | null;
-    slug: string;
-    storeName: string;
-}) {
-    const { push } = useToast();
-    // phone 미등록(null) 공방은 전화 링크 비표시.
-    const telHref = phone ? `tel:${phone.replace(/[^0-9+]/g, '')}` : null;
-
-    async function handleShare() {
-        const url = `${window.location.origin}/stores/${slug}`;
-        if (typeof navigator.share === 'function') {
-            try {
-                await navigator.share({ title: storeName, url });
-                return;
-            } catch (e) {
-                if (e instanceof Error && e.name === 'AbortError') return;
-            }
-        }
-        try {
-            await navigator.clipboard.writeText(url);
-            push({ message: '공방 링크를 복사했어요.' });
-        } catch {
-            push({ message: '링크 복사에 실패했어요.' });
-        }
-    }
-
-    return (
-        <>
-            {telHref && (
-                <>
-                    <span className="text-foreground-tertiary">・</span>
-                    <a
-                        href={telHref}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-foreground-tertiary hover:text-foreground"
-                    >
-                        <PhoneIcon size={16} />
-                        <span>문의하기</span>
-                    </a>
-                </>
-            )}
-            <span className="text-foreground-tertiary">・</span>
-            <button
-                type="button"
-                className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-foreground-tertiary hover:text-foreground"
-                onClick={handleShare}
-            >
-                <ShareIcon size={16} />
-                <span>공유하기</span>
-            </button>
-        </>
-    );
 }
 
 /**
@@ -150,9 +84,7 @@ export default function PartnerStorePage() {
         return (
             <div className="flex h-full flex-col bg-background">
                 <main className="flex-1 overflow-y-auto">
-                    <p className="py-10 text-center text-sm text-foreground-tertiary">
-                        공방 정보를 불러오는 중입니다.
-                    </p>
+                    <StudioDetailSkeleton />
                 </main>
             </div>
         );
@@ -231,7 +163,7 @@ export default function PartnerStorePage() {
                             description={store.description ?? ''}
                             tags={<ConvenienceChips convenienceInfo={store.convenienceInfo} />}
                             actions={
-                                <StoreInfoActions
+                                <StudioInfoActions
                                     phone={store.phone}
                                     slug={store.slug}
                                     storeName={store.name}

@@ -38,6 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             redirectToLogin();
         };
 
+        // 닫기: 모달만 닫고 머문다. pending 리셋해 다음 401에 다시 안내.
+        const dismiss = () => {
+            isAuthRedirectPending = false;
+            closeModal();
+        };
+
         function handleAuthError(error: ApiError): void {
             if (!isAuthRedirectError(error)) return;
             if (window.location.pathname === LOGIN_PATH) return;
@@ -54,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     description="로그인 후 다시 이용해 주세요."
                     cancelLabel="닫기"
                     confirmLabel="로그인하기"
-                    onCancel={goLogin}
+                    onCancel={dismiss}
                     onConfirm={goLogin}
                 />,
             );
