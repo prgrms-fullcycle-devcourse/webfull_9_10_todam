@@ -9,8 +9,8 @@
 ## Status
 
 - [x] API 구현
-- [x] UI 구현
-- [x] API 연동
+- [ ] UI 구현
+- [ ] API 연동
 
 ## Context
 
@@ -53,13 +53,11 @@
 ## Open Decisions
 
 - ~~**D1 상태 그룹 세부 매핑**~~ **해소:** 서버가 `Artwork.status + Reservation.status + deliveryMethod`를 조합해 `statusGroup`과 `detailStatus`를 계산한다. 기본 그룹은 `IN_PROGRESS(제작 중)`이며 그룹 변경 바텀시트에서 `WAITING(제작 대기) | IN_PROGRESS(제작 중) | RECEIVING(수령 대기) | RECEIVED(수령 완료)` 중 단일 선택한다. 매핑:
-  - `WAITING`: Artwork `RESERVED` → `RESERVED(예약 확정)`
+  - `WAITING`: Artwork `RESERVED | VISITED` → `RESERVED(예약 확정) | VISITED(체험 완료)`
   - `IN_PROGRESS`: Artwork `DRYING | BISQUE_FIRING | GLAZING | GLAZE_FIRING` → `건조 | 초벌 | 유약 | 재벌`
-  - `RECEIVING`: Artwork `COMPLETED` 또는 Reservation `SHIPPED | PICKUP_READY` → deliveryMethod에 따라 `DELIVERY_READY(수령 대기) | SHIPPED(배송 중) | PICKUP_READY(픽업 가능)`
+  - `RECEIVING`: Artwork `COMPLETED` 또는 Reservation `SHIPPED | PICKUP_READY` → deliveryMethod에 따라 `DELIVERY_READY(배송 준비) | SHIPPED(배송 중) | PICKUP_READY(픽업 가능)`
   - `RECEIVED`: Reservation `DELIVERED | PICKUP_DONE` → `DELIVERED(배송 완료) | PICKUP_DONE(픽업 완료)`
   - Artwork `CANCELED` 및 Reservation `CANCELED`은 모든 그룹/카운트/목록에서 제외한다.
-  - **체험완료 = 건조(DRYING) — 사용자 확정 2026-06-09:** 체험완료(`Reservation.IN_PROGRESS`) 전이 시 Artwork 를 `VISITED` 가 아니라 바로 `DRYING` 으로 둔다(정본 화면: 제작 중·건조 단계에 "(체험완료)" 주석). 따라서 `VISITED` 는 어떤 경로로도 생성되지 않는 사실상 dead 상태이며 `WAITING` 그룹 칩에서 제외한다. `statusView`/`displayState` 의 `VISITED` 분기는 레거시 데이터 안전망으로만 유지한다. 기존 `VISITED` 행은 `UPDATE artwork SET status='DRYING'` 으로 이관 완료(2026-06-09).
-  - **단계 칩 셋(FE `GROUP_STEP_ORDER`) — 사용자 확정 2026-06-09:** 그룹별 고정 칩 = `WAITING:[RESERVED]`, `IN_PROGRESS:[DRYING,BISQUE_FIRING,GLAZING,GLAZE_FIRING]`, `RECEIVING:[SHIPPED,PICKUP_READY]`, `RECEIVED:[DELIVERED,PICKUP_DONE]`. 작품 없는 단계도 `0` 으로 표기한다. `DELIVERY_READY`(완료·발송 전)는 별도 칩 없이 `RECEIVING` 그룹 레벨에서만 노출한다(그룹 이름 "수령 대기" 가 곧 그 상태). 정본 화면 기준.
 - ~~**D2 목록 표시 필드**~~ **해소(Figma):** 카드에는 `체험일(월.일+요일)`, `클래스명`, `예약자명 + 외 N명`, `수령 방식`, `현재 세부 단계 badge`를 표시한다. 이미지/예상 완성일은 카드에 표시하지 않는다. 정본 목록 API에 `scheduledAt`, `programTitle`, `participantCount`, `deliveryMethod`, `reservationStatus`, `statusGroup`, `detailStatus` 추가가 필요하다.
 - ~~**D3 상태 그룹/단계 카운트 API**~~ **해소:** 기존 `GET /partner/artworks/count-by-step`을 확장한다. `storeId`와 선택 `group`을 받아 해당 그룹의 단계별 count를 반환하며, 작품 관리 상단 count chip의 SSOT로 사용한다. 대시보드의 기존 제작 중 4단계 응답과의 하위 호환 방식은 API 구현 시 확정한다.
 - ~~**D4 상세 표시 계약**~~ **해소(Figma):** 상세는 전체 타임라인과 단계별 날짜/사진을 표시하고 현재 단계를 활성화한다. 상단 수령 방식 카드, 하단 `예약 정보` + 현재 상태별 CTA를 노출한다. 예약정보 바텀시트는 클래스명, 예약번호, 날짜, 시간, 인원, 예약자, 연락처, 내부 메모를 표시한다. 정본 상세 API에 `deliveryMethod`, `timeline[]`, `reservation`, `availableAction` 추가가 필요하다.
@@ -98,9 +96,7 @@
 ### `GET /partner/stores/{storeId}/artworks` — 공방 작품 목록
 
 - 가드: AuthGuard + PartnerGuard + 공방 소유권.
-- query: `group?`(`WAITING | IN_PROGRESS | RECEIVING | RECEIVED`), `detailStatus?`(`ArtworkDetailStatus`), `status?`, `cursor?`, `limit?`(기본 20).
-  - `group` 지정 시 서버가 `ArtworkPolicy.statusView` 와 동일한 우선순위(reservation 배송/픽업 상태 > artwork 상태)로 DB where 절을 구성해 해당 그룹 작품만 반환한다. — 사용자 확정 2026-06-09
-  - `detailStatus` 는 단계 칩 필터로, `count-by-step` 의 `steps` 키(camel(detail))와 1:1 대응한다. 서버가 `statusView` detail 산출 로직을 역매핑해 where 절을 구성한다(예: `DELIVERY_READY`=Artwork COMPLETED+택배+미처리, `PICKUP_READY`=Reservation PICKUP_READY 또는 COMPLETED+픽업+미처리, `SHIPPED/DELIVERED/PICKUP_DONE`=Reservation 상태). `group`/`status` 와 함께 오면 AND 로 좁힌다. — 사용자 확정 2026-06-09
+- query: `status?`, `cursor?`, `limit?`(기본 20).
 - 정렬: 기능명세는 최신 체험일/예약일 내림차순. 커서 기준 필드는 API명세에 미정.
 - res `200`:
   ```json
@@ -127,23 +123,22 @@
 ### `GET /partner/artworks/count-by-step` — 제작 단계별 작품 수
 
 - query: `storeId?`, `group?`; 지정 시 소유권 검증. `group = WAITING | IN_PROGRESS | RECEIVING | RECEIVED`.
-- res `200` 확장 계약 (`steps` 키 = `ArtworkDetailStatus` enum값, 존재하는 단계만 포함하는 partial):
+- res `200` 확장 계약:
   ```json
   {
     "data": {
       "group": "IN_PROGRESS",
       "total": 25,
       "steps": {
-        "DRYING": 12,
-        "BISQUE_FIRING": 8,
-        "GLAZING": 4,
-        "GLAZE_FIRING": 1
+        "drying": 12,
+        "bisqueFiring": 8,
+        "glazing": 4,
+        "glazeFiring": 1
       }
     }
   }
   ```
 - errors: `401 UNAUTHORIZED`, `403 FORBIDDEN`, `500 INTERNAL_SERVER_ERROR`.
-- `steps` 키를 `detailStatus` 와 일치시켜 목록 칩 필터(`detailStatus` query)와 정합. FE는 키→라벨/아이콘만 매핑. — 사용자 확정 2026-06-09
 - 기존 대시보드 제작 중 4단계 응답의 하위 호환 방식은 구현 시 확정한다.
 
 ### `GET /partner/artworks/{artworkId}` — 파트너 작품 상세
@@ -283,7 +278,7 @@
   - D12 승인 시 작품 다중 선택 일괄 공정 변경.
 - Out:
   - Artwork 자동 생성 및 QR 발급: 예약 확정/수동 예약 등록 소관.
-  - 체험 완료로 `DRYING`(건조) 전이 및 Artwork 생성: 파트너 예약 관리 소관. (체험완료=건조 결정 반영, 2026-06-09. 본 plan에서 `complete()`/`createManual` 수정함.)
+  - 체험 완료로 `VISITED` 전이: 파트너 예약 관리 소관.
   - QR 라벨 출력: `GET /partner/reservations/{reservationId}/qr-label`, 예약 관리 소관.
   - 고객용 작품 제작 단계 조회: `유저 예약 - 작품 상세 조회.md` 소관.
   - 배송 완료 7일 자동 전이 worker 구현과 알림 채널 구현은 별도 worker/notification 범위. 본 기능은 작업 등록까지만 계약한다.
@@ -302,9 +297,6 @@
 8. **FE 목록:** `/partner/artworks`에 현재 공방 기반 그룹 chip, 그룹 카운트, 세부 필터 바텀시트, 무한 스크롤, 카드/빈 상태를 구현한다.
 9. **FE 일괄 편집:** 목록 선택 모드, 체크박스, 선택 개수 CTA, 공정 선택 바텀시트, 일괄 변경 결과 처리를 구현한다.
 10. **FE 상세:** `/partner/artworks/[id]`에 전체 타임라인, 단계별 사진 업로드/삭제, 수령 방식 카드, 예약정보 바텀시트, 현재 상태별 CTA를 구현한다.
-    - **스텝퍼 재사용:** 유저 read-only `entities/artwork/ui/Stepper`(contract `ArtworkTimelineEntry`, displayState 강결합)를 쓰지 않고, edit 프리미티브가 이미 있는 `shared/ui` `StepperIcon` + `StepperItemChild`(editable/onAddMedia/onRemoveImage/maxImages)를 파트너 상세용 컨테이너에서 조립한다. 유저 컴포넌트는 건드리지 않는다.
-    - **어댑터(소):** ① 파트너 `timeline[].photos`(`ArtworkPhoto {id,thumbnailUrl,imageUrl}`) → `StepperItemChildImage {src,alt}` 매핑. ② `timeline[].state`(`CURRENT|COMPLETED|UPCOMING`) → `StepperIconStatus`(소문자) 매핑. ③ 단계 라벨은 `stage`(ArtworkStatus) → `STEP_MAP`/`DETAIL_STATUS_LABEL` 파생. ④ `StepperIcon` current/upcoming 둘 다 LeafIcon → Figma(current=채운 점) 토큰 미세 조정 1건.
-    - **편집 범위:** 현재 단계 + 완료 단계에 한해 사진 추가/삭제 노출(`availableAction`/`artworkLogId` 기준). presign·confirm·delete 연동은 step 13.
 11. **FE 수령 정보:** 별도 수령 방식 선택 화면에 택배/직접수령 분기, 주소·택배사·운송장 입력, 변경 감지 저장 버튼을 구현한다.
 12. **FE 배송/픽업 완료:** 운송장 입력·바코드 스캔·배송 시작 확인, 픽업 준비/완료 확인, 완료 화면을 구현한다.
 13. **FE 업로드/연동:** 현재 단계 사진 선택→presigned 발급→S3 PUT→완료 처리 흐름과 상태/배송 mutation 후 상세·목록·카운트 invalidate를 연결한다.
@@ -319,30 +311,6 @@
 - Shared 계약 정리(2026-06-08): 목록/카운트/상세/상태 변경/사진/배송 응답 Zod schema와 공용 상태 그룹·상세 상태·available action 타입을 `packages/shared`로 분리하고 API repository/Swagger DTO에 바인딩.
 - UI: 파트너 작품 관리 목록 및 상세 화면.
 - 연동: 현재 공방, 목록 필터/페이지네이션, 상세 mutation, 이미지 직접 업로드, 배송/픽업 액션.
-- 상세 화면 부분 완료(2026-06-09):
-  - `features/artwork/detail-partner/api.ts` — getPartnerArtworkDetail, updateArtworkStatus, createArtworkPhotos, confirmArtworkPhoto, deleteArtworkPhoto, updateArtworkDelivery 6개 API 함수.
-  - `features/artwork/detail-partner/queries.ts` — usePartnerArtworkDetail(useQuery, 401/403/404 retry off), useUpdateArtworkStatus, usePhotoPresign, useConfirmArtworkPhoto, useDeleteArtworkPhoto, useUpdateArtworkDelivery(useMutation, detail invalidate + 토스트).
-  - `features/artwork/detail-partner/timeline.ts` — buildPartnerTimeline FE 고정 7행 조립 유틸. Decision Log 2026-06-09 매핑 규칙(체험/건조~재벌/수령 2행) 구현.
-  - `features/artwork/detail-partner/ui/PartnerArtworkDetailClient.tsx` — 로딩/에러/정상, 수령방식카드, PartnerArtworkStepper, 예약정보 바텀시트, 하단 ButtonSection(예약정보 outline + 동적 CTA filled), presign→S3 PUT→confirm 파일 업로드 흐름.
-  - `features/artwork/detail-partner/ui/PartnerArtworkStepper.tsx` — shared/ui StepperIcon + StepperItemChild(editable) 조립. 단계별 아이콘 STEP_ICON_MAP.
-  - `features/artwork/detail-partner/ui/PartnerReservationInfoSheet.tsx` — shared/ui ResultTable 재사용. 예약정보(날짜/시간/인원/예약자/연락처) + internalMemo 블록.
-  - `features/artwork/detail-partner/index.ts` — 공개 exports.
-  - `app/partner/artworks/[id]/page.tsx` — use(params) + PartnerArtworkDetailClient 조립.
-- 리스트 조회 화면 부분 완료(2026-06-09):
-  - `features/artwork/list/api.ts` — `getPartnerArtworks`, `getPartnerArtworkCount` API 함수.
-  - `features/artwork/list/queries.ts` — `usePartnerArtworks`(useInfiniteQuery), `usePartnerArtworkCount`(useQuery).
-  - `features/artwork/list/stepMap.tsx` — steps 키→라벨/filterStatus/IconComponent 매핑 상수, `buildStepFilters` 헬퍼, badge 톤/라벨/그룹 라벨 상수.
-  - `features/artwork/list/ui/ArtworkCardItem.tsx` — 날짜+요일, 클래스명, 예약자 "외 N명", 수령방식, detailStatus badge 카드.
-  - `features/artwork/list/ui/ArtworkGroupSheet.tsx` — StandardBottomSheet 패턴 그룹 선택 시트.
-  - `features/artwork/list/ui/ArtworkListClient.tsx` — 그룹/상태 필터 바, 무한스크롤, 로딩/에러/빈 상태, 카드 리스트.
-  - `app/partner/artworks/page.tsx` — useCurrentStoreId + ArtworkListClient 조립.
-- 수령 정보 입력 화면 완료(step 11, 2026-06-09):
-  - `features/artwork/detail-partner/api.ts` — `updateArtworkDeliveryInfo`(PATCH `/partner/artworks/{id}/delivery-info`) 추가.
-  - `features/artwork/detail-partner/queries.ts` — `useUpdateArtworkDeliveryInfo`(useMutation, detail invalidate).
-  - `features/artwork/detail-partner/ui/CarrierSelectSheet.tsx` — StandardBottomSheet 택배사 선택 시트 + `CARRIER_LABEL`(DeliveryCarrier 6종 한글 매핑).
-  - `features/artwork/detail-partner/ui/PartnerDeliveryInfoClient.tsx` — 상세 fetch + pre-fill(저장값 우선, 없으면 예약자 fallback), 택배/직접수령 RadioInput 분기, 조건부 이름·연락처·주소(Daum 검색)·상세주소, 택배사 시트, 운송장(선택, 숫자 5~100), contract schema 검증 + isDirty 기반 저장 버튼 활성.
-  - `app/partner/artworks/[id]/shipping/page.tsx` — use(params) + PartnerDeliveryInfoClient 조립(기존 placeholder 대체).
-  - `PartnerArtworkDetailClient.tsx` — 수령방식 카드 클릭 + SHIP CTA '입력하기' 토스트 액션을 `/partner/artworks/{id}/shipping` 라우팅으로 연결(기존 TODO 해소).
 
 ## Risks
 
@@ -386,16 +354,6 @@
 - 파트너는 배송/픽업 처리 시작 전까지 작품의 수령 방식을 변경할 수 있으며, 파트너 전용 delivery-info API를 사용한다. — 사용자 확정 2026-06-08
 - 작품 목록 상태 그룹은 서버가 Artwork/Reservation 상태와 deliveryMethod를 조합해 WAITING/IN_PROGRESS/RECEIVING/RECEIVED로 계산하며 취소 건은 제외한다. — 사용자 확정 2026-06-08
 - 배송/픽업 action은 deliveryMethod와 Artwork/Reservation 상태 전이표로 검증하며, 파트너 수동 DELIVERED 처리를 허용한다. — 사용자 확정 2026-06-08
-- 목록/카운트 그룹 필터를 위해 `GET /partner/stores/{storeId}/artworks` 에 `group`/`detailStatus` 쿼리를 추가하고, 서버가 `statusView` 우선순위를 미러한 where 절로 필터한다. — 사용자 확정 2026-06-09
-- `count-by-step` 의 `steps` 키를 camelCase 대신 `ArtworkDetailStatus` enum값으로 통일해 목록 `detailStatus` 필터와 정합시킨다. — 사용자 확정 2026-06-09
-- 체험완료(`Reservation.IN_PROGRESS`) 시 Artwork 를 `VISITED` 가 아닌 `DRYING` 으로 전이한다. `VISITED` 는 dead 상태로 두고 기존 데이터는 이관했다. — 사용자 확정 2026-06-09
-- 단계 칩 셋은 그룹별 고정(`GROUP_STEP_ORDER`)이며 작품 없는 단계도 `0` 으로 표기한다. `DELIVERY_READY` 는 칩 없이 그룹 레벨에서만 노출한다. — 사용자 확정 2026-06-09
-- 파트너 상세 타임라인은 유저 read-only `entities/artwork/ui/Stepper` 재사용 대신 edit 프리미티브를 이미 가진 `shared/ui` `StepperIcon`+`StepperItemChild`(editable)를 파트너 컨테이너에 조립한다(B안). 유저 컴포넌트 비오염 + 파트너 timeline shape(state enum, stage 라벨 파생)·편집 상호작용 차이 때문. — 사용자 확정 2026-06-09
-- **상세 타임라인은 BE timeline[]의 직접 렌더가 아니라 FE 고정 행 조립이다.** 정본 화면 행 = `체험 · 건조 · 초벌 · 유약 · 재벌 · (배송중|픽업가능) · (배송완료|픽업완료)`. BE `timeline[].stage`(ArtworkStatus)는 건조~완료 단계의 사진/날짜/state SSOT로만 쓰고, FE가 다음을 파생해 고정 행으로 합성한다 — 사용자 확정 2026-06-09:
-  - **체험 행**: `artwork.status=RESERVED` & `scheduledAt` 미래 → 예정(upcoming), 도달 → 현재(current); `complete`(artwork `DRYING`+) → 완료(completed). (reservationStatus 미반환이므로 artwork.status+scheduledAt로 파생.)
-  - **건조/초벌/유약/재벌 행**: BE `timeline[]`의 해당 stage entry(state/changedAt/photos) 그대로 매핑.
-  - **수령 행(2개)**: `deliveryMethod`로 분기. `DELIVERY`→`배송중·배송완료`, `PICKUP`→`픽업가능·픽업완료`. state는 `availableAction` + `delivery.shippedAt` + `artwork.status=COMPLETED`로 파생(`SHIP` 가능=배송 전 upcoming, `DELIVERED` 가능=배송중 current, 배송액션 없음+COMPLETED=완료; 픽업도 `PICKUP_READY`/`PICKUP_DONE` 동형). reservationStatus 없이 availableAction만으로 충분 → contract 변경 불필요.
-- 상세 구현 스코프 = **풀 상세**(7케이스): 단계진행 CTA(`PATCH status`)·배송시작(`PATCH delivery SHIP`)·픽업완료(`PATCH delivery PICKUP_DONE`) 등 CTA + 현재/완료 단계 사진 presign→S3 PUT→confirm 및 삭제. 예약정보 바텀시트는 `shared/ui/ResultTable` 재사용. 수령방식 카드는 별도 수령방식 선택 화면으로 이동(화면 자체는 후속). — 사용자 확정 2026-06-09
 
 ## Outcome
 

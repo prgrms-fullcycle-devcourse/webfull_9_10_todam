@@ -4,6 +4,8 @@ import { RightIcon } from '@todam/ui';
 export type MenuTableRow = {
     label: string;
     onClick?: () => void;
+    showChevron?: boolean;
+    muted?: boolean;
 };
 
 export type MenuTableProps = {
@@ -31,12 +33,19 @@ export function MenuTable({
                     key={index}
                     type="button"
                     onClick={row.onClick}
-                    className="flex items-center justify-between gap-3 py-3 border-b border-border-subtle last:border-b-0 text-left"
+                    className="flex cursor-pointer items-center justify-between gap-3 py-3 border-b border-border-subtle last:border-b-0 text-left"
                 >
-                    <span className="flex-1 text-xs font-semibold text-foreground">
+                    <span
+                        className={[
+                            'flex-1 text-xs font-semibold',
+                            row.muted ? 'text-foreground-tertiary' : 'text-foreground',
+                        ].join(' ')}
+                    >
                         {row.label}
                     </span>
-                    <RightIcon size={24} className="text-foreground-tertiary" />
+                    {row.showChevron !== false && (
+                        <RightIcon size={24} className="text-foreground-tertiary" />
+                    )}
                 </button>
             ))}
         </div>

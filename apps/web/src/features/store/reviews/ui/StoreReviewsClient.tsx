@@ -1,10 +1,11 @@
 'use client';
 
 import { formatYmd, type StoreReviewListItem, type StoreReviewSort } from '@todam/shared';
-import { Button, CloseIcon, Rating } from '@todam/ui';
+import { Button, CloseIcon, Divider, Rating, SegmentedControl } from '@todam/ui';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useModal } from '@/shared/model';
@@ -85,28 +86,16 @@ export function StoreReviewsClient() {
     const isError = storeQuery.isError || reviewsQuery.isError;
 
     return (
-        <main className="min-h-full bg-background px-4 pb-20 pt-2">
-            <div className="sticky top-0 z-10 -mx-4 bg-background px-4 py-3">
-                <div className="grid grid-cols-2 rounded-lg bg-surface-secondary p-1">
-                    {SORT_OPTIONS.map((option) => {
-                        const selected = sort === option.value;
-                        return (
-                            <button
-                                key={option.value}
-                                type="button"
-                                className={[
-                                    'h-9 rounded-md text-sm font-semibold',
-                                    selected
-                                        ? 'bg-surface text-foreground shadow-sm'
-                                        : 'text-foreground-tertiary hover:text-foreground',
-                                ].join(' ')}
-                                onClick={() => setSort(option.value)}
-                            >
-                                {option.label}
-                            </button>
-                        );
-                    })}
-                </div>
+        <main className="min-h-full bg-background px-4 pb-16">
+            <div className="sticky top-0 z-10 -mx-4 bg-background px-4 pb-9">
+                <SegmentedControl
+                    options={SORT_OPTIONS.map((option) => option.label)}
+                    selected={SORT_OPTIONS.findIndex((option) => option.value === sort)}
+                    onSelectedChange={(index) => {
+                        const next = SORT_OPTIONS[index];
+                        if (next) setSort(next.value);
+                    }}
+                />
             </div>
 
             {isInitialLoading && <ReviewSkeletonList />}
@@ -129,9 +118,17 @@ export function StoreReviewsClient() {
             )}
 
             {!isInitialLoading && !isError && reviews.length > 0 && (
-                <div className="divide-y divide-border-subtle">
-                    {reviews.map((review) => (
-                        <StoreReviewCard key={review.id} review={review} onOpenImage={openImage} />
+                <div className="flex flex-col">
+                    {reviews.map((review, index) => (
+                        <Fragment key={review.id}>
+                            <StoreReviewCard
+                                review={review}
+                                onOpenImage={openImage}
+                                storeSlug={slug}
+                                storeName={storeName}
+                            />
+                            {index < reviews.length - 1 && <Divider className="py-9" />}
+                        </Fragment>
                     ))}
                 </div>
             )}
@@ -149,17 +146,24 @@ export function StoreReviewsClient() {
 function StoreReviewCard({
     review,
     onOpenImage,
+    storeSlug,
+    storeName,
 }: {
     review: StoreReviewListItem;
     onOpenImage: (src: string, alt: string) => void;
+    storeSlug: string;
+    storeName?: string;
 }) {
     const ratingLabel = Number.isInteger(review.rating)
         ? `${review.rating}.0`
         : String(review.rating);
     const createdAt = formatYmd(review.createdAt);
+    const classHref = `/classes/${review.programId}?store=${encodeURIComponent(storeSlug)}${
+        storeName ? `&storeName=${encodeURIComponent(storeName)}` : ''
+    }`;
 
     return (
-        <article className="flex flex-col gap-3 py-5">
+        <article className="flex flex-col gap-4">
             <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
@@ -177,39 +181,47 @@ function StoreReviewCard({
                 )}
             </div>
 
-            {review.content && (
-                <p className="whitespace-pre-wrap text-sm leading-5 text-foreground">
-                    {review.content}
-                </p>
-            )}
+            <section className="flex flex-col gap-3">
+                {review.content && (
+                    <p className="whitespace-pre-wrap text-sm leading-5 text-foreground">
+                        {review.content}
+                    </p>
+                )}
 
-            {review.photos.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                    {review.photos.slice(0, 3).map((photo, index) => (
-                        <button
-                            key={`${review.id}-${photo.thumbnailUrl}-${index}`}
-                            type="button"
-                            className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted"
-                            onClick={() =>
-                                onOpenImage(photo.imageUrl, `${review.programTitle} 리뷰 이미지`)
-                            }
-                        >
-                            <Image
-                                src={photo.thumbnailUrl}
-                                alt=""
-                                fill
-                                sizes="96px"
-                                className="object-cover"
-                                unoptimized
-                            />
-                        </button>
-                    ))}
-                </div>
-            )}
+                {review.photos.length > 0 && (
+                    <div className="flex gap-3 overflow-x-auto">
+                        {review.photos.slice(0, 3).map((photo, index) => (
+                            <button
+                                key={`${review.id}-${photo.thumbnailUrl}-${index}`}
+                                type="button"
+                                className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted"
+                                onClick={() =>
+                                    onOpenImage(
+                                        photo.imageUrl,
+                                        `${review.programTitle} 리뷰 이미지`,
+                                    )
+                                }
+                            >
+                                <Image
+                                    src={photo.thumbnailUrl}
+                                    alt=""
+                                    fill
+                                    sizes="128px"
+                                    className="object-cover"
+                                    unoptimized
+                                />
+                            </button>
+                        ))}
+                    </div>
+                )}
 
-            <span className="inline-flex h-7 w-fit items-center rounded-lg border border-border px-3 text-xs text-foreground-secondary">
-                {review.programTitle}
-            </span>
+                <Link
+                    href={classHref}
+                    className="inline-flex h-7 w-fit cursor-pointer items-center rounded-lg border border-border px-3 text-xs text-foreground-secondary"
+                >
+                    {review.programTitle}
+                </Link>
+            </section>
         </article>
     );
 }

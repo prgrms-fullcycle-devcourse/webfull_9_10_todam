@@ -22,9 +22,25 @@ import {
 } from './api';
 
 const KEY = ['artworks', 'partner', 'detail'] as const;
+// 목록·단계별 집계(파트너홈 '제작 중인 작품' 포함) 공통 prefix. 상태 변경 시 함께 무효화.
+const ARTWORK_LIST_KEY = ['artworks', 'partner'] as const;
+// 작품 상태 전이는 예약 상태(체험완료/배송/픽업)와 연동 → 예약 목록·요약도 무효화.
+const PARTNER_RESERVATIONS_KEY = ['partner', 'reservations'] as const;
 
 export function detailQueryKey(artworkId: string) {
     return [...KEY, artworkId] as const;
+}
+
+// 작품 상태/배송 변경 후 갱신 대상: 상세 + 목록/집계 + 연동 예약.
+function invalidateArtworkRelated(
+    queryClient: ReturnType<typeof useQueryClient>,
+    artworkId: string,
+) {
+    return Promise.all([
+        queryClient.invalidateQueries({ queryKey: detailQueryKey(artworkId) }),
+        queryClient.invalidateQueries({ queryKey: ARTWORK_LIST_KEY }),
+        queryClient.invalidateQueries({ queryKey: PARTNER_RESERVATIONS_KEY }),
+    ]);
 }
 
 // 파트너 작품 상세 조회 훅.
@@ -55,7 +71,7 @@ export function useUpdateArtworkStatus(artworkId: string) {
     return useMutation({
         mutationFn: (body: UpdateArtworkStatusRequest) => updateArtworkStatus(artworkId, body),
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: detailQueryKey(artworkId) });
+            await invalidateArtworkRelated(queryClient, artworkId);
             push({ message: '작품 상태가 변경되었습니다.' });
         },
     });
@@ -100,7 +116,7 @@ export function useUpdateArtworkDelivery(artworkId: string) {
     return useMutation({
         mutationFn: (body: UpdateArtworkDeliveryRequest) => updateArtworkDelivery(artworkId, body),
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: detailQueryKey(artworkId) });
+            await invalidateArtworkRelated(queryClient, artworkId);
             push({ message: '작품 상태가 변경되었습니다.' });
         },
     });
@@ -114,7 +130,7 @@ export function useUpdateArtworkDeliveryInfo(artworkId: string) {
         mutationFn: (body: UpdateArtworkDeliveryInfoRequest) =>
             updateArtworkDeliveryInfo(artworkId, body),
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: detailQueryKey(artworkId) });
+            await invalidateArtworkRelated(queryClient, artworkId);
         },
     });
 }

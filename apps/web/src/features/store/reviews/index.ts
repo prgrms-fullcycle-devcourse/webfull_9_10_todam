@@ -1,3 +1,3 @@
 export { getPublicStoreName, getStoreReviews } from './api';
-export { usePublicStoreName, useStoreReviewsInfinite } from './queries';
+export { usePublicStoreName, useStoreReviewsInfinite, useStoreReviewsPreview } from './queries';
 export { StoreReviewsClient } from './ui/StoreReviewsClient';

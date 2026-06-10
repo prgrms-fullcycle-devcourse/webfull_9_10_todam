@@ -17,8 +17,8 @@
 -->
 
 - [x] API 구현 — **신규 BE API 없음** (기존 작품상세/예약상세 API 재사용. 별도 구현 불필요)
-- [ ] UI 구현
-- [ ] API 연동
+- [x] UI 구현
+- [x] API 연동
 
 > 참고: 이 기능은 **FE 전용**이다. "API 구현" 항목은 신규 백엔드 작업이 없으므로 해당 없음 처리.
 > QR/PDF 생성은 전적으로 브라우저(프론트)에서 수행한다.
@@ -136,5 +136,5 @@
 
 ## Outcome
 
-- Status: 결정 확정, FE 구현 대기
-- Follow-up: `/impl partner-qr-pdf fe` 로 구현 착수. (BE 착수 불필요)
+- Status: 완료 (FE 구현·실 API 연동 완료, reviewer drift 0)
+- Follow-up: 모바일 실기기 PDF 저장 UX + 출력물 QR 스캔 라운드트립 수동 검증(plan Validation 참고). 일괄 출력은 MVP 이후.
