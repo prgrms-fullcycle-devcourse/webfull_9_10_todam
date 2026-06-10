@@ -42,7 +42,6 @@ type FavoriteStoreRow = Prisma.FavoriteStoreGetPayload<{
                 address: true;
                 images: {
                     select: {
-                        thumbnailUrl: true;
                         imageUrl: true;
                         sortOrder: true;
                         isThumbnail: true;
@@ -63,7 +62,6 @@ const FAVORITE_STORE_SELECT = {
             address: true,
             images: {
                 select: {
-                    thumbnailUrl: true,
                     imageUrl: true,
                     sortOrder: true,
                     isThumbnail: true,
@@ -125,10 +123,10 @@ export class PrismaFavoriteStoresReader {
         };
     }
 
-    // prisma-stores.reader.ts 의 toThumbnailUrl 규칙과 동일:
-    // isThumbnail 우선 → sortOrder asc → thumbnailUrl ?? imageUrl
+    // prisma-stores.reader.ts 의 toImageUrl 규칙과 동일:
+    // isThumbnail 우선 → sortOrder asc → imageUrl
     // 이미지 없으면 '' (빈 문자열, plan contract)
-    private toThumbnailUrl(images: FavoriteStoreRow['store']['images']): string {
+    private toImageUrl(images: FavoriteStoreRow['store']['images']): string {
         if (images.length === 0) {
             return '';
         }
@@ -142,7 +140,7 @@ export class PrismaFavoriteStoresReader {
         if (!picked) {
             return '';
         }
-        return picked.thumbnailUrl ?? picked.imageUrl ?? '';
+        return picked.imageUrl ?? '';
     }
 
     private toDto(row: FavoriteStoreRow): FavoriteStoreListItem {
@@ -150,7 +148,7 @@ export class PrismaFavoriteStoresReader {
             favoriteId: row.id,
             storeId: row.store.id,
             name: row.store.name ?? '',
-            imageUrl: this.toThumbnailUrl(row.store.images),
+            imageUrl: this.toImageUrl(row.store.images),
             address: row.store.address ?? '',
             createdAt: row.createdAt.toISOString(),
         };

@@ -158,7 +158,6 @@ const SEEDED_STORE_REVIEWS: StoreReviewListItem[] = [
         photos: [
             {
                 imageUrl: 'https://placehold.co/800x800?text=review-1',
-                thumbnailUrl: 'https://placehold.co/240x240?text=review-1',
             },
         ],
         programId: 'prog-uuid-001',
@@ -174,11 +173,9 @@ const SEEDED_STORE_REVIEWS: StoreReviewListItem[] = [
         photos: [
             {
                 imageUrl: 'https://placehold.co/800x800?text=review-2',
-                thumbnailUrl: 'https://placehold.co/240x240?text=review-2',
             },
             {
                 imageUrl: 'https://placehold.co/800x800?text=review-3',
-                thumbnailUrl: 'https://placehold.co/240x240?text=review-3',
             },
         ],
         programId: 'prog-uuid-002',

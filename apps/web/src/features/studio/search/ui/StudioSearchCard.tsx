@@ -19,7 +19,7 @@ export function StudioSearchCard({
         slug,
         name,
         region,
-        thumbnailUrl,
+        imageUrl,
         rating,
         reviewCount,
         distance,
@@ -56,14 +56,8 @@ export function StudioSearchCard({
         >
             {/* 썸네일 (준비 중이면 딤 오버레이 + 라벨) */}
             <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted">
-                {thumbnailUrl && (
-                    <Image
-                        src={thumbnailUrl}
-                        alt={name}
-                        fill
-                        sizes="80px"
-                        className="object-cover"
-                    />
+                {imageUrl && (
+                    <Image src={imageUrl} alt={name} fill sizes="80px" className="object-cover" />
                 )}
                 {!isOperating && (
                     <div className="absolute inset-0 flex items-center justify-center bg-foreground/60">

@@ -36,7 +36,7 @@ type StoreRow = Prisma.StoreGetPayload<{
         publishedAt: true;
         createdAt: true;
         images: {
-            select: { thumbnailUrl: true; imageUrl: true; sortOrder: true; isThumbnail: true };
+            select: { imageUrl: true; sortOrder: true; isThumbnail: true };
         };
         programs: {
             select: { id: true; title: true; price: true; sortOrder: true; status: true };
@@ -73,7 +73,7 @@ const STORE_SELECT = {
     publishedAt: true,
     createdAt: true,
     images: {
-        select: { thumbnailUrl: true, imageUrl: true, sortOrder: true, isThumbnail: true },
+        select: { imageUrl: true, sortOrder: true, isThumbnail: true },
     },
     programs: {
         where: { status: ProgramStatus.ACTIVE },
@@ -238,7 +238,7 @@ export class PrismaStoresReader {
                 sigungu: row.regionSigungu,
                 dong: row.regionDong,
             },
-            thumbnailUrl: this.toThumbnailUrl(row.images),
+            imageUrl: this.toImageUrl(row.images),
             rating: this.toRating(row.reviews),
             reviewCount: row.reviews.length,
             distance: distance === null || !Number.isFinite(distance) ? null : distance,
@@ -262,7 +262,7 @@ export class PrismaStoresReader {
         };
     }
 
-    private toThumbnailUrl(images: StoreRow['images']): string | null {
+    private toImageUrl(images: StoreRow['images']): string | null {
         if (images.length === 0) {
             return null;
         }
@@ -276,7 +276,7 @@ export class PrismaStoresReader {
         if (!picked) {
             return null;
         }
-        return picked.thumbnailUrl ?? picked.imageUrl ?? null;
+        return picked.imageUrl ?? null;
     }
 
     private toRating(reviews: StoreRow['reviews']): number | null {

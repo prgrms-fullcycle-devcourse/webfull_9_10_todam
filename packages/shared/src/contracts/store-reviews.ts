@@ -4,7 +4,6 @@ export const STORE_REVIEWS_PAGE_SIZE = 10;
 
 export const storeReviewPhotoSchema = z.object({
     imageUrl: z.string(),
-    thumbnailUrl: z.string(),
 });
 export type StoreReviewPhoto = z.infer<typeof storeReviewPhotoSchema>;
 

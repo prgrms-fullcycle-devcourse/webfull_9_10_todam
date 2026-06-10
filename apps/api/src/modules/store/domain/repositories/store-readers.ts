@@ -18,7 +18,7 @@ export interface StoreListItem {
     convenienceInfo: { parking: boolean; pet: boolean; wifi: boolean };
     autoConfirm: boolean;
     region: { sido: string | null; sigungu: string | null; dong: string | null };
-    thumbnailUrl: string | null;
+    imageUrl: string | null;
     rating: number | null;
     reviewCount: number;
     distance: number | null;
@@ -47,7 +47,7 @@ export interface StoreReviewListItem {
     nickname: string;
     rating: number;
     content: string;
-    photos: { imageUrl: string; thumbnailUrl: string }[];
+    photos: { imageUrl: string }[];
     programId: string;
     programTitle: string;
     createdAt: string;
@@ -105,7 +105,6 @@ export interface PartnerStoreDetailResult {
         images: {
             id: string;
             imageUrl: string;
-            thumbnailUrl: string | null;
             isThumbnail: boolean;
             sortOrder: number;
         }[];
@@ -135,7 +134,7 @@ export interface PublicStoreDetailResult {
         convenienceInfo: { parking: boolean; pet: boolean; wifi: boolean };
         autoConfirm: boolean;
         publishedAt: string;
-        images: { imageUrl: string; thumbnailUrl: string | null }[];
+        images: { imageUrl: string }[];
         rating: number | null;
         reviewCount: number;
         location: { lat: number; lng: number };
@@ -155,7 +154,7 @@ export interface StoreProgramsResult {
         durationMinutes: number;
         leadTimeDays: number;
         deliverable: boolean;
-        thumbnailUrl: string | null;
+        imageUrl: string | null;
         status: `${ProgramStatus}`;
         sortOrder: number;
     }[];
