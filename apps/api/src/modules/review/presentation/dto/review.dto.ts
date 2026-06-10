@@ -4,6 +4,7 @@ import {
     reviewUpdateResultSchema,
     reviewImageUploadRequestSchema,
     reviewImageUploadResultSchema,
+    reviewDetailResultSchema,
 } from '@todam/shared';
 import { createZodDto } from 'nestjs-zod';
 
@@ -23,3 +24,6 @@ export class ReviewUpdateResultDto extends createZodDto(reviewUpdateResultSchema
 
 /** POST /review/images/presigned 200 응답 */
 export class ReviewImageUploadResultDto extends createZodDto(reviewImageUploadResultSchema) {}
+
+/** GET /reservations/:reservationId/review 200 응답 */
+export class ReviewDetailResultDto extends createZodDto(reviewDetailResultSchema) {}

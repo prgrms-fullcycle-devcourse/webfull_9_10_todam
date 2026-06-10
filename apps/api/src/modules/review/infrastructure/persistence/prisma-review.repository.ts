@@ -8,6 +8,20 @@ import {
     UpdateReviewInput,
 } from '../../domain/repositories/review.repository';
 
+const REVIEW_WITH_PHOTOS_SELECT = {
+    id: true,
+    reservationId: true,
+    userId: true,
+    rating: true,
+    content: true,
+    createdAt: true,
+    updatedAt: true,
+    photos: {
+        select: { id: true, imageUrl: true, sortOrder: true },
+        orderBy: { sortOrder: 'asc' as const },
+    },
+} as const;
+
 @Injectable()
 export class PrismaReviewRepository extends ReviewRepository {
     constructor(private readonly prisma: PrismaService) {
@@ -77,21 +91,24 @@ export class PrismaReviewRepository extends ReviewRepository {
     async findReviewWithPhotos(reviewId: string): Promise<ReviewRow | null> {
         const row = await this.prisma.review.findUnique({
             where: { id: reviewId },
-            select: {
-                id: true,
-                reservationId: true,
-                userId: true,
-                rating: true,
-                content: true,
-                createdAt: true,
-                updatedAt: true,
-                photos: {
-                    select: { id: true, imageUrl: true, sortOrder: true },
-                    orderBy: { sortOrder: 'asc' },
-                },
-            },
+            select: REVIEW_WITH_PHOTOS_SELECT,
         });
         return row ?? null;
+    }
+
+    async findReviewByReservationWithPhotos(reservationId: string): Promise<ReviewRow | null> {
+        const row = await this.prisma.review.findUnique({
+            where: { reservationId },
+            select: REVIEW_WITH_PHOTOS_SELECT,
+        });
+        return row ?? null;
+    }
+
+    async deleteReviewCascade(reviewId: string): Promise<void> {
+        await this.prisma.$transaction(async (tx) => {
+            await tx.reviewPhoto.deleteMany({ where: { reviewId } });
+            await tx.review.delete({ where: { id: reviewId } });
+        });
     }
 
     async updateReviewWithPhotos(reviewId: string, input: UpdateReviewInput): Promise<ReviewRow> {
