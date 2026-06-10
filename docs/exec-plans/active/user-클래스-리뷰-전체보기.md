@@ -16,9 +16,40 @@
 - API 연동: **실 API** 요청/응답이 contract 스키마로 연결. MSW mock 바인딩만 한 상태는 미체크(연동 아님).
 -->
 
-- [ ] API 구현
+- [x] API 구현
 - [x] UI 구현
 - [ ] API 연동
+
+> API 구현: 2026-06-13 `GET /stores/{slug}/programs/{programId}/reviews` BE 구현 완료(drift 0, reviewer 통과, jest 282). 잔여 = FE 실연동(mock→실 BE) → `API 연동`은 FE turn. (3항목 모두 [x] 전까지 completed/ 미이동.)
+
+## Reconcile (2026-06-13, pre-reconcile) — batch 3: 클래스 리뷰 목록 (BE GET)
+
+FE UI **완료**(Status UI [x]). 잔여 = **BE 1개**: `GET /stores/{slug}/programs/{programId}/reviews`. **공개(Guest 허용, 인증 불필요).** FE 가 이미 계약에 바인딩했으므로 BE 는 그 계약에 정확히 맞춘다(이 블록 = implementer 바인딩 SSOT).
+
+**코드 검증(2026-06-13)**:
+- **BE 미구현**(클래스 리뷰 라우트 없음). 공방 목록 `GET /stores/{slug}/reviews` 는 별개로 이미 존재(store 모듈, cursor 기반) — **shape 다름, 미러 아님.**
+- **FE 바인딩 계약 = `packages/shared/src/contracts/program-edit.ts`** (store-reviews.ts 아님!): `entities/program/api.ts:46 getProgramReviews` → `ProgramReviewListResult`, query `{ page?, limit?, sort? }`(`ProgramReviewSort='latest'|'rating_high'`), MSW `handlers.ts:200`. **shared 무변경.**
+  - `programReviewSchema = { id, userId, nickname, rating(1~5), content(string), photos: [{ thumbnailUrl }], createdAt(ISO) }`
+  - `programReviewListResultSchema = { totalCount, averageRating(0~5), reviews[], pagination: { currentPage, totalPages, limit } }`
+  - `programReviewSortSchema = ['latest','rating_high']`
+  - 404 = `PROGRAM_NOT_FOUND`("프로그램을 찾을 수 없습니다.") — `ProgramEditErrorCode` 재사용(FE mock 동일).
+- **관계 경로**: `Reservation{ programId, storeId }` → Review 는 `reservationId` 로 연결. `Program{ id, storeId }`, `Store{ slug(unique) }`. → 필터 = `review.reservation.programId = programId` + 프로그램이 slug 공방 소속.
+- **#278(remove-thumbnailurl, dev 머지)**: `programReviewPhotoSchema = { imageUrl }`(thumbnailUrl 제거), `ReviewPhoto` 모델도 `imageUrl`만. → 응답 photos = `{ imageUrl }`(폴백 불필요).
+
+**결정 (2026-06-13)**:
+- **page 기반 pagination** 확정(FE 계약 — cursor 아님). `page`(기본 1), `limit`(기본 10), offset=`(page-1)*limit`, `totalPages = ceil(totalCount/limit)`(0건이면 0).
+- **sort**: `latest` → `createdAt DESC`, `rating_high` → `rating DESC, createdAt DESC`. 기본 `latest`.
+- **totalCount** = 해당 프로그램 노출 리뷰 수. **averageRating** = 노출 리뷰 rating 평균(소수 1자리 반올림; 0건이면 0).
+- **노출 필터**: `Review.isVisible = true` 만(신고/미노출 제외). store `PUBLISHED` 만(비공개/삭제 공방의 프로그램은 404 `PROGRAM_NOT_FOUND` — 다른 public 엔드포인트 정합).
+- **응답 매핑**: `nickname = maskNickname(review.user.nickname)` — **작성자명 마스킹**(Figma "리뷰 카드: 작성자 ID(마스킹)" 확정). **기존 공방 reader `prisma-store-reviews.reader.ts:181 maskNickname`(앞 3글자 노출 + 나머지 길이만큼 `*`, 3글자 이하면 첫 글자+`*`, 빈값 `*`) 규칙 그대로 재사용** — 공용 util 로 추출해 두 reader 공유(중복 금지). `content = review.content ?? ''`, `photos = review_photos(sortOrder ASC).map(p => ({ imageUrl: p.imageUrl }))`.
+- **모듈 배치(권장) = store 모듈** — 기존 `GET /stores/:slug/reviews`(`list-store-reviews.use-case`) + 프로그램 데이터(`list-store-programs`)가 store 모듈에 있어 응집도 높음. (plan 원안은 "ReviewModule"이나 user-리뷰 write/detail/delete 중심이라 부적합.) → `store.controller` 에 `@Get('stores/:slug/programs/:programId/reviews')` + `list-program-reviews.use-case` + `prisma-program-reviews.reader` + DTO(createZodDto(programReviewListResultSchema)) + 쿼리 DTO(page/limit/sort). **최종 모듈 위치는 착수 시 확인.**
+
+**잔여 결정 (2026-06-13, Figma "리뷰 리스트 조회" 근거 확정)**:
+- **작성자 표시 = 마스킹된 닉네임** (Figma "리뷰 카드: 작성자 ID(마스킹)"). BE 가 `nickname` 에 `maskNickname` 적용분을 넣음(공방 reader 규칙 재사용). FE 는 `nickname` 그대로 렌더.
+- **userId 공개 노출 — 채택: 빈 문자열(`''`) 반환(익명화)**. 근거: ① Figma 가 작성자 식별자를 **마스킹/익명화**하라는 의도 → 실제 user UUID 를 게스트에게 노출하면 익명화 위반(같은 작성자 리뷰 정확 상관관계 가능) ② **공방 리뷰 계약엔 userId 필드 자체가 없음**(더 익명적) ③ FE 미사용 → 화면 영향 0. 계약 `userId: z.string()`(non-null) 만족 위해 빈 문자열. (shared 변경 없이 익명화 유지.)
+- **모듈 배치 = store 모듈 확정**(기존 공방 리뷰 목록·프로그램 데이터와 응집).
+
+**이번 batch 범위 = BE 1개.** shared·FE 무변경. 착수 = #276 머지 후 dev 기준 새 브랜치(`feature/user-class-reviews` 등). Open decisions #1~#3(lightbox/정렬 UI/페이지네이션 방식)은 **FE 이미 해소**(UI 완료).
 
 ## Context
 
@@ -201,6 +232,20 @@
 ## Out (단계별 완료물)
 
 - API: `GET /stores/{slug}/programs/{programId}/reviews` 엔드포인트, DTO, service 로직
+  - 신규 파일:
+    - `apps/api/src/modules/store/infrastructure/persistence/review-author-mask.util.ts` — maskNickname 공용 util (기존 store-reviews reader에서 추출)
+    - `apps/api/src/modules/store/infrastructure/persistence/prisma-program-reviews.reader.ts` — 클래스 리뷰 목록 Prisma reader (페이지 기반, isVisible 필터, sort, averageRating aggregate, maskNickname 적용, userId='')
+    - `apps/api/src/modules/store/application/use-cases/list-program-reviews.use-case.ts` — 클래스 리뷰 목록 use-case
+    - `apps/api/src/modules/store/application/use-cases/list-program-reviews.use-case.spec.ts` — 9개 시나리오 spec (404/정렬/페이지/averageRating/isVisible/마스킹/userId/photos)
+    - `apps/api/src/modules/store/presentation/dto/list-program-reviews.dto.ts` — 응답 DTO (createZodDto(programReviewListResultSchema))
+  - 수정 파일:
+    - `packages/shared/src/contracts/program-edit.ts` — `programReviewListQuerySchema`(page/limit/sort, coerce·default) additive 추가(다른 store 핸들러처럼 query 스키마를 shared에 두고 `QueryZodValidationPipe` 사용 — reviewer 권고 반영). 기존 스키마 무변경.
+    - `prisma-store-reviews.reader.ts` — private maskNickname → util import로 교체
+    - `store-readers.ts` — ProgramReviewsReader 추상 클래스 + 관련 인터페이스 추가
+    - `store.controller.ts` — GET stores/:slug/programs/:programId/reviews 핸들러 추가 (가드 없음)
+    - `store.module.ts` — ListProgramReviewsUseCase, PrismaProgramReviewsReader provider 등록
+    - `api-routes.snapshot.spec.ts` — listProgramReviews 라우트 스냅샷 추가
+  - 결정 반영: page 기반 pagination, averageRating 소수1자리 반올림, 0건이면 totalPages=0/averageRating=0, userId='', maskNickname 공용화, store PUBLISHED 필터
 - UI: `/classes/[id]/reviews` 화면 구현 완료. `ClassReviewsClient`에서 헤더(`클래스 리뷰`), 평균 별점·총 리뷰 수, 정렬 토글(`latest`/`rating_high`), 리뷰 카드(닉네임·별점·본문·썸네일·작성일), 페이지네이션, 빈 상태, 이미지 확대 모달을 제공. 클래스 상세의 리뷰 진입 링크는 `store`/`storeName` 쿼리를 보존한다.
 - 연동: MSW handler → 실 API 전환, contract 스키마 기반 타입 바인딩 확인
 
