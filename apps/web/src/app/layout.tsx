@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { SuspendedStoreGate } from '@/features/store/switch';
+import { SuspendedStudioGate } from '@/features/studio/switch';
 
 import { MswProvider } from '../mocks/MswProvider';
 import { AppModal, AppSheet, AppToast } from '../shared/ui';
@@ -39,7 +39,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
                                 <AppSheet />
                                 <AppToast />
                                 {/* 작업 공방 게시중단 시 전체 takeover 오버레이(파트너 영역, 자체 가드). */}
-                                <SuspendedStoreGate />
+                                <SuspendedStudioGate />
                             </div>
                         </AuthProvider>
                     </QueryProvider>

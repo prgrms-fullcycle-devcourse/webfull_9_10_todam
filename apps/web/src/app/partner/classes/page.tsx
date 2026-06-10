@@ -10,14 +10,14 @@ import {
     PartnerClassListItem,
     usePartnerPrograms,
 } from '@/features/program/list';
-import { useCurrentStoreId } from '@/entities/store';
+import { useCurrentStudioId } from '@/entities/studio';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { EmptyState } from '@/shared/ui';
 
 // GET /partner/stores/:storeId/programs 연동 완료
 export default function PartnerClassesPage() {
     const router = useRouter();
-    const storeId = useCurrentStoreId();
+    const storeId = useCurrentStudioId();
     const { data, isLoading, isError } = usePartnerPrograms(storeId);
 
     // DRAFT(작성 중)는 목록 미표기. BE가 sortOrder asc로 선정렬 → filter는 순서 보존하므로 클라 재정렬 불필요.

@@ -6,7 +6,7 @@ import { InformationIcon } from '@todam/ui';
 import { formatKoreanMonthDayWithWeekday, toKSTOffsetISO } from '@todam/shared';
 import type { ReservationRestrictionTimeRange } from '@todam/shared';
 
-import { useCurrentStoreId } from '@/entities/store';
+import { useCurrentStudioId } from '@/entities/studio';
 import {
     useDeletePartnerReservationRestrictionsMutation,
     usePartnerTimeSlotsByDate,
@@ -26,7 +26,7 @@ type Props = {
 };
 
 export function RestrictionPageClient({ date }: Props) {
-    const storeId = useCurrentStoreId();
+    const storeId = useCurrentStudioId();
     const router = useRouter();
     const { open: openSheet, close: closeSheet } = useSheet();
     const { push: pushToast } = useToast();

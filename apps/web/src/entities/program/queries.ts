@@ -4,13 +4,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type { ProgramReviewSort, UpdateProgramStatusRequest } from '@todam/shared';
 
-import { getPartnerProgramDetail, getProgramReviews, getPublicProgramDetail, updateProgramStatus } from './api';
+import {
+    getPartnerProgramDetail,
+    getProgramReviews,
+    getPublicProgramDetail,
+    updateProgramStatus,
+} from './api';
 
-const PROGRAMS_KEY = (storeId: string) => ['partner', 'stores', storeId, 'programs'] as const;
+const PROGRAMS_KEY = (storeId: string) => ['partner', 'studios', storeId, 'programs'] as const;
 const DETAIL_KEY = (storeId: string, programId: string) =>
     [...PROGRAMS_KEY(storeId), programId] as const;
 const PUBLIC_DETAIL_KEY = (storeSlug: string, programId: string) =>
-    ['public', 'stores', storeSlug, 'programs', programId] as const;
+    ['public', 'studios', storeSlug, 'programs', programId] as const;
 const PUBLIC_REVIEWS_KEY = (
     storeSlug: string,
     programId: string,

@@ -15,18 +15,18 @@ import {
 
 import { StoreStatus } from '@todam/shared';
 
-import { usePartnerStoreDetail, usePartnerStorePrograms } from '@/entities/store';
+import { usePartnerStudioDetail, usePartnerStudioPrograms } from '@/entities/studio';
 import {
     ConvenienceChips,
-    StoreImageCarousel,
-    StoreInfoSummary,
-    StoreLocation,
-} from '@/entities/store';
-import { useReviewStore } from '@/entities/store';
+    StudioImageCarousel,
+    StudioInfoSummary,
+    StudioLocation,
+} from '@/entities/studio';
+import { useReviewStore } from '@/entities/studio';
 import { PartnerClassListItem } from '@/features/program/list';
-import { StoreEditSheet, StoreReviewPreview, StoreReviewResult } from '@/features/store/detail';
+import { StudioEditSheet, StudioReviewPreview, StudioReviewResult } from '@/features/studio/detail';
 import { ApiError } from '@/shared/api';
-import { useCurrentStoreId } from '@/entities/store';
+import { useCurrentStudioId } from '@/entities/studio';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useSheet, useToast } from '@/shared/model';
 import { EmptyState } from '@/shared/ui';
@@ -109,22 +109,22 @@ function StoreInfoActions({
 }
 
 /**
- * 현재 공방 상세 — storeId는 전역 currentStore(useCurrentStoreId). URL 파라미터 없음.
+ * 현재 공방 상세 — storeId는 전역 currentStore(useCurrentStudioId). URL 파라미터 없음.
  * 진입: 파트너홈 전환시트(심사중·반려) / 설정 > 공방관리(게시중).
  * 상태별: 심사중·반려 → 검수 결과 화면, 게시중 → 일반 상세.
  */
 export default function PartnerStorePage() {
     const router = useRouter();
     const { open } = useSheet();
-    const currentStoreId = useCurrentStoreId();
+    const currentStudioId = useCurrentStudioId();
     const { reviewStoreId, setReviewStoreId } = useReviewStore();
     // 미승인 공방 "보기"(reviewStoreId) 우선, 없으면 현재 작업 공방(currentStore).
     // reviewStoreId는 진입점이 명시 설정(심사중 선택=id, 설정>공방관리=null). 언마운트 clear는
     // StrictMode(dev) mount 시 cleanup이 먼저 돌아 값을 날리므로 쓰지 않는다.
-    const storeId = reviewStoreId ?? currentStoreId;
+    const storeId = reviewStoreId ?? currentStudioId;
 
-    const detail = usePartnerStoreDetail(storeId);
-    const programs = usePartnerStorePrograms(storeId);
+    const detail = usePartnerStudioDetail(storeId);
+    const programs = usePartnerStudioPrograms(storeId);
 
     const detailStatus = detail.data?.store.status;
     // 헤더 없는 전체 안내 화면(검수 결과·게시중단) → override 비활성 → 헤더 숨김.
@@ -173,7 +173,7 @@ export default function PartnerStorePage() {
     // 심사중·반려 공방은 일반 상세 대신 검수 결과 화면.
     if (store.status === StoreStatus.PENDING || store.status === StoreStatus.REJECTED) {
         return (
-            <StoreReviewResult
+            <StudioReviewResult
                 storeName={store.name}
                 status={store.status}
                 rejectedReason={store.rejectedReason}
@@ -187,7 +187,7 @@ export default function PartnerStorePage() {
         );
     }
 
-    // 게시중단 공방 보기 = 중단 안내(탈출 가능 — 홈으로). 작업 공방 lockout(SuspendedStoreGate)과 별개.
+    // 게시중단 공방 보기 = 중단 안내(탈출 가능 — 홈으로). 작업 공방 lockout(SuspendedStudioGate)과 별개.
     if (store.status === StoreStatus.SUSPENDED) {
         return (
             <div className="flex h-full flex-col bg-background">
@@ -218,13 +218,13 @@ export default function PartnerStorePage() {
     return (
         <div className="flex h-full flex-col bg-background">
             <main className="flex-1 overflow-y-auto pb-28">
-                <StoreImageCarousel images={store.images} />
+                <StudioImageCarousel images={store.images} />
 
                 <div className="flex flex-col px-4">
                     <SpaceBlock size={8} />
 
                     <div className="py-2">
-                        <StoreInfoSummary
+                        <StudioInfoSummary
                             name={store.name}
                             rating={store.rating}
                             reviewCount={store.reviewCount}
@@ -240,7 +240,7 @@ export default function PartnerStorePage() {
                         />
                     </div>
 
-                    <StoreReviewPreview slug={store.slug} />
+                    <StudioReviewPreview slug={store.slug} />
 
                     <Divider />
 
@@ -296,7 +296,7 @@ export default function PartnerStorePage() {
 
                     <SectionTitle title="위치" size="lg" />
                     <section className="py-2">
-                        <StoreLocation
+                        <StudioLocation
                             address={store.address ?? ''}
                             latitude={store.latitude ?? undefined}
                             longitude={store.longitude ?? undefined}
@@ -313,7 +313,7 @@ export default function PartnerStorePage() {
                     className="w-full"
                     onClick={() =>
                         open(
-                            <StoreEditSheet
+                            <StudioEditSheet
                                 storeName={store.name}
                                 inProgressReservationCount={store.inProgressReservationCount}
                             />,

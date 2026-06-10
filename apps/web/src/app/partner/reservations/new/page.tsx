@@ -2,12 +2,12 @@
 
 import { useSearchParams } from 'next/navigation';
 
-import { useCurrentStoreId } from '@/entities/store';
+import { useCurrentStudioId } from '@/entities/studio';
 import { PartnerReservationManualCreateClient } from '@/features/reservation/manual-create';
 
 export default function PartnerReservationNewPage() {
     const searchParams = useSearchParams();
-    const storeId = useCurrentStoreId();
+    const storeId = useCurrentStudioId();
 
     if (!storeId) return null;
 

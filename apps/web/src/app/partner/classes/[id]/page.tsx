@@ -8,7 +8,7 @@ import { ProgramDifficulty, ProgramStatus } from '@todam/shared';
 import { ApiError } from '@/shared/api';
 import { useSheet, useToast } from '@/shared/model';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
-import { useCurrentStoreId } from '@/entities/store';
+import { useCurrentStudioId } from '@/entities/studio';
 import {
     getDifficultyLabel,
     usePartnerProgramDetail,
@@ -20,7 +20,7 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default function PartnerClassDetailPage({ params }: PageProps) {
     const { id: programId } = use(params);
-    const storeId = useCurrentStoreId();
+    const storeId = useCurrentStudioId();
     const { data, isLoading } = usePartnerProgramDetail(storeId, programId);
     const program = data?.program;
     const { open: openSheet, close: closeSheet } = useSheet();
