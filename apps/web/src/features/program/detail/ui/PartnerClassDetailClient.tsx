@@ -18,6 +18,7 @@ import { useSheet, useToast } from '@/shared/model';
 
 import { ClassDescription } from './ClassDescription';
 import { ClassEditSheet } from './ClassEditSheet';
+import { ClassExperienceInfo } from './ClassExperienceInfo';
 import { ClassInfoTable } from './ClassInfoTable';
 
 export function PartnerClassDetailClient() {
@@ -118,6 +119,11 @@ export function PartnerClassDetailClient() {
                 {/* 클래스 상세 정보 테이블 */}
                 <section className="py-2">
                     <ClassInfoTable program={program} />
+                </section>
+
+                {/* 체험 정보 */}
+                <section className="py-2">
+                    <ClassExperienceInfo leadTimeDays={program.leadTimeDays} />
                 </section>
             </main>
 

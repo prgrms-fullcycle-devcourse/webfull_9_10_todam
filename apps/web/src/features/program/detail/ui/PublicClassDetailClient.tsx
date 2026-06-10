@@ -14,6 +14,7 @@ import {
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 
 import { ClassDescription } from './ClassDescription';
+import { ClassExperienceInfo } from './ClassExperienceInfo';
 import { ClassInfoTable } from './ClassInfoTable';
 
 export function PublicClassDetailClient() {
@@ -32,7 +33,21 @@ export function PublicClassDetailClient() {
     const program = detailQuery.data?.program;
     const reviewCount = reviewsQuery.data?.totalCount ?? 0;
 
-    useHeaderOverride({ title: storeName || program?.title, hideRightAction: true });
+    // 공유 버튼은 헤더 우측 액션 슬롯(Figma 클래스 상세 = sub 헤더 좌 back / 우 share).
+    useHeaderOverride({
+        title: storeName || program?.title,
+        rightAction: (
+            <Button
+                variant="ghost"
+                layout="onlyIcon"
+                size="lg"
+                icon={<ShareIcon />}
+                aria-label="공유하기"
+                onClick={handleShare}
+                className="hover:!bg-transparent hover:!text-foreground"
+            />
+        ),
+    });
 
     const reviewsHref = `/classes/${programId}/reviews?store=${encodeURIComponent(storeSlug)}&storeName=${encodeURIComponent(storeName)}`;
     const reserveHref = program
@@ -79,16 +94,6 @@ export function PublicClassDetailClient() {
                         imageUrl={program.images[0]?.imageUrl}
                         alt={program.title}
                         priority
-                        overlay={
-                            <Button
-                                variant="overlay"
-                                layout="onlyIcon"
-                                size="sm"
-                                icon={<ShareIcon />}
-                                aria-label="공유하기"
-                                onClick={handleShare}
-                            />
-                        }
                     />
                 </div>
 
@@ -124,6 +129,11 @@ export function PublicClassDetailClient() {
                 {/* 클래스 상세 정보 테이블 */}
                 <section className="py-2">
                     <ClassInfoTable program={program} />
+                </section>
+
+                {/* 체험 정보 */}
+                <section className="py-2">
+                    <ClassExperienceInfo leadTimeDays={program.leadTimeDays} />
                 </section>
             </main>
 
