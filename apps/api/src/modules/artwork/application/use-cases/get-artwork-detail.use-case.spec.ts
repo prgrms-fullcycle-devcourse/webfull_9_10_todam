@@ -16,7 +16,6 @@ function makePhoto(overrides: Partial<PhotoRow> = {}): PhotoRow {
     return {
         id: 'photo-uuid-001',
         imageUrl: 'https://cdn.todam.app/photo.jpg',
-        thumbnailUrl: 'https://cdn.todam.app/photo_thumb.jpg',
         status: ImageUploadStatus.UPLOADED,
         ...overrides,
     };
@@ -249,16 +248,15 @@ describe('GetArtworkDetailUseCase', () => {
         });
     });
 
-    // ── thumbnailUrl 폴백 ──
-    describe('thumbnailUrl 폴백', () => {
-        it('thumbnailUrl=null이면 imageUrl로 폴백한다', async () => {
+    // ── 사진 노출 ──
+    describe('사진 노출', () => {
+        it('UPLOADED 사진의 imageUrl을 그대로 노출한다', async () => {
             const uc = makeUseCase(
                 makeRow({
                     status: ArtworkStatus.DRYING,
                     logs: [
                         makeLog(ArtworkStatus.DRYING, new Date(), [
                             makePhoto({
-                                thumbnailUrl: null,
                                 imageUrl: 'https://cdn.todam.app/full.jpg',
                                 status: ImageUploadStatus.UPLOADED,
                             }),
@@ -268,7 +266,6 @@ describe('GetArtworkDetailUseCase', () => {
             );
             const result = await uc.execute(CURRENT_USER_ID, ARTWORK_ID);
             const drying = result.artwork.timeline[1]!;
-            expect(drying.photos[0]!.thumbnailUrl).toBe('https://cdn.todam.app/full.jpg');
             expect(drying.photos[0]!.imageUrl).toBe('https://cdn.todam.app/full.jpg');
         });
     });

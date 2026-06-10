@@ -222,7 +222,7 @@ export const handlers = [
                 nickname: '토담이',
                 rating: 5,
                 content: '차분하게 알려주셔서 처음인데도 즐겁게 만들었어요.',
-                photos: [{ thumbnailUrl: 'https://placehold.co/240x240?text=review' }],
+                photos: [{ imageUrl: 'https://placehold.co/240x240?text=review' }],
                 createdAt: '2026-05-10T12:00:00.000Z',
             },
             {

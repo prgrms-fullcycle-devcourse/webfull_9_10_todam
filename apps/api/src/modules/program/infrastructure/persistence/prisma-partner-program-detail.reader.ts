@@ -43,7 +43,7 @@ export class PrismaPartnerProgramDetailReader extends PartnerProgramDetailReader
                 images: {
                     where: { status: 'UPLOADED' },
                     orderBy: { sortOrder: 'asc' },
-                    select: { id: true, imageUrl: true, thumbnailUrl: true, isThumbnail: true },
+                    select: { id: true, imageUrl: true, isThumbnail: true },
                 },
             },
         });
@@ -83,7 +83,6 @@ export class PrismaPartnerProgramDetailReader extends PartnerProgramDetailReader
                 images: program.images.map((image) => ({
                     programImageId: image.id,
                     imageUrl: image.imageUrl,
-                    thumbnailUrl: image.thumbnailUrl,
                     isThumbnail: image.isThumbnail,
                 })),
             },

@@ -112,7 +112,6 @@ export interface ProgramImageRow {
     programImageId: string;
     programId: string;
     imageUrl: string;
-    thumbnailUrl: string;
     isThumbnail: boolean;
     status: 'PENDING' | 'UPLOADED';
 }
@@ -139,7 +138,6 @@ export function findPublicStoreBySlug(slug: string) {
         images: [
             {
                 imageUrl: 'https://placehold.co/640x360?text=store',
-                thumbnailUrl: 'https://placehold.co/320x180?text=store',
             },
         ],
         rating: 4.8,
@@ -299,7 +297,6 @@ export const seededProgramImages: ProgramImageRow[] = [
         programImageId: 'prog-img-uuid-001',
         programId: 'prog-uuid-001',
         imageUrl: 'https://cdn.todam.app/programs/prog-uuid-001/01.jpg',
-        thumbnailUrl: 'https://cdn.todam.app/programs/prog-uuid-001/01_thumb.jpg',
         isThumbnail: true,
         status: 'UPLOADED',
     },
@@ -338,7 +335,6 @@ export function programToApiShape(program: ProgramRow): object {
     const images: ProgramImage[] = getProgramImages(program.id).map((img) => ({
         programImageId: img.programImageId,
         imageUrl: img.imageUrl,
-        thumbnailUrl: img.thumbnailUrl,
         isThumbnail: img.isThumbnail,
     }));
     return {
@@ -819,9 +815,7 @@ export function createReviewImageUpload(fileName: string): { uploadUrl: string; 
 //   IN_PROGRESS substate(DRYING/BISQUE_FIRING/GLAZING/GLAZE_FIRING) +
 //   VISITED("체험이 완료되었어요.") + COMPLETED("작품이 완성되었어요.").
 //   ⚠️ RESERVED 는 plan D5 미해소 → timeline 에 등장시키지 않음.
-// - D1: imageUrl / thumbnailUrl 둘 다 채워 production 패턴 시연.
-const ARTWORK_SEED_THUMB = (slug: string) =>
-    `https://placehold.co/64x64?text=${encodeURIComponent(slug)}`;
+// - D1: imageUrl(원본)만 제공. 리사이징은 next/image 위임.
 const ARTWORK_SEED_IMG = (slug: string) =>
     `https://placehold.co/320x320?text=${encodeURIComponent(slug)}`;
 
@@ -862,11 +856,9 @@ const SEEDED_ARTWORK_DETAILS: Record<string, ArtworkDetail> = {
                 },
                 photos: [
                     {
-                        thumbnailUrl: ARTWORK_SEED_THUMB('drying-1'),
                         imageUrl: ARTWORK_SEED_IMG('drying-1'),
                     },
                     {
-                        thumbnailUrl: ARTWORK_SEED_THUMB('drying-2'),
                         imageUrl: ARTWORK_SEED_IMG('drying-2'),
                     },
                 ],
@@ -949,7 +941,6 @@ const SEEDED_ARTWORK_DETAILS: Record<string, ArtworkDetail> = {
                 },
                 photos: [
                     {
-                        thumbnailUrl: ARTWORK_SEED_THUMB('drying-1'),
                         imageUrl: ARTWORK_SEED_IMG('drying-1'),
                     },
                 ],
@@ -965,11 +956,9 @@ const SEEDED_ARTWORK_DETAILS: Record<string, ArtworkDetail> = {
                 },
                 photos: [
                     {
-                        thumbnailUrl: ARTWORK_SEED_THUMB('bisque-1'),
                         imageUrl: ARTWORK_SEED_IMG('bisque-1'),
                     },
                     {
-                        thumbnailUrl: ARTWORK_SEED_THUMB('bisque-2'),
                         imageUrl: ARTWORK_SEED_IMG('bisque-2'),
                     },
                 ],
@@ -986,15 +975,12 @@ const SEEDED_ARTWORK_DETAILS: Record<string, ArtworkDetail> = {
                 },
                 photos: [
                     {
-                        thumbnailUrl: ARTWORK_SEED_THUMB('glazing-1'),
                         imageUrl: ARTWORK_SEED_IMG('glazing-1'),
                     },
                     {
-                        thumbnailUrl: ARTWORK_SEED_THUMB('glazing-2'),
                         imageUrl: ARTWORK_SEED_IMG('glazing-2'),
                     },
                     {
-                        thumbnailUrl: ARTWORK_SEED_THUMB('glazing-3'),
                         imageUrl: ARTWORK_SEED_IMG('glazing-3'),
                     },
                 ],

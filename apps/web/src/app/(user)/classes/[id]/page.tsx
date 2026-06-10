@@ -36,7 +36,7 @@ function ClassDetailContent() {
 
     useHeaderOverride({ title: storeName, hideRightAction: true });
 
-    const heroImage = program?.images[0]?.imageUrl ?? program?.images[0]?.thumbnailUrl;
+    const heroImage = program?.images[0]?.imageUrl;
     const reviewsHref = `/classes/${programId}/reviews?store=${encodeURIComponent(storeSlug)}&storeName=${encodeURIComponent(storeName)}`;
     const reserveHref = program
         ? `/classes/${program.id}/reserve?title=${encodeURIComponent(program.title)}&price=${program.price}&deliverable=${program.deliverable}`

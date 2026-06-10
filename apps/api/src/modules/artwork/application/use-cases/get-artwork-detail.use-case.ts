@@ -54,11 +54,10 @@ export class GetArtworkDetailUseCase {
                       )
                     : null;
 
-            // photos: UPLOADED 만, thumbnailUrl 폴백 처리
+            // photos: UPLOADED 만
             const photos = (log?.photos ?? [])
                 .filter((p) => p.status === ImageUploadStatus.UPLOADED)
                 .map((p) => ({
-                    thumbnailUrl: p.thumbnailUrl ?? p.imageUrl,
                     imageUrl: p.imageUrl,
                 }));
 
