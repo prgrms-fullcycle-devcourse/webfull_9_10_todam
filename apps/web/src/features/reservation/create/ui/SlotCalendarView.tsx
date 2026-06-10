@@ -3,13 +3,33 @@
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, getDay, isToday } from 'date-fns';
 import { useState } from 'react';
 
+import { CALENDAR_YEAR_RANGE, DAYS, toKSTOffsetISO } from '@todam/shared';
 import type { AvailableSlotItem } from '@todam/shared';
-import { StoreTimeSlotStatus } from '@todam/shared';
+import { SectionTitle, Slot } from '@todam/ui';
 
-// ─── 상수 ────────────────────────────────────────────────────────────────────
+// 당일 예약 불가 — 오늘 0시 기준, 오늘보다 큰 날짜만 선택 가능.
+function startOfToday(): Date {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
 
-const DOW_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
-const YEAR_RANGE = 5;
+const fmtDate = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// 해당 월의 기본 선택일 = 첫 선택가능일.
+// 현재 월이면 내일(당일 예약 불가), 그 외 월이면 1일.
+function defaultDateFor(year: number, month: number): string {
+    const today = startOfToday();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const inMonth = tomorrow.getFullYear() === year && tomorrow.getMonth() === month - 1;
+    return inMonth ? fmtDate(tomorrow) : fmtDate(new Date(year, month - 1, 1));
+}
+
+// 슬롯 startAt(UTC)을 KST 기준 날짜(YYYY-MM-DD)/시각(HH:mm)으로. 브라우저 TZ 무관 고정.
+// (로컬 TZ로 비교하면 자정 걸치는 슬롯이 인접일로 새어 날짜별 개수가 틀어진다.)
+const slotKstDate = (startAt: string) => toKSTOffsetISO(startAt).slice(0, 10);
+const slotKstTime = (startAt: string) => toKSTOffsetISO(startAt).slice(11, 16);
 
 // ─── 연/월 드롭다운 ───────────────────────────────────────────────────────────
 
@@ -23,8 +43,8 @@ function YearMonthPicker({ year, month, onChange }: YearMonthPickerProps) {
     const [open, setOpen] = useState(false);
     const currentYear = new Date().getFullYear();
     const years = Array.from(
-        { length: YEAR_RANGE * 2 + 1 },
-        (_, i) => currentYear - YEAR_RANGE + i,
+        { length: CALENDAR_YEAR_RANGE * 2 + 1 },
+        (_, i) => currentYear - CALENDAR_YEAR_RANGE + i,
     );
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
@@ -33,7 +53,7 @@ function YearMonthPicker({ year, month, onChange }: YearMonthPickerProps) {
             <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-1 text-base font-semibold text-foreground"
+                className="flex items-center gap-1 text-lg font-semibold text-foreground"
             >
                 <span>
                     {year}년 {month}월
@@ -109,101 +129,57 @@ function YearMonthPicker({ year, month, onChange }: YearMonthPickerProps) {
     );
 }
 
-// ─── 날짜 셀 컴포넌트 ─────────────────────────────────────────────────────────
+// ─── 날짜 셀 ──────────────────────────────────────────────────────────────────
 
 interface DayCellProps {
     dateObj: Date;
-    hasAvailable: boolean;
     selected: boolean;
+    disabled: boolean;
     empty?: boolean;
     dow: number;
     onClick: () => void;
 }
 
-function DayCell({ dateObj, hasAvailable, selected, empty, dow, onClick }: DayCellProps) {
+function DayCell({ dateObj, selected, disabled, empty, dow, onClick }: DayCellProps) {
     if (empty) {
-        return <div className="aspect-square rounded-lg" />;
+        return <div className="aspect-square" />;
     }
+
     const today = isToday(dateObj);
     const day = dateObj.getDate();
 
-    const bgClass = today
-        ? 'bg-secondary-subtle border border-secondary-lighter'
-        : 'bg-surface border border-border-subtle';
+    const textClass = selected
+        ? 'text-foreground-inverse'
+        : disabled
+          ? 'text-foreground-disabled'
+          : dow === 0
+            ? 'text-danger'
+            : dow === 6
+              ? 'text-info'
+              : 'text-foreground';
 
-    const textClass = today
-        ? 'text-secondary-darker'
-        : dow === 0
-          ? 'text-danger'
-          : dow === 6
-            ? 'text-info'
-            : 'text-foreground';
-
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={[
-                'flex flex-col items-center justify-center gap-0.5 rounded-lg aspect-square transition-colors',
-                bgClass,
-                selected ? 'ring-2 ring-primary ring-offset-1' : 'hover:ring-1 hover:ring-border',
-            ].join(' ')}
-        >
-            <span className={['text-xs font-medium leading-none', textClass].join(' ')}>{day}</span>
-            {/* 예약 가능 슬롯 있음 dot */}
-            <span
-                className={[
-                    'size-1 rounded-full transition-opacity',
-                    hasAvailable ? 'bg-primary opacity-100' : 'opacity-0',
-                ].join(' ')}
-            />
-        </button>
-    );
-}
-
-// ─── 슬롯 목록 (선택된 날짜의 시간대) ─────────────────────────────────────────
-
-interface SlotItemProps {
-    slot: AvailableSlotItem;
-    selected: boolean;
-    onSelect: () => void;
-}
-
-function SlotItem({ slot, selected, onSelect }: SlotItemProps) {
-    const startTime = format(new Date(slot.startAt), 'HH:mm');
-    const endTime = format(new Date(slot.endAt), 'HH:mm');
-    const isSelectable = slot.isAvailable;
-    const isClosed =
-        slot.status === StoreTimeSlotStatus.CLOSED ||
-        slot.status === StoreTimeSlotStatus.CANCELED ||
-        !slot.isAvailable;
+    const boxClass = selected
+        ? 'bg-inverse font-semibold'
+        : today
+          ? 'border border-secondary-lighter'
+          : disabled
+            ? ''
+            : 'hover:bg-muted';
 
     return (
         <button
             type="button"
-            disabled={isClosed}
-            onClick={isSelectable ? onSelect : undefined}
+            disabled={disabled}
+            onClick={disabled ? undefined : onClick}
             className={[
-                'flex items-center justify-between w-full rounded-xl border px-4 py-3 text-sm transition-colors',
-                isClosed
-                    ? 'bg-muted border-border text-foreground-tertiary cursor-not-allowed'
-                    : selected
-                      ? 'bg-primary-subtle border-primary text-primary font-semibold'
-                      : 'bg-surface border-border-subtle text-foreground hover:border-primary',
-            ].join(' ')}
+                'flex aspect-square items-center justify-center rounded-lg text-sm transition-colors',
+                disabled ? 'cursor-not-allowed' : '',
+                boxClass,
+            ]
+                .filter(Boolean)
+                .join(' ')}
         >
-            <span>
-                {startTime} – {endTime}
-            </span>
-            <span className="text-xs">
-                {isClosed ? (
-                    <span className="text-foreground-tertiary">예약 불가</span>
-                ) : (
-                    <span className={selected ? 'text-primary' : 'text-foreground-secondary'}>
-                        잔여 {slot.remainingCount}명
-                    </span>
-                )}
-            </span>
+            <span className={['leading-none', textClass].join(' ')}>{day}</span>
         </button>
     );
 }
@@ -227,24 +203,12 @@ export function SlotCalendarView({
     onMonthChange,
     onSlotSelect,
 }: SlotCalendarViewProps) {
-    const [selectedDate, setSelectedDate] = useState<string>(() => {
-        const today = format(new Date(), 'yyyy-MM-dd');
-        const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
-        return today.startsWith(monthPrefix) ? today : `${monthPrefix}-01`;
-    });
+    // 첫 선택가능일(현재 월=내일)을 기본 선택 → 빈 상태 없이 바로 슬롯 노출.
+    const [selectedDate, setSelectedDate] = useState<string>(() => defaultDateFor(year, month));
+    const todayStart = startOfToday();
 
-    // 선택된 날짜의 슬롯 목록 (날짜 기준 필터링 — UTC ISO -> 로컬 날짜 비교)
-    const slotsForDate = slots.filter((s) => {
-        const slotDate = format(new Date(s.startAt), 'yyyy-MM-dd');
-        return slotDate === selectedDate;
-    });
-
-    // 날짜별 available 여부 맵
-    const availableByDate = new Map<string, boolean>();
-    for (const s of slots) {
-        const d = format(new Date(s.startAt), 'yyyy-MM-dd');
-        if (s.isAvailable) availableByDate.set(d, true);
-    }
+    // 선택된 날짜의 슬롯 목록 (UTC ISO → KST 날짜 비교)
+    const slotsForDate = slots.filter((s) => slotKstDate(s.startAt) === selectedDate);
 
     // 달력 그리드 계산
     const monthStart = new Date(year, month - 1, 1);
@@ -256,98 +220,97 @@ export function SlotCalendarView({
 
     const handleMonthChange = (y: number, m: number) => {
         onMonthChange(y, m);
-        const newPrefix = `${y}-${String(m).padStart(2, '0')}`;
-        const today = format(new Date(), 'yyyy-MM-dd');
-        setSelectedDate(today.startsWith(newPrefix) ? today : `${newPrefix}-01`);
+        setSelectedDate(defaultDateFor(y, m));
     };
 
     return (
-        <div className="flex flex-col gap-4">
-            {/* 연월 드롭다운 */}
-            <div className="px-1">
+        <div className="flex flex-col gap-2">
+            {/* 캘린더 카드 */}
+            <div className="flex flex-col gap-4 rounded-2xl border border-border-subtle bg-surface p-4">
                 <YearMonthPicker year={year} month={month} onChange={handleMonthChange} />
-            </div>
 
-            {/* 요일 헤더 */}
-            <div className="grid grid-cols-7 gap-1">
-                {DOW_LABELS.map((label, idx) => (
-                    <div
-                        key={label}
-                        className={[
-                            'text-center text-xs font-medium',
-                            idx === 0
-                                ? 'text-danger'
-                                : idx === 6
-                                  ? 'text-info'
-                                  : 'text-foreground-tertiary',
-                        ].join(' ')}
-                    >
-                        {label}
-                    </div>
-                ))}
-            </div>
+                {/* 요일 헤더 */}
+                <div className="grid grid-cols-7 gap-1">
+                    {DAYS.map((label, idx) => (
+                        <div
+                            key={label}
+                            className={[
+                                'text-center text-xs font-medium',
+                                idx === 0
+                                    ? 'text-danger'
+                                    : idx === 6
+                                      ? 'text-info'
+                                      : 'text-foreground-tertiary',
+                            ].join(' ')}
+                        >
+                            {label}
+                        </div>
+                    ))}
+                </div>
 
-            {/* 날짜 그리드 */}
-            <div className="grid grid-cols-7 gap-1">
-                {Array.from({ length: leadingEmpties }, (_, i) => (
-                    <DayCell
-                        key={`lead-${i}`}
-                        dateObj={new Date(year, month - 1, 0)}
-                        hasAvailable={false}
-                        selected={false}
-                        dow={i}
-                        empty
-                        onClick={() => {}}
-                    />
-                ))}
-                {daysInMonth.map((dateObj) => {
-                    const dateStr = format(dateObj, 'yyyy-MM-dd');
-                    const dow = getDay(dateObj);
-                    return (
+                {/* 날짜 그리드 */}
+                <div className="grid grid-cols-7 gap-1">
+                    {Array.from({ length: leadingEmpties }, (_, i) => (
                         <DayCell
-                            key={dateStr}
-                            dateObj={dateObj}
-                            hasAvailable={availableByDate.get(dateStr) ?? false}
-                            selected={selectedDate === dateStr}
-                            dow={dow}
-                            onClick={() => setSelectedDate(dateStr)}
+                            key={`lead-${i}`}
+                            dateObj={monthStart}
+                            selected={false}
+                            disabled
+                            dow={i}
+                            empty
+                            onClick={() => {}}
                         />
-                    );
-                })}
-                {Array.from({ length: trailingEmpties }, (_, i) => (
-                    <DayCell
-                        key={`trail-${i}`}
-                        dateObj={new Date(year, month - 1, 0)}
-                        hasAvailable={false}
-                        selected={false}
-                        dow={(leadingEmpties + daysInMonth.length + i) % 7}
-                        empty
-                        onClick={() => {}}
-                    />
-                ))}
+                    ))}
+                    {daysInMonth.map((dateObj) => {
+                        const dateStr = format(dateObj, 'yyyy-MM-dd');
+                        const dow = getDay(dateObj);
+                        // 당일 포함 과거는 선택 불가.
+                        const disabled = dateObj <= todayStart;
+                        return (
+                            <DayCell
+                                key={dateStr}
+                                dateObj={dateObj}
+                                selected={selectedDate === dateStr}
+                                disabled={disabled}
+                                dow={dow}
+                                onClick={() => setSelectedDate(dateStr)}
+                            />
+                        );
+                    })}
+                    {Array.from({ length: trailingEmpties }, (_, i) => (
+                        <DayCell
+                            key={`trail-${i}`}
+                            dateObj={monthEnd}
+                            selected={false}
+                            disabled
+                            dow={(leadingEmpties + daysInMonth.length + i) % 7}
+                            empty
+                            onClick={() => {}}
+                        />
+                    ))}
+                </div>
             </div>
 
-            {/* 선택된 날짜의 슬롯 목록 */}
-            <div className="flex flex-col gap-2 pt-2">
-                <p className="text-sm font-semibold text-foreground">
-                    {format(new Date(selectedDate), 'M월 d일')} 시간 선택
-                </p>
+            {/* 체험 시간 */}
+            <div className="flex flex-col py-2 gap-2">
+                <SectionTitle size="md" title="체험 시간" />
                 {slotsForDate.length === 0 ? (
-                    <p className="text-sm text-foreground-tertiary py-4 text-center">
-                        해당 날짜에 예약 가능한 슬롯이 없습니다.
+                    <p className="py-4 text-center text-sm text-foreground-tertiary">
+                        해당 날짜에 예약 가능한 시간이 없습니다.
                     </p>
                 ) : (
-                    <ul className="flex flex-col gap-2">
+                    <div className="grid grid-cols-3 gap-3">
                         {slotsForDate.map((slot) => (
-                            <li key={slot.slotId}>
-                                <SlotItem
-                                    slot={slot}
-                                    selected={selectedSlotId === slot.slotId}
-                                    onSelect={() => onSlotSelect(slot)}
-                                />
-                            </li>
+                            <Slot
+                                key={slot.slotId}
+                                selected={selectedSlotId === slot.slotId}
+                                disabled={!slot.isAvailable}
+                                onClick={() => onSlotSelect(slot)}
+                            >
+                                {slotKstTime(slot.startAt)}
+                            </Slot>
                         ))}
-                    </ul>
+                    </div>
                 )}
             </div>
         </div>
