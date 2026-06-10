@@ -1,13 +1,21 @@
 'use client';
 
+import Image from 'next/image';
 import { useRef, useState } from 'react';
 
 import { Pagination } from '@todam/ui';
 import type { StoreImage } from '@todam/shared';
 
 // 대표 이미지 carousel. 가로 스크롤(터치 native) + 마우스 드래그 + 인디케이터.
-// UI-2(디자인 토큰) 미확정 → 기존 패턴(plain img + bg-muted + object-cover)·기본 스케일로 골격 구성.
-export function StudioImageCarousel({ images }: { images: StoreImage[] }) {
+// 이미지 호스트는 cdn.todam.app(next.config remotePatterns 등록). next/Image fill + 첫 장 priority(LCP).
+// paginationClassName: 인디케이터 위치 조정. 풀블리드(시트 overlap) 화면은 'bottom-10'으로 올려 가림 방지.
+export function StudioImageCarousel({
+    images,
+    paginationClassName = 'bottom-3',
+}: {
+    images: StoreImage[];
+    paginationClassName?: string;
+}) {
     const [active, setActive] = useState(0);
     const trackRef = useRef<HTMLDivElement>(null);
     // 마우스 드래그 상태. 터치는 native 스크롤·스냅에 위임하므로 mouse 포인터만 처리.
@@ -83,18 +91,25 @@ export function StudioImageCarousel({ images }: { images: StoreImage[] }) {
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
             >
-                {sorted.map((image) => (
-                    <img
+                {sorted.map((image, idx) => (
+                    <div
                         key={image.id}
-                        src={image.imageUrl}
-                        alt=""
-                        draggable={false}
-                        // 마우스 드래그 중 이미지로 클릭 이벤트·텍스트 선택 전파 방지.
-                        onClickCapture={(e) => {
-                            if (drag.current.moved) e.preventDefault();
-                        }}
-                        className="aspect-[3/2] w-full shrink-0 cursor-grab snap-center select-none bg-muted object-cover active:cursor-grabbing"
-                    />
+                        className="relative aspect-[3/2] w-full shrink-0 snap-center bg-muted"
+                    >
+                        <Image
+                            src={image.imageUrl}
+                            alt=""
+                            fill
+                            sizes="100vw"
+                            priority={idx === 0} // 첫 장(히어로) LCP
+                            draggable={false}
+                            // 마우스 드래그 중 이미지로 클릭 이벤트·텍스트 선택 전파 방지.
+                            onClickCapture={(e) => {
+                                if (drag.current.moved) e.preventDefault();
+                            }}
+                            className="cursor-grab select-none object-cover active:cursor-grabbing"
+                        />
+                    </div>
                 ))}
             </div>
             {sorted.length > 1 && (
@@ -102,7 +117,7 @@ export function StudioImageCarousel({ images }: { images: StoreImage[] }) {
                     count={sorted.length}
                     activeIndex={active}
                     onDotClick={scrollToIndex}
-                    className="absolute bottom-3 left-0 right-0 justify-center"
+                    className={`absolute left-0 right-0 justify-center ${paginationClassName}`}
                 />
             )}
         </div>
