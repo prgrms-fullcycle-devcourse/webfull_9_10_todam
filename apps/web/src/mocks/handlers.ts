@@ -615,11 +615,14 @@ export const handlers = [
         return ok(path, result, '예약 상세 정보가 성공적으로 조회되었습니다.');
     }),
 
-    // 예약별 리뷰 상세 조회 (D4 가정 endpoint — BE 채택 패턴 결정 대기).
+    // 예약별 리뷰 상세 조회 (BE 확정 경로: GET /reservations/{reservationId}/review).
     // hasReview=true 인 예약만 200, 외엔 404 REVIEW_NOT_FOUND.
-    http.get(`${API}/reservations/:reservationId/review`, ({ params, request }) => {
+    // MSW 패턴을 `*/reservations/:reservationId/review`(no /api/v1)로 유지:
+    // 호출자 entities/reservation/api.ts 의 getReservationReview 가
+    // `/reservations/${id}/review` 상대경로로 호출하므로 MSW 인터셉트에 일치.
+    http.get(`*/reservations/:reservationId/review`, ({ params, request }) => {
         const reservationId = String(params.reservationId);
-        const path = `/api/v1/reservations/${reservationId}/review`;
+        const path = `/reservations/${reservationId}/review`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -753,9 +756,11 @@ export const handlers = [
     //   ?simulate=404 → 404 REVIEW_NOT_FOUND (이미 삭제됨)
     //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
     //   정상 → 200 data:null
-    http.delete(`${API}/reviews/:reviewId`, ({ params, request }) => {
+    // MSW 패턴을 `*/reviews/:reviewId`(no /api/v1)로 유지: entities/review/api.ts 의
+    // deleteReview 가 `/reviews/${reviewId}` 상대경로로 호출하므로 MSW 인터셉트에 일치.
+    http.delete(`*/reviews/:reviewId`, ({ params, request }) => {
         const reviewId = String(params.reviewId);
-        const path = `/api/v1/reviews/${reviewId}`;
+        const path = `/reviews/${reviewId}`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
