@@ -22,7 +22,12 @@ function resolveUrl(path: string): string {
     return `${BASE_URL}${path}`;
 }
 
-export type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };
+export type RequestOptions = Omit<RequestInit, 'body'> & {
+    body?: unknown;
+    // true 면 이 요청의 ApiError 를 전역 인증 에러 핸들러(로그인 모달/리다이렉트)로 보내지 않는다.
+    // 공개 화면의 선택적 인증 요청(예: 메인 최근 예약 위젯)에서 401 을 자체 처리할 때 사용.
+    skipAuthErrorHandler?: boolean;
+};
 type ApiErrorHandler = (error: ApiError) => void;
 
 let apiErrorHandler: ApiErrorHandler | null = null;
@@ -32,7 +37,7 @@ export function setApiErrorHandler(handler: ApiErrorHandler): void {
 }
 
 export async function clientApiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
-    const { body, headers, ...rest } = options;
+    const { body, headers, skipAuthErrorHandler, ...rest } = options;
     const token = getAuthToken();
     const requestHeaders = new Headers(headers);
     const url = resolveUrl(path);
@@ -57,7 +62,7 @@ export async function clientApiFetch<T>(path: string, options: RequestOptions = 
 
         return await parseApiResponse<T>(res);
     } catch (error) {
-        if (error instanceof ApiError) apiErrorHandler?.(error);
+        if (error instanceof ApiError && !skipAuthErrorHandler) apiErrorHandler?.(error);
         throw error;
     }
 }
