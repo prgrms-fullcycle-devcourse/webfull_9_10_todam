@@ -3,7 +3,7 @@ import { RedisService } from '../../../../redis/redis.service';
 import { UserRepository } from '../../domain/repositories/user.repository';
 import { EmailService } from '../../infrastructure/email/email.service';
 
-const RESET_CODE_TTL_SECONDS = 300; // 5분
+const RESET_CODE_TTL_SECONDS = 1800; // 30분
 
 function generateCode(): string {
     return String(Math.floor(100000 + Math.random() * 900000));
@@ -26,6 +26,6 @@ export class ResetPasswordRequestUseCase {
 
         const code = generateCode();
         await this.redis.set(`password:reset:${email}`, code, RESET_CODE_TTL_SECONDS);
-        await this.emailService.sendPasswordResetCode(email, code);
+        await this.emailService.sendPasswordResetLink(email, code);
     }
 }

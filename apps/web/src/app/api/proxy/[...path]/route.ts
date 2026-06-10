@@ -8,7 +8,7 @@ const ALLOWED_PREFIXES = [
     '/stores', // 컬렉션(`/stores`, `/stores?...`) + 하위(`/stores/search/...`, `/stores/:slug`) 모두 허용
     '/programs', // 퍼블릭 클래스 상세(`/programs/:id`)·리뷰(`/programs/:id/reviews`)·슬롯(`/programs/:id/available-slots`)
     '/users/',
-    '/reservations/',
+    '/reservations', // 컬렉션(`POST /reservations`) + 하위(`/reservations/:id`) 모두 허용
     '/reviews/',
     '/review/',
     '/artworks/',

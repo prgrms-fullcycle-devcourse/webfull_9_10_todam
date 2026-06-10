@@ -1,19 +1,33 @@
 'use client';
 
-import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
-import { PHONE_REGEX, ReservationDeliveryMethod, formatPhone, formatPrice } from '@todam/shared';
+import {
+    PHONE_REGEX,
+    ReservationDeliveryMethod,
+    formatPhone,
+    formatPrice,
+    toKSTOffsetISO,
+} from '@todam/shared';
 import type { AvailableSlotItem } from '@todam/shared';
-import { BottomBar, Button, Checkbox, DescriptionBlock, ProgressBar, TextInput } from '@todam/ui';
+import {
+    BottomBar,
+    Button,
+    DeliveryIcon,
+    DescriptionBlock,
+    PinIcon,
+    SectionTitle,
+    TextInput,
+} from '@todam/ui';
 
 import { ApiError } from '@/shared/api';
 import { useAuthStore } from '@/features/auth/login';
-import { useSheet } from '@/shared/model';
+import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { useToast } from '@/shared/model';
+import { ProgressBarWrapper } from '@/shared/ui/ProgressBarWrapper';
 
 import { useAvailableSlots, useCreateUserReservation } from '../queries';
-import { ParticipantSheet } from './ParticipantSheet';
 import { SlotCalendarView } from './SlotCalendarView';
 
 // localStorage 키 — 예약자 정보 기억하기
@@ -64,10 +78,16 @@ function getErrorMessage(error: unknown): string {
     return '예약 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
 }
 
-function formatSlotRange(slot: AvailableSlotItem): string {
-    const start = new Date(slot.startAt);
-    const end = new Date(slot.endAt);
-    return `${format(start, 'M월 d일')} ${format(start, 'HH:mm')} – ${format(end, 'HH:mm')}`;
+// 체험 일시 요약 — KST 고정. "M월 d일 오전/오후 h시[ m분]".
+function formatSlotSummary(startAt: string): string {
+    const iso = toKSTOffsetISO(startAt); // 2026-04-18T15:00:00+09:00
+    const month = Number(iso.slice(5, 7));
+    const day = Number(iso.slice(8, 10));
+    const hour24 = Number(iso.slice(11, 13));
+    const min = Number(iso.slice(14, 16));
+    const ampm = hour24 < 12 ? '오전' : '오후';
+    const h12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+    return `${month}월 ${day}일 ${ampm} ${h12}시${min > 0 ? ` ${min}분` : ''}`;
 }
 
 // ─── ReserveClient Props ──────────────────────────────────────────────────────
@@ -76,25 +96,30 @@ export interface ReserveClientProps {
     programId: string;
     programTitle: string;
     price: number;
-    /** Program.deliverable — false면 PICKUP 고정 */
     deliverable: boolean;
+    initialParticipantCount: number;
 }
 
 type Step = 'date' | 'info';
 
 // ─── ReserveClient ────────────────────────────────────────────────────────────
-//
-// 디자인(클래스 - 예약 생성)에 따른 다단계 마법사:
-//   인원 바텀시트(ParticipantSheet, mount 시 1회) → 1/2 날짜·시간 → 2/2 예약자 정보 → 완료 화면.
 
-export function ReserveClient({ programId, programTitle, price, deliverable }: ReserveClientProps) {
+export function ReserveClient({
+    programId,
+    programTitle,
+    price,
+    deliverable,
+    initialParticipantCount,
+}: ReserveClientProps) {
     const router = useRouter();
     const authState = useAuthStore((s) => s.state);
-    const user = useAuthStore((s) => s.user);
-    const { open, close } = useSheet();
+    const { push } = useToast();
 
     // 마법사 단계
     const [step, setStep] = useState<Step>('date');
+
+    // 인원은 클래스 상세 CTA에서 확정 — 이 화면에선 고정.
+    const participantCount = initialParticipantCount;
 
     // 현재 연/월
     const [year, setYear] = useState(() => new Date().getFullYear());
@@ -103,16 +128,11 @@ export function ReserveClient({ programId, programTitle, price, deliverable }: R
     // 선택된 슬롯
     const [selectedSlot, setSelectedSlot] = useState<AvailableSlotItem | null>(null);
 
-    // 참가 인원 (인원 시트에서 선행 결정)
-    const [participantCount, setParticipantCount] = useState(1);
-
     // 예약자 정보
     const [reserverName, setReserverName] = useState('');
     const [reserverPhone, setReserverPhone] = useState('');
-    const [requestMemo, setRequestMemo] = useState('');
 
-    // "내 정보 불러오기" / "입력한 정보 기억하기"
-    const [usedProfile, setUsedProfile] = useState(false);
+    // 예약자 정보 기억/불러오기 — 체크박스 UI는 spec out(주석). mount 자동 프리필 + 제출 저장만 유지.
     const [rememberInfo, setRememberInfo] = useState(false);
 
     // 수령 방법. 기본 PICKUP. deliverable=false 이면 PICKUP 고정(선택 비노출).
@@ -120,6 +140,7 @@ export function ReserveClient({ programId, programTitle, price, deliverable }: R
         ReservationDeliveryMethod.PICKUP,
     );
 
+    // 저장된 예약자 정보 있으면 → 기본 체크 + 자동 입력("내 정보 불러오기").
     useEffect(() => {
         const timer = window.setTimeout(() => {
             const saved = loadSavedReserverInfo();
@@ -139,44 +160,32 @@ export function ReserveClient({ programId, programTitle, price, deliverable }: R
         }
     }, [authState, router]);
 
-    // mount(인증 상태 확정) 시 인원 바텀시트 1회 노출
-    const sheetOpenedRef = useRef(false);
-    useEffect(() => {
-        if (authState === 'UNAUTHENTICATED' || sheetOpenedRef.current) return;
-        sheetOpenedRef.current = true;
-        open(
-            <ParticipantSheet
-                initial={participantCount}
-                onConfirm={(count) => {
-                    setParticipantCount(count);
-                    close();
-                }}
-            />,
-        );
-    }, [authState, close, open, participantCount]);
+    // 헤더: "{클래스명} 예약하기" + 뒤로가기(2단계면 1단계로, 1단계면 이전 화면).
+    useHeaderOverride({
+        type: 'sub',
+        title: `${programTitle} 예약하기`.trim(),
+        hideRightAction: true,
+        onBack: () => {
+            if (step === 'info') setStep('date');
+            else router.back();
+        },
+    });
 
-    const reopenParticipantSheet = () => {
-        open(
-            <ParticipantSheet
-                initial={participantCount}
-                onConfirm={(count) => {
-                    setParticipantCount(count);
-                    close();
-                }}
-            />,
-        );
-    };
-
-    // "내 정보 불러오기" — 프로필 prefill.
-    // 현재 프로필/인증 스토어 user에는 nickname만 있고 예약자 이름·전화 필드는 미포함이다
-    // (packages/shared user-me.ts: "예약자 필드는 D2 확정 전까지 미포함").
-    // → 이름은 nickname으로 best-effort prefill, 전화 prefill은 D2 확정 후 추가.
-    const handleToggleProfile = (checked: boolean) => {
-        setUsedProfile(checked);
-        if (checked && user?.nickname) {
-            setReserverName(user.nickname);
-        }
-    };
+    // [spec out] 예약자 정보 기억/불러오기 체크박스 토글. UI 복구 시 함께 살린다.
+    // - 저장 정보 있음("내 정보 불러오기"): 체크 시 저장값 자동입력, 해제 시 입력 초기화.
+    // - 저장 정보 없음("입력한 정보 기억하기"): 체크 상태만 기억 → 제출 시 저장.
+    // const handleToggleRemember = (checked: boolean) => {
+    //     setRememberInfo(checked);
+    //     if (savedInfo) {
+    //         if (checked) {
+    //             setReserverName(savedInfo.name);
+    //             setReserverPhone(savedInfo.phone);
+    //         } else {
+    //             setReserverName('');
+    //             setReserverPhone('');
+    //         }
+    //     }
+    // };
 
     // 슬롯 조회
     const {
@@ -186,7 +195,7 @@ export function ReserveClient({ programId, programTitle, price, deliverable }: R
     } = useAvailableSlots(programId, year, month);
 
     // 예약 생성 뮤테이션
-    const { mutate: createReservation, isPending, error: submitError } = useCreateUserReservation();
+    const { mutate: createReservation, isPending } = useCreateUserReservation();
 
     // 폼 유효성
     const nameValid = reserverName.trim().length >= 2 && reserverName.trim().length <= 20;
@@ -216,7 +225,6 @@ export function ReserveClient({ programId, programTitle, price, deliverable }: R
                 reserverPhone,
                 participantCount,
                 deliveryMethod,
-                ...(requestMemo.trim() ? { requestMemo: requestMemo.trim() } : {}),
             },
             {
                 onSuccess: (result) => {
@@ -240,7 +248,9 @@ export function ReserveClient({ programId, programTitle, price, deliverable }: R
                 onError: (error) => {
                     if (error instanceof ApiError && error.code === 'UNAUTHORIZED') {
                         router.replace('/login');
+                        return;
                     }
+                    push({ message: getErrorMessage(error) });
                 },
             },
         );
@@ -258,122 +268,48 @@ export function ReserveClient({ programId, programTitle, price, deliverable }: R
     }
 
     return (
-        <div className="flex min-h-screen flex-col">
-            {/* 진행 표시 */}
-            <div className="flex flex-col gap-3 px-4 pt-4 pb-2">
-                <div className="flex items-center justify-between">
-                    {step === 'info' ? (
-                        <button
-                            type="button"
-                            onClick={() => setStep('date')}
-                            className="text-sm text-foreground-secondary"
-                        >
-                            ← 이전
-                        </button>
-                    ) : (
-                        <span />
-                    )}
-                    <span className="text-sm font-medium text-foreground-tertiary">
-                        {step === 'date' ? '1' : '2'}/2
-                    </span>
+        <>
+            <main className="flex-1 overflow-y-auto px-4 pb-16">
+                <div className="py-2">
+                    <ProgressBarWrapper
+                        value={step === 'date' ? 50 : 100}
+                        leftLabel={`${step === 'date' ? 1 : 2}/2 단계`}
+                    />
                 </div>
-                <ProgressBar value={step === 'date' ? 50 : 100} />
-            </div>
 
-            <div className="flex flex-1 flex-col gap-6 px-4 pb-40 pt-3">
                 {step === 'date' ? (
-                    <>
-                        {/* 클래스명 + 인원 요약 */}
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-foreground-tertiary">클래스</p>
-                                <p className="mt-0.5 text-base font-semibold text-foreground">
-                                    {programTitle}
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={reopenParticipantSheet}
-                                className="text-sm text-primary underline underline-offset-2"
-                            >
-                                {participantCount}명
-                            </button>
-                        </div>
-
-                        <section className="flex flex-col gap-3">
-                            <h2 className="text-sm font-semibold text-foreground">
-                                예약 날짜와 시간을 선택해 주세요
-                            </h2>
-                            {slotsLoading && (
-                                <p className="py-4 text-center text-sm text-foreground-tertiary">
-                                    슬롯을 불러오는 중...
-                                </p>
-                            )}
-                            {slotsError && (
-                                <p className="py-4 text-center text-sm text-danger">
-                                    슬롯을 불러오지 못했습니다. 다시 시도해 주세요.
-                                </p>
-                            )}
-                            {!slotsLoading && !slotsError && (
-                                <SlotCalendarView
-                                    year={year}
-                                    month={month}
-                                    slots={slotsData?.slots ?? []}
-                                    selectedSlotId={selectedSlot?.slotId ?? null}
-                                    onMonthChange={(y, m) => {
-                                        setYear(y);
-                                        setMonth(m);
-                                        setSelectedSlot(null);
-                                    }}
-                                    onSlotSelect={(slot) => setSelectedSlot(slot)}
-                                />
-                            )}
-                        </section>
-                    </>
-                ) : (
-                    <>
-                        {/* 체험 일시 요약 */}
-                        {selectedSlot && (
-                            <section className="flex flex-col gap-2 rounded-2xl border border-border-subtle bg-surface px-4 py-4">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-foreground-tertiary">클래스</span>
-                                    <span className="text-foreground">{programTitle}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-foreground-tertiary">체험 일시</span>
-                                    <span className="text-foreground">
-                                        {formatSlotRange(selectedSlot)}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-foreground-tertiary">인원</span>
-                                    <span className="text-foreground">{participantCount}명</span>
-                                </div>
-                            </section>
-                        )}
-                        {overCapacity && selectedSlot && (
-                            <p className="text-sm text-danger">
-                                선택한 시간의 잔여 정원({selectedSlot.remainingCount}명)을
-                                초과했습니다. 인원을 줄이거나 다른 시간을 선택해 주세요.
+                    <div className="flex flex-col gap-2 py-2">
+                        <SectionTitle size="md" title="체험을 진행할 날짜를 골라주세요" />
+                        {slotsLoading && (
+                            <p className="py-4 text-center text-sm text-foreground-tertiary">
+                                슬롯을 불러오는 중...
                             </p>
                         )}
-
+                        {slotsError && (
+                            <p className="py-4 text-center text-sm text-danger">
+                                슬롯을 불러오지 못했습니다. 다시 시도해 주세요.
+                            </p>
+                        )}
+                        {!slotsLoading && !slotsError && (
+                            <SlotCalendarView
+                                year={year}
+                                month={month}
+                                slots={slotsData?.slots ?? []}
+                                selectedSlotId={selectedSlot?.slotId ?? null}
+                                onMonthChange={(y, m) => {
+                                    setYear(y);
+                                    setMonth(m);
+                                    setSelectedSlot(null);
+                                }}
+                                onSlotSelect={(slot) => setSelectedSlot(slot)}
+                            />
+                        )}
+                    </div>
+                ) : (
+                    <div className="flex flex-col">
                         {/* 예약자 정보 */}
-                        <section className="flex flex-col gap-4">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-sm font-semibold text-foreground">
-                                    예약자 정보
-                                </h2>
-                                {user && (
-                                    <label className="flex items-center gap-2 text-sm text-foreground-secondary">
-                                        <Checkbox
-                                            checked={usedProfile}
-                                            onCheckedChange={handleToggleProfile}
-                                        />
-                                        내 정보 불러오기
-                                    </label>
-                                )}
-                            </div>
+                        <section className="flex flex-col gap-3 py-2">
+                            <SectionTitle size="md" title="예약자 정보를 확인해 주세요" />
 
                             <TextInput
                                 label="예약자 이름"
@@ -406,108 +342,121 @@ export function ReserveClient({ programId, programTitle, price, deliverable }: R
                                 }
                             />
 
-                            <div className="flex flex-col gap-2">
-                                <label
-                                    htmlFor="requestMemo"
-                                    className="text-sm font-semibold text-foreground-tertiary"
-                                >
-                                    요청사항 <span className="font-normal">(선택)</span>
-                                </label>
-                                <textarea
-                                    id="requestMemo"
-                                    value={requestMemo}
-                                    onChange={(e) => setRequestMemo(e.target.value)}
-                                    placeholder="작가님께 전달할 내용을 입력해 주세요."
-                                    maxLength={500}
-                                    rows={3}
-                                    className="w-full resize-none rounded-xl border border-border-subtle bg-surface px-4 py-3 text-base text-foreground outline-none transition-colors placeholder:text-foreground-tertiary focus:border-primary"
-                                />
-                            </div>
-
-                            <label className="flex items-center gap-2 self-start text-sm text-foreground-secondary">
+                            {/* <label className="flex items-center gap-1 self-start text-sm text-foreground-secondary font-semibold py-2">
                                 <Checkbox
                                     checked={rememberInfo}
-                                    onCheckedChange={setRememberInfo}
+                                    onCheckedChange={handleToggleRemember}
                                 />
-                                입력한 정보 기억하기
-                            </label>
+                                {savedInfo ? '내 정보 불러오기' : '입력한 정보 기억하기'}
+                            </label> */}
                         </section>
 
-                        {/* 수령 방법 */}
-                        <section className="flex flex-col gap-3">
-                            <h2 className="text-sm font-semibold text-foreground">
-                                작품 수령 방법
-                            </h2>
-                            {deliverable ? (
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setDeliveryMethod(ReservationDeliveryMethod.PICKUP)
+                        {/* 수령 방법 — 택배 미지원(deliverable=false)이면 PICKUP 고정이라 섹션 숨김 */}
+                        {deliverable && (
+                            <section className="flex flex-col gap-2 py-2">
+                                <SectionTitle
+                                    size="md"
+                                    title="완성된 작품은 어떻게 전달해 드릴까요?"
+                                />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <DeliveryCard
+                                        icon={<DeliveryIcon size={16} />}
+                                        title="택배로 받기"
+                                        description="안전하게 집 앞으로 보내드려요"
+                                        selected={
+                                            deliveryMethod === ReservationDeliveryMethod.DELIVERY
                                         }
-                                        className={[
-                                            'flex-1 rounded-xl border px-4 py-3 text-sm transition-colors',
-                                            deliveryMethod === ReservationDeliveryMethod.PICKUP
-                                                ? 'border-primary bg-primary-subtle font-semibold text-primary'
-                                                : 'border-border-subtle bg-surface text-foreground hover:border-primary',
-                                        ].join(' ')}
-                                    >
-                                        직접 가져가기
-                                    </button>
-                                    <button
-                                        type="button"
                                         onClick={() =>
                                             setDeliveryMethod(ReservationDeliveryMethod.DELIVERY)
                                         }
-                                        className={[
-                                            'flex-1 rounded-xl border px-4 py-3 text-sm transition-colors',
-                                            deliveryMethod === ReservationDeliveryMethod.DELIVERY
-                                                ? 'border-primary bg-primary-subtle font-semibold text-primary'
-                                                : 'border-border-subtle bg-surface text-foreground hover:border-primary',
-                                        ].join(' ')}
-                                    >
-                                        택배로 받기
-                                    </button>
+                                    />
+                                    <DeliveryCard
+                                        icon={<PinIcon size={16} />}
+                                        title="직접 가져가기"
+                                        description="완성된 작품을 공방에서 직접 만나요"
+                                        selected={
+                                            deliveryMethod === ReservationDeliveryMethod.PICKUP
+                                        }
+                                        onClick={() =>
+                                            setDeliveryMethod(ReservationDeliveryMethod.PICKUP)
+                                        }
+                                    />
                                 </div>
-                            ) : (
-                                <p className="rounded-xl bg-muted px-4 py-3 text-sm text-foreground-secondary">
-                                    직접 가져가기 (이 클래스는 택배 배송을 지원하지 않습니다)
-                                </p>
-                            )}
-                            <DescriptionBlock type="info" title="작품 수령 안내">
-                                체험 후 작품은 건조·소성 과정을 거쳐 약 2~3주 뒤 수령하실 수 있어요.
-                                {deliverable ? ' 택배 수령 시 배송비가 추가될 수 있습니다.' : ''}
-                            </DescriptionBlock>
-                        </section>
-                    </>
+                                <div className="mt-2">
+                                    <DescriptionBlock title="작품 수령 안내">
+                                        택배를 선택하시면 별도의 배송비가 추가될 수 있어요. 직접
+                                        방문을 선택하시면 작품이 완성되는 날 바로 알려드릴게요.
+                                    </DescriptionBlock>
+                                </div>
+                            </section>
+                        )}
+                    </div>
                 )}
-            </div>
+            </main>
 
-            {/* 고정 하단 CTA */}
-            <div className="fixed bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2">
-                <BottomBar>
-                    {step === 'date' ? (
-                        <Button
-                            className="w-full"
-                            disabled={!selectedSlot}
-                            onClick={() => setStep('info')}
-                        >
-                            다음
+            {/* 하단 CTA */}
+            <BottomBar>
+                {step === 'date' ? (
+                    <Button
+                        className="w-full"
+                        disabled={!selectedSlot}
+                        onClick={() => setStep('info')}
+                    >
+                        {selectedSlot ? '다음' : '체험 시간을 선택해 주세요'}
+                    </Button>
+                ) : (
+                    <div className="flex w-full flex-col gap-3">
+                        {selectedSlot && (
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-foreground-tertiary">체험일시</span>
+                                <span className="text-sm font-semibold text-foreground">
+                                    {formatSlotSummary(selectedSlot.startAt)}・{participantCount}명
+                                </span>
+                            </div>
+                        )}
+                        {overCapacity && selectedSlot && (
+                            <p className="text-center text-sm text-danger">
+                                잔여 정원({selectedSlot.remainingCount}명)을 초과했어요.
+                            </p>
+                        )}
+                        <Button className="w-full" disabled={!canSubmit} onClick={handleSubmit}>
+                            {isPending ? '예약 중...' : `${formatPrice(totalPrice)} 예약하기`}
                         </Button>
-                    ) : (
-                        <div className="flex w-full flex-col gap-2">
-                            {submitError && (
-                                <p className="text-center text-sm text-danger">
-                                    {getErrorMessage(submitError)}
-                                </p>
-                            )}
-                            <Button className="w-full" disabled={!canSubmit} onClick={handleSubmit}>
-                                {isPending ? '예약 중...' : `${formatPrice(totalPrice)} 예약하기`}
-                            </Button>
-                        </div>
-                    )}
-                </BottomBar>
-            </div>
-        </div>
+                    </div>
+                )}
+            </BottomBar>
+        </>
+    );
+}
+
+// 수령 방법 카드 — 아이콘 + 제목 + 설명. 선택 시 primary 보더 강조.
+function DeliveryCard({
+    icon,
+    title,
+    description,
+    selected,
+    onClick,
+}: {
+    icon: ReactNode;
+    title: string;
+    description: string;
+    selected: boolean;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-pressed={selected}
+            className={[
+                // 보더 굵기는 2로 고정하고 색만 바꿔야 선택 시 내부 요소가 안 밀린다.
+                'flex flex-col gap-2 rounded-2xl border-2 bg-surface p-4 text-left transition-colors cursor-pointer',
+                selected ? 'border-primary' : 'border-border-subtle hover:border-primary',
+            ].join(' ')}
+        >
+            <span className={selected ? 'text-primary' : 'text-foreground-tertiary'}>{icon}</span>
+            <span className="text-sm font-semibold text-foreground">{title}</span>
+            <span className="text-xs leading-4 text-foreground-tertiary">{description}</span>
+        </button>
     );
 }

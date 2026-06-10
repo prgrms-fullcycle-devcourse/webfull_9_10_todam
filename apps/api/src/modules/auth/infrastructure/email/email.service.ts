@@ -25,19 +25,22 @@ export class EmailService {
         );
     }
 
-    async sendPasswordResetCode(email: string, code: string): Promise<void> {
+    async sendPasswordResetLink(email: string, code: string): Promise<void> {
+        const resetUrl = `${this.env.FRONTEND_URL}/reset-password?email=${encodeURIComponent(email)}&code=${code}`;
         await this.send(
             email,
-            '[토담] 비밀번호 재설정 인증코드',
-            this.codeEmailHtml(
+            '[토담] 비밀번호 재설정 링크',
+            this.linkEmailHtml(
                 '비밀번호 재설정',
-                '아래 인증코드를 입력해 비밀번호 재설정을 진행해주세요.',
-                code,
+                '아래 버튼을 클릭해 비밀번호를 재설정해주세요.',
+                resetUrl,
+                '비밀번호 재설정하기',
             ),
-            this.codeEmailText(
+            this.linkEmailText(
                 '비밀번호 재설정',
-                '아래 인증코드를 입력해 비밀번호 재설정을 진행해주세요.',
-                code,
+                '아래 버튼을 클릭해 비밀번호를 재설정해주세요.',
+                resetUrl,
+                '비밀번호 재설정하기',
             ),
         );
     }
@@ -82,5 +85,25 @@ export class EmailService {
 
     private codeEmailText(title: string, guide: string, code: string): string {
         return `[토담 ${title}]\n\n${guide}\n\n인증코드: ${code}\n\n인증코드는 5분간 유효합니다. 본인이 요청하지 않았다면 이 메일을 무시해주세요.`;
+    }
+
+    private linkEmailHtml(title: string, guide: string, url: string, buttonLabel: string): string {
+        return `<!DOCTYPE html>
+<html lang="ko">
+  <body style="margin:0;padding:24px;background:#f5f5f5;font-family:'Apple SD Gothic Neo',sans-serif;">
+    <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;">
+      <h1 style="font-size:20px;color:#222;margin:0 0 16px;">토담 ${title}</h1>
+      <p style="font-size:14px;color:#555;line-height:1.6;margin:0 0 24px;">${guide}</p>
+      <div style="text-align:center;margin-bottom:24px;">
+        <a href="${url}" style="display:inline-block;background:#1D5628;color:#fff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:8px;">${buttonLabel}</a>
+      </div>
+      <p style="font-size:12px;color:#999;line-height:1.6;margin:0;">링크는 30분간 유효합니다. 본인이 요청하지 않았다면 이 메일을 무시해주세요.</p>
+    </div>
+  </body>
+</html>`;
+    }
+
+    private linkEmailText(title: string, guide: string, url: string, buttonLabel: string): string {
+        return `[토담 ${title}]\n\n${guide}\n\n${buttonLabel}: ${url}\n\n링크는 30분간 유효합니다. 본인이 요청하지 않았다면 이 메일을 무시해주세요.`;
     }
 }

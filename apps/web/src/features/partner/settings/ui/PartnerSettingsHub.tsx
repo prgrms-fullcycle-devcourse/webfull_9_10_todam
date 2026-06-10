@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Modal, SectionTitle, Toggle } from '@todam/ui';
 
-import { logout } from '@/features/auth/logout';
+import { useLogout } from '@/features/auth/logout';
 import { TERMS } from '@/features/auth/terms';
 import { useReviewStore } from '@/entities/studio';
 import { MenuTable } from '@/shared/ui';
@@ -22,6 +22,7 @@ export function PartnerSettingsHub() {
     const router = useRouter();
     const { setReviewStoreId } = useReviewStore();
     const { open: openModal, close: closeModal } = useModal();
+    const runLogout = useLogout();
 
     // 알림 토글은 영속 API 미연동(후속). 화면 표시용 로컬 상태만 유지.
     const [reservationNoti, setReservationNoti] = useState(true);
@@ -47,14 +48,7 @@ export function PartnerSettingsHub() {
 
     const doLogout = async () => {
         closeModal();
-        try {
-            await logout();
-        } catch (err) {
-            console.warn('[logout] 서버 로그아웃 실패, 클라이언트 토큰만 제거', err);
-        } finally {
-            window.localStorage.removeItem('accessToken');
-            router.push('/login');
-        }
+        await runLogout();
     };
 
     const handleLogout = () => {

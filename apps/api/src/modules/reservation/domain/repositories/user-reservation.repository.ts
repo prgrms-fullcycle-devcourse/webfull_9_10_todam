@@ -60,6 +60,31 @@ export interface UserReservationCancelRow {
     artworkStatus: ArtworkStatus | null;
 }
 
+/** PATCH /reservations/:reservationId/delivery 가드용 행 */
+export interface UserReservationDeliveryGuardRow {
+    userId: string | null;
+    deliveryMethod: ReservationDeliveryMethod;
+    status: ReservationStatus;
+}
+
+/** PATCH /reservations/:reservationId/delivery upsert 입력 */
+export interface UpsertDeliveryInput {
+    recipientName: string;
+    recipientPhone: string;
+    postalCode: string;
+    address: string;
+    addressDetail?: string;
+}
+
+/** PATCH /reservations/:reservationId/delivery upsert 결과 */
+export interface UpsertDeliveryResult {
+    recipientName: string;
+    recipientPhone: string;
+    postalCode: string;
+    address: string;
+    addressDetail?: string;
+}
+
 /** POST /reservations/:reservationId/cancel 취소 결과 */
 export interface CancelUserReservationResult {
     id: string;
@@ -124,4 +149,13 @@ export abstract class UserReservationRepository {
         row: UserReservationCancelRow,
         userId: string,
     ): Promise<CancelUserReservationResult>;
+
+    abstract findReservationForDelivery(
+        reservationId: string,
+    ): Promise<UserReservationDeliveryGuardRow | null>;
+
+    abstract upsertDelivery(
+        reservationId: string,
+        input: UpsertDeliveryInput,
+    ): Promise<UpsertDeliveryResult>;
 }
