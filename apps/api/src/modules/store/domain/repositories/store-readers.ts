@@ -230,6 +230,44 @@ export abstract class FavoriteStoresReader {
     abstract execute(query: ListFavoriteStoresQuery): Promise<ListFavoriteStoresResult>;
 }
 
+// ─── 클래스 리뷰 목록 (GET /stores/{slug}/programs/{programId}/reviews) ─────────
+export type ProgramReviewSort = 'latest' | 'rating_high';
+
+export interface ListProgramReviewsQuery {
+    page: number;
+    limit: number;
+    sort: ProgramReviewSort;
+}
+
+export interface ProgramReviewListItem {
+    id: string;
+    userId: string;
+    nickname: string;
+    rating: number;
+    content: string;
+    photos: { imageUrl: string }[];
+    createdAt: string;
+}
+
+export interface ListProgramReviewsResult {
+    totalCount: number;
+    averageRating: number;
+    reviews: ProgramReviewListItem[];
+    pagination: {
+        currentPage: number;
+        totalPages: number;
+        limit: number;
+    };
+}
+
+export abstract class ProgramReviewsReader {
+    abstract execute(
+        slug: string,
+        programId: string,
+        query: ListProgramReviewsQuery,
+    ): Promise<ListProgramReviewsResult>;
+}
+
 import type {
     OcrStatus,
     PartnerDashboardStoresResult,

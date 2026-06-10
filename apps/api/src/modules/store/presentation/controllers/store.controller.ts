@@ -26,6 +26,7 @@ import {
     createStoreRequestSchema,
     favoriteStoresQuerySchema,
     listStoreReviewsQuerySchema,
+    programReviewListQuerySchema,
     listStoresQuerySchema,
     slugAvailabilityQuerySchema,
     storeReviewSortSchema,
@@ -38,6 +39,7 @@ import type {
     CreateStoreImageRequest,
     CreateStoreRequest,
     ListStoreReviewsQuery,
+    ProgramReviewListQuery,
     ListStoresQuery,
     SlugAvailabilityQuery,
     StoreUpdateRequest,
@@ -68,6 +70,7 @@ import { GetSlugAvailabilityUseCase } from '../../application/use-cases/get-slug
 import { GetStoreDetailUseCase } from '../../application/use-cases/get-store-detail.use-case';
 import { ListStoreProgramsUseCase } from '../../application/use-cases/list-store-programs.use-case';
 import { ListStoreReviewsUseCase } from '../../application/use-cases/list-store-reviews.use-case';
+import { ListProgramReviewsUseCase } from '../../application/use-cases/list-program-reviews.use-case';
 import { ToggleFavoriteStoreUseCase } from '../../application/use-cases/toggle-favorite-store.use-case';
 import { ListFavoriteStoresUseCase } from '../../application/use-cases/list-favorite-stores.use-case';
 import { GetPartnerCurrentStoreUseCase } from '../../application/use-cases/get-partner-current-store.use-case';
@@ -93,6 +96,7 @@ import {
     ListFavoriteStoresResponseDto,
 } from '../dto/list-favorite-stores.dto';
 import { ListStoreProgramsResponseDto } from '../dto/list-store-programs.dto';
+import { ListProgramReviewsResponseDto } from '../dto/list-program-reviews.dto';
 import {
     GetPartnerCurrentStoreResponseDto,
     UpdatePartnerCurrentStoreDto,
@@ -127,6 +131,7 @@ export class StoreController {
         private readonly getStoreDetailUseCase: GetStoreDetailUseCase,
         private readonly listStoreProgramsUseCase: ListStoreProgramsUseCase,
         private readonly listStoreReviewsUseCase: ListStoreReviewsUseCase,
+        private readonly listProgramReviewsUseCase: ListProgramReviewsUseCase,
         private readonly toggleFavoriteStoreUseCase: ToggleFavoriteStoreUseCase,
         private readonly listFavoriteStoresUseCase: ListFavoriteStoresUseCase,
         private readonly getPartnerCurrentStoreUseCase: GetPartnerCurrentStoreUseCase,
@@ -216,6 +221,26 @@ export class StoreController {
     })
     async listStorePrograms(@Param('slug') slug: string): Promise<ListStoreProgramsResponseDto> {
         return this.listStoreProgramsUseCase.execute(slug);
+    }
+
+    @Get('stores/:slug/programs/:programId/reviews')
+    @HttpCode(HttpStatus.OK)
+    // 퍼블릭(Guest·User 공통). PUBLISHED 공방의 특정 클래스 노출 리뷰 목록. 페이지 기반.
+    @ResponseMessage('리뷰 목록이 성공적으로 조회되었습니다.')
+    @ApiOkResponse({
+        description: '클래스 리뷰 목록 조회 성공',
+        type: ListProgramReviewsResponseDto,
+    })
+    @ApiQuery({ name: 'page', type: Number, required: false, example: 1 })
+    @ApiQuery({ name: 'limit', type: Number, required: false, example: 10 })
+    @ApiQuery({ name: 'sort', enum: ['latest', 'rating_high'], required: false })
+    async listProgramReviews(
+        @Param('slug') slug: string,
+        @Param('programId') programId: string,
+        @Query(new QueryZodValidationPipe(programReviewListQuerySchema))
+        query: ProgramReviewListQuery,
+    ): Promise<ListProgramReviewsResponseDto> {
+        return this.listProgramReviewsUseCase.execute(slug, programId, query);
     }
 
     @Get('stores/:slug/reviews')

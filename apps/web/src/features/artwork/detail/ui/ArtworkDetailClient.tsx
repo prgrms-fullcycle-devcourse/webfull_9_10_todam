@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import type { ArtworkPhoto } from '@todam/shared';
 
 import { Stepper } from '@/entities/artwork';
@@ -19,7 +21,13 @@ function ArtworkImageView({ photo }: { photo: ArtworkPhoto }) {
             className="h-80 w-80 overflow-hidden rounded-[32px] bg-muted"
             onClick={(e) => e.stopPropagation()}
         >
-            <img src={src} alt="작품 이미지" className="h-full w-full object-cover" />
+            <Image
+                src={src}
+                alt="작품 이미지"
+                width={320}
+                height={320}
+                className="h-full w-full object-cover"
+            />
         </div>
     );
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import type { ArtworkPhoto } from '@todam/shared';
 
 // 단계별 사진 가로 스크롤 (Figma `8505:16209`).
@@ -24,7 +26,13 @@ export function StepperItemMedia({ photos, onSelect }: StepperItemMediaProps) {
                     aria-label={`작품 이미지 ${idx + 1} 확대 보기`}
                     className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted"
                 >
-                    <img src={photo.imageUrl} alt="" className="h-full w-full object-cover" />
+                    <Image
+                        src={photo.imageUrl}
+                        alt=""
+                        width={64}
+                        height={64}
+                        className="h-full w-full object-cover"
+                    />
                     <span
                         className="absolute left-1 top-1 flex h-5 w-11 items-center justify-center rounded bg-surface text-[10px] font-medium leading-[15px] text-foreground-secondary"
                         aria-hidden="true"
