@@ -990,12 +990,7 @@ export const handlers = [
             );
         }
         if (simulate === '400') {
-            return fail(
-                path,
-                400,
-                'INVALID_REQUEST',
-                '닉네임은 특수문자를 제외한 2자 이상 10자 이내여야 합니다.',
-            );
+            return fail(path, 400, 'INVALID_REQUEST', '닉네임은 한글·영문·숫자 2~10자여야 합니다.');
         }
 
         const body = (await request.json()) as { nickname?: string };
