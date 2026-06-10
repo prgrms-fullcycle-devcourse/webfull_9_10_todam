@@ -2,6 +2,7 @@ import type {
     GetMyProfileResponse,
     UpdateMyProfileBody,
     UpdateMyProfileResponse,
+    WithdrawBody,
 } from '@todam/shared';
 
 import { clientApiFetch } from '@/shared/api';
@@ -18,5 +19,15 @@ export function updateMyProfile(body: UpdateMyProfileBody) {
     return clientApiFetch<UpdateMyProfileResponse>('/users/me', {
         method: 'PATCH',
         body,
+    });
+}
+
+// DELETE /users/me — 회원 탈퇴
+// contract: docs/exec-plans/active/마이 - 회원탈퇴.md
+// 이메일 유저: body { password }. 소셜 유저: body 없음(undefined).
+export function withdrawAccount(body?: WithdrawBody) {
+    return clientApiFetch<null>('/users/me', {
+        method: 'DELETE',
+        ...(body ? { body } : {}),
     });
 }

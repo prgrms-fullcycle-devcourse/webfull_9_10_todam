@@ -13,6 +13,7 @@ import {
     AUTOCOMPLETE_ERROR_CODES,
     ProgramDifficulty,
     ProgramStatus,
+    WithdrawErrorCode,
     type DeliveryEditResult,
     type ArtworkDetailResult,
     type GeocodeResult,
@@ -1274,5 +1275,73 @@ export const handlers = [
             },
         };
         return ok(path, result, '알림 설정이 성공적으로 수정되었습니다.');
+    }),
+
+    // ─── 회원탈퇴 (DELETE /api/v1/users/me) ─────────────────────────────────
+    // contract: docs/exec-plans/active/마이 - 회원탈퇴.md API Contract (스냅샷) 기준
+    // 시뮬 토글:
+    //   ?unauth=1 → 401 UNAUTHORIZED
+    //   ?simulate=partner → 400 ACTIVE_PARTNER_EXISTS
+    //   ?simulate=reservations → 400 ACTIVE_RESERVATIONS_OR_ARTWORKS_EXIST
+    //   ?simulate=password → 400 PASSWORD_MISMATCH
+    //   ?simulate=404 → 404 USER_NOT_FOUND
+    //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
+    //   정상 → 200 data:null
+    http.delete(`${API}/users/me`, ({ request }) => {
+        const path = '/api/v1/users/me';
+        const url = new URL(request.url);
+
+        if (url.searchParams.get('unauth') === '1') {
+            return fail(
+                path,
+                401,
+                WithdrawErrorCode.UNAUTHORIZED,
+                '인증 정보가 유효하지 않거나 만료되었습니다.',
+            );
+        }
+
+        const simulate = url.searchParams.get('simulate');
+        if (simulate === 'partner') {
+            return fail(
+                path,
+                400,
+                WithdrawErrorCode.ACTIVE_PARTNER_EXISTS,
+                '파트너 해지 후 탈퇴가 가능합니다.',
+            );
+        }
+        if (simulate === 'reservations') {
+            return fail(
+                path,
+                400,
+                WithdrawErrorCode.ACTIVE_RESERVATIONS_OR_ARTWORKS_EXIST,
+                '진행 중인 클래스 예약 또는 제작 중인 도자기 작품이 남아있어 탈퇴가 불가능합니다.',
+            );
+        }
+        if (simulate === 'password') {
+            return fail(
+                path,
+                400,
+                WithdrawErrorCode.PASSWORD_MISMATCH,
+                '본인 확인을 위한 인증 정보가 일치하지 않습니다.',
+            );
+        }
+        if (simulate === '404') {
+            return fail(
+                path,
+                404,
+                WithdrawErrorCode.USER_NOT_FOUND,
+                '존재하지 않거나 탈퇴 처리된 회원입니다.',
+            );
+        }
+        if (simulate === '500') {
+            return fail(
+                path,
+                500,
+                WithdrawErrorCode.INTERNAL_SERVER_ERROR,
+                '회원 탈퇴 처리 중 서버 내부 오류가 발생했습니다.',
+            );
+        }
+
+        return ok(path, null, '회원 탈퇴가 정상적으로 처리되었습니다.');
     }),
 ];
