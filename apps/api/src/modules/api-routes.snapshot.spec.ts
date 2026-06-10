@@ -324,6 +324,13 @@ describe('API route baseline', () => {
             },
             {
                 controller: 'StoreController',
+                handler: 'ocrBusinessDocument',
+                method: 'POST',
+                path: '/partner/business-documents/ocr',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'StoreController',
                 handler: 'createStoreImage',
                 method: 'POST',
                 path: '/partner/stores/:storeId/images',

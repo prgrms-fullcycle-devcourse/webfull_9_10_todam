@@ -8,7 +8,7 @@
 
 ## Status
 
-- [ ] API 구현
+- [x] API 구현
 - [ ] UI 구현
 - [ ] API 연동
 
@@ -44,10 +44,11 @@
 // 신설 컬럼
 startDate       String?    @map("start_date") @db.VarChar(8)  // "YYYYMMDD", OCR prefill + 사용자 수정
 
-// enum 변경: OcrStatus
-// BEFORE: PENDING | VERIFIED | FAILED
-// AFTER:  PENDING | DONE     | FAILED
-// 마이그레이션: 기존 VERIFIED → DONE rename
+// 제거: ocrStatus 컬럼 + OcrStatus enum + ocrRaw 컬럼
+// 사유: 문서 신뢰 상태는 verificationStatus(진위확인, verify plan)로 일원화.
+//       OCR은 prefill 보조 기능이라 별도 상태/원본 컬럼 불필요(둘 다 현재 읽기·쓰기 없는 죽은 컬럼).
+// 처리 결과는 응답 HTTP status로 표현(성공 200 / 실패 404·413·415·500·503).
+// 국세청 감사 원본이 필요하면 verify plan이 채우는 시점에 제대로 된 이름(예: nts_raw)으로 직접 추가.
 ```
 
 **Zod 스키마 (`packages/shared/src/contracts/store-registration.ts`)**
@@ -66,7 +67,7 @@ export const businessDocumentOcrResultSchema = z.object({
   businessName:   z.string().nullable(),
   businessAddress:z.string().nullable(),
   startDate:      z.string().nullable(),   // "YYYYMMDD" 또는 null
-  ocrStatus:      z.nativeEnum(OcrStatus), // DONE | FAILED
+  // ocrStatus 없음 — 처리 성공/실패는 HTTP status로 표현. 개별 필드 null = 파싱 실패.
 });
 export type BusinessDocumentOcrResult = z.infer<typeof businessDocumentOcrResultSchema>;
 ```
@@ -91,8 +92,7 @@ export type BusinessDocumentOcrResult = z.infer<typeof businessDocumentOcrResult
      - 사업자번호: `/\d{3}-\d{2}-\d{5}/`
      - 개업일자: `/\d{4}\.\s*\d{2}\.\s*\d{2}|\d{8}/` → "YYYYMMDD"로 정규화
      - 대표자명, 상호명, 사업장주소: 키워드 기반 라인 추출
-  8. `ocrRaw`에 Vision 원본 응답 저장(DB 저장은 BusinessDocument 생성 시점이 아니므로 이 단계는 응답에만 포함)
-  9. 응답 반환 (`ocrStatus: DONE` — 텍스트 추출 성공, 개별 필드 null은 파싱 실패)
+  8. 응답 반환 (개별 필드 null은 파싱 실패 — graceful degradation, 처리 자체는 성공이므로 200)
 - 응답 200:
   ```json
   {
@@ -101,16 +101,22 @@ export type BusinessDocumentOcrResult = z.infer<typeof businessDocumentOcrResult
       "ownerName": "홍길동",
       "businessName": "흙담공방",
       "businessAddress": "서울특별시 성동구 둑섬로 273",
-      "startDate": "20190315",
-      "ocrStatus": "DONE"
+      "startDate": "20190315"
     }
   }
   ```
 - 응답 실패:
   - `400 INVALID_DOCUMENT_URL` — prefix 화이트리스트 불일치
   - `403 FORBIDDEN` — 소유권 대조 실패(타 userId prefix)
-  - `404 DOCUMENT_NOT_FOUND` — objectExists false
+  - `404 DOCUMENT_NOT_FOUND` — HeadObject 없음(미업로드)
+  - `413 DOCUMENT_TOO_LARGE` — 파일 크기 10MB 초과(다운로드 전 HeadObject + 스트리밍 중 상한 둘 다)
+  - `415 UNSUPPORTED_DOCUMENT_TYPE` — PDF 등 이미지가 아닌 문서(Vision TEXT_DETECTION 미지원)
+  - `503 SERVICE_UNAVAILABLE` — Vision 자격증명 미설정(HttpException 그대로 전달)
   - `500 OCR_FAILED` — Vision API 장애 (전체 호출 실패 시. 파싱 실패는 200 + 필드 null)
+- 서버 게이트(처리 순서 4): HeadObject 1회로 존재·크기·타입을 함께 검증한다.
+  PDF(Content-Type `application/pdf` 또는 `.pdf`)는 415, 10MB 초과는 413으로 다운로드 전 반려.
+  추가로 GetObject 스트리밍 중 누적이 10MB 초과하면 중단(HeadObject 이후 객체 교체 TOCTOU 방어).
+- 업로드 차단: `POST /partner/business-documents/images`의 `fileType`을 `image/jpeg`·`image/png`로 제한(PDF 차단). FE도 업로드 전 `isBusinessDocumentFileType`로 사전 차단.
 
 ### MSW mock (개발용)
 
@@ -124,7 +130,6 @@ http.post('/api/v1/partner/business-documents/ocr', () =>
       businessName: '흙담공방',
       businessAddress: '서울특별시 성동구 둑섬로 273',
       startDate: '20190315',
-      ocrStatus: 'DONE',
     },
   })
 )
@@ -136,10 +141,10 @@ http.post('/api/v1/partner/business-documents/ocr', () =>
   - BE: `POST /partner/business-documents/ocr` 엔드포인트 신설
   - BE: Google Cloud Vision 클라이언트 모듈 (`common/vision/` 또는 `store` 내 infra service)
   - BE: `documentUrl` 3단계 보안 검증 (prefix 화이트리스트, IDOR, objectExists)
-  - BE: Prisma 스키마 — `BusinessDocument.startDate` 컬럼 추가, `OcrStatus` enum `VERIFIED→DONE` rename
-  - BE: 마이그레이션 파일 생성 (기존 `VERIFIED` 데이터 → `DONE` 변환 포함)
+  - BE: Prisma 스키마 — `BusinessDocument.startDate` 컬럼 추가, `ocrStatus`·`ocrRaw` 컬럼 + `OcrStatus` enum 제거
+  - BE: 마이그레이션 — `ocr_status`·`ocr_raw` DROP COLUMN + `OcrStatus` DROP TYPE (`start_date`는 직전 마이그레이션에서 추가)
   - Shared: `businessDocumentOcrRequestSchema`, `businessDocumentOcrResultSchema` 추가
-  - Shared: `OcrStatus` enum `DONE` 추가 (기존 `VERIFIED` 제거 또는 deprecated 처리)
+  - Shared: `OcrStatus` enum 파일 제거 + 전 계약(store-edit·store-registration)에서 `ocrStatus` 필드 제거
   - Shared: `createStoreBusinessDocumentSchema`에 `startDate` 필드 추가 (optional)
   - FE: `StudioRegistrationForm.business`에 `startDate: string` 필드 추가
   - FE: `BusinessStep.tsx` — 이미지 업로드 후 OCR mutation 호출, 응답으로 폼 prefill (startDate 필드 포함)
@@ -170,10 +175,11 @@ http.post('/api/v1/partner/business-documents/ocr', () =>
    - 출력: `{ businessNumber, ownerName, businessName, businessAddress, startDate }` (미추출 필드 `null`)
    - 정규식 단위 테스트 작성 (실제 사업자등록증 텍스트 샘플 기반)
 
-3. **OcrStatus enum 변경 + 마이그레이션**
-   - `apps/api/prisma/schema.prisma`: `OcrStatus` — `VERIFIED` → `DONE`
-   - `packages/shared/src/enums/ocr-status.ts`: `DONE` 추가, `VERIFIED` 제거
-   - `prisma migrate dev` 실행, 기존 `VERIFIED` 데이터 → `DONE` UPDATE SQL 포함
+3. **ocrStatus·ocrRaw 제거 + 마이그레이션** (코드리뷰 후 방향 전환)
+   - `apps/api/prisma/schema.prisma`: `ocrStatus`·`ocrRaw` 컬럼 + `OcrStatus` enum 제거
+   - `packages/shared/src/enums/ocr-status.ts` 파일 삭제 + 전 계약에서 `ocrStatus` 필드 제거
+   - 마이그레이션 `20260610100000_drop_ocr_columns`: `DROP COLUMN ocr_status, ocr_raw` + `DROP TYPE "OcrStatus"`
+   - (이전 `..._ocr_status_done_and_start_date` rename 마이그레이션은 이미 적용됨 → 수정하지 않고 별도 drop 마이그레이션 추가)
 
 4. **`startDate` 컬럼 추가 마이그레이션**
    - `BusinessDocument.startDate String? @map("start_date") @db.VarChar(8)` 추가
@@ -182,8 +188,8 @@ http.post('/api/v1/partner/business-documents/ocr', () =>
 5. **OCR 유스케이스 작성**
    - `apps/api/src/modules/store/application/use-cases/ocr-business-document.use-case.ts`
    - 의존: `S3Service`, `VisionService`
-   - documentUrl 3단계 보안 검증 → S3 GetObject → Vision 호출 → 파싱 → 응답 반환
-   - `ocrRaw`는 응답 DTO에 포함하지 않음(서버 내부 보관용 — 향후 `BusinessDocument` 저장 시 사용)
+   - documentUrl 보안 검증 → HeadObject(존재·크기·타입) → S3 GetObject → Vision 호출 → 파싱 → 응답 반환
+   - 원본 텍스트는 저장하지 않는다(prefill 전용). 감사 필요 시 verify plan 소관.
 
 6. **컨트롤러 라우트 추가**
    - `store.controller.ts`에 `POST /partner/business-documents/ocr` 라우트 추가
@@ -226,13 +232,30 @@ http.post('/api/v1/partner/business-documents/ocr', () =>
 
 ## Out (단계별 완료물)
 
-- API: `POST /partner/business-documents/ocr` 엔드포인트, `VisionService`, `BusinessDocumentParser`, OcrStatus 마이그레이션, startDate 마이그레이션
-- UI: `BusinessStep.tsx` 개업일자 필드 추가 + OCR prefill 로직
-- 연동: 이미지 업로드 완료 시 OCR 자동 호출 → 폼 5개 필드 prefill 동작 확인
+- API (완료):
+  - `packages/shared/src/enums/ocr-status.ts` — `VERIFIED` 제거, `DONE` 추가
+  - `packages/shared/src/contracts/store-registration.ts` — `businessDocumentOcrRequestSchema`, `businessDocumentOcrResultSchema`, `BusinessDocumentOcrRequest`, `BusinessDocumentOcrResult` 추가; `createStoreBusinessDocumentSchema`에 `startDate` optional 추가
+  - `packages/shared/src/contracts/store-edit.ts` — `OcrStatus.VERIFIED` → `OcrStatus.DONE` 예시값 수정
+  - `apps/api/prisma/schema.prisma` — `OcrStatus.VERIFIED` → `DONE`, `BusinessDocument.startDate` 컬럼 추가
+  - `apps/api/prisma/migrations/20260610090000_ocr_status_done_and_start_date/migration.sql` — 마이그레이션 파일 (실행 미완료 — DB 연결 후 `prisma migrate deploy` 필요)
+  - `apps/api/src/common/vision/vision.service.ts` — `VisionService.detectText(imageBuffer, mimeType?)`
+  - `apps/api/src/common/vision/vision.module.ts` — Global VisionModule
+  - `apps/api/src/app.module.ts` — `VisionModule` 등록
+  - `apps/api/src/common/s3/s3.service.ts` — `getObjectBuffer(key)` 메서드 추가
+  - `apps/api/src/modules/store/application/ocr/business-document-parser.ts` — 정규식 파싱 유틸
+  - `apps/api/src/modules/store/application/ocr/business-document-parser.spec.ts` — 단위 테스트 17개 (전체 통과)
+  - `apps/api/src/modules/store/application/use-cases/ocr-business-document.use-case.ts` — OCR 유스케이스 (3단계 보안검증 + S3 GetObject + Vision + 파싱)
+  - `apps/api/src/modules/store/presentation/dto/ocr-business-document.dto.ts` — 요청/응답 DTO
+  - `apps/api/src/modules/store/presentation/controllers/store.controller.ts` — `POST /partner/business-documents/ocr` 라우트 추가
+  - `apps/api/src/modules/store/store.module.ts` — `OcrBusinessDocumentUseCase` provider 등록
+  - `apps/api/src/modules/store/domain/repositories/store-writers.ts` — `CreateStoreInput.businessDocument.startDate` 추가
+  - `apps/api/src/modules/store/infrastructure/persistence/prisma-create-store.command.ts` — `startDate` 저장
+- UI: 미착수 (FE 8~11번)
+- 연동: 미착수 (FE 9~12번)
 
 ## Risks
 
-- Google Cloud Vision 비용: 사업자등록증 1장 = 1 unit. 월 1,000건 무료 초과 시 과금. 스팸 업로드 방지 고려(현재 rate limit 없음).
+- Google Cloud Vision 비용: 사업자등록증 1장 = 1 unit. 월 1,000건 무료 초과 시 과금. 동일 이미지 재호출은 Redis 결과 캐시(TTL 600s)로 Vision 재호출을 막아 비용·부하를 줄였다. 단 **서로 다른 이미지를 빠르게 반복 업로드+OCR하는 스팸**에는 캐시가 무력 — 사용자별 호출 제한(throttle)은 미적용(후속 고려).
 - PDF 처리: Vision API는 PDF를 직접 처리하지 않음. `business-documents/` presigned 업로드는 PDF 허용(`application/pdf`). PDF인 경우 Vision 호출 전 첫 페이지 이미지 변환 필요(`pdf-to-image` 또는 Vision PDF feature). 미처리 시 PDF 업로드 케이스에서 OCR 동작 안 함.
 - 파싱 정확도: 이미지 품질·레이아웃 변형 시 정규식 파싱 실패 가능. 실패 시 해당 필드 null + 수동 입력 유도로 graceful degradation.
 - 마이그레이션 `OcrStatus.VERIFIED → DONE`: 기존 `VERIFIED` 데이터가 있으면 변환 필요. 없으면 단순 enum rename.
@@ -250,7 +273,7 @@ http.post('/api/v1/partner/business-documents/ocr', () =>
   - OCR prefill 후 사용자가 값 수정 → 수정된 값으로 POST /stores 전송 확인
 - Observability:
   - Vision API 호출 실패 시 서버 로그에 에러 코드 기록
-  - `ocrRaw` 컬럼에 Vision 원본 텍스트 보관 (감사·재파싱 대비)
+  - OCR 완료 로그는 추출 필드 수만 기록(PII 미노출). 원본 텍스트는 저장하지 않음.
 
 ## Decision Log
 
@@ -260,6 +283,15 @@ http.post('/api/v1/partner/business-documents/ocr', () =>
 - 2026-06-10: OCR prefill + 사용자 수정 허용(B안). 자동완성 후 잠금(A안) 탈락 — 오탐 리스크.
 - 2026-06-10: `OcrStatus.DONE` 신설 (기존 `VERIFIED` 제거). OCR-전용 상태와 진위확인 상태를 enum 분리.
 - 2026-06-10: 기능명세 DB 매칭 없음 확인 → 확정 설계 메모리가 SSOT임을 plan에 명시.
+- 2026-06-10: 코드리뷰 반영 — (1) PDF는 다운로드 전 415 반려(500→415), (2) 10MB 초과 413 차단(무제한 버퍼링 방지), (3) Vision 503 자격증명 오류는 use-case에서 500으로 덮지 않고 그대로 전달. 업로드 단계 fileType 화이트리스트는 미적용 유지(별도 결정).
+- 2026-06-10: `BusinessDocument.ocrStatus` 제출 시 확정 방식 결정 — **제출(`POST /stores`) 시 서버가 verify plan의 제출 처리에서 확정**(클라이언트 전달은 스푸핑 위험으로 탈락). OCR 엔드포인트는 prefill 전용이라 상태를 저장하지 않으며, 생성 시점 ocrStatus 저장은 `business-document-verify.md` 소관. 그 전까지 생성된 row의 ocrStatus는 null.
+- 2026-06-10: **`ocrStatus` 컬럼·`OcrStatus` enum 전면 제거**로 최종 결정(위 결정 대체). 근거: 문서 신뢰 상태는 `verificationStatus`(진위확인)로 일원화하고, OCR은 폼 prefill 보조라 별도 상태 필드가 불필요(항상 null로 남는 중복 신호). 처리 성공/실패는 응답 HTTP status로 표현. store-detail/edit 응답 계약(완료 기능)·apispec·web mock·OCR 응답 스키마에서 `ocrStatus` 제거. 이미 적용된 rename 마이그레이션은 보존하고 별도 drop 마이그레이션 추가.
+- 2026-06-10: **`ocrRaw` 컬럼도 제거**로 결정(ocrStatus와 동일 원칙). 근거: `ocrRaw`는 현재 읽기·쓰기 모두 없는 죽은 컬럼이고, "OCR 원본" 보관은 ocrStatus와 같은 저장-시점 모호성을 가진다. 명확히 채울 수 있는 건 제출 시 국세청 원본뿐이며, 그건 `ocr`이 아니라 진위확인 데이터다. 따라서 감사 원본 컬럼은 **verify plan이 채우는 시점에 제대로 된 이름(예: `nts_raw`)으로 직접 추가**한다. drop 마이그레이션을 `20260610100000_drop_ocr_columns`로 확장(`ocr_status`+`ocr_raw`+`OcrStatus`). 영향: api 311 tests·shared/api/web tsc 통과. ▶ **verify plan(`business-document-verify.md`) 수정 필요**: `ocrRaw.nts` 참조를 신규 컬럼으로 교체.
+- 2026-06-10: 코드리뷰 2차 반영 — (1) **PDF 업로드 차단**: images `fileType`을 jpeg/png enum으로 제한 + FE 사전 차단(`isBusinessDocumentFileType`). (2) **startDate 표시·재수정**: store-detail 응답(`storeBusinessDocumentSchema`)·PATCH 수정 계약(`businessDocumentUpdateRequestSchema`)·reader·persistence에 `startDate` 추가(반려 후 수정 가능). (3) **개업일자 실날짜 검증**: `businessStartDateSchema`(fields.ts) — 8자리 + 실제 달력 날짜 refine(20261399·20260230 거부). (4) **TOCTOU 방어**: `getObjectBuffer(key, maxBytes)` 스트리밍 중 상한 초과 시 중단→413.
+- 2026-06-10: **OCR rate limit = Redis 결과 캐시(dedup)로 결정**. `(documentKey)`별 OCR 결과를 Redis에 TTL 600s 캐싱 — 동일 이미지 재호출 시 Vision 미호출. OCR은 이미지별 결정적이고 key에 userId 포함이라 안전. Redis 장애는 best-effort 무시(OCR 정상 수행). 사용자별 호출 횟수 throttle(@nestjs/throttler 등)은 신규 의존성이라 미도입(후속).
+- 2026-06-10: 코드리뷰 3차 반영 — (1) **저장 시 소유권 검증(P1)**: `assertOwnedBusinessDocumentImage`(common/s3/business-document.util.ts) 공용 헬퍼 신설 — prefix 화이트리스트 + IDOR(`business-documents/{userId}/`) + 업로드 존재 + JPEG/PNG Content-Type. `POST /stores`·PATCH 사업자정보 양쪽 적용(기존엔 objectExists만 했음). OCR use-case의 인라인 검증도 이 헬퍼(`resolveOwnedBusinessDocumentKey`)로 통합. (2) **캐시 stale 방지(P2)**: HeadObject를 캐시보다 먼저 수행(삭제 객체는 404) + 캐시 키에 ETag 포함(`ocr:result:{key}:{etag}` — 동일 key 객체 교체 시 캐시 무효화). (3) **린트(P3)**: 미사용 `CDN_BASE` import 제거(헬퍼 통합으로 해소). 영향: api 323 tests·tsc·eslint(0 errors) 통과. ▷ 사용자별 throttle·동시요청 분산락(P2)은 별도 결정(cache-only 유지).
+- 2026-06-10: 코드리뷰 4차 반영 — (1) **OCR 타입검증 일치(P1)**: OCR use-case가 PDF만 차단하던 것을 공용 화이트리스트(`assertBusinessDocumentContentType`)로 교체. `application/octet-stream`·Content-Type 없음 등도 Vision 전달 전 415. 저장 검증과 동일 규칙. (2) **undefined Content-Type 거절(P2)**: 화이트리스트이므로 `contentType === undefined`도 415(기존엔 통과). (3) **공용 헬퍼 테스트(P2)**: `business-document.util.spec.ts` 신설(외부 URL/IDOR/미존재/타입 미허용/undefined 등). 영향: api 339 tests·eslint(0 errors) 통과.
+- 2026-06-10: **HEIC 미허용 확정** — 리뷰어가 HEIC 허용을 요청했으나, **Google Vision은 HEIC를 지원하지 않는다**(JPEG/PNG/GIF/BMP/WEBP/RAW/ICO/PDF/TIFF만). 화이트리스트에 HEIC를 넣으면 "업로드 OK·OCR 실패"의 PDF와 동일한 불일치가 재발하므로 **추가하지 않기로 결정**(사용자 확인). 아이폰 HEIC는 추후 필요 시 FE 변환(heic2any) 또는 서버 변환(sharp/heic-convert)으로 대응 — 단순 화이트리스트 확장은 금지. `business-document.util.spec.ts`가 `image/heic → 415`로 이 결정을 고정.
 
 ## Outcome
 

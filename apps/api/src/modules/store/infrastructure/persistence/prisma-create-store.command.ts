@@ -3,7 +3,7 @@ import { randomBytes } from 'crypto';
 import { DayOfWeek } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { S3Service } from '../../../../common/s3/s3.service';
-import { keyFromImageUrl } from '../../../../common/s3/s3-object.util';
+import { assertOwnedBusinessDocumentImage } from '../../../../common/s3/business-document.util';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { parseStoreTime } from '../../domain/time.util';
 import type { CreateStoreInput, CreateStoreResult } from '../../domain/repositories/store-writers';
@@ -22,17 +22,10 @@ export class PrismaCreateStoreCommand {
     async execute(userId: string, dto: CreateStoreInput): Promise<CreateStoreResult> {
         const slug = dto.slug ?? generateSlug();
 
-        // 사업자등록증 documentUrl이 있으면 presigned 업로드가 실제로 완료됐는지 검증.
+        // 사업자등록증 documentUrl이 있으면 소유권(IDOR)·업로드 완료·이미지 타입을 검증.
         const documentUrl = dto.businessDocument.documentUrl ?? null;
         if (documentUrl) {
-            const exists = await this.s3.objectExists(keyFromImageUrl(documentUrl));
-            if (!exists) {
-                throw new BusinessException(
-                    'BAD_REQUEST',
-                    '사업자등록증 파일이 업로드되지 않았습니다.',
-                    HttpStatus.BAD_REQUEST,
-                );
-            }
+            await assertOwnedBusinessDocumentImage(this.s3, userId, documentUrl);
         }
 
         const existing = await this.prisma.store.findUnique({
@@ -101,6 +94,7 @@ export class PrismaCreateStoreCommand {
                         businessNumber: dto.businessDocument.businessNumber,
                         businessAddress: dto.businessDocument.businessAddress,
                         documentUrl,
+                        startDate: dto.businessDocument.startDate ?? null,
                     },
                 },
             },

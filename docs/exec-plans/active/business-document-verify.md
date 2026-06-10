@@ -48,9 +48,14 @@
 
 > 아래 컬럼들은 **제출(`POST /stores`) 시점에 서버가 채워 저장**한다(verify 엔드포인트는 stateless). verify 게이트는 이 컬럼을 읽거나 쓰지 않는다.
 
+> ⚠️ 변경(2026-06-10): OCR plan이 `ocrRaw` 컬럼을 제거했다(죽은 컬럼 + 저장-시점 모호성). 따라서 국세청 원본 보관용 컬럼은 **이 plan이 신규 컬럼 `nts_raw Json?`로 직접 추가**한다(아래 "참고" 섹션 참조). 기존 `ocrRaw.nts` 참조는 모두 `ntsRaw`(신규 컬럼)로 읽는다.
+
 ```prisma
 // 신설 컬럼 (OCR plan의 startDate 컬럼 추가 이후 동일 마이그레이션 또는 이후 마이그레이션에 포함)
 verificationStatus  VerificationStatus  @default(PENDING) @map("verification_status")
+ntsRaw              Json?               @map("nts_raw")
+  // 국세청 진위확인/상태조회 원본 응답 보관(감사·디버깅). 제출 시점에 채움.
+  // (구 ocrRaw 컬럼 제거 대체. OCR 원본은 보관하지 않음 — prefill 전용.)
 verifiedAt          DateTime?           @map("verified_at") @db.Timestamptz(6)
   // 진위확인 VERIFIED 통과 시에만 기록. MISMATCH/ERROR는 null.
   // 기존 schema.prisma에 verifiedAt이 있으나 의미 미확정 상태였음 → 이 plan에서 "VERIFIED 통과 시각"으로 확정.
@@ -74,18 +79,16 @@ enum BusinessState {
 }
 ```
 
-**참고: `ocrRaw`(Json) 활용**
+**참고: `ntsRaw`(Json) 활용** (구 `ocrRaw` 대체)
 
-국세청 API 원본 응답은 `BusinessDocument.ocrRaw`에 OCR 원본과 함께 보관한다. 감사·디버깅 목적.
+국세청 API 원본 응답은 신규 컬럼 `BusinessDocument.ntsRaw`에 보관한다. 감사·디버깅 목적.
+OCR 원본은 보관하지 않는다(OCR은 prefill 보조 기능).
 
 ```json
-// ocrRaw 구조 예시
+// ntsRaw 구조 예시
 {
-  "ocr": { /* Google Vision 원본 */ },
-  "nts": {
-    "validate": { /* 국세청 진위확인 원본 응답 */ },
-    "status":   { /* 국세청 상태조회 원본 응답, b_stt 미포함 시에만 사용 */ }
-  }
+  "validate": { /* 국세청 진위확인 원본 응답 */ },
+  "status":   { /* 국세청 상태조회 원본 응답, b_stt 미포함 시에만 사용 */ }
 }
 ```
 
@@ -223,7 +226,7 @@ verify 게이트가 stateless이므로, 진위확인 결과의 **영구 기록�
    - VERIFIED 시: `verificationStatus = VERIFIED`, `verifiedAt = now()`, `businessState`
    - MISMATCH/CLOSED/SUSPENDED 시: `verificationStatus`/`businessState`만, `verifiedAt = null`
    - ERROR 시: `verificationStatus = ERROR` (best-effort 저장, 제출 자체는 막지 않음 — 관리자 심사에서 재확인)
-   - `ocrRaw.nts`에 국세청 원본 응답 저장(OCR 원본과 merge)
+   - `ntsRaw`에 국세청 원본 응답 저장(신규 컬럼)
 3. **정책 결정 필요(Open decision)**: 제출 시 재검증이 MISMATCH/CLOSED면 제출을 거부(4xx)할지, 일단 저장하고 관리자 심사로 넘길지. 기본은 **저장 후 심사 위임**(동기 게이트에서 이미 1차 차단했으므로). verify 게이트를 우회한 직접 제출 방어용으로 ERROR가 아닌 한 기록만 남기고 통과시킨다.
 
 > **국세청 호출 2회**(1단계 게이트 + 제출 시 재검증)가 발생한다. 공공데이터포털 API 무료·일일한도 내라 부담은 작다. 재검증을 생략하고 게이트 결과를 신뢰하려면 프론트가 결과를 동봉해야 하는데, 이는 신뢰경계 위반이라 채택하지 않는다.
@@ -249,7 +252,8 @@ http.post('/api/v1/partner/business-documents/verify', () =>
   - BE: `POST /partner/business-documents/verify` 엔드포인트 신설
   - BE: `NtsService` (`apps/api/src/modules/store/infrastructure/nts.service.ts` 또는 `common/nts/`) — 국세청 API 2종 클라이언트 (진위확인, 상태조회), 타임아웃 5초, 재시도 없음(동기 게이트)
   - BE: `VerifyBusinessDocumentUseCase` — 검증 로직, 결과 DTO 반환 (**stateless, DB 미접근**)
-  - BE: `POST /stores` 생성 유스케이스(기존)에 국세청 재검증 + 진위확인 컬럼 저장 로직 추가 (`verificationStatus`/`verifiedAt`/`verificationCheckedAt`/`businessState`/`ocrRaw.nts`)
+  - BE: `POST /stores` 생성 유스케이스(기존)에 국세청 재검증 + 진위확인 컬럼 저장 로직 추가 (`verificationStatus`/`verifiedAt`/`verificationCheckedAt`/`businessState`/`ntsRaw`)
+  - BE: Prisma 스키마 — `ntsRaw Json? @map("nts_raw")` 신규 컬럼 추가(구 `ocrRaw` 제거 대체)
   - BE: Prisma 스키마 — `verificationStatus`, `verifiedAt`, `verificationCheckedAt`, `businessState` 컬럼 추가; `VerificationStatus`, `BusinessState` enum 신설
   - BE: 마이그레이션 파일 생성 (OCR plan 마이그레이션과 병합 또는 별도)
   - BE: `createApiEnv()`에 `NTS_API_KEY` env 추가 (`packages/config/src/index.ts`)
@@ -325,7 +329,7 @@ http.post('/api/v1/partner/business-documents/verify', () =>
 6. **`POST /stores` 생성 유스케이스에 진위확인 저장 추가**
    - 기존 store/BusinessDocument 생성 유스케이스를 찾아(`create-store`/`create-studio` 계열) BusinessDocument 생성 직전에:
      1. `NtsService` 재검증 호출 → `resolveVerification()`로 결과 산출
-     2. BusinessDocument 생성 데이터에 `verificationStatus`/`verifiedAt`(VERIFIED만)/`verificationCheckedAt`(항상)/`businessState`/`ocrRaw.nts` 포함
+     2. BusinessDocument 생성 데이터에 `verificationStatus`/`verifiedAt`(VERIFIED만)/`verificationCheckedAt`(항상)/`businessState`/`ntsRaw` 포함
      3. ERROR면 best-effort 저장(제출은 막지 않음). MISMATCH/CLOSED 제출 거부 여부는 Open decision(기본: 저장 후 심사 위임)
    - `NtsService`를 store 생성 유스케이스에 주입
 
@@ -396,7 +400,7 @@ http.post('/api/v1/partner/business-documents/verify', () =>
 - Observability:
   - NtsService에서 국세청 API 호출 실패 시 서버 로그에 상태코드 및 에러 기록
   - `verificationCheckedAt` 및 `verificationStatus` DB 컬럼으로 검증 이력 추적 가능
-  - `ocrRaw.nts` 컬럼에 국세청 원본 응답 보관 (감사·디버깅)
+  - `ntsRaw` 컬럼에 국세청 원본 응답 보관 (감사·디버깅)
 
 ## Decision Log
 

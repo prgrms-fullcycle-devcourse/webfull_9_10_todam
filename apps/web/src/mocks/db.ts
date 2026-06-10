@@ -1,6 +1,5 @@
 import {
     ArtworkStatus,
-    OcrStatus,
     PartnerStatus,
     ProgramStatus,
     ReservationDeliveryMethod,
@@ -53,7 +52,6 @@ export interface BusinessDocumentRow {
     businessNumber: string;
     businessAddress: string;
     email: string;
-    ocrStatus: OcrStatus;
     verifiedAt: string | null;
 }
 export interface OperatingHourRow {

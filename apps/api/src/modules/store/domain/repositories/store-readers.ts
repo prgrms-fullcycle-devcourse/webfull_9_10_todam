@@ -114,7 +114,7 @@ export interface PartnerStoreDetailResult {
             businessName: string;
             businessNumber: string;
             businessAddress: string;
-            ocrStatus: `${OcrStatus}` | null;
+            startDate: string | null;
         } | null;
         publishedAt: string | null;
         createdAt: string;
@@ -268,7 +268,6 @@ export abstract class ProgramReviewsReader {
 }
 
 import type {
-    OcrStatus,
     PartnerDashboardStoresResult,
     PartnerOnboardingResult,
     ProgramDifficulty,

@@ -1,6 +1,6 @@
 'use client';
 
-import type { BusinessDocumentUpdateRequest } from '@todam/shared';
+import { isBusinessDocumentFileType, type BusinessDocumentUpdateRequest } from '@todam/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { uploadToPresignedUrl } from '@/shared/api';
@@ -13,6 +13,10 @@ import { getBusinessEditStudioDetail, updateBusinessDocument } from './api';
 export function useUploadBusinessDocument() {
     return useMutation({
         mutationFn: async (file: File): Promise<{ documentUrl: string }> => {
+            // 사업자등록증은 JPEG/PNG만 허용(PDF 등은 OCR 불가) — 업로드 전 차단.
+            if (!isBusinessDocumentFileType(file.type)) {
+                throw new Error('사업자등록증은 JPEG 또는 PNG 이미지만 업로드할 수 있어요.');
+            }
             const { uploadUrl, documentUrl } = await createBusinessDocumentImage({
                 fileName: file.name,
                 fileType: file.type,

@@ -112,8 +112,7 @@ model BusinessDocument {
   businessName    String     @map("business_name") @db.VarChar(200)
   businessNumber  String     @map("business_number") @db.VarChar(20)
   businessAddress String     @map("business_address") @db.VarChar(500)
-  ocrStatus       OcrStatus? @map("ocr_status")
-  ocrRaw          Json?      @map("ocr_raw")
+  startDate       String?    @map("start_date") @db.VarChar(8)  // "YYYYMMDD", OCR prefill + 사용자 수정
   verifiedAt      DateTime?  @map("verified_at") @db.Timestamptz(6)
   createdAt       DateTime?  @map("created_at") @db.Timestamptz(6)
   partner         Partner    @relation(fields: [partnerId], references: [id])
@@ -533,12 +532,6 @@ enum PartnerStatus {
   REJECTED
   SUSPENDED
   TERMINATED
-}
-
-enum OcrStatus {
-  PENDING
-  VERIFIED
-  FAILED // [S-8]
 }
 
 enum StoreStatus {
