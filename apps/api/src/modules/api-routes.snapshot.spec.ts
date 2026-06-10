@@ -693,6 +693,20 @@ describe('API route baseline', () => {
                 path: '/review/images/presigned',
                 guards: ['AuthGuard'],
             },
+            {
+                controller: 'ReviewController',
+                handler: 'getReviewDetailHandler',
+                method: 'GET',
+                path: '/reservations/:reservationId/review',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'ReviewController',
+                handler: 'deleteReviewHandler',
+                method: 'DELETE',
+                path: '/reviews/:reviewId',
+                guards: ['AuthGuard'],
+            },
         ]);
     });
 });

@@ -1,6 +1,8 @@
 import {
     Body,
     Controller,
+    Delete,
+    Get,
     HttpCode,
     HttpStatus,
     Param,
@@ -24,8 +26,11 @@ import type { RequestUser } from '../../../../common/types/request-user.type';
 import { CreateReviewUseCase } from '../../application/use-cases/create-review.use-case';
 import { UpdateReviewUseCase } from '../../application/use-cases/update-review.use-case';
 import { IssueReviewImagePresignedUseCase } from '../../application/use-cases/issue-review-image-presigned.use-case';
+import { GetReviewDetailUseCase } from '../../application/use-cases/get-review-detail.use-case';
+import { DeleteReviewUseCase } from '../../application/use-cases/delete-review.use-case';
 import {
     ReviewCreateResultDto,
+    ReviewDetailResultDto,
     ReviewUpdateResultDto,
     ReviewImageUploadResultDto,
     ReviewWriteRequestDto,
@@ -40,6 +45,8 @@ export class ReviewController {
         private readonly createReview: CreateReviewUseCase,
         private readonly updateReview: UpdateReviewUseCase,
         private readonly issuePresigned: IssueReviewImagePresignedUseCase,
+        private readonly getReviewDetail: GetReviewDetailUseCase,
+        private readonly deleteReview: DeleteReviewUseCase,
     ) {}
 
     @Post('reservations/:reservationId/review')
@@ -106,5 +113,40 @@ export class ReviewController {
         dto: ReviewImageUploadRequestDto,
     ): Promise<ReviewImageUploadResultDto> {
         return this.issuePresigned.execute(dto);
+    }
+
+    @Get('reservations/:reservationId/review')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ResponseMessage('리뷰가 성공적으로 조회되었습니다.')
+    @ApiOkResponse({ description: '리뷰 상세 조회 성공', type: ReviewDetailResultDto })
+    async getReviewDetailHandler(
+        @CurrentUser() user: RequestUser,
+        @Param('reservationId') reservationId: string,
+    ): Promise<ReviewDetailResultDto> {
+        const row = await this.getReviewDetail.execute(user.id, reservationId);
+        return {
+            review: {
+                id: row.id,
+                reservationId: row.reservationId,
+                rating: row.rating,
+                content: row.content ?? '',
+                photos: row.photos.map((p) => ({ id: p.id, imageUrl: p.imageUrl })),
+                createdAt: row.createdAt.toISOString(),
+            },
+        };
+    }
+
+    @Delete('reviews/:reviewId')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ResponseMessage('리뷰가 성공적으로 삭제되었습니다.')
+    @ApiOkResponse({ description: '리뷰 삭제 성공' })
+    async deleteReviewHandler(
+        @CurrentUser() user: RequestUser,
+        @Param('reviewId') reviewId: string,
+    ): Promise<null> {
+        await this.deleteReview.execute(user.id, reviewId);
+        return null;
     }
 }
