@@ -54,6 +54,9 @@ function controllers(): ControllerClass[] {
     const { UserController } = jest.requireActual<
         typeof import('./user/presentation/controllers/user.controller')
     >('./user/presentation/controllers/user.controller');
+    const { ReviewController } = jest.requireActual<
+        typeof import('./review/presentation/controllers/review.controller')
+    >('./review/presentation/controllers/review.controller');
 
     return [
         AuthController,
@@ -66,6 +69,7 @@ function controllers(): ControllerClass[] {
         PartnerArtworkController,
         PartnerController,
         UserController,
+        ReviewController,
     ];
 }
 
@@ -666,6 +670,27 @@ describe('API route baseline', () => {
                 handler: 'withdraw',
                 method: 'DELETE',
                 path: '/users/me',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'ReviewController',
+                handler: 'createReviewHandler',
+                method: 'POST',
+                path: '/reservations/:reservationId/review',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'ReviewController',
+                handler: 'updateReviewHandler',
+                method: 'PATCH',
+                path: '/reviews/:reviewId',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'ReviewController',
+                handler: 'issuePresignedHandler',
+                method: 'POST',
+                path: '/review/images/presigned',
                 guards: ['AuthGuard'],
             },
         ]);
