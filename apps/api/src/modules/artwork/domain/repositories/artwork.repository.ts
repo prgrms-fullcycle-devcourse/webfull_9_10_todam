@@ -17,6 +17,28 @@ import type {
     UpdateArtworkStatusRequest,
     UpdateArtworkStatusResult,
 } from '@todam/shared';
+import type { ArtworkStatus, ImageUploadStatus } from '@prisma/client';
+
+// 유저용 작품 상세 조회 row 타입 (repository → use-case 경계).
+export interface UserArtworkDetailRow {
+    id: string;
+    status: ArtworkStatus;
+    estimatedCompletedAt: Date | null;
+    reservation: {
+        userId: string | null;
+    };
+    logs: Array<{
+        id: string;
+        toStatus: ArtworkStatus;
+        createdAt: Date;
+        photos: Array<{
+            id: string;
+            imageUrl: string;
+            thumbnailUrl: string | null;
+            status: ImageUploadStatus;
+        }>;
+    }>;
+}
 
 export abstract class ArtworkRepository {
     abstract list(
@@ -63,4 +85,7 @@ export abstract class ArtworkRepository {
         artworkId: string,
         dto: UpdateArtworkDeliveryRequest,
     ): Promise<UpdateArtworkDeliveryResult>;
+
+    // 유저용 — 본인 가드(reservation.userId)와 타임라인 합성에 필요한 데이터 반환.
+    abstract findUserArtworkDetail(artworkId: string): Promise<UserArtworkDetailRow | null>;
 }
