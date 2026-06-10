@@ -8,6 +8,7 @@ import { ProgramModule } from './modules/program/program.module';
 import { TimeslotModule } from './modules/timeslot/timeslot.module';
 import { ReservationModule } from './modules/reservation/reservation.module';
 import { S3Module } from './common/s3/s3.module';
+import { VisionModule } from './common/vision/vision.module';
 import { RedisModule } from './redis/redis.module';
 import { ArtworkModule } from './modules/artwork/artwork.module';
 import { PartnerModule } from './modules/partner/partner.module';
@@ -22,6 +23,7 @@ import { ReviewModule } from './modules/review/review.module';
         AuthModule,
         HealthModule,
         S3Module,
+        VisionModule,
         StoreModule,
         TimeslotModule,
         ProgramModule,

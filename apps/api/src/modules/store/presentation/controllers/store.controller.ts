@@ -21,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import {
     businessDocumentImageRequestSchema,
+    businessDocumentOcrRequestSchema,
     businessDocumentUpdateRequestSchema,
     createStoreImageRequestSchema,
     createStoreRequestSchema,
@@ -35,6 +36,7 @@ import {
 } from '@todam/shared';
 import type {
     BusinessDocumentImageRequest,
+    BusinessDocumentOcrRequest,
     BusinessDocumentUpdateRequest,
     CreateStoreImageRequest,
     CreateStoreRequest,
@@ -56,6 +58,7 @@ import type { RequestUser } from '../../../../common/types/request-user.type';
 import { CreateStoreUseCase } from '../../application/use-cases/create-store.use-case';
 import { CreateStoreImageUseCase } from '../../application/use-cases/create-store-image.use-case';
 import { CreateBusinessDocumentImageUseCase } from '../../application/use-cases/create-business-document-image.use-case';
+import { OcrBusinessDocumentUseCase } from '../../application/use-cases/ocr-business-document.use-case';
 import { ConfirmStoreImageUseCase } from '../../application/use-cases/confirm-store-image.use-case';
 import { SubmitStoreUseCase } from '../../application/use-cases/submit-store.use-case';
 import { ListPartnerStoresUseCase } from '../../application/use-cases/list-partner-stores.use-case';
@@ -85,6 +88,10 @@ import {
     CreateBusinessDocumentImageDto,
     CreateBusinessDocumentImageResponseDto,
 } from '../dto/business-document-image.dto';
+import {
+    OcrBusinessDocumentDto,
+    OcrBusinessDocumentResponseDto,
+} from '../dto/ocr-business-document.dto';
 import { SubmitStoreResponseDto } from '../dto/submit-store.dto';
 import { ListPartnerStoresResponseDto } from '../dto/list-partner-stores.dto';
 import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detail.dto';
@@ -108,6 +115,13 @@ import {
     UpdateBusinessDocumentResponseDto,
 } from '../dto/update-business-document.dto';
 import { ConfirmStoreImageResponseDto } from '../dto/confirm-store-image.dto';
+// 응답 DTO는 Swagger 문서용(@ApiOkResponse). 실제 반환 타입은 도메인 결과 타입을 쓴다
+// (status는 도메인에서 string 유니온, contract DTO는 StoreStatus enum — 문서는 더 정밀하게 enum 노출).
+import type {
+    CreateStoreResult,
+    UpdateStoreResult,
+    UpdateBusinessDocumentResult,
+} from '../../domain/repositories/store-writers';
 
 @ApiTags('stores')
 @ApiBearerAuth()
@@ -117,6 +131,7 @@ export class StoreController {
         private readonly createStoreUseCase: CreateStoreUseCase,
         private readonly createStoreImageUseCase: CreateStoreImageUseCase,
         private readonly createBusinessDocumentImageUseCase: CreateBusinessDocumentImageUseCase,
+        private readonly ocrBusinessDocumentUseCase: OcrBusinessDocumentUseCase,
         private readonly confirmStoreImageUseCase: ConfirmStoreImageUseCase,
         private readonly submitStoreUseCase: SubmitStoreUseCase,
         private readonly listPartnerStoresUseCase: ListPartnerStoresUseCase,
@@ -341,7 +356,7 @@ export class StoreController {
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
         @Body(new ZodValidationPipe(storeUpdateRequestSchema)) dto: StoreUpdateRequest,
-    ): Promise<UpdateStoreResponseDto> {
+    ): Promise<UpdateStoreResult> {
         return this.updateStoreUseCase.execute(user.id, storeId, dto);
     }
 
@@ -360,7 +375,7 @@ export class StoreController {
         @Param('storeId') storeId: string,
         @Body(new ZodValidationPipe(businessDocumentUpdateRequestSchema))
         dto: BusinessDocumentUpdateRequest,
-    ): Promise<UpdateBusinessDocumentResponseDto> {
+    ): Promise<UpdateBusinessDocumentResult> {
         return this.updateBusinessDocumentUseCase.execute(user.id, storeId, dto);
     }
 
@@ -372,7 +387,7 @@ export class StoreController {
     async createStore(
         @CurrentUser() user: RequestUser,
         @Body(new ZodValidationPipe(createStoreRequestSchema)) dto: CreateStoreRequest,
-    ): Promise<CreateStoreResponseDto> {
+    ): Promise<CreateStoreResult> {
         return this.createStoreUseCase.execute(user.id, dto);
     }
 
@@ -393,6 +408,24 @@ export class StoreController {
         dto: BusinessDocumentImageRequest,
     ): Promise<CreateBusinessDocumentImageResponseDto> {
         return this.createBusinessDocumentImageUseCase.execute(user.id, dto);
+    }
+
+    @Post('partner/business-documents/ocr')
+    @HttpCode(HttpStatus.OK)
+    // store-비종속. 공방 등록 전 단계라 Partner 레코드 미존재 가능 → AuthGuard만 (PartnerGuard 미적용).
+    @UseGuards(AuthGuard)
+    @ResponseMessage('사업자등록증 OCR이 완료되었습니다.')
+    @ApiOkResponse({
+        description: '사업자등록증 OCR 성공',
+        type: OcrBusinessDocumentResponseDto,
+    })
+    @ApiBody({ type: OcrBusinessDocumentDto })
+    async ocrBusinessDocument(
+        @CurrentUser() user: RequestUser,
+        @Body(new ZodValidationPipe(businessDocumentOcrRequestSchema))
+        dto: BusinessDocumentOcrRequest,
+    ): Promise<OcrBusinessDocumentResponseDto> {
+        return this.ocrBusinessDocumentUseCase.execute(user.id, dto.documentUrl);
     }
 
     @Post('partner/stores/:storeId/images')

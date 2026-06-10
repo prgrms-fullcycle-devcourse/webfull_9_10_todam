@@ -99,7 +99,7 @@ export class PrismaPartnerStoreDetailReader {
                         businessName: true,
                         businessNumber: true,
                         businessAddress: true,
-                        ocrStatus: true,
+                        startDate: true,
                     },
                 },
             },
@@ -187,7 +187,7 @@ export class PrismaPartnerStoreDetailReader {
                           businessName: businessDoc.businessName,
                           businessNumber: businessDoc.businessNumber,
                           businessAddress: businessDoc.businessAddress,
-                          ocrStatus: businessDoc.ocrStatus,
+                          startDate: businessDoc.startDate,
                       }
                     : null,
                 publishedAt: store.publishedAt?.toISOString() ?? null,

@@ -1,10 +1,16 @@
 import { z } from 'zod';
 
-import { OcrStatus } from '../enums/ocr-status';
 import { PartnerStatus } from '../enums/partner-status';
 import { StoreStatus } from '../enums/store-status';
 
-import { businessNumberSchema, emailSchema, phoneSchema, slugSchema, timeSchema } from './fields';
+import {
+    businessNumberSchema,
+    businessStartDateSchema,
+    emailSchema,
+    phoneSchema,
+    slugSchema,
+    timeSchema,
+} from './fields';
 
 // ─── 에러 코드 (web mock·api 공통 계약) ──────────────────────────
 export const StoreRegistrationErrorCode = {
@@ -22,19 +28,26 @@ export const DAY_OF_WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as 
 export const dayOfWeekSchema = z.enum(DAY_OF_WEEK);
 export type DayOfWeek = z.infer<typeof dayOfWeekSchema>;
 
-// ─── OCR / 진위검증 (추후 연동) ──────────────────────────────────
-export const ocrResultSchema = z.object({
-    documentUrl: z.string().meta({
-        example:
-            'https://todam-prod-assets.s3.ap-northeast-2.amazonaws.com/business-documents/uuid.pdf',
+// ─── 사업자등록증 OCR (POST /partner/business-documents/ocr) ─────
+export const businessDocumentOcrRequestSchema = z.object({
+    documentUrl: z.string().url().meta({
+        example: 'https://cdn.todam.app/business-documents/{userId}/uuid.pdf',
+        description: 'CDN URL (https://cdn.todam.app/business-documents/{userId}/...)',
     }),
-    ownerName: z.string().meta({ example: '김리듬' }),
-    businessName: z.string().meta({ example: '흙담' }),
-    businessNumber: z.string().meta({ example: '555-55-55555' }),
-    businessAddress: z.string().meta({ example: '서울특별시 성동구 둑섬로 273(성수동)' }),
-    ocrStatus: z.nativeEnum(OcrStatus).meta({ example: OcrStatus.VERIFIED }),
 });
-export type OcrResult = z.infer<typeof ocrResultSchema>;
+export type BusinessDocumentOcrRequest = z.infer<typeof businessDocumentOcrRequestSchema>;
+
+export const businessDocumentOcrResultSchema = z.object({
+    businessNumber: z.string().nullable().meta({ example: '123-45-67890' }),
+    ownerName: z.string().nullable().meta({ example: '홍길동' }),
+    businessName: z.string().nullable().meta({ example: '흙담공방' }),
+    businessAddress: z.string().nullable().meta({ example: '서울특별시 성동구 둑섬로 273' }),
+    startDate: z
+        .string()
+        .nullable()
+        .meta({ example: '20190315', description: '"YYYYMMDD" 또는 null' }),
+});
+export type BusinessDocumentOcrResult = z.infer<typeof businessDocumentOcrResultSchema>;
 
 // ─── 공방 URL(slug) 중복 확인 ────────────────────────────────────
 export const slugAvailabilityResultSchema = z.object({
@@ -155,6 +168,14 @@ export const createStoreBusinessDocumentSchema = z.object({
         })
         .nullable()
         .optional(),
+    // OCR prefill 또는 사용자 직접 입력. "YYYYMMDD" 8자리 실제 날짜. 미입력 시 null.
+    startDate: businessStartDateSchema
+        .meta({
+            example: '20190315',
+            description: 'OCR prefill 또는 사용자 직접 입력. YYYYMMDD 8자리.',
+        })
+        .nullable()
+        .optional(),
 });
 
 export const createStoreRequestSchema = z.object({
@@ -228,9 +249,19 @@ export const createStoreImageResultSchema = z.object({
 export type CreateStoreImageResult = z.infer<typeof createStoreImageResultSchema>;
 
 // 2-1) POST /partner/business-documents/images — 사업자등록증 presigned PUT URL 발급 (store-비종속)
+// 사업자등록증은 OCR(Vision TEXT_DETECTION) 대상이라 이미지(JPEG/PNG)만 허용.
+// PDF는 Vision이 처리하지 못하므로 업로드 단계에서 차단(제출 후 OCR 415를 받기 전에 빠르게 실패).
+export const BUSINESS_DOCUMENT_FILE_TYPES = ['image/jpeg', 'image/png'] as const;
+export type BusinessDocumentFileType = (typeof BUSINESS_DOCUMENT_FILE_TYPES)[number];
+// 업로드 전 클라이언트 측 사전 차단용 타입가드(File.type → 허용 enum 좁히기).
+export function isBusinessDocumentFileType(t: string): t is BusinessDocumentFileType {
+    return (BUSINESS_DOCUMENT_FILE_TYPES as readonly string[]).includes(t);
+}
 export const businessDocumentImageRequestSchema = z.object({
-    fileName: z.string().meta({ example: 'business_license.pdf' }),
-    fileType: z.string().meta({ example: 'application/pdf' }),
+    fileName: z.string().meta({ example: 'business_license.jpg' }),
+    fileType: z
+        .enum(BUSINESS_DOCUMENT_FILE_TYPES)
+        .meta({ example: 'image/jpeg', description: 'JPEG/PNG 이미지만 허용(PDF 불가)' }),
 });
 export type BusinessDocumentImageRequest = z.infer<typeof businessDocumentImageRequestSchema>;
 

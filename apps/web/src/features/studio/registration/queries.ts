@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { isBusinessDocumentFileType } from '@todam/shared';
+
 import { uploadToPresignedUrl } from '@/shared/api';
 
 import { generateTimeSlots, rollingGenerateRange } from '../timeslot/api';
@@ -40,6 +42,10 @@ export function useGeocode() {
 export function useUploadBusinessDocument() {
     return useMutation({
         mutationFn: async (file: File): Promise<{ documentUrl: string }> => {
+            // 사업자등록증은 JPEG/PNG만 허용(PDF 등은 OCR 불가) — 업로드 전 차단.
+            if (!isBusinessDocumentFileType(file.type)) {
+                throw new Error('사업자등록증은 JPEG 또는 PNG 이미지만 업로드할 수 있어요.');
+            }
             const { uploadUrl, documentUrl } = await createBusinessDocumentImage({
                 fileName: file.name,
                 fileType: file.type,
