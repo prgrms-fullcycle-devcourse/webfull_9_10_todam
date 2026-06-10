@@ -113,7 +113,7 @@ export function PublicClassDetailClient() {
                     <button
                         type="button"
                         onClick={() => router.push(reviewsHref)}
-                        className="flex w-fit items-center text-sm font-semibold text-foreground"
+                        className="flex w-fit cursor-pointer items-center text-sm font-semibold text-foreground"
                     >
                         클래스 리뷰 {reviewCount.toLocaleString('ko-KR')}개
                         <RightIcon size={16} />

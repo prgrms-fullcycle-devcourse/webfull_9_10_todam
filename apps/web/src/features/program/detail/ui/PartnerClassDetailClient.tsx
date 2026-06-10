@@ -2,12 +2,13 @@
 
 import { BottomBar, Button, RightIcon, Tag } from '@todam/ui';
 import { ProgramDifficulty, ProgramStatus } from '@todam/shared';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import {
     ClassDetailHero,
     ClassDetailSkeleton,
     getDifficultyLabel,
+    useProgramReviews,
     usePartnerProgramDetail,
     useUpdateProgramStatus,
 } from '@/entities/program';
@@ -22,11 +23,14 @@ import { ClassExperienceInfo } from './ClassExperienceInfo';
 import { ClassInfoTable } from './ClassInfoTable';
 
 export function PartnerClassDetailClient() {
+    const router = useRouter();
     const params = useParams<{ id: string }>();
     const programId = params.id;
     const storeId = useCurrentStudioId();
     const { data, isLoading } = usePartnerProgramDetail(storeId, programId);
     const program = data?.program;
+    const reviewsQuery = useProgramReviews(programId, { limit: 1 });
+    const reviewCount = reviewsQuery.data?.totalCount ?? 0;
     const { open: openSheet, close: closeSheet } = useSheet();
     const { push: pushToast } = useToast();
     const statusMutation = useUpdateProgramStatus(storeId, programId);
@@ -38,8 +42,7 @@ export function PartnerClassDetailClient() {
     }
 
     const isPublished = program.status === ProgramStatus.ACTIVE;
-    // TODO: reviewCount 는 리뷰 API 후행(임시 0). featureTags 는 운영 플래그에서 파생.
-    const reviewCount = 0;
+    // featureTags 는 운영 플래그에서 파생.
     const featureTags = [
         program.childFriendly && '어린이 가능',
         program.deliverable && '배송 가능',
@@ -107,9 +110,10 @@ export function PartnerClassDetailClient() {
 
                     <button
                         type="button"
-                        className="flex w-fit items-center text-sm font-semibold text-foreground"
+                        onClick={() => router.push(`/partner/classes/${programId}/reviews`)}
+                        className="flex w-fit cursor-pointer items-center text-sm font-semibold text-foreground"
                     >
-                        클래스 리뷰 {reviewCount}개
+                        클래스 리뷰 {reviewCount.toLocaleString('ko-KR')}개
                         <RightIcon size={16} />
                     </button>
 

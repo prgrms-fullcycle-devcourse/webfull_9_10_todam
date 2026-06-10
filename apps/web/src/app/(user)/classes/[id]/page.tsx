@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
-import { Suspense } from 'react';
 
 import type { ProgramDetailResult } from '@todam/shared';
 
-import { ClassDetailSkeleton } from '@/entities/program';
 import { PublicClassDetailClient } from '@/features/program/detail';
 import { serverApiFetch } from '@/shared/api/server';
 
@@ -38,10 +36,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     }
 }
 
+// 로딩은 PublicClassDetailClient 내부 스켈레톤이 담당(react-query isLoading).
 export default function ClassDetailPage() {
-    return (
-        <Suspense fallback={<ClassDetailSkeleton />}>
-            <PublicClassDetailClient />
-        </Suspense>
-    );
+    return <PublicClassDetailClient />;
 }

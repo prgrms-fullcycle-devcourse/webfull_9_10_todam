@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type { ProgramReviewSort, UpdateProgramStatusRequest } from '@todam/shared';
 
@@ -52,6 +52,30 @@ export function useProgramReviews(
         queryKey: PUBLIC_REVIEWS_KEY(programId, normalized),
         queryFn: () => getProgramReviews(programId, normalized),
         enabled: !!programId,
+        staleTime: 30_000,
+    });
+}
+
+// 클래스 리뷰 전체보기(무한 스크롤). page 기반 → currentPage<totalPages 면 다음 페이지.
+export function useProgramReviewsInfinite(
+    programId: string,
+    sort: ProgramReviewSort = 'latest',
+    limit = 10,
+) {
+    return useInfiniteQuery({
+        queryKey: [
+            ...PUBLIC_DETAIL_KEY(programId),
+            'reviews',
+            'infinite',
+            { sort, limit },
+        ] as const,
+        queryFn: ({ pageParam }) => getProgramReviews(programId, { page: pageParam, limit, sort }),
+        enabled: !!programId,
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) => {
+            const { currentPage, totalPages } = lastPage.pagination;
+            return currentPage < totalPages ? currentPage + 1 : undefined;
+        },
         staleTime: 30_000,
     });
 }
