@@ -637,9 +637,9 @@ export const handlers = [
 
     // 리뷰 작성 — POST /reservations/{reservationId}/review (201).
     // ?unauth=1 → 401, ?simulate=403|404|409|500 토글, 그 외 201.
-    http.post(`${API}/reservations/:reservationId/review`, async ({ params, request }) => {
+    http.post(`*/reservations/:reservationId/review`, async ({ params, request }) => {
         const reservationId = String(params.reservationId);
-        const path = `/api/v1/reservations/${reservationId}/review`;
+        const path = `/reservations/${reservationId}/review`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -681,9 +681,9 @@ export const handlers = [
 
     // 리뷰 수정 — PATCH /reviews/{reviewId} (200). 응답 shape: D15(photos URL[] + updatedAt).
     // ?unauth=1 → 401, ?simulate=400|403|500 토글, 미존재 → 404.
-    http.patch(`${API}/reviews/:reviewId`, async ({ params, request }) => {
+    http.patch(`*/reviews/:reviewId`, async ({ params, request }) => {
         const reviewId = String(params.reviewId);
-        const path = `/api/v1/reviews/${reviewId}`;
+        const path = `/reviews/${reviewId}`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -734,8 +734,8 @@ export const handlers = [
     }),
 
     // 리뷰 사진 presigned — POST /review/images/presigned (D14 추론 mock). 응답에 S3 key 포함.
-    http.post(`${API}/review/images/presigned`, async ({ request }) => {
-        const path = '/api/v1/review/images/presigned';
+    http.post(`*/review/images/presigned`, async ({ request }) => {
+        const path = '/review/images/presigned';
         const body = (await request.json()) as ReviewImageUploadRequest;
         const result: ReviewImageUploadResult = createReviewImageUpload(body.fileName);
         return ok(
@@ -789,9 +789,9 @@ export const handlers = [
     //   ?simulate=404 → 404 RESERVATION_NOT_FOUND
     //   ?simulate=409 → 409 DELIVERY_NOT_EDITABLE
     //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
-    http.patch(`${API}/reservations/:reservationId/delivery`, async ({ params, request }) => {
+    http.patch(`*/reservations/:reservationId/delivery`, async ({ params, request }) => {
         const reservationId = String(params.reservationId);
-        const path = `/api/v1/reservations/${reservationId}/delivery`;
+        const path = `/reservations/${reservationId}/delivery`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -889,9 +889,9 @@ export const handlers = [
     //   ?simulate=404 → 404 ARTWORK_NOT_FOUND
     //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
     //   ?empty=1 → timeline 빈 배열 (등록 단계 없음)
-    http.get(`${API}/artworks/:artworkId`, ({ params, request }) => {
+    http.get(`*/artworks/:artworkId`, ({ params, request }) => {
         const artworkId = String(params.artworkId);
-        const path = `/api/v1/artworks/${artworkId}`;
+        const path = `/artworks/${artworkId}`;
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -1005,11 +1005,11 @@ export const handlers = [
         return ok(path, result, '프로필이 성공적으로 수정되었습니다.');
     }),
 
-    // ─── 알림 설정 조회 (GET /api/v1/users/me/notification-settings) ──────────
+    // ─── 알림 설정 조회 (GET /users/me/notification-settings) ──────────
     // contract: docs/exec-plans/active/마이페이지.md
     // 시뮬: ?unauth=1 → 401, ?simulate=500 → 500
-    http.get(`${API}/users/me/notification-settings`, ({ request }) => {
-        const path = '/api/v1/users/me/notification-settings';
+    http.get(`*/users/me/notification-settings`, ({ request }) => {
+        const path = '/users/me/notification-settings';
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -1239,11 +1239,11 @@ export const handlers = [
         return ok(path, result, '자동완성 목록 조회가 완료되었습니다.');
     }),
 
-    // ─── 알림 설정 수정 (PATCH /api/v1/users/me/notification-settings) ────────
+    // ─── 알림 설정 수정 (PATCH /users/me/notification-settings) ────────
     // contract: docs/exec-plans/active/마이페이지.md
     // 시뮬: ?unauth=1 → 401
-    http.patch(`${API}/users/me/notification-settings`, async ({ request }) => {
-        const path = '/api/v1/users/me/notification-settings';
+    http.patch(`*/users/me/notification-settings`, async ({ request }) => {
+        const path = '/users/me/notification-settings';
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
