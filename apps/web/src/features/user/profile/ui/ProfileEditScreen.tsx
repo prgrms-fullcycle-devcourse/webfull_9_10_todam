@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TextInput, Button } from '@todam/ui';
 
-import { useToast } from '@/shared/model';
+import { useToast, useModal } from '@/shared/model';
 import { ApiError } from '@/shared/api';
 import { useMyProfile, useUpdateMyProfile } from '../queries';
+import { WithdrawModal } from './WithdrawModal';
 
 // 닉네임 유효성: 공백 제외 2~10자, 특수문자 불가 (정본). D5 정규식 확정 전 기본 검증.
 function validateNickname(value: string): string | null {
@@ -23,6 +24,7 @@ function validateNickname(value: string): string | null {
 export function ProfileEditScreen() {
     const router = useRouter();
     const toast = useToast();
+    const { open: openModal } = useModal();
 
     const { data: profileData, isLoading } = useMyProfile();
     const updateProfile = useUpdateMyProfile();
@@ -85,6 +87,10 @@ export function ProfileEditScreen() {
         );
     };
 
+    const handleWithdraw = () => {
+        openModal(<WithdrawModal />);
+    };
+
     return (
         <main className="flex flex-1 flex-col overflow-y-auto px-4 pb-8 pt-6">
             <div className="flex flex-1 flex-col gap-6">
@@ -113,10 +119,25 @@ export function ProfileEditScreen() {
                 />
             </div>
 
+            {/* 회원탈퇴 진입 — Figma D-1: Divider + 안내문 + 링크 (foreground-tertiary, 12px) */}
+            <div className="my-6 flex flex-col items-center gap-1">
+                <div className="h-px w-full bg-border-subtle mb-4" />
+                <p className="text-xs text-foreground-tertiary">
+                    혹시 리듬을 떠나고 싶으신가요?{' '}
+                    <button
+                        type="button"
+                        onClick={handleWithdraw}
+                        className="text-xs font-semibold text-foreground-tertiary underline underline-offset-2"
+                    >
+                        탈퇴하기
+                    </button>
+                </p>
+            </div>
+
             <Button
                 variant="filled"
                 size="lg"
-                className="mt-6 w-full"
+                className="w-full"
                 onClick={handleSave}
                 disabled={updateProfile.isPending || isLoading}
             >
