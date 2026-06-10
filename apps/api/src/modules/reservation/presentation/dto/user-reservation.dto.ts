@@ -4,6 +4,7 @@ import {
     cancelReservationResponseSchema,
     createUserReservationRequestSchema,
     createUserReservationResultSchema,
+    deliveryEditResultSchema,
     getMyReservationsQuerySchema,
     reservationDetailResponseSchema,
 } from '@todam/shared';
@@ -57,3 +58,7 @@ export class ReservationDetailResponseDto extends createZodDto(reservationDetail
 // 요청 바디 없음 — 요청 DTO 불필요 (O3 확정).
 // 응답 SSOT = @todam/shared(zod).
 export class CancelReservationResponseDto extends createZodDto(cancelReservationResponseSchema) {}
+
+// ─── PATCH /reservations/:reservationId/delivery ──────────────────────────────
+// 응답 SSOT = @todam/shared(zod) deliveryEditResultSchema.
+export class DeliveryEditResponseDto extends createZodDto(deliveryEditResultSchema) {}

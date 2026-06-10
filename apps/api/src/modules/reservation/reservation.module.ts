@@ -14,6 +14,7 @@ import { GetPartnerReservationDetailUseCase } from './application/use-cases/get-
 import { GetPendingReservationSummaryUseCase } from './application/use-cases/get-pending-reservation-summary.use-case';
 import { ListPartnerReservationsUseCase } from './application/use-cases/list-partner-reservations.use-case';
 import { RejectPartnerReservationUseCase } from './application/use-cases/reject-partner-reservation.use-case';
+import { UpdateDeliveryUseCase } from './application/use-cases/update-delivery.use-case';
 import { UpdatePartnerReservationInternalMemoUseCase } from './application/use-cases/update-partner-reservation-internal-memo.use-case';
 import { PartnerReservationRepository } from './domain/repositories/partner-reservation.repository';
 import { UserReservationRepository } from './domain/repositories/user-reservation.repository';
@@ -40,6 +41,7 @@ import { UserReservationController } from './presentation/controllers/user-reser
         CancelUserReservationUseCase,
         CompletePartnerReservationUseCase,
         UpdatePartnerReservationInternalMemoUseCase,
+        UpdateDeliveryUseCase,
         { provide: PartnerReservationRepository, useClass: PrismaPartnerReservationRepository },
         { provide: UserReservationRepository, useClass: PrismaUserReservationRepository },
         PartnerGuard,
