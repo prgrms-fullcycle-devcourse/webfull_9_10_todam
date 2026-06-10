@@ -80,6 +80,12 @@ class MockRepository extends UserReservationRepository {
         this.cancelCalledWith = { row, userId };
         return this.cancelResult;
     }
+    override async findReservationForDelivery(): Promise<null> {
+        return null;
+    }
+    override async upsertDelivery(): Promise<never> {
+        throw new Error('not impl');
+    }
 }
 
 function makeUseCase(row: UserReservationCancelRow | null): {

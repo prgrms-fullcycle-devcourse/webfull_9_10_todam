@@ -15,7 +15,10 @@ import {
     CancelUserReservationResult,
     CreateCustomerReservationInput,
     CreateCustomerReservationResult,
+    UpsertDeliveryInput,
+    UpsertDeliveryResult,
     UserReservationCancelRow,
+    UserReservationDeliveryGuardRow,
     UserReservationDetailRow,
     UserReservationListQuery,
     UserReservationListRow,
@@ -447,6 +450,66 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
                 canceledAt: updated.canceledAt,
             };
         });
+    }
+
+    async findReservationForDelivery(
+        reservationId: string,
+    ): Promise<UserReservationDeliveryGuardRow | null> {
+        const row = await this.prisma.reservation.findUnique({
+            where: { id: reservationId },
+            select: {
+                userId: true,
+                deliveryMethod: true,
+                status: true,
+            },
+        });
+
+        if (!row) return null;
+
+        return {
+            userId: row.userId,
+            deliveryMethod: row.deliveryMethod,
+            status: row.status,
+        };
+    }
+
+    async upsertDelivery(
+        reservationId: string,
+        input: UpsertDeliveryInput,
+    ): Promise<UpsertDeliveryResult> {
+        const saved = await this.prisma.delivery.upsert({
+            where: { reservationId },
+            create: {
+                reservationId,
+                recipientName: input.recipientName,
+                recipientPhone: input.recipientPhone,
+                postalCode: input.postalCode,
+                shippingAddress: input.address,
+                addressDetail: input.addressDetail ?? null,
+            },
+            update: {
+                recipientName: input.recipientName,
+                recipientPhone: input.recipientPhone,
+                postalCode: input.postalCode,
+                shippingAddress: input.address,
+                addressDetail: input.addressDetail ?? null,
+            },
+            select: {
+                recipientName: true,
+                recipientPhone: true,
+                postalCode: true,
+                shippingAddress: true,
+                addressDetail: true,
+            },
+        });
+
+        return {
+            recipientName: saved.recipientName as string,
+            recipientPhone: saved.recipientPhone as string,
+            postalCode: saved.postalCode as string,
+            address: saved.shippingAddress as string,
+            ...(saved.addressDetail != null ? { addressDetail: saved.addressDetail } : {}),
+        };
     }
 
     private createQrToken(artworkId: string): string {

@@ -71,6 +71,12 @@ class MockRepository extends UserReservationRepository {
     override async cancelReservation(): Promise<CancelUserReservationResult> {
         throw new Error('not impl');
     }
+    override async findReservationForDelivery(): Promise<null> {
+        return null;
+    }
+    override async upsertDelivery(): Promise<never> {
+        throw new Error('not impl');
+    }
 }
 
 function makeUseCase(row: UserReservationDetailRow | null) {
