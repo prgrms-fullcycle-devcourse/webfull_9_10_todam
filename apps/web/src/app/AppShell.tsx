@@ -4,9 +4,9 @@ import { PartnerStatus, StoreStatus } from '@todam/shared';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 
-import { useCurrentStore } from '@/entities/store';
-import { useCurrentStoreQuery, useUpdateCurrentStoreMutation } from '@/entities/store';
-import { StoreRegistrationComplete, usePartnerOnboarding } from '@/features/store/registration';
+import { useCurrentStudio } from '@/entities/studio';
+import { useCurrentStudioQuery, useUpdateCurrentStudioMutation } from '@/entities/studio';
+import { StudioRegistrationComplete, usePartnerOnboarding } from '@/features/studio/registration';
 import { BottomNav } from '@/widgets/bottom-navigation';
 import { Header } from '@/widgets/header';
 
@@ -45,12 +45,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     const isApproved = partnerStatus === PartnerStatus.APPROVED;
     const bootstrapEnabled = isPartnerArea && isApproved && !isLoading && !isError;
 
-    const { storeId, setStoreId } = useCurrentStore();
+    const { storeId, setStudioId } = useCurrentStudio();
     const needsBootstrap = bootstrapEnabled && storeId === null;
 
     const { data: currentStoreData, isLoading: isCurrentStoreLoading } =
-        useCurrentStoreQuery(needsBootstrap);
-    const { mutate: updateCurrentStoreMutation } = useUpdateCurrentStoreMutation();
+        useCurrentStudioQuery(needsBootstrap);
+    const { mutate: updateCurrentStoreMutation } = useUpdateCurrentStudioMutation();
 
     useEffect(() => {
         if (!currentStoreData) return;
@@ -59,16 +59,16 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         // lastAccessedStoreId 있으면 전역 storeId 주입
         if (lastAccessedStoreId) {
-            setStoreId(lastAccessedStoreId);
+            setStudioId(lastAccessedStoreId);
             return;
         }
 
         // lastAccessedStoreId 미설정 예외 처리
         const fallback = stores.find((s) => s.status === StoreStatus.PUBLISHED) ?? stores[0];
         if (!fallback) return;
-        setStoreId(fallback.id);
+        setStudioId(fallback.id);
         updateCurrentStoreMutation(fallback.id);
-    }, [currentStoreData, setStoreId, updateCurrentStoreMutation]);
+    }, [currentStoreData, setStudioId, updateCurrentStoreMutation]);
 
     // 게이트 영역 조회 전/리다이렉트 진행 중엔 chrome·내용 모두 숨겨 깜빡임 방지.
     if (isGated && isLoading) return null;
@@ -80,7 +80,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     // 검수중/반려 파트너 (게이트 키 = partnerStatus)
     if (blocking && store) {
         return (
-            <StoreRegistrationComplete
+            <StudioRegistrationComplete
                 storeId={store.id}
                 onClose={() => router.push('/')}
                 onEditInfo={() => router.push(`/partner/studio/${store.id}/business`)}

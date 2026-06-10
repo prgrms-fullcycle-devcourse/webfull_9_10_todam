@@ -33,7 +33,7 @@ import {
     usePartnerProgramReservationCounts,
     usePartnerTimeSlotsByDate,
 } from '@/entities/reservation';
-import { usePartnerStorePrograms, usePartnerStoreDetail } from '@/entities/store';
+import { usePartnerStudioPrograms, usePartnerStudioDetail } from '@/entities/studio';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useSheet, useToast } from '@/shared/model';
 
@@ -133,8 +133,8 @@ export function PartnerReservationManualCreateClient({ storeId, initialDate }: P
     const [internalMemo, setInternalMemo] = useState('');
 
     const timeSlotsQuery = usePartnerTimeSlotsByDate(storeId, selectedDate);
-    const programsQuery = usePartnerStorePrograms(storeId);
-    const storeName = usePartnerStoreDetail(storeId).data?.store.name;
+    const programsQuery = usePartnerStudioPrograms(storeId);
+    const storeName = usePartnerStudioDetail(storeId).data?.store.name;
     const mutation = useCreatePartnerReservationMutation(storeId);
 
     const slots = useMemo(

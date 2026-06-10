@@ -6,7 +6,7 @@ import { Modal, SectionTitle, Toggle } from '@todam/ui';
 
 import { logout } from '@/features/auth/logout';
 import { TERMS } from '@/features/auth/terms';
-import { useReviewStore } from '@/entities/store';
+import { useReviewStore } from '@/entities/studio';
 import { MenuTable } from '@/shared/ui';
 import { useModal } from '@/shared/model';
 

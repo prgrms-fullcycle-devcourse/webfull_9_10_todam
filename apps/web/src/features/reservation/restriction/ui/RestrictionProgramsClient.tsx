@@ -17,7 +17,7 @@ import {
     useCreatePartnerReservationRestrictionsMutation,
     usePartnerProgramReservationCounts,
 } from '@/entities/reservation';
-import { usePartnerStorePrograms } from '@/entities/store';
+import { usePartnerStudioPrograms } from '@/entities/studio';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useToast } from '@/shared/model';
 
@@ -59,7 +59,7 @@ export function RestrictionProgramsClient({
 
     // 전체 활성 클래스 = 선택 대상. reservation-counts는 확정 예약 있는 클래스만 주므로
     // 목록 소스로 쓸 수 없고, 확정 건수 캡션 용도로만 Map 병합한다.
-    const programsQuery = usePartnerStorePrograms(storeId);
+    const programsQuery = usePartnerStudioPrograms(storeId);
     const countsQuery = usePartnerProgramReservationCounts(
         storeId,
         date,

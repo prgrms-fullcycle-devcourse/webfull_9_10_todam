@@ -2,18 +2,18 @@
 
 import { DescriptionBlock, SpaceBlock, TextInput } from '@todam/ui';
 
-import { useCurrentStoreId } from '@/entities/store/model';
-import { usePartnerStoreDetail } from '@/entities/store';
+import { useCurrentStudioId } from '@/entities/studio/model';
+import { usePartnerStudioDetail } from '@/entities/studio';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 
 // 설정 - 사업자 정보. 전 항목 읽기 전용(증빙 목적, 직접 수정 불가).
 export function PartnerBusinessInfoScreen() {
-    const storeId = useCurrentStoreId();
+    const storeId = useCurrentStudioId();
 
     // sub 헤더 기본 우측 noti 숨김.
     useHeaderOverride({ hideRightAction: true });
 
-    const { data, isLoading } = usePartnerStoreDetail(storeId);
+    const { data, isLoading } = usePartnerStudioDetail(storeId);
     const doc = data?.store.businessDocument ?? null;
 
     const v = (value: string | null | undefined) => (isLoading ? '' : (value ?? ''));

@@ -9,7 +9,7 @@ import { Button, BottomBar, Modal } from '@todam/ui';
 
 import { usePartnerPrograms } from '@/features/program/list';
 import { ClassOrderCardItem, useReorderPrograms } from '@/features/program/order';
-import { useCurrentStoreId } from '@/entities/store';
+import { useCurrentStudioId } from '@/entities/studio';
 import { useLeaveGuard } from '@/shared/lib/useLeaveGuard';
 import { useModal, useToast } from '@/shared/model';
 
@@ -33,7 +33,7 @@ function sameOrder(a: PartnerProgramListItem[], b: PartnerProgramListItem[]): bo
 // 로컬 헤더로 구현 (routeConfig 미등록 → 전역 Header 는 visible:false 로 숨김).
 export default function PartnerClassOrderPage() {
     const router = useRouter();
-    const storeId = useCurrentStoreId();
+    const storeId = useCurrentStudioId();
     const { push } = useToast();
     const { open, close } = useModal();
 

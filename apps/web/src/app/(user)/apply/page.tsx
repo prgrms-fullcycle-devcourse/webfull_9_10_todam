@@ -1,5 +1,5 @@
-import { StoreRegistrationFlow } from '@/features/store/registration';
+import { StudioRegistrationFlow } from '@/features/studio/registration';
 
 export default function PartnerApplyPage() {
-    return <StoreRegistrationFlow />;
+    return <StudioRegistrationFlow />;
 }

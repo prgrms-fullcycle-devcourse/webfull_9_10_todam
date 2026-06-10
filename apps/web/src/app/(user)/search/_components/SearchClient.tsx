@@ -8,10 +8,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     AutocompleteDropdown,
     RecentSearches,
-    StoreSearchCard,
+    StudioSearchCard,
     useAutocomplete,
-    useStoreSearch,
-} from '@/features/store/search';
+    useStudioSearch,
+} from '@/features/studio/search';
 import { useRecentSearches } from '@/shared/lib/useRecentSearches';
 import { EmptyState } from '@/shared/ui';
 
@@ -52,7 +52,7 @@ export function SearchClient() {
                 setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
             },
             () => {
-                // 거부 → null 유지 → getStores에서 DEFAULT_LAT/LNG 폴백
+                // 거부 → null 유지 → getStudios에서 DEFAULT_LAT/LNG 폴백
             },
         );
     }, []);
@@ -83,7 +83,7 @@ export function SearchClient() {
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
-    } = useStoreSearch({
+    } = useStudioSearch({
         keyword: submittedKeyword,
         lat: coords?.lat,
         lng: coords?.lng,
@@ -223,7 +223,7 @@ export function SearchClient() {
                             <ul className="flex flex-col gap-6">
                                 {stores.map((store) => (
                                     <li key={store.id}>
-                                        <StoreSearchCard store={store} />
+                                        <StudioSearchCard store={store} />
                                     </li>
                                 ))}
                             </ul>

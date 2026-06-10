@@ -6,9 +6,9 @@ import { Button, HeartFillIcon } from '@todam/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
-import { FavoriteStoreCard } from '@/entities/store';
-import { FAVORITE_STORES_QUERY_KEY, useFavoriteStores } from '@/features/store/favorite-list';
-import { useToggleFavorite } from '@/features/store/toggle-favorite';
+import { FavoriteStudioCard } from '@/entities/studio';
+import { FAVORITE_STUDIOS_QUERY_KEY, useFavoriteStudios } from '@/features/studio/favorite-list';
+import { useToggleFavorite } from '@/features/studio/toggle-favorite';
 import { ApiError } from '@/shared/api';
 import { useToast } from '@/shared/model';
 import { EmptyState } from '@/shared/ui';
@@ -24,7 +24,7 @@ export function FavoritesListClient() {
     const toggle = useToggleFavorite();
 
     const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
-        useFavoriteStores();
+        useFavoriteStudios();
 
     // 401 → 로그인 페이지로. (공통 401 인터셉터 없음 → 화면별 처리)
     useEffect(() => {
@@ -51,7 +51,7 @@ export function FavoritesListClient() {
         return () => io.disconnect();
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    const queryKey = [...FAVORITE_STORES_QUERY_KEY, { limit: undefined }] as const;
+    const queryKey = [...FAVORITE_STUDIOS_QUERY_KEY, { limit: undefined }] as const;
 
     // 무한쿼리 캐시에서 항목 제거/복원 (낙관적 업데이트 — D3).
     function removeFromCache(favoriteId: string) {
@@ -134,7 +134,7 @@ export function FavoritesListClient() {
             {items.length > 0 && (
                 <section className="flex flex-col gap-4 py-2">
                     {items.map((item) => (
-                        <FavoriteStoreCard
+                        <FavoriteStudioCard
                             key={item.favoriteId}
                             storeId={item.storeId}
                             name={item.name}

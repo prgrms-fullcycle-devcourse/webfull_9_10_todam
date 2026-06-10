@@ -1,4 +1,4 @@
-import { NearbyStoresSection } from '@/features/store/nearby-list';
+import { NearbyStudiosSection } from '@/features/studio/nearby-list';
 
 export default function HomePage() {
     return (
@@ -12,7 +12,7 @@ export default function HomePage() {
                 {/* Container: 좌/우 패딩 + 섹션 간 gap */}
                 <div className="flex flex-col gap-6 px-4 py-6">
                     {/* 근처 공방: 위치 기반 공방 목록 (커서 무한스크롤) */}
-                    <NearbyStoresSection />
+                    <NearbyStudiosSection />
                 </div>
             </main>
         </>

@@ -7,7 +7,7 @@ import { PartnerStatus } from '@todam/shared';
 import { logout } from '@/features/auth/logout';
 import { TERMS, type TermsKey } from '@/features/auth/terms';
 import { MyPageHub } from '@/features/user/profile';
-import { usePartnerOnboarding } from '@/features/store/registration';
+import { usePartnerOnboarding } from '@/features/studio/registration';
 import { useModal } from '@/shared/model';
 
 const CUSTOMER_SUPPORT_TERMS: { key: TermsKey; label: string }[] = [

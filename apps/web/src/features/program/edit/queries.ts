@@ -10,7 +10,7 @@ import { uploadToPresignedUrl } from '@/shared/api';
 
 // 프로그램 수정 preload 는 파트너 상세(usePartnerProgramDetail)를 재사용한다.
 // 수정/이미지 변경 후 상세·목록 캐시를 무효화해 재조회되게 한다.
-const PROGRAMS_KEY = (storeId: string) => ['partner', 'stores', storeId, 'programs'] as const;
+const PROGRAMS_KEY = (storeId: string) => ['partner', 'studios', storeId, 'programs'] as const;
 
 // ─── 프로그램 수정 ───────────────────────────────────────────────
 export function usePatchProgram(storeId: string, programId: string) {
