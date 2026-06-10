@@ -3,7 +3,6 @@
 import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import type { FavoriteStoreItem, FavoriteStoreListResult } from '@todam/shared';
 import { Button, HeartFillIcon } from '@todam/ui';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 import { FavoriteStudioCard } from '@/entities/studio';
@@ -15,23 +14,16 @@ import { EmptyState } from '@/shared/ui';
 
 type FavoriteInfiniteData = InfiniteData<FavoriteStoreListResult, string | null>;
 
-// 클라이언트 동작(react-query / IntersectionObserver / 401 리다이렉트 / 낙관적 해제) 캡슐화.
+// 클라이언트 동작(react-query / IntersectionObserver / 낙관적 해제) 캡슐화.
 // page.tsx 는 서버 컴포넌트로 두고 본 클라이언트 컴포넌트만 렌더.
+// 401 은 AuthProvider 전역 핸들러가 "로그인이 필요해요" 모달로 처리(화면별 리다이렉트 금지).
 export function FavoritesListClient() {
-    const router = useRouter();
     const queryClient = useQueryClient();
     const { push } = useToast();
     const toggle = useToggleFavorite();
 
     const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
         useFavoriteStudios();
-
-    // 401 → 로그인 페이지로. (공통 401 인터셉터 없음 → 화면별 처리)
-    useEffect(() => {
-        if (isError && error instanceof ApiError && error.statusCode === 401) {
-            router.replace('/login');
-        }
-    }, [isError, error, router]);
 
     // 무한 스크롤: 리스트 하단 sentinel 진입 시 다음 페이지 요청.
     const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -95,11 +87,9 @@ export function FavoritesListClient() {
                     });
                 },
                 onError: (err) => {
-                    if (err instanceof ApiError && err.statusCode === 401) {
-                        router.replace('/login');
-                        return;
-                    }
+                    // 낙관적 제거 되돌림. 401 은 전역 로그인 모달이 안내하므로 토스트 생략.
                     restoreToCache(item);
+                    if (err instanceof ApiError && err.statusCode === 401) return;
                     push({
                         type: 'icon',
                         message: '찜 상태 변경에 실패했습니다.',
@@ -111,7 +101,7 @@ export function FavoritesListClient() {
 
     const items = data?.pages.flatMap((p) => p.favoriteStores) ?? [];
     const isEmpty = !isLoading && !isError && items.length === 0;
-    // 401 은 로그인 리다이렉트 → 화면 메시지 분기 제외.
+    // 401 은 전역 로그인 모달이 안내 → 네트워크 에러 메시지 분기 제외.
     const isNetworkError = isError && !(error instanceof ApiError && error.statusCode === 401);
 
     return (
