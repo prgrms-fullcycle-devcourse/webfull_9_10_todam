@@ -15,7 +15,7 @@ Phase별 완료가 아니라 기능 전체가 완료돼야 체크.
 -->
 
 - [ ] API 구현
-- [ ] UI 구현
+- [ ] UI 구현  <!-- Phase 1 PWA 기반 완료 (2026-06-11). Phase 2·3 미완료. -->
 - [ ] API 연동
 
 ---
@@ -29,12 +29,14 @@ Phase별 완료가 아니라 기능 전체가 완료돼야 체크.
 - Open decisions:
   1. **인앱 알림센터 UI 토큰**: DESIGN.md에서 알림 아이템 variant enum, 읽음/미읽음 상태 토큰 확보 필요. 미확보 시 구현 전 확인.
   2. **P-5(단계 정체) N일 임계값**: BE와 확정 필요. 정책 §8에서 N일 미명시.
-  3. **next-pwa 도입 여부**: manifest 자동화 편의 vs firebase SW 충돌 위험. FE 결정 필요.
-  4. **webPushEnabled BE 추가 시점**: user 모듈 소유(태성)이므로 FE 설정 UI 구현 전 스키마 변경 + PATCH 엔드포인트 확장 완료 필요. 협업 싱크 필요.
+  1. **P-5(단계 정체) N일 임계값**: BE와 확정 필요. 정책 §8에서 N일 미명시.
+  2. **webPushEnabled BE 추가 시점**: user 모듈 소유(태성)이므로 FE 설정 UI 구현 전 스키마 변경 + PATCH 엔드포인트 확장 완료 필요. 협업 싱크 필요.
 
 > **Resolved decisions (2026-06-11)**
 > - ~~Open decision #1 (NotificationPreference vs Settings 통합)~~: **기존 `/users/me/notification-settings`로 통합**. 별도 NotificationPreference 엔티티 신설하지 않음. `/notifications/preferences` 엔드포인트 폐기.
 > - ~~Open decision #2 (webPushEnabled 필드)~~: **`notificationSettings`에 `webPushEnabled` 필드 추가**로 결정. user 모듈(태성) 소유 — `packages/shared/src/contracts/user-me.ts` 스키마 변경 포함.
+> - ~~Open decision (next-pwa 도입 여부)~~: **next-pwa 미도입**. 푸시-only MVP라 오프라인/프리캐싱 불필요 + firebase SW와 SW scope 충돌 위험 회피. manifest 메타 수동 관리(`public/manifest.webmanifest`), SW 수동 등록(`ServiceWorkerRegistrar`).
+> - ~~인앱 알림센터 UI 토큰~~: Phase 1 안내 시트는 공용 `useSheet`/`StandardBottomSheet` 재사용으로 해결. (Phase 3 알림센터 토큰은 해당 시점 재확인)
 
 ---
 
@@ -316,7 +318,13 @@ PATCH /notifications/read-all
 ## Out (단계별 완료물)
 
 - **Phase 1 API**: 없음 (FE 정적 파일만)
-- **Phase 1 UI**: `manifest.webmanifest`, `firebase-messaging-sw.js` (플레이스홀더), iOS 안내 컴포넌트
+- **Phase 1 UI** (2026-06-11 완료):
+  - `apps/web/public/manifest.webmanifest` — name/short_name/icons/standalone/start_url/theme_color/background_color
+  - `apps/web/public/firebase-messaging-sw.js` — Phase 1 플레이스홀더 (install·activate 생명주기만, FCM 없음)
+  - `apps/web/src/features/notification/ui/ServiceWorkerRegistrar.tsx` — useEffect에서 SW 등록 ('use client')
+  - `apps/web/src/features/notification/ui/IosInstallBanner.tsx` — iOS Safari + 미설치 감지 → 홈화면 추가 수동 가이드 배너
+  - `apps/web/src/features/notification/ui/index.ts`, `apps/web/src/features/notification/index.ts` — exports
+  - `apps/web/src/app/layout.tsx` — metadata.manifest, appleWebApp, viewport.themeColor 추가 + ServiceWorkerRegistrar·IosInstallBanner 마운트
 - **Phase 2 API**: `POST /notifications/tokens`, `DELETE /notifications/tokens/:token`, FCM Admin SDK 발송 파이프라인, BullMQ 워커 기본, `notificationSettings.webPushEnabled` 필드 추가 (user 모듈)
 - **Phase 2 UI**: `useFcmToken` 훅, `PushPermissionPrompt`, firebase.ts 초기화
 - **Phase 3 API**: `GET /notifications`, `PATCH /notifications/:id/read`, `PATCH /notifications/read-all`, 도메인 훅 연결 (U-1~U-15, P-1~P-9)
