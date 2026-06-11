@@ -57,6 +57,9 @@ function controllers(): ControllerClass[] {
     const { ReviewController } = jest.requireActual<
         typeof import('./review/presentation/controllers/review.controller')
     >('./review/presentation/controllers/review.controller');
+    const { AdminController } = jest.requireActual<
+        typeof import('./admin/presentation/controllers/admin.controller')
+    >('./admin/presentation/controllers/admin.controller');
 
     return [
         AuthController,
@@ -70,6 +73,7 @@ function controllers(): ControllerClass[] {
         PartnerController,
         UserController,
         ReviewController,
+        AdminController,
     ];
 }
 
@@ -734,6 +738,55 @@ describe('API route baseline', () => {
                 method: 'DELETE',
                 path: '/reviews/:reviewId',
                 guards: ['AuthGuard'],
+            },
+            {
+                controller: 'AdminController',
+                handler: 'login',
+                method: 'POST',
+                path: '/admin/auth/login',
+                guards: [],
+            },
+            {
+                controller: 'AdminController',
+                handler: 'listStores',
+                method: 'GET',
+                path: '/admin/stores',
+                guards: ['AdminGuard'],
+            },
+            {
+                controller: 'AdminController',
+                handler: 'getStoreDetail',
+                method: 'GET',
+                path: '/admin/stores/:storeId',
+                guards: ['AdminGuard'],
+            },
+            {
+                controller: 'AdminController',
+                handler: 'approve',
+                method: 'PATCH',
+                path: '/admin/stores/:storeId/approve',
+                guards: ['AdminGuard'],
+            },
+            {
+                controller: 'AdminController',
+                handler: 'reject',
+                method: 'PATCH',
+                path: '/admin/stores/:storeId/reject',
+                guards: ['AdminGuard'],
+            },
+            {
+                controller: 'AdminController',
+                handler: 'suspend',
+                method: 'PATCH',
+                path: '/admin/stores/:storeId/suspend',
+                guards: ['AdminGuard'],
+            },
+            {
+                controller: 'AdminController',
+                handler: 'restore',
+                method: 'PATCH',
+                path: '/admin/stores/:storeId/restore',
+                guards: ['AdminGuard'],
             },
         ]);
     });
