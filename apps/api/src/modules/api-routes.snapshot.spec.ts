@@ -331,6 +331,13 @@ describe('API route baseline', () => {
             },
             {
                 controller: 'StoreController',
+                handler: 'verifyBusinessDocument',
+                method: 'POST',
+                path: '/partner/business-documents/verify',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'StoreController',
                 handler: 'createStoreImage',
                 method: 'POST',
                 path: '/partner/stores/:storeId/images',

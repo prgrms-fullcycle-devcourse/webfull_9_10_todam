@@ -23,6 +23,7 @@ import {
     businessDocumentImageRequestSchema,
     businessDocumentOcrRequestSchema,
     businessDocumentUpdateRequestSchema,
+    businessDocumentVerifyRequestSchema,
     createStoreImageRequestSchema,
     createStoreRequestSchema,
     favoriteStoresQuerySchema,
@@ -38,6 +39,8 @@ import type {
     BusinessDocumentImageRequest,
     BusinessDocumentOcrRequest,
     BusinessDocumentUpdateRequest,
+    BusinessDocumentVerifyRequest,
+    BusinessDocumentVerifyResult,
     CreateStoreImageRequest,
     CreateStoreRequest,
     ListStoreReviewsQuery,
@@ -59,6 +62,7 @@ import { CreateStoreUseCase } from '../../application/use-cases/create-store.use
 import { CreateStoreImageUseCase } from '../../application/use-cases/create-store-image.use-case';
 import { CreateBusinessDocumentImageUseCase } from '../../application/use-cases/create-business-document-image.use-case';
 import { OcrBusinessDocumentUseCase } from '../../application/use-cases/ocr-business-document.use-case';
+import { VerifyBusinessDocumentUseCase } from '../../application/use-cases/verify-business-document.use-case';
 import { ConfirmStoreImageUseCase } from '../../application/use-cases/confirm-store-image.use-case';
 import { SubmitStoreUseCase } from '../../application/use-cases/submit-store.use-case';
 import { ListPartnerStoresUseCase } from '../../application/use-cases/list-partner-stores.use-case';
@@ -92,6 +96,10 @@ import {
     OcrBusinessDocumentDto,
     OcrBusinessDocumentResponseDto,
 } from '../dto/ocr-business-document.dto';
+import {
+    VerifyBusinessDocumentDto,
+    VerifyBusinessDocumentResponseDto,
+} from '../dto/verify-business-document.dto';
 import { SubmitStoreResponseDto } from '../dto/submit-store.dto';
 import { ListPartnerStoresResponseDto } from '../dto/list-partner-stores.dto';
 import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detail.dto';
@@ -132,6 +140,7 @@ export class StoreController {
         private readonly createStoreImageUseCase: CreateStoreImageUseCase,
         private readonly createBusinessDocumentImageUseCase: CreateBusinessDocumentImageUseCase,
         private readonly ocrBusinessDocumentUseCase: OcrBusinessDocumentUseCase,
+        private readonly verifyBusinessDocumentUseCase: VerifyBusinessDocumentUseCase,
         private readonly confirmStoreImageUseCase: ConfirmStoreImageUseCase,
         private readonly submitStoreUseCase: SubmitStoreUseCase,
         private readonly listPartnerStoresUseCase: ListPartnerStoresUseCase,
@@ -426,6 +435,27 @@ export class StoreController {
         dto: BusinessDocumentOcrRequest,
     ): Promise<OcrBusinessDocumentResponseDto> {
         return this.ocrBusinessDocumentUseCase.execute(user.id, dto.documentUrl);
+    }
+
+    @Post('partner/business-documents/verify')
+    @HttpCode(HttpStatus.OK)
+    // store-비종속. 공방 등록 1단계 verify 게이트. Partner 레코드 미존재 가능 → AuthGuard만 (PartnerGuard 미적용).
+    @UseGuards(AuthGuard)
+    @ResponseMessage('진위확인 완료')
+    @ApiOkResponse({
+        description: '사업자등록증 진위확인 결과 (VERIFIED/MISMATCH/ERROR 모두 200)',
+        type: VerifyBusinessDocumentResponseDto,
+    })
+    @ApiBody({ type: VerifyBusinessDocumentDto })
+    async verifyBusinessDocument(
+        @Body(new ZodValidationPipe(businessDocumentVerifyRequestSchema))
+        dto: BusinessDocumentVerifyRequest,
+    ): Promise<BusinessDocumentVerifyResult> {
+        return this.verifyBusinessDocumentUseCase.execute(
+            dto.businessNumber,
+            dto.ownerName,
+            dto.startDate,
+        );
     }
 
     @Post('partner/stores/:storeId/images')
