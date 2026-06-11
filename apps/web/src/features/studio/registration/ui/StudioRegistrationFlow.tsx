@@ -2,7 +2,7 @@
 
 import { BottomBar, Button, Modal } from '@todam/ui';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { PartnerStatus, StoreRegistrationApiErrorCode } from '@todam/shared';
 
@@ -46,6 +46,12 @@ export function StudioRegistrationFlow({ returnTo = '/my' }: StudioRegistrationF
     const submitted = submittedStoreId !== null;
 
     const dirty = isDirty(form);
+
+    // 스텝 전환 시 스크롤 컨테이너를 최상단으로 (긴 폼에서 이전 스크롤 위치 잔존 방지)
+    const scrollRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        scrollRef.current?.scrollTo({ top: 0 });
+    }, [step]);
 
     // 진입점 2개(/apply, /partner/studio/new)가 전역 store 공유 → 플로우 이탈 시 초기화
     useEffect(() => () => reset(), [reset]);
@@ -135,7 +141,7 @@ export function StudioRegistrationFlow({ returnTo = '/my' }: StudioRegistrationF
     return (
         <div className="flex flex-1 flex-col overflow-hidden">
             {/* Container */}
-            <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-16">
+            <div ref={scrollRef} className="flex flex-1 flex-col overflow-y-auto px-4 pb-16">
                 <div className="py-2">
                     <ProgressBarWrapper value={progress} leftLabel={`${step + 1}/4 단계`} />
                 </div>

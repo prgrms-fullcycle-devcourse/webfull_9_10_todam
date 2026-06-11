@@ -20,6 +20,9 @@ export interface CreateStoreInput {
     address: string;
     latitude: number;
     longitude: number;
+    regionSido?: string | null;
+    regionSigungu?: string | null;
+    regionDong?: string | null;
     convenienceInfo: ConvenienceInfoInput;
     autoConfirm: boolean;
     cancelDeadlineDays: number;
