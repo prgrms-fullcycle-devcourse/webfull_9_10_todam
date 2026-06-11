@@ -1,12 +1,13 @@
 // API Contract 바인딩: apps/api auth.controller `password/reset-request`, `password/reset`.
-// BE는 6자리 인증코드 방식. 엔드포인트/스키마/필드명은 contract 그대로. 임의 변경 금지.
+// BE는 email+code 링크 방식. 메일에 /reset-password?email=&code= 링크 발송(Redis TTL 30분).
+// 엔드포인트/스키마/필드명은 contract 그대로. 임의 변경 금지.
 
 import { clientApiFetch } from '@/shared/api';
 
 // ───────────── POST /auth/password/reset-request ─────────────
 // req: { email }
 // res 200: data null (enumeration-proof — 미가입/소셜계정도 동일 200 반환)
-// 이메일로 6자리 인증코드 발송(Redis TTL 5분).
+// 메일로 /reset-password?email=&code= 재설정 링크 발송(Redis TTL 1800s=30분).
 // err: 400 INVALID_EMAIL_FORMAT / 500 INTERNAL_SERVER_ERROR
 export function requestPasswordReset(email: string): Promise<null> {
     return clientApiFetch<null>('/auth/password/reset-request', {
