@@ -11,7 +11,7 @@
 
 ## Status
 
-- [ ] API 구현
+- [x] API 구현
 - [ ] UI 구현
 - [ ] API 연동
 
@@ -62,15 +62,18 @@ verifiedAt          DateTime?           @map("verified_at") @db.Timestamptz(6)
 verificationCheckedAt DateTime?         @map("verification_checked_at") @db.Timestamptz(6)
   // verify 엔드포인트 매 호출 시 갱신 (결과 무관).
 businessState       BusinessState?      @map("business_state")
-  // 국세청 상태조회 결과. VERIFIED 시에만 기록. ERROR/MISMATCH는 null.
+  // 국세청 상태조회 결과(ACTIVE/CLOSED/SUSPENDED). 진위 통과(VERIFIED) 시 기록. MISMATCH/ERROR는 null.
 
 // 신설 enum
 enum VerificationStatus {
   PENDING    // 진위확인 미수행 (초기값)
-  VERIFIED   // 진위확인 통과 + 사업자 ACTIVE
-  MISMATCH   // 입력 정보가 실제 등록정보와 불일치 (사용자 잘못 입력, 최종 상태)
+  VERIFIED   // 진위확인 통과 = 번호·이름·개업일이 실제 등록정보와 일치 (영업상태 무관 — 폐업·휴업도 VERIFIED)
+  MISMATCH   // 입력 정보가 실제 등록정보와 불일치 (valid==02, 사용자 잘못 입력, 최종 상태)
   ERROR      // 국세청 API 장애·타임아웃 (일시적, 재시도 가능)
 }
+// 직교 설계: verificationStatus(진위 일치)와 businessState(영업 상태)는 별개 축이다.
+//   "등록 가능"은 저장값이 아니라 파생 판단: verificationStatus===VERIFIED && businessState===ACTIVE.
+//   폐업·휴업 = VERIFIED + businessState=CLOSED/SUSPENDED + message(BUSINESS_CLOSED/SUSPENDED)로 차단.
 
 enum BusinessState {
   ACTIVE     // 계속사업자
@@ -282,13 +285,14 @@ http.post('/api/v1/partner/business-documents/verify', () =>
 
 ### 선행 조건
 
-- [ ] 국세청 공공데이터포털 "국세청_사업자등록정보 진위확인 및 상태조회" 서비스 키 신청 및 승인 (외부 선행, 승인 지연 가능). 미승인 상태에서도 BE 구현까지는 진행 가능.
+- [x] 국세청 공공데이터포털 "국세청_사업자등록정보 진위확인 및 상태조회" 서비스 키 신청 및 승인 — **2026-06-11 발급 완료, 실 API 호출 테스트 정상 확인.**
 - [ ] OCR plan의 `startDate` 컬럼 마이그레이션 완료 (또는 동일 마이그레이션에 병합 결정)
 
 ### BE
 
 1. **env 추가**
-   - `packages/config/src/index.ts` `apiSchema`에 `NTS_API_KEY: z.string()` 추가
+   - `packages/config/src/index.ts` `apiSchema`에 `NTS_API_KEY: z.string().optional()` 추가
+     - 바로 위 `GOOGLE_VISION_*`(OCR 키)와 동일 컨벤션: **외부 API 키는 env 스키마에서 optional로 두고, 사용 지점(NtsService)에서 존재 검증**한다(부재 시 NtsApiError→ERROR). required로 좁히면 키 미보유 환경(타 개발자·CI)의 부팅이 막히고 형제 키와 불일치. (초기 plan의 `z.string()` 표기는 이 컨벤션 미반영 — 정정)
    - `apps/api/.env.example`에 `NTS_API_KEY=` 항목 추가
 
 2. **Shared enum·스키마 추가**
@@ -369,6 +373,22 @@ http.post('/api/v1/partner/business-documents/verify', () =>
 ## Out (단계별 완료물)
 
 - API: `POST /partner/business-documents/verify`(stateless) 엔드포인트, `NtsService`, `VerifyBusinessDocumentUseCase`, `POST /stores` 생성 유스케이스의 진위확인 저장 로직, `VerificationStatus`/`BusinessState` 마이그레이션
+  - `packages/shared/src/enums/verification-status.ts` — `VerificationStatus` enum 신설
+  - `packages/shared/src/enums/business-state.ts` — `BusinessState` enum 신설
+  - `packages/shared/src/index.ts` — 두 enum re-export 추가
+  - `packages/shared/src/contracts/store-registration.ts` — `businessDocumentVerifyRequestSchema`, `businessDocumentVerifyResultSchema`, 타입 추가
+  - `apps/api/prisma/schema.prisma` — `BusinessDocument`에 `verificationStatus`/`ntsRaw`/`verifiedAt`/`verificationCheckedAt`/`businessState` 컬럼 추가; `VerificationStatus`/`BusinessState` enum 신설
+  - `apps/api/prisma/migrations/20260611130000_add_verification_columns/migration.sql` — 마이그레이션 파일
+  - `apps/api/src/modules/store/infrastructure/nts.service.ts` — 국세청 API 클라이언트 (`validate`/`getStatus`, 5초 타임아웃, `NtsApiError`)
+  - `apps/api/src/modules/store/application/use-cases/verify-business-document.use-case.ts` — stateless 유스케이스 + `resolveVerification()` 순수함수
+  - `apps/api/src/modules/store/infrastructure/persistence/prisma-create-store.command.ts` — `POST /stores` 제출 시 국세청 재검증 + 진위확인 컬럼 저장 로직 추가
+  - `apps/api/src/modules/store/presentation/controllers/store.controller.ts` — `POST /partner/business-documents/verify` 라우트 추가
+  - `apps/api/src/modules/store/presentation/dto/verify-business-document.dto.ts` — Swagger DTO
+  - `apps/api/src/modules/store/store.module.ts` — `NtsService`, `VerifyBusinessDocumentUseCase` 등록
+  - `apps/api/src/modules/store/application/use-cases/verify-business-document.use-case.spec.ts` — 유스케이스 테스트 (18개 중 9개)
+  - `apps/api/src/modules/store/infrastructure/nts.service.spec.ts` — HTTP 클라이언트 테스트 (9개)
+  - `apps/api/src/modules/api-routes.snapshot.spec.ts` — 신규 라우트 스냅샷 반영
+  - 검증: `tsc --noEmit` 0 오류, Jest 371/371 통과
 - UI: `StudioRegistrationFlow.tsx` Business step "다음" 버튼 게이트 (스피너, 분기 토스트, 진행 차단)
 - 연동: 실 국세청 API 호출 → 결과별 UX 분기 동작 확인 (키 승인 후)
 
@@ -412,6 +432,9 @@ http.post('/api/v1/partner/business-documents/verify', () =>
 - 2026-06-10: `b_stt` 포함 여부에 따라 1회/2회 호출 런타임 분기. 실 스펙 확인 전까지 양 경로 모두 구현.
 - 2026-06-10: 기능명세 DB 및 API명세 DB 매칭 없음 확인 → 확정 설계 메모리(`business-verification-design.md`)가 SSOT임을 명시.
 - 2026-06-10: `AuthGuard`만 적용 (PartnerGuard 없음). 공방 등록 1단계 = Partner 레코드 미존재 가능.
+- 2026-06-11: **국세청 API 키 발급 완료**, 실 API 호출 테스트 정상. 통합 테스트 가능 상태.
+- 2026-06-11: **`NTS_API_KEY`는 env 스키마에서 `optional()` 유지 확정.** 바로 위 `GOOGLE_VISION_*`(OCR) 키와 동일하게 "외부 API 키 = env optional + 사용 지점 검증" 컨벤션을 따른다. required로 좁히면 키 미보유 환경(타 개발자·CI) 부팅 차단 + 형제 키와 불일치. 초기 plan의 `z.string()`(required) 표기를 정정. (리뷰 DRIFT-2 해소: 코드가 컨벤션에 맞고 plan이 틀렸던 케이스.)
+- 2026-06-11: **VERIFIED 재정의 + 직교 설계 확정.** 초기 설계는 "VERIFIED = 진위 통과 + ACTIVE"로 묶어, 폐업·휴업을 `verificationStatus=MISMATCH`로 매핑했음 → `MISMATCH + businessState=CLOSED`라는 모순값 발생(MISMATCH는 valid==02 전용인데 폐업은 valid==01). 해소: `verificationStatus`(진위 일치 여부)와 `businessState`(영업 상태)를 **직교 축**으로 분리. 폐업·휴업 = `VERIFIED` + `businessState=CLOSED/SUSPENDED` + message로 차단. "등록 가능"은 저장값이 아니라 파생 판단(`VERIFIED && ACTIVE`). enum 추가·마이그레이션 불필요(기존 4값 유지). businessState를 verificationStatus에 흡수(A안)하면 두 컬럼이 중복되므로 기각. 코드: [verify-business-document.use-case.ts](apps/api/src/modules/store/application/use-cases/verify-business-document.use-case.ts) `resolveVerification` CLOSED/SUSPENDED 분기 `MISMATCH→VERIFIED`.
 
 ## Outcome
 
