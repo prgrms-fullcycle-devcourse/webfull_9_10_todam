@@ -14,6 +14,7 @@ import { ArtworkModule } from './modules/artwork/artwork.module';
 import { PartnerModule } from './modules/partner/partner.module';
 import { UserModule } from './modules/user/user.module';
 import { ReviewModule } from './modules/review/review.module';
+import { PolicyModule } from './modules/policy/policy.module';
 
 @Module({
     imports: [
@@ -32,6 +33,7 @@ import { ReviewModule } from './modules/review/review.module';
         PartnerModule,
         UserModule,
         ReviewModule,
+        PolicyModule,
     ],
 })
 export class AppModule {}
