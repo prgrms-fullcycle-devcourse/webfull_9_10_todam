@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 
 import { useCurrentStudioStore } from '@/entities/studio/model/currentStudio';
 import { useAuthStore } from '@/features/auth/login';
+import { revokeNotificationToken } from '@/features/notification/api';
+import { clearStoredFcmToken, getStoredFcmToken } from '@/features/notification/model/pushToken';
 
 import { logout } from './api';
 
@@ -18,6 +20,17 @@ export function useLogout() {
     const clearAuth = useAuthStore((s) => s.clearAuth);
 
     return async (redirectTo = '/login') => {
+        // FCM 토큰 revoke (best-effort — 실패해도 로그아웃 진행).
+        const fcmToken = getStoredFcmToken();
+        if (fcmToken) {
+            try {
+                await revokeNotificationToken(fcmToken);
+            } catch {
+                // 무시 — 서버 revoke 실패해도 클라 정리는 계속.
+            }
+            clearStoredFcmToken();
+        }
+
         try {
             await logout();
         } catch (err) {
