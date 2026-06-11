@@ -74,6 +74,7 @@ export * from './contracts/store-search';
 export * from './contracts/store-detail';
 export * from './contracts/policy';
 export * from './contracts/notification';
+export * from './contracts/admin';
 
 export * from './utils/date';
 export * from './utils/format-scheduled';
