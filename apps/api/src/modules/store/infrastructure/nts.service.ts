@@ -113,7 +113,7 @@ export class NtsService {
 
         return {
             status_code: data.status_code ?? '',
-            data: data.data ?? [],
+            data: Array.isArray(data.data) ? data.data : [],
             _raw: raw,
         };
     }
@@ -137,7 +137,7 @@ export class NtsService {
 
         return {
             status_code: data.status_code ?? '',
-            data: data.data ?? [],
+            data: Array.isArray(data.data) ? data.data : [],
             _raw: raw,
         };
     }
@@ -169,7 +169,13 @@ export class NtsService {
                 throw new NtsApiError(`국세청 API 오류 (${label}): HTTP ${response.status}`);
             }
 
-            return await response.json();
+            // HTTP 200이어도 본문이 JSON null·비객체이면 파싱 시 TypeError가 callNts 밖에서 터진다.
+            // 여기서 구조를 검증해 NtsApiError로 변환한다(호출부 catch가 ERROR로 처리하도록).
+            const json: unknown = await response.json();
+            if (json === null || typeof json !== 'object') {
+                throw new NtsApiError(`국세청 ${label} API 비정상 응답 구조`);
+            }
+            return json;
         } catch (error) {
             if (error instanceof NtsApiError) throw error;
 
