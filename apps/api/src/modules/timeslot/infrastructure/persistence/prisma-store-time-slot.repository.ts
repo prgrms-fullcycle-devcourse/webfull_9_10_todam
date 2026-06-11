@@ -79,8 +79,9 @@ export class PrismaStoreTimeSlotRepository extends StoreTimeSlotRepository {
         const candidatePairKeys = new Set(candidates.map((c) => pairKey(c.startAt, c.endAt)));
 
         return this.prisma.$transaction(async (tx) => {
-            // ── prune: 윈도우 내 미래 OPEN 슬롯 중 새 격자에 없는 것 삭제.
-            // 과거 슬롯·CLOSED/CANCELED(파트너 수동 조치)·예약 걸린 슬롯은 보존.
+            // ── prune: 윈도우 내 미래 OPEN 슬롯 중 새 격자에 없는(stale) 것 정리.
+            // 과거 슬롯·기존 CLOSED/CANCELED(파트너 수동 조치)는 애초에 조회 대상 제외.
+            // (startAt,endAt) 둘 다 새 격자와 일치하면 stale 아님 → 손대지 않아 기존 status 유지.
             const futureOpen = await tx.storeTimeSlot.findMany({
                 where: {
                     storeId,
@@ -94,6 +95,7 @@ export class PrismaStoreTimeSlotRepository extends StoreTimeSlotRepository {
             );
 
             let removedCount = 0;
+            let closedCount = 0;
             if (staleSlots.length > 0) {
                 const staleIds = staleSlots.map((s) => s.id);
                 const reserved = await tx.reservation.findMany({
@@ -101,7 +103,10 @@ export class PrismaStoreTimeSlotRepository extends StoreTimeSlotRepository {
                     select: { storeTimeSlotId: true },
                 });
                 const reservedIds = new Set(reserved.map((r) => r.storeTimeSlotId));
+                // 예약 없는 stale → 삭제. 예약 있는 stale → 삭제 불가(예약 고아 방지)이므로
+                // CLOSED 로 전환해 신규 예약 노출/접수에서 제외(고객은 status===OPEN 으로만 노출).
                 const deletableIds = staleIds.filter((id) => !reservedIds.has(id));
+                const reservedStaleIds = staleIds.filter((id) => reservedIds.has(id));
 
                 if (deletableIds.length > 0) {
                     const deleted = await tx.storeTimeSlot.deleteMany({
@@ -109,15 +114,26 @@ export class PrismaStoreTimeSlotRepository extends StoreTimeSlotRepository {
                     });
                     removedCount = deleted.count;
                 }
+                if (reservedStaleIds.length > 0) {
+                    const closed = await tx.storeTimeSlot.updateMany({
+                        where: { id: { in: reservedStaleIds } },
+                        data: { status: 'CLOSED' },
+                    });
+                    closedCount = closed.count;
+                }
             }
 
-            // ── 멱등 생성: 이미 존재하는 startAt 스킵.
+            // ── 멱등 생성: 이미 존재하는 (startAt, endAt) 쌍 스킵.
+            // startAt 만 비교하면, interval 변경으로 CLOSED 처리된 옛 슬롯(예: 1:00–3:00)이
+            // 같은 startAt 의 새 슬롯(1:00–2:00) 생성을 막아버린다. 쌍으로 비교해야 새 슬롯이 생성됨.
             const existing = await tx.storeTimeSlot.findMany({
                 where: { storeId, startAt: { in: candidates.map((c) => c.startAt) } },
-                select: { startAt: true },
+                select: { startAt: true, endAt: true },
             });
-            const existingKeys = new Set(existing.map((e) => e.startAt.getTime()));
-            const toCreate = candidates.filter((c) => !existingKeys.has(c.startAt.getTime()));
+            const existingPairKeys = new Set(existing.map((e) => pairKey(e.startAt, e.endAt)));
+            const toCreate = candidates.filter(
+                (c) => !existingPairKeys.has(pairKey(c.startAt, c.endAt)),
+            );
 
             const created: StoreTimeSlot[] = [];
             for (const c of toCreate) {
@@ -134,7 +150,8 @@ export class PrismaStoreTimeSlotRepository extends StoreTimeSlotRepository {
                 created.push(StoreTimeSlotMapper.toDomain(slot));
             }
 
-            return { created, alreadyExisting: existingKeys.size, removedCount };
+            const alreadyExisting = candidates.length - toCreate.length;
+            return { created, alreadyExisting, removedCount, closedCount };
         });
     }
 }
