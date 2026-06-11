@@ -1,13 +1,16 @@
 {
-  "extends": "@todam/typescript-config/nextjs.json",
-  "compilerOptions": {
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
-  },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+    "extends": "@todam/typescript-config/base.json",
+    "compilerOptions": {
+        "jsx": "react-jsx",
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "useDefineForClassFields": true,
+        "noEmit": true,
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./src/*"]
+        },
+        "types": ["vite/client"]
+    },
+    "include": ["src", "vite.config.ts"],
+    "exclude": ["node_modules", "dist"]
 }
-
