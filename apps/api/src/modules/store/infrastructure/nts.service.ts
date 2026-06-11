@@ -3,12 +3,13 @@ import { createApiEnv } from '@todam/config';
 
 /**
  * 국세청 진위확인 API 응답 내 사업자 항목.
- * valid: '01' = 일치, '02' = 불일치
+ * valid: '01' = 일치, '02' = 불일치 (그 외 예상 못한 값은 호출부에서 fail-closed 처리)
  * b_stt: '계속사업자' | '폐업자' | '휴업자' (포함 여부는 실 스펙에 따라 결정)
  */
 export interface NtsValidateItem {
     b_no: string;
-    valid: '01' | '02';
+    // 외부 API 원시값. '01'/'02' 외 값이 올 수 있어 string으로 받고 호출부에서 방어한다.
+    valid: string;
     valid_msg?: string;
     request_param?: Record<string, unknown>;
     /** 납세자 상태 — 진위확인 응답에 포함될 경우 상태조회 2차 호출 불필요 */

@@ -139,8 +139,8 @@ describe('VerifyBusinessDocumentUseCase', () => {
         });
     });
 
-    describe('응답 data가 비어있는 경우', () => {
-        it('data 배열이 비어있으면 MISMATCH', async () => {
+    describe('fail-closed 경로 (불확실하면 승인하지 않음)', () => {
+        it('data 배열이 비어있으면 ERROR (불일치 아님 — API 이상)', async () => {
             nts.validate.mockResolvedValue({
                 status_code: '200',
                 data: [],
@@ -148,8 +148,39 @@ describe('VerifyBusinessDocumentUseCase', () => {
             });
             const result = await useCase.execute('1234567890', '홍길동', '20190315');
 
-            expect(result.verificationStatus).toBe(VerificationStatus.MISMATCH);
-            expect(result.message).toBe('MISMATCH');
+            expect(result.verificationStatus).toBe(VerificationStatus.ERROR);
+            expect(result.message).toBe('NTS_ERROR');
+        });
+
+        it('valid가 01·02가 아닌 예상 못한 값이면 ERROR', async () => {
+            nts.validate.mockResolvedValue({
+                status_code: '200',
+                data: [{ b_no: '1234567890', valid: '99' }],
+                _raw: {},
+            });
+            const result = await useCase.execute('1234567890', '홍길동', '20190315');
+
+            expect(result.verificationStatus).toBe(VerificationStatus.ERROR);
+            expect(result.message).toBe('NTS_ERROR');
+        });
+
+        it('알 수 없는 b_stt(매핑에 없음)이면 ERROR (ACTIVE로 오인 승인 금지)', async () => {
+            nts.validate.mockResolvedValue(mockValidateRes('01', '알수없는상태'));
+            const result = await useCase.execute('1234567890', '홍길동', '20190315');
+
+            expect(result.verificationStatus).toBe(VerificationStatus.ERROR);
+            expect(result.businessState).toBeNull();
+            expect(result.message).toBe('NTS_ERROR');
+        });
+
+        it('getStatus가 b_stt 없는 빈 응답이면 ERROR', async () => {
+            nts.validate.mockResolvedValue(mockValidateRes('01'));
+            nts.getStatus.mockResolvedValue({ status_code: '200', data: [], _raw: {} });
+
+            const result = await useCase.execute('1234567890', '홍길동', '20190315');
+
+            expect(result.verificationStatus).toBe(VerificationStatus.ERROR);
+            expect(result.message).toBe('NTS_ERROR');
         });
     });
 });

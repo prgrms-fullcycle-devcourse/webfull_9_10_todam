@@ -68,13 +68,15 @@ export class PrismaCreateStoreCommand {
         // ── 국세청 진위확인 재검증 (신뢰경계 내 서버 측 재검증) ───────────────────
         // FE의 게이트 결과를 신뢰하지 않고 서버가 직접 국세청 API를 재호출해 결과를 영구 저장한다.
         // startDate가 없으면 재검증을 건너뛰고 PENDING으로 저장한다.
-        const verificationCheckedAt = new Date();
+        // 검증을 실제로 수행한 경우에만 verificationCheckedAt을 기록한다(스킵 시 null = 미검증).
+        let verificationCheckedAt: Date | null = null;
         let verificationStatus: VerificationStatus = VerificationStatus.PENDING;
         let verifiedAt: Date | null = null;
         let businessState: BusinessState | null = null;
         let ntsRaw: Prisma.InputJsonValue | null = null;
 
         if (dto.businessDocument.startDate) {
+            verificationCheckedAt = new Date();
             try {
                 // validate 호출
                 const validateRes = await this.nts.validate(
@@ -85,7 +87,10 @@ export class PrismaCreateStoreCommand {
                 ntsRaw = { validate: validateRes._raw } as unknown as Prisma.InputJsonValue;
 
                 const item = validateRes.data[0];
-                if (!item || item.valid === '02') {
+                if (!item || (item.valid !== '01' && item.valid !== '02')) {
+                    // 빈 응답·예상 못한 valid → ERROR(fail-closed). best-effort 저장.
+                    verificationStatus = VerificationStatus.ERROR;
+                } else if (item.valid === '02') {
                     // MISMATCH — best-effort 저장(제출 자체는 막지 않음, 관리자 심사에서 재확인)
                     verificationStatus = VerificationStatus.MISMATCH;
                 } else {

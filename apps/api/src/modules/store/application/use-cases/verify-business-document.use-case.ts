@@ -5,7 +5,8 @@ import type { NtsValidateItem } from '../../infrastructure/nts.service';
 
 /**
  * 국세청 b_stt(납세자 상태 문자열) → BusinessState 매핑 테이블.
- * 실제 국세청 API 응답값 기준. 알 수 없는 값은 ACTIVE로 처리(폐업·휴업이 아닌 한 최대 허용).
+ * 실제 국세청 API 응답값 기준. 매핑에 없는 값(빈 응답·예상 못한 신규 상태)은
+ * resolveVerification에서 fail-closed(ERROR)로 처리한다 — 영업상태를 확신 못 하면 승인하지 않는다.
  */
 const B_STT_MAP: Record<string, BusinessState> = {
     계속사업자: BusinessState.ACTIVE,
@@ -25,16 +26,17 @@ export function resolveVerification(bStt: string | undefined | null): {
     businessState: BusinessState | null;
     message: BusinessDocumentVerifyResult['message'];
 } {
-    if (!bStt) {
-        // b_stt 정보 없음 → VERIFIED (ACTIVE로 간주)
+    const state = bStt ? B_STT_MAP[bStt] : undefined;
+
+    // 상태조회 응답이 비었거나(state 미확인) 매핑에 없는 알 수 없는 b_stt → fail-closed로 ERROR.
+    // 영업상태를 확신할 수 없으면 승인하지 않는다(폐업·휴업을 ACTIVE로 오인 승인하는 위험 차단).
+    if (!state) {
         return {
-            verificationStatus: VerificationStatus.VERIFIED,
-            businessState: BusinessState.ACTIVE,
-            message: 'VERIFIED',
+            verificationStatus: VerificationStatus.ERROR,
+            businessState: null,
+            message: 'NTS_ERROR',
         };
     }
-
-    const state = B_STT_MAP[bStt] ?? BusinessState.ACTIVE;
 
     // verificationStatus(진위 일치 여부)와 businessState(영업 상태)는 직교한다.
     // 폐업·휴업도 "번호·이름·개업일이 실제 등록정보와 일치"했으므로 진위확인은 VERIFIED.
@@ -86,7 +88,16 @@ export class VerifyBusinessDocumentUseCase {
             const validateRes = await this.nts.validate(businessNumber, ownerName, startDate);
             const item: NtsValidateItem | undefined = validateRes.data[0];
 
-            if (!item || item.valid === '02') {
+            // 빈 응답·예상 못한 valid 값 → API 이상으로 보고 ERROR(fail-closed). 통과는 '01'만, 불일치는 '02'만.
+            if (!item || (item.valid !== '01' && item.valid !== '02')) {
+                return {
+                    verificationStatus: VerificationStatus.ERROR,
+                    businessState: null,
+                    message: 'NTS_ERROR',
+                };
+            }
+
+            if (item.valid === '02') {
                 return {
                     verificationStatus: VerificationStatus.MISMATCH,
                     businessState: null,

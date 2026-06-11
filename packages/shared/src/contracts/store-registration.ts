@@ -39,10 +39,8 @@ export const businessDocumentVerifyRequestSchema = z.object({
         .regex(/^\d{10}$/, '사업자등록번호는 하이픈 없이 숫자 10자리여야 합니다.')
         .meta({ example: '1234567890' }),
     ownerName: z.string().min(1).meta({ example: '홍길동' }),
-    startDate: z
-        .string()
-        .regex(/^\d{8}$/, '개업일자는 YYYYMMDD 8자리여야 합니다.')
-        .meta({ example: '20190315' }),
+    // 실제 존재하는 날짜까지 검증(20260230 등 불가). 제출 스키마와 동일 SSOT 재사용.
+    startDate: businessStartDateSchema.meta({ example: '20190315' }),
 });
 export type BusinessDocumentVerifyRequest = z.infer<typeof businessDocumentVerifyRequestSchema>;
 
