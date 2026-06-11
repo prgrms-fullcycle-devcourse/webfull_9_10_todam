@@ -23,6 +23,8 @@ export interface ApplyGeneratedGridResult {
     created: StoreTimeSlot[];
     alreadyExisting: number;
     removedCount: number;
+    /** stale 이지만 활성 예약이 있어 삭제 대신 CLOSED 로 전환한 슬롯 수(신규 예약 차단·기존 예약 보존). */
+    closedCount: number;
 }
 
 export abstract class StoreTimeSlotRepository {

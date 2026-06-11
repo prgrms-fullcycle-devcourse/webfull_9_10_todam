@@ -100,12 +100,13 @@ export class GenerateTimeSlotsUseCase {
         const skippedCount = pastSkipped + result.alreadyExisting;
 
         this.logger.log(
-            `[generate] store=${storeId} range=${dto.startDate}~${dto.endDate} created=${result.created.length} removed=${result.removedCount} skipped=${skippedCount}(past=${pastSkipped},existing=${result.alreadyExisting})`,
+            `[generate] store=${storeId} range=${dto.startDate}~${dto.endDate} created=${result.created.length} removed=${result.removedCount} closed=${result.closedCount} skipped=${skippedCount}(past=${pastSkipped},existing=${result.alreadyExisting})`,
         );
 
         return {
             createdCount: result.created.length,
             removedCount: result.removedCount,
+            closedCount: result.closedCount,
             skippedCount,
             createdSlots: result.created
                 .slice()
