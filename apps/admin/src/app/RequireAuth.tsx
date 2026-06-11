@@ -1,6 +1,12 @@
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 
-// 인증 가드 자리. 로그인/토큰 contract 확정 후 미인증 시 /login 리다이렉트 로직 연결.
+import { useAdminAuthStore } from '@/features/auth/model/adminAuthStore';
+
+// A-0 인증 가드. 미인증 시 로그인으로 리다이렉트.
 export function RequireAuth() {
+    const isAuthenticated = useAdminAuthStore((s) => s.state === 'AUTHENTICATED');
+
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
+
     return <Outlet />;
 }
