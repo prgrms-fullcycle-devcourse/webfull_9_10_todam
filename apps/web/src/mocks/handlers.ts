@@ -70,6 +70,7 @@ export const handlers = [
                 inAppEnabled: true,
                 emailEnabled: true,
                 kakaoEnabled: true,
+                webPushEnabled: true,
                 reservationEnabled: true,
                 artworkEnabled: true,
                 shippingEnabled: true,
@@ -99,6 +100,8 @@ export const handlers = [
                 inAppEnabled: true,
                 emailEnabled: true,
                 kakaoEnabled: true,
+                webPushEnabled:
+                    typeof body.webPushEnabled === 'boolean' ? body.webPushEnabled : true,
                 reservationEnabled: true,
                 artworkEnabled:
                     typeof body.artworkEnabled === 'boolean' ? body.artworkEnabled : true,
