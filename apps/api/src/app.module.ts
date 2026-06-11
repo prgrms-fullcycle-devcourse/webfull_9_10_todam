@@ -15,6 +15,7 @@ import { PartnerModule } from './modules/partner/partner.module';
 import { UserModule } from './modules/user/user.module';
 import { ReviewModule } from './modules/review/review.module';
 import { PolicyModule } from './modules/policy/policy.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
     imports: [
@@ -34,6 +35,7 @@ import { PolicyModule } from './modules/policy/policy.module';
         UserModule,
         ReviewModule,
         PolicyModule,
+        NotificationModule,
     ],
 })
 export class AppModule {}
