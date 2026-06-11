@@ -1,4 +1,10 @@
-import { businessNumberSchema, emailSchema, phoneSchema, slugSchema } from '@todam/shared';
+import {
+    businessNumberSchema,
+    businessStartDateSchema,
+    emailSchema,
+    phoneSchema,
+    slugSchema,
+} from '@todam/shared';
 import { create } from 'zustand';
 
 import { filterValidImageFiles } from '@/shared/lib/imageFile';
@@ -23,10 +29,8 @@ function initialForm(): StudioRegistrationForm {
             businessName: '',
             ownerName: '',
             email: '',
+            startDate: '',
             businessAddress: '',
-            addressDetail: '',
-            latitude: null,
-            longitude: null,
         },
         store: {
             images: [],
@@ -37,6 +41,13 @@ function initialForm(): StudioRegistrationForm {
             convenienceInfo: { parking: false, pet: false, wifi: false },
             slugChecked: false,
             slugAvailable: false,
+            address: '',
+            addressDetail: '',
+            latitude: null,
+            longitude: null,
+            regionSido: null,
+            regionSigungu: null,
+            regionDong: null,
         },
         operating: {
             openTime: '10:00',
@@ -63,7 +74,12 @@ interface StudioRegistrationStore {
     next: () => void;
     prev: () => void;
     patchBusiness: (p: Patch<StudioRegistrationForm['business']>) => void;
-    setAddress: (address: string, latitude: number, longitude: number) => void;
+    setStoreAddress: (
+        address: string,
+        latitude: number,
+        longitude: number,
+        region?: { sido: string; sigungu: string; dong: string } | null,
+    ) => void;
     patchStudio: (p: Patch<StudioRegistrationForm['store']>) => void;
     addImageFiles: (files: File[]) => void;
     removeImage: (index: number) => void;
@@ -82,16 +98,19 @@ export const useStudioRegistrationStore = create<StudioRegistrationStore>((set) 
     prev: () => set((s) => ({ step: Math.max(s.step - 1, StoreRegistrationStep.Business) })),
     patchBusiness: (p) =>
         set((s) => ({ form: { ...s.form, business: { ...s.form.business, ...p } } })),
-    // 주소 선택: 도로명 + 좌표 세팅, 상세주소는 초기화
-    setAddress: (address, latitude, longitude) =>
+    // 공방 운영 주소 선택: 도로명 + 좌표 + 행정구역 세팅, 상세주소는 초기화
+    setStoreAddress: (address, latitude, longitude, region) =>
         set((s) => ({
             form: {
                 ...s.form,
-                business: {
-                    ...s.form.business,
-                    businessAddress: address,
+                store: {
+                    ...s.form.store,
+                    address,
                     latitude,
                     longitude,
+                    regionSido: region?.sido ?? null,
+                    regionSigungu: region?.sigungu ?? null,
+                    regionDong: region?.dong ?? null,
                     addressDetail: '',
                 },
             },
@@ -181,9 +200,8 @@ export function isStepValid(form: StudioRegistrationForm, step: StoreRegistratio
                 b.businessName.trim().length > 0 &&
                 b.ownerName.trim().length > 0 &&
                 ok(emailSchema, b.email) &&
-                b.businessAddress.trim().length > 0 &&
-                b.latitude !== null &&
-                b.longitude !== null
+                ok(businessStartDateSchema, b.startDate)
+                // businessAddress(등록증 주소)는 선택값 — 유효성 제외
             );
         }
         case StoreRegistrationStep.StoreInfo: {
@@ -194,7 +212,10 @@ export function isStepValid(form: StudioRegistrationForm, step: StoreRegistratio
                 ok(slugSchema, s.slug) &&
                 s.slugChecked &&
                 s.slugAvailable &&
-                ok(phoneSchema, s.phone)
+                ok(phoneSchema, s.phone) &&
+                s.address.trim().length > 0 &&
+                s.latitude !== null &&
+                s.longitude !== null
             );
         }
         case StoreRegistrationStep.Operating: {

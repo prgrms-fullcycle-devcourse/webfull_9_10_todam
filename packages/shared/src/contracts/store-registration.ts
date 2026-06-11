@@ -151,11 +151,8 @@ export const createStoreBusinessDocumentSchema = z.object({
         .meta({ example: '5555555555', description: '하이픈 없이 숫자 10자리' }),
     businessName: z.string().min(1).max(200).meta({ example: '흙담' }),
     ownerName: z.string().min(1).max(100).meta({ example: '김리듬' }),
-    businessAddress: z
-        .string()
-        .min(1)
-        .max(500)
-        .meta({ example: '서울특별시 성동구 둑섬로 273(성수동)' }),
+    // 등록증상 사업장 주소(선택값). 미입력 시 빈 문자열. DB NOT NULL 이라 null 대신 '' 저장.
+    businessAddress: z.string().max(500).meta({ example: '서울특별시 성동구 둑섬로 273(성수동)' }),
     email: emailSchema.max(255).meta({ example: 'leadem@studio.com' }).nullable().optional(),
     // 사업자등록증 파일 S3 URL. POST /partner/business-documents/images 발급 URL. 미첨부 시 null.
     documentUrl: z
@@ -200,6 +197,10 @@ export const createStoreRequestSchema = z.object({
     address: z.string().min(1).meta({ example: '서울특별시 성동구 성수이로 12길 34' }),
     latitude: z.number().meta({ example: 37.5446 }),
     longitude: z.number().meta({ example: 127.0556 }),
+    // 행정구역(좌표 → coord2RegionCode 역지오코딩). 지역명 자동완성 검색의 소스. 변환 실패 시 null.
+    regionSido: z.string().nullable().optional().meta({ example: '서울' }),
+    regionSigungu: z.string().nullable().optional().meta({ example: '성동구' }),
+    regionDong: z.string().nullable().optional().meta({ example: '성수동' }),
     convenienceInfo: convenienceInfoSchema,
     autoConfirm: z.boolean().meta({ example: false }),
     cancelDeadlineDays: z.number().int().min(0).meta({ example: 1 }),

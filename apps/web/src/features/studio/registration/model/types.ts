@@ -36,18 +36,16 @@ export const STEP_TITLES: Record<StoreRegistrationStep, string> = {
 export const TOTAL_STEPS = 4;
 
 export interface StudioRegistrationForm {
-    // 사업자 정보 (OCR·진위검증 추후 연동 → 현재 수기 입력)
-    // 사업장 주소 = 주소검색 API. store 주소/좌표의 소스이기도 함.
+    // 사업자 정보 (사업자등록증 OCR 자동입력 + 사용자 수정).
+    // businessAddress = 등록증상 사업장 소재지(수기/OCR 텍스트). 좌표·위치노출과 무관.
     business: {
         documentUrl: string | null;
         businessNumber: string;
         businessName: string;
         ownerName: string;
         email: string;
-        businessAddress: string; // 도로명/지번 (주소검색 결과)
-        addressDetail: string; // 상세주소 (주소 선택 후 입력)
-        latitude: number | null;
-        longitude: number | null;
+        startDate: string; // 개업일자 "YYYYMMDD" (OCR prefill + 사용자 수정)
+        businessAddress: string; // 등록증상 사업장 주소 (수기 입력, 선택값)
     };
     store: {
         images: PendingImage[]; // 대표 이미지 (최대 5, File 펜딩 — 제출 시 presigned 업로드)
@@ -58,6 +56,15 @@ export interface StudioRegistrationForm {
         convenienceInfo: ConvenienceState;
         slugChecked: boolean;
         slugAvailable: boolean;
+        // 공방 운영 주소 = 고객 노출·위치기반 검색 소스. 주소검색 + Kakao 좌표변환.
+        address: string; // 도로명/지번 (주소검색 결과)
+        addressDetail: string; // 상세주소
+        latitude: number | null;
+        longitude: number | null;
+        // 행정구역(좌표 → coord2RegionCode). 지역명 검색 소스. 변환 실패 시 null.
+        regionSido: string | null;
+        regionSigungu: string | null;
+        regionDong: string | null;
     };
     operating: OperatingState;
     reservation: {
