@@ -62,6 +62,7 @@ export const notificationSettingsSchema = z.object({
     inAppEnabled: z.boolean(),
     emailEnabled: z.boolean(),
     kakaoEnabled: z.boolean(),
+    webPushEnabled: z.boolean(), // 푸시 알림 Web Push 채널 on/off (#315)
     reservationEnabled: z.boolean(),
     artworkEnabled: z.boolean(),
     shippingEnabled: z.boolean(),
@@ -90,6 +91,7 @@ export const patchNotificationSettingsAllFieldsBodySchema = z.object({
     inAppEnabled: z.boolean().optional(),
     emailEnabled: z.boolean().optional(),
     kakaoEnabled: z.boolean().optional(),
+    webPushEnabled: z.boolean().optional(), // 푸시 알림 Web Push 채널 (#315)
     reservationEnabled: z.boolean().optional(),
     artworkEnabled: z.boolean().optional(),
     shippingEnabled: z.boolean().optional(),
