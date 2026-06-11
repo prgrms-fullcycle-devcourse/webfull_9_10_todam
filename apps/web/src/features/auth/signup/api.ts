@@ -16,7 +16,6 @@ export function verifyEmailCode(email: string, code: string) {
     });
 }
 
-// 약관 동의 필드는 signupRequestSchema(shared, .strict)에 없음 → 전송 시 거부. 동의 시트 확정 전까지 미전송.
 export function signup(input: SignupRequest) {
     return clientApiFetch<SignupResponse>('/auth/signup', {
         method: 'POST',

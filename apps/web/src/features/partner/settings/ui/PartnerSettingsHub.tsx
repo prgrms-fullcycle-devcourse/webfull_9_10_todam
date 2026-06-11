@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Modal, SectionTitle, Toggle } from '@todam/ui';
 
 import { useLogout } from '@/features/auth/logout';
-import { TERMS } from '@/features/auth/terms';
+import { useLatestPolicies } from '@/features/auth/terms';
+import type { TermsKey } from '@/features/auth/terms';
 import { useReviewStore } from '@/entities/studio';
 import { MenuTable } from '@/shared/ui';
 import { useModal } from '@/shared/model';
 
-// 고객지원 약관 — figma 라벨 기준. notionUrl은 TERMS(key)에서 조회.
+// 고객지원 약관 — figma 라벨 기준. URL은 GET /policies/latest API 응답(urlMap)에서 조회.
 const CUSTOMER_SUPPORT_TERMS = [
     { key: 'service', label: '서비스 이용약관' },
     { key: 'privacy', label: '개인정보처리방침' },
@@ -23,6 +24,7 @@ export function PartnerSettingsHub() {
     const { setReviewStoreId } = useReviewStore();
     const { open: openModal, close: closeModal } = useModal();
     const runLogout = useLogout();
+    const { urlMap } = useLatestPolicies();
 
     // 알림 토글은 영속 API 미연동(후속). 화면 표시용 로컬 상태만 유지.
     const [reservationNoti, setReservationNoti] = useState(true);
@@ -42,8 +44,8 @@ export function PartnerSettingsHub() {
     ];
 
     const handleOpenTerms = (key: string) => {
-        const item = TERMS.find((term) => term.key === key);
-        if (item) window.open(item.notionUrl, '_blank', 'noopener,noreferrer');
+        const url = urlMap[key as TermsKey];
+        if (url) window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     const doLogout = async () => {
