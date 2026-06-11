@@ -1,12 +1,8 @@
 import {
-    deliveryEditRequestSchema,
-    DeliveryEditErrorCode,
-    ReservationDeliveryMethod,
     RESERVATION_LIST_DEFAULT_LIMIT,
     ReservationStatus,
     StoreRegistrationErrorCode,
     StoreTimeSlotStatus,
-    reviewWriteRequestSchema,
     ProgramEditErrorCode,
     createUserReservationRequestSchema,
     ReservationCreateErrorCode,
@@ -14,16 +10,10 @@ import {
     ProgramDifficulty,
     ProgramStatus,
     WithdrawErrorCode,
-    type DeliveryEditResult,
-    type ArtworkDetailResult,
     type GeocodeResult,
     type ReservationDetailResult,
     type ReservationListResult,
     type ReviewDetailResult,
-    type ReviewCreateResult,
-    type ReviewUpdateResult,
-    type ReviewImageUploadRequest,
-    type ReviewImageUploadResult,
     type ProgramDetailResult,
     type ProgramReviewListResult,
     type StoreReviewListResult,
@@ -42,7 +32,6 @@ import {
 import { http, HttpResponse } from 'msw';
 
 import {
-    findArtworkDetail,
     findProgramById,
     findProgramByStoreAndId,
     findPublicStoreBySlug,
@@ -50,14 +39,10 @@ import {
     programToApiShape,
     findReservationDetail,
     findReviewByReservation,
-    createReview,
-    updateReview,
-    createReviewImageUpload,
     listStoreReviews,
     listMyReservations,
     mockGeocode,
     nowIso,
-    upsertDeliveryEdit,
     MOCK_STORE_SLUG,
     MOCK_STORE_ID,
     seededPrograms,
@@ -638,117 +623,6 @@ export const handlers = [
         return ok(path, result, '리뷰가 성공적으로 조회되었습니다.');
     }),
 
-    // 리뷰 작성 — POST /reservations/{reservationId}/review (201).
-    // ?unauth=1 → 401, ?simulate=403|404|409|500 토글, 그 외 201.
-    http.post(`*/reservations/:reservationId/review`, async ({ params, request }) => {
-        const reservationId = String(params.reservationId);
-        const path = `/reservations/${reservationId}/review`;
-        const url = new URL(request.url);
-
-        if (url.searchParams.get('unauth') === '1') {
-            return fail(path, 401, 'UNAUTHORIZED', '인증 정보가 유효하지 않거나 만료되었습니다.');
-        }
-        const sim = url.searchParams.get('simulate');
-        if (sim === '403')
-            return fail(
-                path,
-                403,
-                'FORBIDDEN',
-                '본인이 참여한 예약 정보에 대해서만 리뷰 작성이 허용됩니다.',
-            );
-        if (sim === '404')
-            return fail(
-                path,
-                404,
-                'RESERVATION_NOT_FOUND',
-                '요청하신 예약 정보를 찾을 수 없습니다.',
-            );
-        if (sim === '409')
-            return fail(path, 409, 'REVIEW_ALREADY_EXISTS', '이미 리뷰를 작성한 예약입니다.');
-        if (sim === '500')
-            return fail(
-                path,
-                500,
-                'INTERNAL_SERVER_ERROR',
-                '리뷰 등록 중 서버 오류가 발생했습니다.',
-            );
-
-        const parsed = reviewWriteRequestSchema.safeParse(await request.json());
-        if (!parsed.success) {
-            return fail(path, 400, 'BAD_REQUEST', '요청 값이 올바르지 않습니다.');
-        }
-        const review = createReview(reservationId, parsed.data);
-        const result: ReviewCreateResult = { review };
-        return ok(path, result, '리뷰가 성공적으로 등록되었습니다.', 201);
-    }),
-
-    // 리뷰 수정 — PATCH /reviews/{reviewId} (200). 응답 shape: D15(photos URL[] + updatedAt).
-    // ?unauth=1 → 401, ?simulate=400|403|500 토글, 미존재 → 404.
-    http.patch(`*/reviews/:reviewId`, async ({ params, request }) => {
-        const reviewId = String(params.reviewId);
-        const path = `/reviews/${reviewId}`;
-        const url = new URL(request.url);
-
-        if (url.searchParams.get('unauth') === '1') {
-            return fail(path, 401, 'UNAUTHORIZED', '인증 정보가 유효하지 않거나 만료되었습니다.');
-        }
-        const sim = url.searchParams.get('simulate');
-        if (sim === '400')
-            return fail(
-                path,
-                400,
-                'REVIEW_EDIT_DEADLINE_EXCEEDED',
-                '리뷰 수정이 가능한 기한(작성일로부터 30일 이내)이 경과하여 수정을 완료할 수 없습니다.',
-            );
-        if (sim === '403')
-            return fail(
-                path,
-                403,
-                'FORBIDDEN',
-                '자신이 직접 등록한 리뷰에 대해서만 수정이 가능합니다.',
-            );
-        if (sim === '500')
-            return fail(
-                path,
-                500,
-                'INTERNAL_SERVER_ERROR',
-                '리뷰 수정 중 서버 오류가 발생했습니다.',
-            );
-
-        const parsed = reviewWriteRequestSchema.safeParse(await request.json());
-        if (!parsed.success) {
-            return fail(path, 400, 'BAD_REQUEST', '요청 값이 올바르지 않습니다.');
-        }
-        const review = updateReview(reviewId, parsed.data);
-        if (!review) {
-            return fail(path, 404, 'REVIEW_NOT_FOUND', '리뷰를 찾을 수 없습니다.');
-        }
-        // D15: PATCH 응답은 photos URL 문자열배열 + updatedAt.
-        const result: ReviewUpdateResult = {
-            review: {
-                id: review.id,
-                rating: review.rating,
-                content: review.content,
-                photos: review.photos.map((p) => p.imageUrl),
-                updatedAt: nowIso(),
-            },
-        };
-        return ok(path, result, '리뷰가 성공적으로 수정되었습니다.');
-    }),
-
-    // 리뷰 사진 presigned — POST /review/images/presigned (D14 추론 mock). 응답에 S3 key 포함.
-    http.post(`*/review/images/presigned`, async ({ request }) => {
-        const path = '/review/images/presigned';
-        const body = (await request.json()) as ReviewImageUploadRequest;
-        const result: ReviewImageUploadResult = createReviewImageUpload(body.fileName);
-        return ok(
-            path,
-            result,
-            'Pre-signed URL이 성공적으로 발급되었습니다. 5분 이내에 업로드를 완료해주세요.',
-            201,
-        );
-    }),
-
     // 리뷰 삭제 (DELETE /reviews/:reviewId).
     // contract: docs/exec-plans/active/유저 예약 - 나의 리뷰 상세 조회, 나의 리뷰 삭제.md
     //   ?unauth=1 → 401 UNAUTHORIZED
@@ -784,155 +658,6 @@ export const handlers = [
         }
 
         return ok(path, null, '리뷰가 성공적으로 삭제되었습니다.');
-    }),
-
-    // 배송 정보 등록/수정 (인증 필요, 본인 예약만, DELIVERY 만)
-    // contract: docs/exec-plans/active/유저 예약 - 나의 배송 정보 수정.md API Contract (스냅샷)
-    // 시뮬 토글(URL forwarding 미적용 환경 한정):
-    //   ?unauth=1 → 401 UNAUTHORIZED
-    //   ?simulate=403 → 403 FORBIDDEN (타인 예약 가정)
-    //   ?simulate=404 → 404 RESERVATION_NOT_FOUND
-    //   ?simulate=409 → 409 DELIVERY_NOT_EDITABLE
-    //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
-    http.patch(`*/reservations/:reservationId/delivery`, async ({ params, request }) => {
-        const reservationId = String(params.reservationId);
-        const path = `/reservations/${reservationId}/delivery`;
-        const url = new URL(request.url);
-
-        if (url.searchParams.get('unauth') === '1') {
-            return fail(path, 401, DeliveryEditErrorCode.UNAUTHORIZED, '인증이 필요합니다.');
-        }
-        const simulate = url.searchParams.get('simulate');
-        if (simulate === '500') {
-            return fail(
-                path,
-                500,
-                DeliveryEditErrorCode.INTERNAL_SERVER_ERROR,
-                '배송 정보 저장 중 서버 오류가 발생했습니다.',
-            );
-        }
-        if (simulate === '403') {
-            return fail(
-                path,
-                403,
-                DeliveryEditErrorCode.FORBIDDEN,
-                '본인 예약의 배송 정보만 수정할 수 있습니다.',
-            );
-        }
-        if (simulate === '404') {
-            return fail(
-                path,
-                404,
-                DeliveryEditErrorCode.RESERVATION_NOT_FOUND,
-                '예약을 찾을 수 없습니다.',
-            );
-        }
-        if (simulate === '409') {
-            return fail(
-                path,
-                409,
-                DeliveryEditErrorCode.DELIVERY_NOT_EDITABLE,
-                '이미 발송된 작품의 배송 정보는 수정할 수 없습니다.',
-            );
-        }
-
-        const reservation = findReservationDetail(reservationId);
-        if (!reservation) {
-            return fail(
-                path,
-                404,
-                DeliveryEditErrorCode.RESERVATION_NOT_FOUND,
-                '예약을 찾을 수 없습니다.',
-            );
-        }
-
-        // PICKUP 예약 — 본 endpoint 자체로 거부 (FE 가드와 정합).
-        if (reservation.deliveryMethod === ReservationDeliveryMethod.PICKUP) {
-            return fail(
-                path,
-                409,
-                DeliveryEditErrorCode.PICKUP_NOT_ALLOWED,
-                '픽업 예약은 배송 정보를 수정할 수 없습니다.',
-            );
-        }
-
-        // 잠금 상태 — SHIPPED/DELIVERED 는 수정 불가 (FE 가드와 정합).
-        if (
-            reservation.status === ReservationStatus.SHIPPED ||
-            reservation.status === ReservationStatus.DELIVERED
-        ) {
-            return fail(
-                path,
-                409,
-                DeliveryEditErrorCode.DELIVERY_NOT_EDITABLE,
-                '이미 발송된 작품의 배송 정보는 수정할 수 없습니다.',
-            );
-        }
-
-        const raw = await request.json();
-        const parsed = deliveryEditRequestSchema.safeParse(raw);
-        if (!parsed.success) {
-            return fail(
-                path,
-                400,
-                DeliveryEditErrorCode.DELIVERY_INFO_INVALID,
-                parsed.error.issues[0]?.message ??
-                    '필수 배송 정보(수령인·연락처·주소)를 입력해야 합니다.',
-            );
-        }
-
-        const saved = upsertDeliveryEdit(reservationId, parsed.data);
-        const result: DeliveryEditResult = { delivery: saved };
-        return ok(path, result, '배송 정보가 저장되었습니다.');
-    }),
-
-    // 작품 상세 조회 (인증 필요, 본인 예약과 연결된 작품).
-    // plan: docs/exec-plans/active/유저 예약 - 작품 상세 조회.md API Contract (스냅샷) 기준.
-    // 시뮬 토글:
-    //   ?unauth=1 → 401 UNAUTHORIZED
-    //   ?simulate=403 → 403 FORBIDDEN (타인 작품 가정)
-    //   ?simulate=404 → 404 ARTWORK_NOT_FOUND
-    //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
-    //   ?empty=1 → timeline 빈 배열 (등록 단계 없음)
-    http.get(`*/artworks/:artworkId`, ({ params, request }) => {
-        const artworkId = String(params.artworkId);
-        const path = `/artworks/${artworkId}`;
-        const url = new URL(request.url);
-
-        if (url.searchParams.get('unauth') === '1') {
-            return fail(path, 401, 'UNAUTHORIZED', '인증이 필요합니다.');
-        }
-        const simulate = url.searchParams.get('simulate');
-        if (simulate === '500') {
-            return fail(
-                path,
-                500,
-                'INTERNAL_SERVER_ERROR',
-                '작품 제작 단계 조회 중 서버 오류가 발생했습니다.',
-            );
-        }
-        if (simulate === '403') {
-            return fail(path, 403, 'FORBIDDEN', '해당 작품에 대한 접근 권한이 없습니다.');
-        }
-        if (simulate === '404') {
-            return fail(path, 404, 'ARTWORK_NOT_FOUND', '작품을 찾을 수 없습니다.');
-        }
-
-        const artwork = findArtworkDetail(artworkId);
-        if (!artwork) {
-            return fail(path, 404, 'ARTWORK_NOT_FOUND', '작품을 찾을 수 없습니다.');
-        }
-
-        // ?empty=1 → timeline 빈 배열 변형.
-        if (url.searchParams.get('empty') === '1') {
-            const result: ArtworkDetailResult = {
-                artwork: { ...artwork, timeline: [] },
-            };
-            return ok(path, result, '작품 제작 단계가 성공적으로 조회되었습니다.');
-        }
-
-        const result: ArtworkDetailResult = { artwork };
-        return ok(path, result, '작품 제작 단계가 성공적으로 조회되었습니다.');
     }),
 
     // ─── 내 프로필 조회 (GET /api/v1/users/me) ───────────────────────────────
