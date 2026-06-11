@@ -123,13 +123,17 @@ export class PrismaStoreTimeSlotRepository extends StoreTimeSlotRepository {
                 }
             }
 
-            // ── 멱등 생성: 이미 존재하는 startAt 스킵.
+            // ── 멱등 생성: 이미 존재하는 (startAt, endAt) 쌍 스킵.
+            // startAt 만 비교하면, interval 변경으로 CLOSED 처리된 옛 슬롯(예: 1:00–3:00)이
+            // 같은 startAt 의 새 슬롯(1:00–2:00) 생성을 막아버린다. 쌍으로 비교해야 새 슬롯이 생성됨.
             const existing = await tx.storeTimeSlot.findMany({
                 where: { storeId, startAt: { in: candidates.map((c) => c.startAt) } },
-                select: { startAt: true },
+                select: { startAt: true, endAt: true },
             });
-            const existingKeys = new Set(existing.map((e) => e.startAt.getTime()));
-            const toCreate = candidates.filter((c) => !existingKeys.has(c.startAt.getTime()));
+            const existingPairKeys = new Set(existing.map((e) => pairKey(e.startAt, e.endAt)));
+            const toCreate = candidates.filter(
+                (c) => !existingPairKeys.has(pairKey(c.startAt, c.endAt)),
+            );
 
             const created: StoreTimeSlot[] = [];
             for (const c of toCreate) {
@@ -146,7 +150,8 @@ export class PrismaStoreTimeSlotRepository extends StoreTimeSlotRepository {
                 created.push(StoreTimeSlotMapper.toDomain(slot));
             }
 
-            return { created, alreadyExisting: existingKeys.size, removedCount, closedCount };
+            const alreadyExisting = candidates.length - toCreate.length;
+            return { created, alreadyExisting, removedCount, closedCount };
         });
     }
 }
