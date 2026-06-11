@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import { PartnerStatus } from '../enums/partner-status';
 import { StoreStatus } from '../enums/store-status';
+import { VerificationStatus } from '../enums/verification-status';
+import { BusinessState } from '../enums/business-state';
 
 import {
     businessNumberSchema,
@@ -27,6 +29,38 @@ export type StoreRegistrationErrorCode =
 export const DAY_OF_WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const;
 export const dayOfWeekSchema = z.enum(DAY_OF_WEEK);
 export type DayOfWeek = z.infer<typeof dayOfWeekSchema>;
+
+// ─── 사업자등록증 진위확인 (POST /partner/business-documents/verify) ─────
+
+// 진위확인 요청
+export const businessDocumentVerifyRequestSchema = z.object({
+    businessNumber: z
+        .string()
+        .regex(/^\d{10}$/, '사업자등록번호는 하이픈 없이 숫자 10자리여야 합니다.')
+        .meta({ example: '1234567890' }),
+    ownerName: z.string().min(1).meta({ example: '홍길동' }),
+    startDate: z
+        .string()
+        .regex(/^\d{8}$/, '개업일자는 YYYYMMDD 8자리여야 합니다.')
+        .meta({ example: '20190315' }),
+});
+export type BusinessDocumentVerifyRequest = z.infer<typeof businessDocumentVerifyRequestSchema>;
+
+// 진위확인 응답
+export const businessDocumentVerifyResultSchema = z.object({
+    verificationStatus: z.nativeEnum(VerificationStatus),
+    // VERIFIED 시에만 값. 그 외 null.
+    businessState: z.nativeEnum(BusinessState).nullable(),
+    // 사용자에게 표시할 표준화된 메시지 키 (FE가 i18n/분기 처리)
+    message: z.enum([
+        'VERIFIED', // 진위확인 통과
+        'MISMATCH', // 정보 불일치 — "정확한 사업자 정보를 입력해 주세요"
+        'BUSINESS_CLOSED', // 폐업 사업장 — "폐업한 사업장은 등록할 수 없어요"
+        'BUSINESS_SUSPENDED', // 휴업 사업장 — "휴업 중인 사업장입니다. 고객센터로 문의해주세요"
+        'NTS_ERROR', // 국세청 장애/타임아웃 — "잠시 후 다시 시도해주세요"
+    ]),
+});
+export type BusinessDocumentVerifyResult = z.infer<typeof businessDocumentVerifyResultSchema>;
 
 // ─── 사업자등록증 OCR (POST /partner/business-documents/ocr) ─────
 export const businessDocumentOcrRequestSchema = z.object({

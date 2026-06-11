@@ -1,3 +1,5 @@
+export { VerificationStatus } from './enums/verification-status';
+export { BusinessState } from './enums/business-state';
 export { UserRole } from './enums/user-role';
 export { UserStatus } from './enums/user-status';
 export { OAuthProvider } from './enums/oauth-provider';

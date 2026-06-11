@@ -103,20 +103,28 @@ model Partner {
 }
 
 model BusinessDocument {
-  id              String     @id @default(uuid()) @db.Uuid
-  partnerId       String     @map("partner_id") @db.Uuid
-  storeId         String     @map("store_id") @db.Uuid
-  email           String?    @map("email") @db.VarChar(255)
-  documentUrl     String?    @map("document_url") @db.VarChar(1000)
-  ownerName       String     @map("owner_name") @db.VarChar(100) // [S-4] representativeName → ownerName
-  businessName    String     @map("business_name") @db.VarChar(200)
-  businessNumber  String     @map("business_number") @db.VarChar(20)
-  businessAddress String     @map("business_address") @db.VarChar(500)
-  startDate       String?    @map("start_date") @db.VarChar(8)  // "YYYYMMDD", OCR prefill + 사용자 수정
-  verifiedAt      DateTime?  @map("verified_at") @db.Timestamptz(6)
-  createdAt       DateTime?  @map("created_at") @db.Timestamptz(6)
-  partner         Partner    @relation(fields: [partnerId], references: [id])
-  store           Store      @relation(fields: [storeId], references: [id])
+  id                       String             @id @default(uuid()) @db.Uuid
+  partnerId                String             @map("partner_id") @db.Uuid
+  storeId                  String             @map("store_id") @db.Uuid
+  email                    String?            @map("email") @db.VarChar(255)
+  documentUrl              String?            @map("document_url") @db.VarChar(1000)
+  ownerName                String             @map("owner_name") @db.VarChar(100) // [S-4] representativeName → ownerName
+  businessName             String             @map("business_name") @db.VarChar(200)
+  businessNumber           String             @map("business_number") @db.VarChar(20)
+  businessAddress          String             @map("business_address") @db.VarChar(500)
+  startDate                String?            @map("start_date") @db.VarChar(8)  // "YYYYMMDD", OCR prefill + 사용자 수정
+  verificationStatus       VerificationStatus @default(PENDING) @map("verification_status")
+  ntsRaw                   Json?              @map("nts_raw")
+    // 국세청 진위확인/상태조회 원본 응답 보관(감사·디버깅). 제출 시점에 채움.
+  verifiedAt               DateTime?          @map("verified_at") @db.Timestamptz(6)
+    // 진위확인 VERIFIED 통과 시에만 기록. MISMATCH/ERROR는 null.
+  verificationCheckedAt    DateTime?          @map("verification_checked_at") @db.Timestamptz(6)
+    // verify 엔드포인트 매 호출 시 갱신 (결과 무관).
+  businessState            BusinessState?     @map("business_state")
+    // 국세청 상태조회 결과. VERIFIED 시에만 기록. ERROR/MISMATCH는 null.
+  createdAt                DateTime?          @map("created_at") @db.Timestamptz(6)
+  partner                  Partner            @relation(fields: [partnerId], references: [id])
+  store                    Store              @relation(fields: [storeId], references: [id])
 
   @@map("business_documents")
 }
@@ -635,4 +643,18 @@ enum ImageUploadStatus {
   PENDING // presigned URL 발급 후 업로드 대기
   UPLOADED // S3 업로드 완료
   FAILED // 업로드 실패 또는 만료
+}
+
+enum VerificationStatus {
+  PENDING    // 진위확인 미수행 (초기값)
+  VERIFIED   // 진위확인 통과 = 번호·이름·개업일이 실제 등록정보와 일치 (영업상태 무관 — 폐업·휴업도 VERIFIED)
+  MISMATCH   // 입력 정보가 실제 등록정보와 불일치 (valid==02, 사용자 잘못 입력, 최종 상태)
+  ERROR      // 국세청 API 장애·타임아웃 (일시적, 재시도 가능)
+}
+// verificationStatus(진위 일치)와 businessState(영업 상태)는 직교. 등록 가능 = VERIFIED && businessState==ACTIVE.
+
+enum BusinessState {
+  ACTIVE     // 계속사업자
+  CLOSED     // 폐업
+  SUSPENDED  // 휴업
 }
