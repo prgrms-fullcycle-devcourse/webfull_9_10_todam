@@ -138,10 +138,10 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
             }
 
             // 2) 유지 existing photo + 신규 key 합본 → 최종 photos[].
-            // ⚠️ D14/D15: GET 은 유지 사진의 imageUrl 만 주고 S3 key 가 없음.
-            //   MSW 단계에선 유지 사진의 id(=ExistingImage.id)를 photos 에 그대로 실어 보낸다.
-            //   실 BE 연동 시 유지 사진을 key 로 매핑(또는 photoId 전달 방식)해야 함 — plan ## Out 명기.
-            const keptKeys = images.existingImages.map((img) => img.id);
+            // 유지 사진은 ExistingImage.src(= GET 응답 imageUrl 전체 URL)를 그대로 전달한다.
+            // BE buildReviewPhotos 는 'http'로 시작하는 값을 기존 imageUrl 로 처리(S3 key 변환 불필요).
+            // GET 응답이 S3 key 를 직접 노출하지 않으므로 imageUrl 경유가 유일한 정합 경로.
+            const keptKeys = images.existingImages.map((img) => img.src);
             const photos = [...keptKeys, ...uploadedKeys];
 
             const body = {
