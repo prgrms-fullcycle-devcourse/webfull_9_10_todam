@@ -41,12 +41,17 @@ export type GeneratedTimeSlot = z.infer<typeof generatedTimeSlotSchema>;
 
 // ─── 자동 생성 응답 ──────────────────────────────────────────────
 // createdCount: 신규 생성 슬롯 수, skippedCount: 멱등 스킵(이미 존재) + 과거 시각 스킵 합산,
-// removedCount: 영업시간/요일/interval 변경으로 새 격자에서 사라진 예약없는 미래 슬롯 삭제 수.
+// removedCount: 영업시간/요일/interval 변경으로 새 격자에서 사라진 예약없는 미래 슬롯 삭제 수,
+// closedCount: 새 격자에서 벗어났지만 활성 예약이 있어 CLOSED로 전환된 슬롯 수(신규 예약 차단·기존 예약 보존).
 export const generateTimeSlotsResultSchema = z.object({
     createdCount: z.number().meta({ example: 28 }),
     removedCount: z.number().meta({
         example: 2,
         description: '영업시간/요일/interval 변경으로 삭제된 미래 빈 슬롯 수',
+    }),
+    closedCount: z.number().meta({
+        example: 1,
+        description: '새 격자에서 벗어났지만 활성 예약이 있어 CLOSED로 전환된 슬롯 수',
     }),
     skippedCount: z.number().meta({ example: 4 }),
     createdSlots: z

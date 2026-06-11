@@ -266,7 +266,9 @@ model StoreTimeSlot {
   store         Store               @relation(fields: [storeId], references: [id])
   reservations  Reservation[]
 
-  @@unique([storeId, startAt])
+  // (startAt, endAt) 쌍으로 유일. 같은 시작시각에 길이가 다른 슬롯 공존 허용
+  // (interval 변경 재생성 시, 예약으로 CLOSED된 옛 슬롯과 새 격자 슬롯이 같은 startAt을 가질 수 있음).
+  @@unique([storeId, startAt, endAt])
   @@index([status])
   @@map("store_time_slots")
 }

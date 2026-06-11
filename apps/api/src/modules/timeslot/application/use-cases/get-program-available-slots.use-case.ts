@@ -34,7 +34,11 @@ export class GetProgramAvailableSlotsUseCase {
         }
 
         const range = kstMonthRange(query.year, query.month);
-        const slots = await this.slots.findByStore(program.storeId, { range });
+        // 고객 노출은 OPEN 격자만. CLOSED(영업시간/격자 변경으로 닫힘)·CANCELED 슬롯은
+        // 신규 예약자에게 보이지 않아야 한다(정원 마감은 status=OPEN 유지 → isAvailable=false 로 노출).
+        const slots = (await this.slots.findByStore(program.storeId, { range })).filter(
+            (s) => s.status === 'OPEN',
+        );
 
         if (slots.length === 0) {
             return { slots: [] };
