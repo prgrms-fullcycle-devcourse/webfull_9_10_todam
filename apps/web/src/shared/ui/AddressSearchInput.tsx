@@ -27,6 +27,7 @@ export function AddressSearchInput({
     const handleClick = useCallback(async () => {
         try {
             const result = await openPostcode();
+            if (!result) return; // 사용자가 선택 없이 닫음
             onResolved({ postalCode: result.zonecode, address: result.roadAddress });
         } catch {
             // openPostcode 스크립트 로드 실패 등 — 호출측이 에러 토스트 처리하지 않으므로 조용히 무시.

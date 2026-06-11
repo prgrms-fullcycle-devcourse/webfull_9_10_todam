@@ -120,6 +120,7 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
     const handleAddressSearch = async () => {
         try {
             const result = await openPostcode();
+            if (!result) return; // 사용자가 선택 없이 닫음
             patch({ businessAddress: result.roadAddress });
         } catch {
             push({ message: '주소 검색을 사용할 수 없습니다. 잠시 후 다시 시도해주세요.' });

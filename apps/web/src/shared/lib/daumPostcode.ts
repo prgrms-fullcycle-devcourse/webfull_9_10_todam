@@ -15,6 +15,8 @@ interface DaumPostcode {
 interface DaumNamespace {
     Postcode: new (opts: {
         oncomplete: (data: { roadAddress: string; jibunAddress: string; zonecode: string }) => void;
+        // 팝업 닫힘 콜백. state === 'FORCE_CLOSE' = 사용자가 주소 선택 없이 닫음.
+        onclose?: (state: 'FORCE_CLOSE' | 'COMPLETE_CLOSE') => void;
     }) => DaumPostcode;
 }
 
@@ -45,21 +47,29 @@ function loadScript(): Promise<void> {
     return loading;
 }
 
-// 우편번호 팝업 오픈 → 선택 결과 resolve. 미선택 닫기 시 영원히 대기하지 않도록 호출측에서 관리.
-export async function openPostcode(): Promise<PostcodeResult> {
+// 우편번호 팝업 오픈 → 선택 결과 resolve. 미선택 닫기(FORCE_CLOSE) 시 null resolve.
+// (oncomplete만 있으면 닫기 시 Promise 가 영원히 pending → 호출측 로딩 플래그가 안 풀려 재오픈 불가 버그)
+export async function openPostcode(): Promise<PostcodeResult | null> {
     await loadScript();
-    return new Promise<PostcodeResult>((resolve, reject) => {
+    return new Promise<PostcodeResult | null>((resolve, reject) => {
         if (!window.daum?.Postcode) {
             reject(new Error('Daum Postcode 사용 불가'));
             return;
         }
+        let completed = false;
         new window.daum.Postcode({
-            oncomplete: (data) =>
+            oncomplete: (data) => {
+                completed = true;
                 resolve({
                     roadAddress: data.roadAddress,
                     jibunAddress: data.jibunAddress,
                     zonecode: data.zonecode,
-                }),
+                });
+            },
+            // 선택 없이 닫으면(FORCE_CLOSE) null 로 종료. COMPLETE_CLOSE 는 oncomplete 직후라 무시.
+            onclose: (state) => {
+                if (!completed && state === 'FORCE_CLOSE') resolve(null);
+            },
         }).open();
     });
 }

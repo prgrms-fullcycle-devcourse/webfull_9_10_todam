@@ -2,6 +2,9 @@ import {
     DAY_OF_WEEK,
     type BusinessDocumentImageRequest,
     type BusinessDocumentImageResult,
+    type BusinessDocumentOcrResult,
+    type BusinessDocumentVerifyRequest,
+    type BusinessDocumentVerifyResult,
     type ConfirmStoreImageResult,
     type CreateStoreImageRequest,
     type CreateStoreImageResult,
@@ -43,15 +46,19 @@ export function getPartnerOnboarding() {
 
 // 폼 → POST /stores body 매핑.
 function toCreateStudioBody(form: StudioRegistrationForm): CreateStoreRequest {
-    const fullAddress = `${form.business.businessAddress} ${form.business.addressDetail}`.trim();
+    // 공방 운영 주소(고객 노출·위치기반) = store.address + 좌표.
+    const storeAddress = `${form.store.address} ${form.store.addressDetail}`.trim();
     return {
         name: form.store.name,
         slug: form.store.slug || undefined,
         description: form.store.description || null,
         phone: form.store.phone,
-        address: fullAddress,
-        latitude: form.business.latitude ?? 0,
-        longitude: form.business.longitude ?? 0,
+        address: storeAddress,
+        latitude: form.store.latitude ?? 0,
+        longitude: form.store.longitude ?? 0,
+        regionSido: form.store.regionSido,
+        regionSigungu: form.store.regionSigungu,
+        regionDong: form.store.regionDong,
         convenienceInfo: { ...form.store.convenienceInfo },
         autoConfirm: form.reservation.autoConfirm ?? false,
         cancelDeadlineDays: form.reservation.cancelDeadlineDays,
@@ -66,14 +73,12 @@ function toCreateStudioBody(form: StudioRegistrationForm): CreateStoreRequest {
                 breakStart: form.operating.breakStart || null,
                 breakEnd: form.operating.breakEnd || null,
             })),
-        // 사업자등록증 파일은 IN scope(파일 저장). OCR/진위확인만 백로그.
-        // documentUrl 은 BusinessStep 에서 실 presigned 업로드로 발급받아 폼에 보관된 S3 URL.
         businessDocument: {
-            // BE 는 하이픈 없이 숫자 10자리 요구. 폼은 하이픈 포함 표시(000-00-00000) → 전송 직전 strip.
             businessNumber: form.business.businessNumber.replace(/-/g, ''),
             businessName: form.business.businessName,
             ownerName: form.business.ownerName,
-            businessAddress: fullAddress,
+            startDate: form.business.startDate || null,
+            businessAddress: form.business.businessAddress.trim(),
             email: form.business.email || null,
             documentUrl: form.business.documentUrl,
         },
@@ -91,6 +96,23 @@ export function createStudio(form: StudioRegistrationForm) {
 // 1-1) 사업자등록증 presigned PUT URL 발급 (store-비종속, 루트 경로 → MSW(/api/v1) 미가로챔, 실 BE).
 export function createBusinessDocumentImage(body: BusinessDocumentImageRequest) {
     return clientApiFetch<BusinessDocumentImageResult>(`${BASE}/business-documents/images`, {
+        method: 'POST',
+        body,
+    });
+}
+
+// 1-2) 사업자등록증 OCR — 업로드된 documentUrl 로 Vision 파싱 결과(필드별 nullable) 반환.
+export function ocrBusinessDocument(documentUrl: string) {
+    return clientApiFetch<BusinessDocumentOcrResult>(`${BASE}/business-documents/ocr`, {
+        method: 'POST',
+        body: { documentUrl },
+    });
+}
+
+// 1-3) 사업자등록증 진위확인 — 국세청 동기 게이트(stateless). 1단계 "다음" 클릭 시 호출.
+// 응답은 200 고정(MISMATCH/ERROR도 200) → message 키로 FE 분기. 차단은 message 판정으로 처리.
+export function verifyBusinessDocument(body: BusinessDocumentVerifyRequest) {
+    return clientApiFetch<BusinessDocumentVerifyResult>(`${BASE}/business-documents/verify`, {
         method: 'POST',
         body,
     });

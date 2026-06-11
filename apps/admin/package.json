@@ -2,31 +2,39 @@
   "name": "@todam/admin",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "next build",
-    "dev": "next dev --port 3001",
-    "start": "next start --port 3001",
+    "dev": "vite --port 3001",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 3001",
     "lint": "eslint",
-    "test": "jest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "^16.2.6",
+    "@tanstack/react-query": "^5.100.14",
+    "@todam/config": "workspace:*",
+    "@todam/shared": "workspace:*",
+    "@todam/ui": "workspace:*",
+    "date-fns": "^4.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@todam/config": "workspace:*",
-    "@todam/shared": "workspace:*"
+    "react-router-dom": "^7.1.1",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.2.2",
+    "@tailwindcss/vite": "^4.2.2",
     "@todam/eslint-config": "workspace:*",
     "@todam/typescript-config": "workspace:*",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "eslint-config-next": "^16.2.6",
-    "postcss": "^8.5.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "msw": "^2.14.6",
     "tailwindcss": "^4.2.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^6.0.7"
+  },
+  "msw": {
+    "workerDirectory": ["public"]
   }
 }

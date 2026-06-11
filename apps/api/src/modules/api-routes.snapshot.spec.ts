@@ -57,6 +57,9 @@ function controllers(): ControllerClass[] {
     const { ReviewController } = jest.requireActual<
         typeof import('./review/presentation/controllers/review.controller')
     >('./review/presentation/controllers/review.controller');
+    const { NotificationController } = jest.requireActual<
+        typeof import('./notification/presentation/controllers/notification.controller')
+    >('./notification/presentation/controllers/notification.controller');
 
     return [
         AuthController,
@@ -70,6 +73,7 @@ function controllers(): ControllerClass[] {
         PartnerController,
         UserController,
         ReviewController,
+        NotificationController,
     ];
 }
 
@@ -327,6 +331,13 @@ describe('API route baseline', () => {
                 handler: 'ocrBusinessDocument',
                 method: 'POST',
                 path: '/partner/business-documents/ocr',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'StoreController',
+                handler: 'verifyBusinessDocument',
+                method: 'POST',
+                path: '/partner/business-documents/verify',
                 guards: ['AuthGuard'],
             },
             {
@@ -694,6 +705,20 @@ describe('API route baseline', () => {
                 guards: ['AuthGuard'],
             },
             {
+                controller: 'UserController',
+                handler: 'getNotificationSettingsHandler',
+                method: 'GET',
+                path: '/users/me/notification-settings',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'UserController',
+                handler: 'patchNotificationSettingsHandler',
+                method: 'PATCH',
+                path: '/users/me/notification-settings',
+                guards: ['AuthGuard'],
+            },
+            {
                 controller: 'ReviewController',
                 handler: 'createReviewHandler',
                 method: 'POST',
@@ -726,6 +751,20 @@ describe('API route baseline', () => {
                 handler: 'deleteReviewHandler',
                 method: 'DELETE',
                 path: '/reviews/:reviewId',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'NotificationController',
+                handler: 'registerNotificationToken',
+                method: 'POST',
+                path: '/notifications/tokens',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'NotificationController',
+                handler: 'revokeNotificationToken',
+                method: 'DELETE',
+                path: '/notifications/tokens/:fcmToken',
                 guards: ['AuthGuard'],
             },
         ]);

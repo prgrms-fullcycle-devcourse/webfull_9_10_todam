@@ -4,7 +4,7 @@ import { Modal } from '@todam/ui';
 import { PartnerStatus } from '@todam/shared';
 
 import { useLogout } from '@/features/auth/logout';
-import { TERMS, type TermsKey } from '@/features/auth/terms';
+import { useLatestPolicies, type TermsKey } from '@/features/auth/terms';
 import { MyPageHub } from '@/features/user/profile';
 import { usePartnerOnboarding } from '@/features/studio/registration';
 import { useModal } from '@/shared/model';
@@ -20,10 +20,11 @@ export default function MyPage() {
     const { data: onboardingData } = usePartnerOnboarding();
     const isPartner = onboardingData?.partnerStatus === PartnerStatus.APPROVED;
     const runLogout = useLogout();
+    const { urlMap } = useLatestPolicies();
 
     const handleOpenTerms = (key: string) => {
-        const item = TERMS.find((term) => term.key === key);
-        if (item) window.open(item.notionUrl, '_blank', 'noopener,noreferrer');
+        const url = urlMap[key as TermsKey];
+        if (url) window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     const doLogout = async () => {

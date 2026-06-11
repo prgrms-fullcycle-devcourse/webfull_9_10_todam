@@ -4,7 +4,7 @@ import { formatPhone } from '@todam/shared';
 import { TextArea, TextInput } from '@todam/ui';
 
 import type { ExistingImage, PendingImage } from '@/shared/model';
-import { PendingImageField } from '@/shared/ui';
+import { AddressSearchInput, PendingImageField } from '@/shared/ui';
 import { MAX_STORE_IMAGES } from '../model';
 
 interface StudioInfoFieldsProps {
@@ -35,6 +35,13 @@ interface StudioInfoFieldsProps {
     description: string;
     onChangeDescription: (v: string) => void;
     descriptionMaxLength: number;
+
+    // 공방 운영 주소 (고객 노출·위치기반). 등록 단계에서만 주입 — 미전달 시 미노출.
+    address?: string;
+    addressDetail?: string;
+    addressError?: string;
+    onResolveAddress?: (next: { postalCode: string; address: string }) => void;
+    onChangeAddressDetail?: (v: string) => void;
 }
 
 // 공방 정보 입력 (등록·수정 공유, store 비종속). 표현 레이어만 공유하고
@@ -58,6 +65,11 @@ export function StudioInfoFields({
     description,
     onChangeDescription,
     descriptionMaxLength,
+    address,
+    addressDetail,
+    addressError,
+    onResolveAddress,
+    onChangeAddressDetail,
 }: StudioInfoFieldsProps) {
     return (
         <div className="flex flex-col gap-4">
@@ -128,6 +140,27 @@ export function StudioInfoFields({
                 helperText={phoneError}
                 onChange={(e) => onChangePhone(formatPhone(e.target.value))}
             />
+
+            {/* 공방 운영 주소 — 등록 단계에서만 주입(onResolveAddress 존재 시 노출) */}
+            {onResolveAddress && (
+                <div className="flex flex-col gap-2">
+                    <AddressSearchInput
+                        label="공방 주소"
+                        value={address ?? ''}
+                        error={!!addressError}
+                        helperText={addressError}
+                        onResolved={onResolveAddress}
+                    />
+                    <TextInput
+                        placeholder={
+                            address ? '상세주소를 입력해 주세요' : '주소 검색 후 입력할 수 있어요'
+                        }
+                        value={addressDetail ?? ''}
+                        disabled={!address}
+                        onChange={(e) => onChangeAddressDetail?.(e.target.value)}
+                    />
+                </div>
+            )}
 
             <TextArea
                 label="공방 소개글"

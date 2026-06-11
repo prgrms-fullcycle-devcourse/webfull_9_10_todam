@@ -15,8 +15,14 @@ const verificationCodeSchema = z
     .length(6, '인증코드는 6자리입니다.')
     .meta({ example: '482917' });
 
+// 필수 약관 동의(서비스/개인정보/위치기반). true 만 통과. false 전송 시 400.
+const requiredConsentSchema = z
+    .boolean()
+    .refine((v) => v === true, { message: '필수 약관에 동의해야 합니다.' });
+
 // ───────────── 회원가입 (POST /auth/signup) ─────────────
-// 약관 동의 필드는 스키마 미수용(.strict) → 전송 시 거부. 동의 시트 확정 전까지 미전송.
+// 약관 동의 3종(서비스이용/개인정보/위치기반)은 모두 필수동의 → true 만 허용.
+// .strict() 유지하되 약관 필드가 whitelist에 포함되어 FE 전송이 더 이상 거부되지 않음.
 export const signupRequestSchema = z
     .object({
         email: emailSchema,
@@ -30,6 +36,18 @@ export const signupRequestSchema = z
                 description: '미입력 시 랜덤 닉네임 자동 생성',
             })
             .optional(),
+        termsAgreed: requiredConsentSchema.meta({
+            example: true,
+            description: '서비스 이용약관 동의(필수)',
+        }),
+        privacyAgreed: requiredConsentSchema.meta({
+            example: true,
+            description: '개인정보 수집·이용 동의(필수)',
+        }),
+        locationAgreed: requiredConsentSchema.meta({
+            example: true,
+            description: '위치기반 서비스 이용약관 동의(필수)',
+        }),
     })
     .strict();
 export type SignupRequest = z.infer<typeof signupRequestSchema>;

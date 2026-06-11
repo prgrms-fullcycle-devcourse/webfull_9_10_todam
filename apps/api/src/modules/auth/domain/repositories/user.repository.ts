@@ -2,6 +2,7 @@
 // 구현은 infrastructure/persistence/prisma-user.repository.ts.
 // 멀티-write(트랜잭션)는 메서드 하나가 통째로 캡슐화한다.
 
+import { PolicyType } from '@todam/shared';
 import { OAuthProvider, User } from '../entities/user.entity';
 
 export interface CreateUserInput {
@@ -24,6 +25,17 @@ export abstract class UserRepository {
     abstract findByEmail(email: string): Promise<User | null>;
     abstract findByOAuth(provider: OAuthProvider, providerId: string): Promise<User | null>;
     abstract create(input: CreateUserInput): Promise<User>;
+
+    /**
+     * 신규 유저 + 동의 약관 이력(UserConsent)을 한 트랜잭션으로 생성.
+     * agreedPolicyTypes 각 항목의 isLatest=true PolicyVersion을 조회해 isAgreed=true로 기록한다.
+     * 최신 약관 버전이 없으면(시드 누락) 에러를 던진다.
+     */
+    abstract createWithConsents(
+        input: CreateUserInput,
+        agreedPolicyTypes: PolicyType[],
+    ): Promise<User>;
+
     abstract linkOAuth(userId: string, provider: OAuthProvider, providerId: string): Promise<void>;
 
     /** 신규 유저 + 소셜 연동(OAuthAccount)을 한 트랜잭션으로 생성. */

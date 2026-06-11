@@ -1,41 +1,62 @@
 'use client';
 
-import { formatBusinessNumber } from '@todam/shared';
+import { businessStartDateSchema, formatBusinessNumber } from '@todam/shared';
 import { DescriptionBlock, TextInput } from '@todam/ui';
 import { useState } from 'react';
 
-import { openPostcode } from '@/shared/lib/daumPostcode';
 import { useToast } from '@/shared/model';
 import { ImageUploadField, type ImageUploadGridItem } from '@/shared/ui';
 import { useStudioRegistrationStore } from '../model/studio';
-import { useGeocode, useUploadBusinessDocument } from '../queries';
+import { useOcrBusinessDocument, useUploadBusinessDocument } from '../queries';
+import type { StudioRegistrationForm } from '../model/types';
+
+const isStartDate = (v: string) => businessStartDateSchema.safeParse(v).success;
 
 export function BusinessStep() {
     const business = useStudioRegistrationStore((s) => s.form.business);
     const patchBusiness = useStudioRegistrationStore((s) => s.patchBusiness);
-    const setAddress = useStudioRegistrationStore((s) => s.setAddress);
     const { push } = useToast();
-
-    const [addrLoading, setAddrLoading] = useState(false);
-    const geocodeMutation = useGeocode();
 
     // 업로드한 파일의 로컬 미리보기 URL. 이미지일 때만 썸네일(PDF 는 라벨 유지).
     const [docPreview, setDocPreview] = useState<{ src: string; name: string } | null>(null);
     const uploadDoc = useUploadBusinessDocument();
+    const ocr = useOcrBusinessDocument();
+
+    // OCR 결과 → 폼 prefill. 추출 실패 시 기존 값 유지.
+    const applyOcr = (r: Awaited<ReturnType<typeof ocr.mutateAsync>>): number => {
+        const patch: Partial<StudioRegistrationForm['business']> = {};
+        if (r.businessNumber) patch.businessNumber = formatBusinessNumber(r.businessNumber);
+        if (r.ownerName) patch.ownerName = r.ownerName;
+        if (r.businessName) patch.businessName = r.businessName;
+        if (r.businessAddress) patch.businessAddress = r.businessAddress;
+        if (r.startDate) patch.startDate = r.startDate;
+        const count = Object.keys(patch).length;
+        if (count > 0) patchBusiness(patch);
+        return count;
+    };
 
     const handleAddDocument = async (files: File[]) => {
         const file = files[0];
-        if (!file || uploadDoc.isPending) return;
-        // TODO(백로그): OCR 자동입력 + 국세청 진위검증
+        if (!file || uploadDoc.isPending || ocr.isPending) return;
         try {
             const { documentUrl } = await uploadDoc.mutateAsync(file);
             patchBusiness({ documentUrl });
             const isImage = file.type.startsWith('image/');
-            setDocPreview({
-                src: isImage ? URL.createObjectURL(file) : '',
-                name: file.name,
-            });
-            push({ message: '사업자등록증이 첨부되었습니다.' });
+            setDocPreview({ src: isImage ? URL.createObjectURL(file) : '', name: file.name });
+
+            // 업로드 성공 직후 OCR 자동입력. 실패하면 직접 입력 유도
+            try {
+                const result = await ocr.mutateAsync(documentUrl);
+                const extracted = applyOcr(result);
+                push({
+                    message:
+                        extracted > 0
+                            ? '사업자등록증 정보를 자동입력했어요. 확인 후 수정해 주세요.'
+                            : '정보를 인식하지 못했어요. 직접 입력해 주세요.',
+                });
+            } catch {
+                push({ message: '자동입력에 실패했어요. 정보를 직접 입력해 주세요.' });
+            }
         } catch {
             push({ message: '사업자등록증 업로드에 실패했어요. 잠시 후 다시 시도해주세요.' });
         }
@@ -47,30 +68,12 @@ export function BusinessStep() {
         patchBusiness({ documentUrl: null });
     };
 
-    const handleAddressSearch = async () => {
-        if (addrLoading) return;
-        setAddrLoading(true);
-        try {
-            const result = await openPostcode();
-            // 좌표 변환(Kakao)은 실패해도 주소 선택 자체는 유지(키 미설정 등 graceful). 좌표는 0/0 폴백.
-            let latitude = 0;
-            let longitude = 0;
-            try {
-                const coords = await geocodeMutation.mutateAsync(result.roadAddress);
-                latitude = coords.latitude;
-                longitude = coords.longitude;
-            } catch {
-                push({ message: '주소 좌표를 가져오지 못했어요. 위치 정보 없이 저장됩니다.' });
-            }
-            setAddress(result.roadAddress, latitude, longitude);
-        } catch {
-            push({ message: '주소 검색을 사용할 수 없습니다. 잠시 후 다시 시도해주세요.' });
-        } finally {
-            setAddrLoading(false);
-        }
-    };
+    const busy = uploadDoc.isPending || ocr.isPending;
 
-    const hasAddress = business.businessAddress.trim().length > 0;
+    const startDateError =
+        business.startDate.length > 0 && !isStartDate(business.startDate)
+            ? 'YYYYMMDD 8자리로 입력해 주세요 (예: 20190315)'
+            : undefined;
 
     // 이미지 파일이면 로컬 썸네일(src) 표시, PDF 등은 파일명 라벨 유지.
     const documentItems: ImageUploadGridItem[] = business.documentUrl
@@ -87,16 +90,26 @@ export function BusinessStep() {
 
     return (
         <div className="flex flex-col gap-4">
-            {/* 사업자 등록증 업로드 */}
+            {/* 사업자 등록증 업로드 → 업로드 후 OCR 자동입력 */}
             <ImageUploadField
                 label="사업자 등록증"
                 items={documentItems}
                 onAdd={handleAddDocument}
                 max={1}
                 multiple={false}
-                accept="image/jpeg,image/png,application/pdf"
-                addDisabled={uploadDoc.isPending}
+                accept="image/jpeg,image/png"
+                addDisabled={busy}
             />
+            {busy && (
+                <p className="px-[5px] text-xs text-foreground-tertiary">
+                    {ocr.isPending ? '사업자등록증 정보를 인식하는 중...' : '업로드 중...'}
+                </p>
+            )}
+
+            <DescriptionBlock type="info" title="사업자등록증을 첨부하면 자동으로 입력돼요">
+                사업자번호·상호명·대표자명·개업일자를 자동으로 인식해 채워드려요. 인식 결과는 확인
+                후 수정할 수 있어요.
+            </DescriptionBlock>
 
             <TextInput
                 label="사업자 등록번호"
@@ -119,26 +132,25 @@ export function BusinessStep() {
                 value={business.ownerName}
                 onChange={(e) => patchBusiness({ ownerName: e.target.value })}
             />
-
-            {/* 사업장 주소: 클릭 → 주소검색, 선택 후 상세주소 활성화 */}
-            <div className="flex flex-col gap-2">
-                <TextInput
-                    label="사업장 주소"
-                    placeholder="도로명 또는 지번 주소를 검색해 주세요"
-                    value={business.businessAddress}
-                    readOnly
-                    onClick={handleAddressSearch}
-                    className="cursor-pointer"
-                />
-                <TextInput
-                    placeholder={
-                        hasAddress ? '상세주소를 입력해 주세요' : '주소 검색 후 입력할 수 있어요'
-                    }
-                    value={business.addressDetail}
-                    disabled={!hasAddress}
-                    onChange={(e) => patchBusiness({ addressDetail: e.target.value })}
-                />
-            </div>
+            <TextInput
+                label="개업일자"
+                inputMode="numeric"
+                maxLength={8}
+                placeholder="예) 20190315"
+                value={business.startDate}
+                error={!!startDateError}
+                helperText={startDateError}
+                onChange={(e) =>
+                    patchBusiness({ startDate: e.target.value.replace(/\D/g, '').slice(0, 8) })
+                }
+            />
+            <TextInput
+                label="사업장 주소"
+                optional
+                placeholder="사업자등록증에 기재된 주소를 입력해 주세요"
+                value={business.businessAddress}
+                onChange={(e) => patchBusiness({ businessAddress: e.target.value })}
+            />
 
             <TextInput
                 label="이메일"

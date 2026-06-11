@@ -6,8 +6,6 @@ import { isBusinessDocumentFileType } from '@todam/shared';
 
 import { uploadToPresignedUrl } from '@/shared/api';
 
-import { generateTimeSlots, rollingGenerateRange } from '../timeslot/api';
-
 import {
     checkSlug,
     confirmStudioImage,
@@ -17,8 +15,11 @@ import {
     geocode,
     getPartnerOnboarding,
     getStudioReviewStatus,
+    ocrBusinessDocument,
     submitStudio,
+    verifyBusinessDocument,
 } from './api';
+import type { BusinessDocumentVerifyRequest } from '@todam/shared';
 import type { StudioRegistrationForm } from './model/types';
 
 const KEY = ['partner', 'onboarding'] as const;
@@ -56,6 +57,18 @@ export function useUploadBusinessDocument() {
     });
 }
 
+// 사업자등록증 OCR: 업로드된 documentUrl 로 필드 자동추출(필드별 nullable, 미추출은 null).
+export function useOcrBusinessDocument() {
+    return useMutation({ mutationFn: (documentUrl: string) => ocrBusinessDocument(documentUrl) });
+}
+
+// 사업자등록증 진위확인(국세청 동기 게이트). 1단계 "다음" 클릭 시 호출.
+export function useVerifyBusinessDocument() {
+    return useMutation({
+        mutationFn: (body: BusinessDocumentVerifyRequest) => verifyBusinessDocument(body),
+    });
+}
+
 // 공방 등록 제출 = 초안 생성 → 이미지 presigned 업로드/확인 → 심사 제출 오케스트레이션.
 // 반환: 생성된 storeId (완료 화면 상태 조회용).
 export function useSubmitStudioRegistration() {
@@ -79,14 +92,9 @@ export function useSubmitStudioRegistration() {
             // 3) 심사 제출 (DRAFT → PENDING)
             await submitStudio(storeId);
 
-            // 4) 타임슬롯 자동 생성 (#169 — 영업시간·interval 기반, 향후 30일 롤링).
-            // best-effort: 생성 실패가 등록 완료를 막지 않는다(공방은 이미 제출됨).
-            try {
-                await generateTimeSlots(storeId, rollingGenerateRange());
-            } catch (err) {
-                console.warn('[registration] 타임슬롯 자동 생성 실패', err);
-            }
-
+            // 타임슬롯 자동 생성은 어드민 승인(APPROVED) 시점으로 이관.
+            // 등록 직후엔 PENDING 이라 time-slots/generate(PartnerGuard) 가 403 → 로그인 모달 오작동.
+            // PENDING 공방은 예약을 받지 않으므로 타임슬롯 불필요. 승인 트랜잭션에서 status 전환과 함께 생성한다.
             return { storeId };
         },
     });

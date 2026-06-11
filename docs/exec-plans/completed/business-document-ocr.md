@@ -9,8 +9,8 @@
 ## Status
 
 - [x] API 구현
-- [ ] UI 구현
-- [ ] API 연동
+- [x] UI 구현
+- [x] API 연동
 
 ## Context
 
@@ -295,5 +295,14 @@ http.post('/api/v1/partner/business-documents/ocr', () =>
 
 ## Outcome
 
-- Status: 미착수
-- Follow-up: 진위확인 plan(`business-document-verify.md`) 작성 후 같은 마이그레이션 파일에 `VerificationStatus`, `BusinessState` enum 추가 병합 가능.
+- Status: 완료 (API 구현 / UI 구현 / API 연동 ✅ — reviewer drift 0 판정)
+- 추가 반영(plan 범위 밖, 같은 PR 포함):
+  - 주소 분리 — 공방 운영 주소(store.address) ↔ 등록증 주소(businessDocument.businessAddress) 별도 입력/저장.
+  - region 검색 컬럼 채우기 — createStoreRequestSchema에 regionSido/Sigungu/Dong 추가, FE reverseGeocodeRegion 으로 좌표→행정구역 확보, BE 저장. (기존: 등록 플로우가 region 미저장 → 지역 자동완성 검색 누락 버그)
+  - 주소검색 팝업 재오픈 버그픽스 — daumPostcode onclose(FORCE_CLOSE) 시 null resolve.
+  - 스텝 전환 시 스크롤 최상단 복귀.
+  - 등록 직후 403→로그인모달 오작동 픽스 — useSubmitStudioRegistration 의 generateTimeSlots(PartnerGuard) 자동호출 제거.
+  - businessAddress contract 완화 — 선택값화에 맞춰 min(1) 제거(빈 문자열 허용, DB NOT NULL 은 '' 로 만족).
+- Follow-up:
+  - 진위확인 plan(`business-document-verify.md`) — startDate 를 국세청 API 입력으로 사용.
+  - **타임슬롯 자동 생성을 어드민 승인(APPROVED 전환) 시점으로 이관** — status 전환 + 타임슬롯 생성 트랜잭션. (어드민 미구현 — 사용자 메모)

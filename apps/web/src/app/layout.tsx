@@ -1,5 +1,11 @@
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
+import {
+    IosInstallBanner,
+    PushMessageListener,
+    ServiceWorkerRegistrar,
+} from '@/features/notification';
 import { SuspendedStudioGate } from '@/features/studio/switch';
 
 import { MswProvider } from '../mocks/MswProvider';
@@ -10,10 +16,20 @@ import { QueryProvider } from './providers/QueryProvider';
 
 import '../styles/globals.css';
 
+export const metadata: Metadata = {
+    manifest: '/manifest.webmanifest',
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: 'default',
+        title: 'todam',
+    },
+};
+
 export const viewport = {
     width: 'device-width',
     initialScale: 1,
     viewportFit: 'cover' as const,
+    themeColor: '#1a3d2b',
 };
 
 type RootLayoutProps = {
@@ -40,6 +56,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
                                 <AppToast />
                                 {/* 작업 공방 게시중단 시 전체 takeover 오버레이(파트너 영역, 자체 가드). */}
                                 <SuspendedStudioGate />
+                                {/* SW 등록 (FCM 백그라운드 수신 전제). */}
+                                <ServiceWorkerRegistrar />
+                                {/* 포그라운드 FCM 메시지 → 토스트 + 토큰 silent 재등록. */}
+                                <PushMessageListener />
+                                {/* iOS Safari 미설치 환경 홈화면 추가 안내. */}
+                                <IosInstallBanner />
                             </div>
                         </AuthProvider>
                     </QueryProvider>

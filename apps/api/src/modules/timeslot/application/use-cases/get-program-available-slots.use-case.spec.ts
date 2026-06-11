@@ -78,14 +78,14 @@ describe('GetProgramAvailableSlotsUseCase', () => {
         });
     });
 
-    it('isAvailable: OPEN·제한없음·잔여>0 → true / 만석·CLOSED·CANCELED·제한 → false', async () => {
+    it('고객 노출은 OPEN 슬롯만: 만석·제한은 isAvailable=false 로 포함, CLOSED·CANCELED는 응답에서 제외', async () => {
         findActiveProgramStore.mockResolvedValue({ storeId: STORE_ID, maxCapacityPerSlot: 4 });
         findByStore.mockResolvedValue([
             slot('s-open', '2026-06-01T01:00:00.000Z', 2, 'OPEN'), // 잔여 2 → true
-            slot('s-full', '2026-06-01T02:00:00.000Z', 4, 'OPEN'), // 잔여 0 → false
-            slot('s-closed', '2026-06-01T03:00:00.000Z', 0, 'CLOSED'), // false
-            slot('s-canceled', '2026-06-01T04:00:00.000Z', 0, 'CANCELED'), // false
-            slot('s-restricted', '2026-06-01T05:00:00.000Z', 0, 'OPEN'), // 제한 → false
+            slot('s-full', '2026-06-01T02:00:00.000Z', 4, 'OPEN'), // 잔여 0 → false(노출 O)
+            slot('s-closed', '2026-06-01T03:00:00.000Z', 0, 'CLOSED'), // 제외
+            slot('s-canceled', '2026-06-01T04:00:00.000Z', 0, 'CANCELED'), // 제외
+            slot('s-restricted', '2026-06-01T05:00:00.000Z', 0, 'OPEN'), // 제한 → false(노출 O)
         ]);
         findByStartAts.mockResolvedValue([
             new ReservationRestriction(
@@ -102,13 +102,17 @@ describe('GetProgramAvailableSlotsUseCase', () => {
         const result = await useCase.execute(PROGRAM_ID, query);
         const byId = Object.fromEntries(result.slots.map((s) => [s.slotId, s]));
 
+        // CLOSED·CANCELED 는 신규 예약자에게 노출되지 않으므로 응답에서 빠진다.
+        expect(byId['s-closed']).toBeUndefined();
+        expect(byId['s-canceled']).toBeUndefined();
+        // OPEN 슬롯만 남는다(만석·제한 포함 → isAvailable=false 로 노출).
+        expect(result.slots).toHaveLength(3);
+
         expect(byId['s-open']!.isAvailable).toBe(true);
         expect(byId['s-open']!.remainingCount).toBe(2);
         expect(byId['s-open']!.startAt).toBe('2026-06-01T01:00:00.000Z');
         expect(byId['s-open']!.endAt).toBe('2026-06-01T03:00:00.000Z');
         expect(byId['s-full']!.isAvailable).toBe(false);
-        expect(byId['s-closed']!.isAvailable).toBe(false);
-        expect(byId['s-canceled']!.isAvailable).toBe(false);
         expect(byId['s-restricted']!.isAvailable).toBe(false);
     });
 
