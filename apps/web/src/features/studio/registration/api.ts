@@ -3,6 +3,8 @@ import {
     type BusinessDocumentImageRequest,
     type BusinessDocumentImageResult,
     type BusinessDocumentOcrResult,
+    type BusinessDocumentVerifyRequest,
+    type BusinessDocumentVerifyResult,
     type ConfirmStoreImageResult,
     type CreateStoreImageRequest,
     type CreateStoreImageResult,
@@ -71,10 +73,7 @@ function toCreateStudioBody(form: StudioRegistrationForm): CreateStoreRequest {
                 breakStart: form.operating.breakStart || null,
                 breakEnd: form.operating.breakEnd || null,
             })),
-        // 사업자등록증 정보. documentUrl 은 BusinessStep 에서 presigned 업로드로 발급받아 폼에 보관된 S3 URL.
-        // businessAddress 는 등록증상 사업장 주소(store.address 와 별개) — 수기/OCR 텍스트 그대로 전송.
         businessDocument: {
-            // BE 는 하이픈 없이 숫자 10자리 요구. 폼은 하이픈 포함 표시(000-00-00000) → 전송 직전 strip.
             businessNumber: form.business.businessNumber.replace(/-/g, ''),
             businessName: form.business.businessName,
             ownerName: form.business.ownerName,
@@ -107,6 +106,15 @@ export function ocrBusinessDocument(documentUrl: string) {
     return clientApiFetch<BusinessDocumentOcrResult>(`${BASE}/business-documents/ocr`, {
         method: 'POST',
         body: { documentUrl },
+    });
+}
+
+// 1-3) 사업자등록증 진위확인 — 국세청 동기 게이트(stateless). 1단계 "다음" 클릭 시 호출.
+// 응답은 200 고정(MISMATCH/ERROR도 200) → message 키로 FE 분기. 차단은 message 판정으로 처리.
+export function verifyBusinessDocument(body: BusinessDocumentVerifyRequest) {
+    return clientApiFetch<BusinessDocumentVerifyResult>(`${BASE}/business-documents/verify`, {
+        method: 'POST',
+        body,
     });
 }
 

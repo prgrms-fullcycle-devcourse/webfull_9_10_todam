@@ -12,8 +12,8 @@
 ## Status
 
 - [x] API 구현
-- [ ] UI 구현
-- [ ] API 연동
+- [x] UI 구현
+- [x] API 연동
 
 ## Context
 
@@ -443,8 +443,11 @@ http.post('/api/v1/partner/business-documents/verify', () =>
 
 ## Outcome
 
-- Status: 미착수
+- Status: 완료
+- 구현 결과:
+  - BE(API 구현): `POST /partner/business-documents/verify`(stateless 게이트), `NtsService`, `VerifyBusinessDocumentUseCase`/`resolveVerification`, `POST /stores` 제출 시 국세청 재검증 저장, `VerificationStatus`/`BusinessState` enum·마이그레이션 — 선행 PR로 dev 병합 완료.
+  - FE(UI 구현·연동): 1단계 "다음" 버튼은 `BusinessStep`이 아니라 `StudioRegistrationFlow` BottomBar의 `onClick`. Business step일 때만 `handleBusinessNext`로 verify 게이트를 끼움(`handleNext` 분기). VERIFIED만 `next()`, MISMATCH/BUSINESS_CLOSED/BUSINESS_SUSPENDED/NTS_ERROR는 message별 토스트 + 진행 차단. 엔드포인트 자체 실패(400/401)는 ApiError 메시지로 일반 안내(MISMATCH 문구 혼용 금지). 검증 중 버튼 `disabled` + "진위확인 중...".
+  - `verifyBusinessDocument()`(api.ts), `useVerifyBusinessDocument()`(queries.ts) 추가. 요청은 `businessNumber`(하이픈 strip)/`ownerName`/`startDate`.
+  - MSW mock 미추가: 실 국세청 API로 직접 연동(키 발급 완료). OCR plan과 동일 정책(실 API).
 - Follow-up:
-  - 국세청 API 키 승인 후 통합 테스트 진행
-  - OCR plan과 마이그레이션 파일 병합 여부 구현 시 결정
   - 진위확인 통과 후 관리자 심사 화면에서 `verificationStatus` 표시 여부 (관리자 UI 백로그)
