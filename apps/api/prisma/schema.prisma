@@ -417,28 +417,45 @@ model ArtworkPhoto {
   @@map("artwork_photos")
 }
 
+// Phase 3a: Notification 모델 reconcile (Option A) — contract 형태로 재편
+// userId 컬럼 유지 (도메인/DTO에서 recipientId로 매핑)
+// artworkId/reservationId 내부용 유지 (deepLink 생성에 활용)
+// 발송상태(sentAt/status/channel/errorReason) → NotificationDelivery로 이동
 model Notification {
-  id            String               @id @default(uuid()) @db.Uuid
-  userId        String               @map("user_id") @db.Uuid
-  artworkId     String?              @map("artwork_id") @db.Uuid
-  reservationId String?              @map("reservation_id") @db.Uuid
-  type          NotificationType
-  title         String               @db.VarChar(200)
-  body          String
-  isRead        Boolean              @default(false) @map("is_read")
-  sentAt        DateTime?            @map("sent_at") @db.Timestamptz(6)
-  errorReason   String?              @map("error_reason")
-  status        NotificationStatus   @default(PENDING)
-  readAt        DateTime?            @map("read_at") @db.Timestamptz(6)
-  channel       NotificationChannel?
-  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
-  artwork       Artwork?             @relation(fields: [artworkId], references: [id])
-  reservation   Reservation?         @relation(fields: [reservationId], references: [id])
-  user          User                 @relation(fields: [userId], references: [id])
+  id              String                   @id @default(uuid()) @db.Uuid
+  userId          String                   @map("user_id") @db.Uuid
+  artworkId       String?                  @map("artwork_id") @db.Uuid
+  reservationId   String?                  @map("reservation_id") @db.Uuid
+  eventType       String                   @map("event_type")
+  category        NotificationCategory
+  title           String                   @db.VarChar(200)
+  body            String
+  deepLink        String?                  @map("deep_link")
+  idempotencyKey  String                   @unique @map("idempotency_key")
+  readAt          DateTime?                @map("read_at") @db.Timestamptz(6)
+  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  artwork         Artwork?                 @relation(fields: [artworkId], references: [id])
+  reservation     Reservation?             @relation(fields: [reservationId], references: [id])
+  user            User                     @relation(fields: [userId], references: [id])
+  deliveries      NotificationDelivery[]
 
   @@index([userId])
-  @@index([isRead])
   @@map("notifications")
+}
+
+// Phase 3a: 채널별 발송 시도 기록 (FCM 발송은 Phase 3b)
+model NotificationDelivery {
+  id             String                      @id @default(uuid()) @db.Uuid
+  notificationId String                      @map("notification_id") @db.Uuid
+  channel        NotificationDeliveryChannel
+  status         NotificationDeliveryStatus  @default(PENDING)
+  attempts       Int                         @default(0)
+  failedReason   String?                     @map("failed_reason")
+  sentAt         DateTime?                   @map("sent_at") @db.Timestamptz(6)
+  notification   Notification                @relation(fields: [notificationId], references: [id])
+
+  @@index([notificationId])
+  @@map("notification_deliveries")
 }
 
 model Report {
@@ -618,22 +635,25 @@ enum ArtworkStatus {
   CANCELED
 }
 
-enum NotificationType {
-  ARTWORK_STATUS
-  RESERVATION_CONFIRMED
-  SHIPPING_STARTED
+// Phase 3a: 알림 카테고리 (contract NotificationCategory 1:1 매핑)
+enum NotificationCategory {
+  TRANSACTION  // 예약 확정/취소 등 거래
+  ARTWORK      // 작품 단계 (건조→소성→완성)
+  DELIVERY     // 배송·픽업
+  OPERATION    // 파트너 운영 (신규예약·심사결과)
+  ENGAGEMENT   // 리뷰요청 등 참여 유도
 }
 
-enum NotificationStatus {
+// Phase 3a: 발송 채널 (MVP=WEB_PUSH 단일)
+enum NotificationDeliveryChannel {
+  WEB_PUSH
+}
+
+// Phase 3a: 발송 상태
+enum NotificationDeliveryStatus {
   PENDING
   SENT
   FAILED
-}
-
-enum NotificationChannel {
-  KAKAO_ALIMTALK
-  EMAIL
-  IN_APP
 }
 
 enum ReportTargetType {
