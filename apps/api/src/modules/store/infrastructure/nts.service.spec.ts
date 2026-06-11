@@ -99,6 +99,28 @@ describe('NtsService', () => {
                 NtsApiError,
             );
         });
+
+        it('HTTP 200이지만 본문이 JSON null → NtsApiError throw (TypeError 방지)', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: async () => null,
+            } as Response);
+
+            await expect(service.validate('1234567890', '홍길동', '20190315')).rejects.toThrow(
+                NtsApiError,
+            );
+        });
+
+        it('HTTP 200이지만 data가 배열이 아니면 빈 배열로 안전 처리', async () => {
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ status_code: '200', data: { unexpected: true } }),
+            } as Response);
+
+            const res = await service.validate('1234567890', '홍길동', '20190315');
+
+            expect(res.data).toEqual([]);
+        });
     });
 
     describe('getStatus()', () => {

@@ -60,7 +60,8 @@ verifiedAt          DateTime?           @map("verified_at") @db.Timestamptz(6)
   // 진위확인 VERIFIED 통과 시에만 기록. MISMATCH/ERROR는 null.
   // 기존 schema.prisma에 verifiedAt이 있으나 의미 미확정 상태였음 → 이 plan에서 "VERIFIED 통과 시각"으로 확정.
 verificationCheckedAt DateTime?         @map("verification_checked_at") @db.Timestamptz(6)
-  // verify 엔드포인트 매 호출 시 갱신 (결과 무관).
+  // 제출 시 국세청 재검증을 실제 수행한 경우에만 기록(결과 무관). 미검증(startDate 없음=PENDING)이면 null.
+  // (verify 엔드포인트는 stateless라 이 컬럼을 쓰지 않는다.)
 businessState       BusinessState?      @map("business_state")
   // 국세청 상태조회 결과(ACTIVE/CLOSED/SUSPENDED). 진위 통과(VERIFIED) 시 기록. MISMATCH/ERROR는 null.
 
@@ -223,14 +224,14 @@ export enum BusinessState {
 
 verify 게이트가 stateless이므로, 진위확인 결과의 **영구 기록은 공방 등록 제출 시점에 서버가 수행**한다. 기존 store 생성 유스케이스(`BusinessDocument` 생성 구간)에 다음을 추가한다:
 
-1. BusinessDocument 생성 직전, `NtsService`로 **국세청 1회 재검증**(`validate` + 필요 시 `status`). 입력은 제출 바디의 `businessNumber`/`ownerName`/`startDate`.
-2. 결과를 BusinessDocument 생성 데이터에 포함해 저장:
-   - `verificationCheckedAt = now()` (항상)
-   - VERIFIED 시: `verificationStatus = VERIFIED`, `verifiedAt = now()`, `businessState`
-   - MISMATCH/CLOSED/SUSPENDED 시: `verificationStatus`/`businessState`만, `verifiedAt = null`
-   - ERROR 시: `verificationStatus = ERROR` (best-effort 저장, 제출 자체는 막지 않음 — 관리자 심사에서 재확인)
+1. BusinessDocument 생성 직전, `startDate`가 있으면 `NtsService`로 **국세청 1회 재검증**(`validate` + `b_stt` 없으면 `status`). 입력은 제출 바디의 `businessNumber`/`ownerName`/`startDate`. **`startDate`가 없으면 재검증을 생략**하고 PENDING으로 저장한다.
+2. 결과를 BusinessDocument 생성 데이터에 포함해 저장(직교 설계·fail-closed 정책 반영):
+   - `verificationCheckedAt`: **재검증을 실제 수행한 경우에만 `now()`. 미검증(`startDate` 없음 → PENDING)이면 `null`.**
+   - 진위 통과(`valid='01'`) → `verificationStatus = VERIFIED`, `verifiedAt = now()`, `businessState`(ACTIVE/CLOSED/SUSPENDED). **폐업·휴업도 진위는 통과이므로 VERIFIED + `verifiedAt` 기록**(직교 설계). 등록 가능 여부는 `businessState===ACTIVE` 파생 판단.
+   - 불일치(`valid='02'`) → `verificationStatus = MISMATCH`, `verifiedAt = null`, `businessState = null`.
+   - ERROR(빈 응답·예상 못한 `valid`·`b_stt` 미상·API 장애) → `verificationStatus = ERROR`, `verifiedAt = null`, `businessState = null`. fail-closed — 영업상태를 확신 못 하면 승인 안 함. best-effort 저장, 제출 자체는 막지 않음.
    - `ntsRaw`에 국세청 원본 응답 저장(신규 컬럼)
-3. **정책 결정 필요(Open decision)**: 제출 시 재검증이 MISMATCH/CLOSED면 제출을 거부(4xx)할지, 일단 저장하고 관리자 심사로 넘길지. 기본은 **저장 후 심사 위임**(동기 게이트에서 이미 1차 차단했으므로). verify 게이트를 우회한 직접 제출 방어용으로 ERROR가 아닌 한 기록만 남기고 통과시킨다.
+3. **정책 결정 필요(Open decision)**: 제출 시 재검증이 MISMATCH거나 `businessState`가 ACTIVE 아님(CLOSED/SUSPENDED)이면 제출을 거부(4xx)할지, 일단 저장하고 관리자 심사로 넘길지. 기본은 **저장 후 심사 위임**(동기 게이트에서 이미 1차 차단했으므로). verify 게이트를 우회한 직접 제출 방어용으로 기록만 남기고 통과시킨다.
 
 > **국세청 호출 2회**(1단계 게이트 + 제출 시 재검증)가 발생한다. 공공데이터포털 API 무료·일일한도 내라 부담은 작다. 재검증을 생략하고 게이트 결과를 신뢰하려면 프론트가 결과를 동봉해야 하는데, 이는 신뢰경계 위반이라 채택하지 않는다.
 
@@ -432,6 +433,10 @@ http.post('/api/v1/partner/business-documents/verify', () =>
 - 2026-06-10: `b_stt` 포함 여부에 따라 1회/2회 호출 런타임 분기. 실 스펙 확인 전까지 양 경로 모두 구현.
 - 2026-06-10: 기능명세 DB 및 API명세 DB 매칭 없음 확인 → 확정 설계 메모리(`business-verification-design.md`)가 SSOT임을 명시.
 - 2026-06-10: `AuthGuard`만 적용 (PartnerGuard 없음). 공방 등록 1단계 = Partner 레코드 미존재 가능.
+- 2026-06-11: **검증 게이트 fail-closed 확정 (리뷰 반영).** 초기 구현은 fail-open이었음 — (a) `valid`가 '02'만 아니면 통과, (b) b_stt 없음/매핑 외 값이면 ACTIVE로 승인. 폐업·휴업을 정상 승인할 위험이 있어 다음으로 변경: `valid`는 '01'만 통과·'02'만 MISMATCH·그 외(빈 응답 포함) ERROR; b_stt는 빈 응답·매핑 외 값이면 ERROR(NTS_ERROR). 영업상태를 확신 못 하면 승인하지 않는다. `NtsValidateItem.valid` 타입도 `'01'|'02'`→`string`(외부 원시값, 방어코드 유효화). 제출 핸들러도 동일 적용. 코드: `resolveVerification`, `VerifyBusinessDocumentUseCase.execute`, `prisma-create-store.command`.
+- 2026-06-11: **`verificationCheckedAt`는 검증 실제 수행 시에만 기록(리뷰 반영).** startDate 없어 국세청 미호출(PENDING)이면 `verificationCheckedAt=null`. (기존 "항상 now()"는 미검증 데이터에 확인 시각이 찍히는 모순.)
+- 2026-06-11: **verify 요청 `startDate`를 `businessStartDateSchema`로 통일(리뷰 반영).** 자체 regex(`/^\d{8}$/`)는 20260230 같은 비존재 날짜를 통과시킴 → 제출 스키마와 동일한 실날짜 검증 SSOT 재사용.
+- 2026-06-11: **rate limit은 이 PR 범위 외 유지.** 리뷰에서 사용자별 rate limit 지적이 있었으나 plan Out 범위에 "재시도 횟수 제한(rate limiting) — 별도 백로그"로 이미 명시. 프로젝트에 throttler 의존성 부재. 별도 백로그로 처리.
 - 2026-06-11: **국세청 API 키 발급 완료**, 실 API 호출 테스트 정상. 통합 테스트 가능 상태.
 - 2026-06-11: **`NTS_API_KEY`는 env 스키마에서 `optional()` 유지 확정.** 바로 위 `GOOGLE_VISION_*`(OCR) 키와 동일하게 "외부 API 키 = env optional + 사용 지점 검증" 컨벤션을 따른다. required로 좁히면 키 미보유 환경(타 개발자·CI) 부팅 차단 + 형제 키와 불일치. 초기 plan의 `z.string()`(required) 표기를 정정. (리뷰 DRIFT-2 해소: 코드가 컨벤션에 맞고 plan이 틀렸던 케이스.)
 - 2026-06-11: **VERIFIED 재정의 + 직교 설계 확정.** 초기 설계는 "VERIFIED = 진위 통과 + ACTIVE"로 묶어, 폐업·휴업을 `verificationStatus=MISMATCH`로 매핑했음 → `MISMATCH + businessState=CLOSED`라는 모순값 발생(MISMATCH는 valid==02 전용인데 폐업은 valid==01). 해소: `verificationStatus`(진위 일치 여부)와 `businessState`(영업 상태)를 **직교 축**으로 분리. 폐업·휴업 = `VERIFIED` + `businessState=CLOSED/SUSPENDED` + message로 차단. "등록 가능"은 저장값이 아니라 파생 판단(`VERIFIED && ACTIVE`). enum 추가·마이그레이션 불필요(기존 4값 유지). businessState를 verificationStatus에 흡수(A안)하면 두 컬럼이 중복되므로 기각. 코드: [verify-business-document.use-case.ts](apps/api/src/modules/store/application/use-cases/verify-business-document.use-case.ts) `resolveVerification` CLOSED/SUSPENDED 분기 `MISMATCH→VERIFIED`.

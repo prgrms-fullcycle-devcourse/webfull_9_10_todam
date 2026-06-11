@@ -3,12 +3,13 @@ import { createApiEnv } from '@todam/config';
 
 /**
  * 국세청 진위확인 API 응답 내 사업자 항목.
- * valid: '01' = 일치, '02' = 불일치
+ * valid: '01' = 일치, '02' = 불일치 (그 외 예상 못한 값은 호출부에서 fail-closed 처리)
  * b_stt: '계속사업자' | '폐업자' | '휴업자' (포함 여부는 실 스펙에 따라 결정)
  */
 export interface NtsValidateItem {
     b_no: string;
-    valid: '01' | '02';
+    // 외부 API 원시값. '01'/'02' 외 값이 올 수 있어 string으로 받고 호출부에서 방어한다.
+    valid: string;
     valid_msg?: string;
     request_param?: Record<string, unknown>;
     /** 납세자 상태 — 진위확인 응답에 포함될 경우 상태조회 2차 호출 불필요 */
@@ -112,7 +113,7 @@ export class NtsService {
 
         return {
             status_code: data.status_code ?? '',
-            data: data.data ?? [],
+            data: Array.isArray(data.data) ? data.data : [],
             _raw: raw,
         };
     }
@@ -136,7 +137,7 @@ export class NtsService {
 
         return {
             status_code: data.status_code ?? '',
-            data: data.data ?? [],
+            data: Array.isArray(data.data) ? data.data : [],
             _raw: raw,
         };
     }
@@ -168,7 +169,13 @@ export class NtsService {
                 throw new NtsApiError(`국세청 API 오류 (${label}): HTTP ${response.status}`);
             }
 
-            return await response.json();
+            // HTTP 200이어도 본문이 JSON null·비객체이면 파싱 시 TypeError가 callNts 밖에서 터진다.
+            // 여기서 구조를 검증해 NtsApiError로 변환한다(호출부 catch가 ERROR로 처리하도록).
+            const json: unknown = await response.json();
+            if (json === null || typeof json !== 'object') {
+                throw new NtsApiError(`국세청 ${label} API 비정상 응답 구조`);
+            }
+            return json;
         } catch (error) {
             if (error instanceof NtsApiError) throw error;
 
