@@ -17,7 +17,9 @@ import {
     getStudioReviewStatus,
     ocrBusinessDocument,
     submitStudio,
+    verifyBusinessDocument,
 } from './api';
+import type { BusinessDocumentVerifyRequest } from '@todam/shared';
 import type { StudioRegistrationForm } from './model/types';
 
 const KEY = ['partner', 'onboarding'] as const;
@@ -58,6 +60,13 @@ export function useUploadBusinessDocument() {
 // 사업자등록증 OCR: 업로드된 documentUrl 로 필드 자동추출(필드별 nullable, 미추출은 null).
 export function useOcrBusinessDocument() {
     return useMutation({ mutationFn: (documentUrl: string) => ocrBusinessDocument(documentUrl) });
+}
+
+// 사업자등록증 진위확인(국세청 동기 게이트). 1단계 "다음" 클릭 시 호출.
+export function useVerifyBusinessDocument() {
+    return useMutation({
+        mutationFn: (body: BusinessDocumentVerifyRequest) => verifyBusinessDocument(body),
+    });
 }
 
 // 공방 등록 제출 = 초안 생성 → 이미지 presigned 업로드/확인 → 심사 제출 오케스트레이션.

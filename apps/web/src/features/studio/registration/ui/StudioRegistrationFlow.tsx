@@ -11,7 +11,11 @@ import { useModal, useToast } from '@/shared/model';
 import { ProgressBarWrapper } from '@/shared/ui';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { isAllValid, isDirty, isStepValid, useStudioRegistrationStore } from '../model/studio';
-import { usePartnerOnboarding, useSubmitStudioRegistration } from '../queries';
+import {
+    usePartnerOnboarding,
+    useSubmitStudioRegistration,
+    useVerifyBusinessDocument,
+} from '../queries';
 import { StoreRegistrationStep, STEP_TITLES, TOTAL_STEPS } from '../model/types';
 
 import { BusinessStep } from './BusinessStep';
@@ -39,6 +43,8 @@ export function StudioRegistrationFlow({ returnTo = '/my' }: StudioRegistrationF
 
     const submitMutation = useSubmitStudioRegistration();
     const submitting = submitMutation.isPending;
+    const verifyMutation = useVerifyBusinessDocument();
+    const verifying = verifyMutation.isPending;
     // 공방 등록 완료 후 승인된 파트너 여부에 따라 '홈으로' 목적지 분기
     const { data: onboarding } = usePartnerOnboarding(true);
     const isApprovedPartner = onboarding?.partnerStatus === PartnerStatus.APPROVED;
@@ -115,6 +121,44 @@ export function StudioRegistrationFlow({ returnTo = '/my' }: StudioRegistrationF
     const stepValid = isStepValid(form, step);
     const progress = ((step + 1) / TOTAL_STEPS) * 100;
 
+    // Business step "다음" = 국세청 진위확인 게이트. 통과(VERIFIED)만 next(). 그 외 message별 토스트 + 차단.
+    // (stepValid 와 별개: 폼이 valid 해도 verify 통과 전엔 next() 금지.)
+    const VERIFY_MESSAGE: Record<string, string> = {
+        MISMATCH: '정확한 사업자 정보를 입력해 주세요.',
+        BUSINESS_CLOSED: '폐업한 사업장은 등록할 수 없어요.',
+        BUSINESS_SUSPENDED: '휴업 중인 사업장입니다. 고객센터로 문의해주세요.',
+        NTS_ERROR: '진위확인에 실패했어요. 잠시 후 다시 시도해주세요.',
+    };
+
+    const handleBusinessNext = async () => {
+        if (verifying) return;
+        try {
+            const { message } = await verifyMutation.mutateAsync({
+                businessNumber: form.business.businessNumber.replace(/-/g, ''),
+                ownerName: form.business.ownerName,
+                startDate: form.business.startDate,
+            });
+            if (message === 'VERIFIED') {
+                next();
+                return;
+            }
+            push({ message: VERIFY_MESSAGE[message] ?? '진위확인에 실패했어요.' });
+        } catch (err) {
+            // 엔드포인트 자체 실패(400/401 등). MISMATCH 문구와 혼용 금지 → 일반 오류 안내.
+            push({
+                message:
+                    err instanceof ApiError
+                        ? err.message
+                        : '진위확인 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.',
+            });
+        }
+    };
+
+    const handleNext = () => {
+        if (step === StoreRegistrationStep.Business) void handleBusinessNext();
+        else next();
+    };
+
     const handleSubmit = async () => {
         if (!isAllValid(form) || submitting) return;
         try {
@@ -168,8 +212,12 @@ export function StudioRegistrationFlow({ returnTo = '/my' }: StudioRegistrationF
                         {submitting ? '신청 중...' : '신청하기'}
                     </Button>
                 ) : (
-                    <Button className="w-full" disabled={!stepValid} onClick={next}>
-                        다음
+                    <Button
+                        className="w-full"
+                        disabled={!stepValid || verifying}
+                        onClick={handleNext}
+                    >
+                        {verifying ? '진위확인 중...' : '다음'}
                     </Button>
                 )}
             </BottomBar>
