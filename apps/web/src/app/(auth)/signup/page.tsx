@@ -10,6 +10,7 @@ import { useToast, useSheet } from '@/shared/model';
 import { ApiError } from '@/shared/api';
 import { sendEmailCode, verifyEmailCode, signup } from '@/features/auth/signup/api';
 import { TermsAgreementSheet } from '@/features/auth/terms';
+import type { TermsAgreement } from '@/features/auth/terms';
 import { markOnboardingPending } from '@/features/onboarding';
 
 type Step = 'email' | 'code' | 'password';
@@ -42,17 +43,22 @@ export default function SignupPage() {
     const [passwordError, setPasswordError] = useState(false);
     const [secondsLeft, setSecondsLeft] = useState(VERIFY_SECONDS);
     const [pending, setPending] = useState(false);
+    // 약관 동의 게이트에서 받은 실제 동의값. signup 전송 시 사용.
+    const [termsAgreement, setTermsAgreement] = useState<TermsAgreement | null>(null);
 
     const emailValid = emailSchema.safeParse(email).success;
     const codeValid = verifyCodeSchema.safeParse(code).success;
     const passwordValid = passwordSchema.safeParse(password).success;
 
-    // 회원가입 진입 시 약관 동의 게이트. 동의값은 signupRequestSchema(shared, .strict) 미수용
-    // → 전송 안 하고 FE 진행 게이트로만 사용. 필수 미동의 닫기 시 로그인으로 복귀.
+    // 회원가입 진입 시 약관 동의 게이트.
+    // onConfirm에서 실제 동의값을 받아 저장 후 시트 닫음. 필수 미동의 닫기 시 로그인으로 복귀.
     useEffect(() => {
         openSheet(
             <TermsAgreementSheet
-                onConfirm={closeSheet}
+                onConfirm={(agreement) => {
+                    setTermsAgreement(agreement);
+                    closeSheet();
+                }}
                 onClose={() => {
                     closeSheet();
                     router.back();
@@ -125,7 +131,16 @@ export default function SignupPage() {
                 return;
             }
             try {
-                await signup({ email, password });
+                // 약관 동의 게이트를 통과했으면 termsAgreement가 non-null.
+                // 필수 3종(service→termsAgreed, privacy→privacyAgreed, location→locationAgreed)은
+                // TermsAgreementSheet requiredAllChecked 조건 통과 후 onConfirm이 호출되므로 true.
+                await signup({
+                    email,
+                    password,
+                    termsAgreed: termsAgreement?.service ?? true,
+                    privacyAgreed: termsAgreement?.privacy ?? true,
+                    locationAgreed: termsAgreement?.location ?? true,
+                });
                 // 회원가입 직후 첫 로그인에 온보딩 1회 노출(서버 저장 안 함).
                 markOnboardingPending();
                 toast('회원가입이 완료되었습니다. 로그인해주세요.');
