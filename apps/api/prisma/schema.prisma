@@ -628,6 +628,7 @@ enum PolicyType {
   PRIVACY_POLICY
   TERMS_OF_SERVICE
   MARKETING
+  LOCATION_BASED_SERVICE
 }
 
 enum ImageUploadStatus {

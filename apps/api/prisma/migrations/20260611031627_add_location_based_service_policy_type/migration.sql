@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "PolicyType" ADD VALUE 'LOCATION_BASED_SERVICE';
