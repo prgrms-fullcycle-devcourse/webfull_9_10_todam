@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { OAuthProvider as PrismaOAuthProvider, Prisma } from '@prisma/client';
+import {
+    OAuthProvider as PrismaOAuthProvider,
+    PolicyType as PrismaPolicyType,
+    Prisma,
+} from '@prisma/client';
+import { PolicyType } from '@todam/shared';
 import { PrismaService } from '../../../../database/prisma.service';
 import { OAuthProvider, User } from '../../domain/entities/user.entity';
 import {
@@ -58,6 +63,39 @@ export class PrismaUserRepository extends UserRepository {
             select: USER_SELECT,
         });
         return UserMapper.toDomain(row);
+    }
+
+    async createWithConsents(
+        input: CreateUserInput,
+        agreedPolicyTypes: PolicyType[],
+    ): Promise<User> {
+        return this.prisma.$transaction(async (tx) => {
+            const user = await tx.user.create({
+                data: {
+                    email: input.email,
+                    password: input.passwordHash,
+                    nickname: input.nickname,
+                    emailVerified: input.emailVerified,
+                },
+                select: USER_SELECT,
+            });
+
+            for (const policyType of agreedPolicyTypes) {
+                const version = await tx.policyVersion.findFirst({
+                    where: { policyType: policyType as PrismaPolicyType, isLatest: true },
+                    select: { id: true },
+                });
+                if (!version) {
+                    // 시드 누락 = 서버 설정 오류. 트랜잭션 롤백 후 500.
+                    throw new Error(`최신 약관 버전이 없습니다: ${policyType}`);
+                }
+                await tx.userConsent.create({
+                    data: { userId: user.id, policyVersionId: version.id, isAgreed: true },
+                });
+            }
+
+            return UserMapper.toDomain(user);
+        });
     }
 
     async linkOAuth(userId: string, provider: OAuthProvider, providerId: string): Promise<void> {
