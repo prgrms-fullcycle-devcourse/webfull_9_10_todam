@@ -660,11 +660,12 @@ export const handlers = [
         return ok(path, null, '리뷰가 성공적으로 삭제되었습니다.');
     }),
 
-    // ─── 내 프로필 조회 (GET /api/v1/users/me) ───────────────────────────────
+    // ─── 내 프로필 조회 (GET /users/me) ───────────────────────────────
     // contract: docs/exec-plans/active/마이페이지.md
+    // BE global prefix 없음 → 호출자(profile/api.ts) bare 경로와 정합.
     // 시뮬: ?unauth=1 → 401, ?simulate=404 → 404 USER_NOT_FOUND, ?simulate=500 → 500
-    http.get(`${API}/users/me`, ({ request }) => {
-        const path = '/api/v1/users/me';
+    http.get(`*/users/me`, ({ request }) => {
+        const path = '/users/me';
         const url = new URL(request.url);
 
         // notification-settings 경로가 먼저 매칭되도록 별도 핸들러로 분리.
@@ -698,11 +699,12 @@ export const handlers = [
         return ok(path, result, '프로필이 성공적으로 조회되었습니다.');
     }),
 
-    // ─── 내 프로필 수정 (PATCH /api/v1/users/me) ─────────────────────────────
+    // ─── 내 프로필 수정 (PATCH /users/me) ─────────────────────────────
     // contract: docs/exec-plans/active/마이페이지.md
+    // BE global prefix 없음 → 호출자(profile/api.ts) bare 경로와 정합.
     // 시뮬: ?unauth=1 → 401, ?simulate=409 → 409 NICKNAME_ALREADY_EXISTS, ?simulate=400 → 400 INVALID_REQUEST
-    http.patch(`${API}/users/me`, async ({ request }) => {
-        const path = '/api/v1/users/me';
+    http.patch(`*/users/me`, async ({ request }) => {
+        const path = '/users/me';
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
@@ -1000,7 +1002,7 @@ export const handlers = [
         return ok(path, result, '알림 설정이 성공적으로 수정되었습니다.');
     }),
 
-    // ─── 회원탈퇴 (DELETE /api/v1/users/me) ─────────────────────────────────
+    // ─── 회원탈퇴 (DELETE /users/me) ─────────────────────────────────
     // contract: docs/exec-plans/active/마이 - 회원탈퇴.md API Contract (스냅샷) 기준
     // 시뮬 토글:
     //   ?unauth=1 → 401 UNAUTHORIZED
@@ -1010,8 +1012,8 @@ export const handlers = [
     //   ?simulate=404 → 404 USER_NOT_FOUND
     //   ?simulate=500 → 500 INTERNAL_SERVER_ERROR
     //   정상 → 200 data:null
-    http.delete(`${API}/users/me`, ({ request }) => {
-        const path = '/api/v1/users/me';
+    http.delete(`*/users/me`, ({ request }) => {
+        const path = '/users/me';
         const url = new URL(request.url);
 
         if (url.searchParams.get('unauth') === '1') {
