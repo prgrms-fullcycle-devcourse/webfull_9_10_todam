@@ -820,6 +820,28 @@ describe('API route baseline', () => {
                 path: '/notifications/tokens/:fcmToken',
                 guards: ['AuthGuard'],
             },
+            // Phase 3a: 인앱 알림센터
+            {
+                controller: 'NotificationController',
+                handler: 'listNotifications',
+                method: 'GET',
+                path: '/notifications/',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'NotificationController',
+                handler: 'readAllNotificationsHandler',
+                method: 'PATCH',
+                path: '/notifications/read-all',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'NotificationController',
+                handler: 'readNotificationHandler',
+                method: 'PATCH',
+                path: '/notifications/:id/read',
+                guards: ['AuthGuard'],
+            },
         ]);
     });
 });
