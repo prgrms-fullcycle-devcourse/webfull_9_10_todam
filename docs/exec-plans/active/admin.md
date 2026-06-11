@@ -8,7 +8,7 @@
 
 ## Status
 
-- [ ] API 구현
+- [x] API 구현
 - [ ] UI 구현
 - [ ] API 연동
 
@@ -588,7 +588,7 @@ SUSPENDED → PUBLISHED (restore)
 
 ## Out (단계별 완료물)
 
-- API:
+- API (완료):
   - `packages/shared/src/contracts/admin.ts` — 모든 admin contract zod 스키마 SSOT
   - `apps/api/src/modules/admin/` — 모듈 전체 (guard, use-cases, controller, infrastructure)
   - `POST /admin/auth/login`, `GET /admin/stores`, `GET /admin/stores/:storeId`
@@ -646,7 +646,7 @@ SUSPENDED → PUBLISHED (restore)
 
 ## Outcome
 
-- Status: 미착수
+- Status: API 구현 완료
 - Follow-up:
   - Open decision 2·3 (타임슬롯 생성 범위) 해소 후 ApproveStoreUseCase 완결
   - Open decision 4 (`GET /admin/stores/:storeId` 상세 필드) 검토
