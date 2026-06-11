@@ -30,11 +30,11 @@ Phase별 완료가 아니라 기능 전체가 완료돼야 체크.
 - **Phase 2 FCM 연동(FE)** (#315, PR #324): firebase 초기화, getToken→토큰등록 호출, SW 백그라운드 수신/클릭, 포그라운드 토스트, 로그아웃 revoke 배선
   - Firebase 프로젝트(`todam-web`) + VAPID 발급 완료, `.env`(NEXT_PUBLIC_FIREBASE_*) 세팅 완료
 
-### BE 대기 (태성) — Phase 2 동작 선행조건
-1. `notificationSettings`에 `webPushEnabled` 컬럼 추가 + GET/PATCH `/users/me/notification-settings` 반영 (⚠️ FE와 동시 배포 — 필수 필드)
-2. `POST /notifications/tokens` (userId+fcmToken upsert)
-3. `DELETE /notifications/tokens/:fcmToken` (revokedAt 기록)
-   - contract: `packages/shared/src/contracts/notification.ts` (RegisterNotificationTokenBody/Response 등)
+### BE 완료 (태성) — Phase 2 구현 완료 (2026-06-11)
+1. `notificationSettings`에 `webPushEnabled` 컬럼 추가 + GET/PATCH `/users/me/notification-settings` 신설 완료
+2. `POST /notifications/tokens` (userId+fcmToken upsert) 완료
+3. `DELETE /notifications/tokens/:fcmToken` (revokedAt 기록) 완료
+   - 구현 상세: 아래 "Phase 2 API (BE)" 항목 참조
 
 ### 다음 시작점
 - **BE 1~3 완료 시** → PR #324 머지 + 실 연동 테스트 (임시 트리거 버튼으로 getToken→Firebase 콘솔 테스트 전송→수신 확인)
@@ -365,7 +365,31 @@ PATCH /notifications/read-all
   - `apps/web/src/features/auth/logout/useLogout.ts` — 로그아웃 시 revoke(best-effort)
   - `apps/web/.env.example` — NEXT_PUBLIC_FIREBASE_* 7키
   - 변경: 계획상 `useFcmToken`/`PushPermissionPrompt` 대신 `useEnablePush`/`PushMessageListener`로 구현
-- **Phase 2 API (BE, 태성) — 미구현**: `POST /notifications/tokens`, `DELETE /notifications/tokens/:fcmToken`, `notificationSettings.webPushEnabled` 컬럼+엔드포인트 반영, (Phase 3) FCM Admin SDK 발송 + BullMQ 워커
+- **Phase 2 API (BE, 태성) — 구현 완료 (2026-06-11, branch: feature/push-notification-phase2-be)**:
+  - **Prisma 마이그레이션**: `apps/api/prisma/migrations/20260611150000_add_web_push_enabled_and_notification_token/migration.sql`
+    - `notification_settings.web_push_enabled Boolean DEFAULT true` 추가
+    - `notification_tokens` 테이블 신설 (id/user_id/fcm_token/user_agent/created_at/revoked_at, unique(user_id, fcm_token))
+  - **Prisma schema**: `apps/api/prisma/schema.prisma` — `NotificationSetting.webPushEnabled` + `NotificationToken` 모델 추가
+  - **notification 모듈** (`apps/api/src/modules/notification/`):
+    - `domain/repositories/notification-token.repository.ts` — port (upsert/revoke)
+    - `infrastructure/persistence/prisma-notification-token.repository.ts` — Prisma 구현
+    - `application/use-cases/register-notification-token.use-case.ts` + `.spec.ts`
+    - `application/use-cases/revoke-notification-token.use-case.ts` + `.spec.ts`
+    - `presentation/controllers/notification.controller.ts` — `POST /notifications/tokens`, `DELETE /notifications/tokens/:fcmToken`
+    - `presentation/dto/notification-token.dto.ts` — createZodDto(shared contract 소비)
+    - `notification.module.ts`
+  - **user 모듈** (`apps/api/src/modules/user/`):
+    - `domain/repositories/notification-setting.repository.ts` — port (findOrCreateByUserId/upsertPatch)
+    - `infrastructure/persistence/prisma-notification-setting.repository.ts` — Prisma 구현(lazy-default, webPushEnabled 포함)
+    - `application/use-cases/get-notification-settings.use-case.ts` + `.spec.ts`
+    - `application/use-cases/patch-notification-settings.use-case.ts` + `.spec.ts`
+    - `presentation/controllers/user.controller.ts` — `GET /users/me/notification-settings`, `PATCH /users/me/notification-settings` 추가
+    - `presentation/dto/notification-settings.dto.ts` — createZodDto(shared contract 소비)
+    - `user.module.ts` — NotificationSettingRepository DI 추가
+  - **app.module.ts**: `NotificationModule` 등록
+  - **테스트**: 총 20개 케이스 통과 (token upsert/revoke, settings GET/PATCH, lazy-default, no-op, webPushEnabled 반영)
+  - **주의(prisma generate 필요)**: Windows Defender로 로컬 prisma CLI 실행 불가 → repository 구현에 `as PrismaAny` 임시 캐스팅 적용. CI/CD 또는 실보호 해제 후 `prisma generate` 실행 + `as PrismaAny` 제거 필요. store 모듈 기존 5개 typecheck 에러(VerificationStatus/BusinessState)도 같은 원인으로 pre-existing.
+  - **(Phase 3 이월)** FCM Admin SDK 발송 + BullMQ 워커 + NotificationDelivery 엔티티
 - **Phase 3 API**: `GET /notifications`, `PATCH /notifications/:id/read`, `PATCH /notifications/read-all`, 도메인 훅 연결 (U-1~U-15, P-1~P-9)
 - **Phase 3 UI**: 인앱 알림센터, Web Push 옵트아웃 토글 UI (webPushEnabled + artworkEnabled, [MVP 소거 후보] marketingEnabled)
 
