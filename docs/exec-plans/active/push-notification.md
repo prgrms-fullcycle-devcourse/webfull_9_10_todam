@@ -15,8 +15,35 @@ Phase별 완료가 아니라 기능 전체가 완료돼야 체크.
 -->
 
 - [ ] API 구현
-- [ ] UI 구현  <!-- Phase 1 PWA 기반 완료 (2026-06-11). Phase 2·3 미완료. -->
+- [ ] UI 구현  <!-- Phase 1 완료. Phase 2 FE 완료(BE 대기). Phase 3 미착수. -->
 - [ ] API 연동
+
+---
+
+## 진행 현황 (2026-06-11)
+
+### 완료 (dev 머지됨)
+- **Phase 1 PWA 기반** (#314, PR #323): manifest, SW 등록, iOS 설치 안내(useSheet 바텀시트)
+- **Phase 2 contract** (#315, PR #322): `packages/shared/src/contracts/notification.ts`, `NotificationChannel.WEB_PUSH`, `notificationSettings.webPushEnabled`
+
+### 진행 중 (PR 오픈)
+- **Phase 2 FCM 연동(FE)** (#315, PR #324): firebase 초기화, getToken→토큰등록 호출, SW 백그라운드 수신/클릭, 포그라운드 토스트, 로그아웃 revoke 배선
+  - Firebase 프로젝트(`todam-web`) + VAPID 발급 완료, `.env`(NEXT_PUBLIC_FIREBASE_*) 세팅 완료
+
+### BE 대기 (태성) — Phase 2 동작 선행조건
+1. `notificationSettings`에 `webPushEnabled` 컬럼 추가 + GET/PATCH `/users/me/notification-settings` 반영 (⚠️ FE와 동시 배포 — 필수 필드)
+2. `POST /notifications/tokens` (userId+fcmToken upsert)
+3. `DELETE /notifications/tokens/:fcmToken` (revokedAt 기록)
+   - contract: `packages/shared/src/contracts/notification.ts` (RegisterNotificationTokenBody/Response 등)
+
+### 다음 시작점
+- **BE 1~3 완료 시** → PR #324 머지 + 실 연동 테스트 (임시 트리거 버튼으로 getToken→Firebase 콘솔 테스트 전송→수신 확인)
+- **Phase 3 (#316)** → 인앱 알림센터(목록/읽음) + 설정 토글에 `useEnablePush()` 배선 + BE 상태전이 훅→큐→FCM Admin SDK 발송
+  - Phase 3 FE는 BE 발송과 독립적으로 UI 골격 선행 가능 (Open decision #1 DESIGN.md 토큰 확인 후)
+
+### 테스트 보류 사유
+- BE 토큰 API 미구현 + `useEnablePush()` 호출 트리거 버튼 없음(Phase 3 토글에서 연결 예정)
+- Web Push는 HTTPS 필수(localhost 예외). iOS는 추가로 PWA 설치 필요 → 배포 후 실기기 검증
 
 ---
 
@@ -26,11 +53,9 @@ Phase별 완료가 아니라 기능 전체가 완료돼야 체크.
 - 기능명세: docs/push-notification-policy.md (Notion 대신 이 문서가 SSOT)
 - API명세: 정책 문서 §7 데이터 모델 + 유즈케이스에서 추론 (Notion API명세 DB 미등록 — 아래 스냅샷이 계약 원본)
 - Relevant design docs: DESIGN.md — 인앱 알림센터 UI 작업 시 variant/토큰 확보 필요 (Open decisions 참고)
-- Open decisions:
-  1. **인앱 알림센터 UI 토큰**: DESIGN.md에서 알림 아이템 variant enum, 읽음/미읽음 상태 토큰 확보 필요. 미확보 시 구현 전 확인.
-  2. **P-5(단계 정체) N일 임계값**: BE와 확정 필요. 정책 §8에서 N일 미명시.
-  1. **P-5(단계 정체) N일 임계값**: BE와 확정 필요. 정책 §8에서 N일 미명시.
-  2. **webPushEnabled BE 추가 시점**: user 모듈 소유(태성)이므로 FE 설정 UI 구현 전 스키마 변경 + PATCH 엔드포인트 확장 완료 필요. 협업 싱크 필요.
+- Open decisions (잔여):
+  1. **인앱 알림센터 UI 토큰**: DESIGN.md에서 알림 아이템 variant enum, 읽음/미읽음 상태 토큰 확보 필요. Phase 3 시작 전 확인.
+  2. **P-5(단계 정체) N일 임계값**: BE와 확정 필요. 정책 §8에서 N일 미명시. [MVP 소거 후보]
 
 > **Resolved decisions (2026-06-11)**
 > - ~~Open decision #1 (NotificationPreference vs Settings 통합)~~: **기존 `/users/me/notification-settings`로 통합**. 별도 NotificationPreference 엔티티 신설하지 않음. `/notifications/preferences` 엔드포인트 폐기.
@@ -325,8 +350,22 @@ PATCH /notifications/read-all
   - `apps/web/src/features/notification/ui/IosInstallBanner.tsx` — iOS Safari + 미설치 감지 → 홈화면 추가 수동 가이드 배너
   - `apps/web/src/features/notification/ui/index.ts`, `apps/web/src/features/notification/index.ts` — exports
   - `apps/web/src/app/layout.tsx` — metadata.manifest, appleWebApp, viewport.themeColor 추가 + ServiceWorkerRegistrar·IosInstallBanner 마운트
-- **Phase 2 API**: `POST /notifications/tokens`, `DELETE /notifications/tokens/:token`, FCM Admin SDK 발송 파이프라인, BullMQ 워커 기본, `notificationSettings.webPushEnabled` 필드 추가 (user 모듈)
-- **Phase 2 UI**: `useFcmToken` 훅, `PushPermissionPrompt`, firebase.ts 초기화
+- **Phase 2 contract** (2026-06-11 완료, PR #322):
+  - `packages/shared/src/contracts/notification.ts` — NotificationToken/Notification/NotificationDelivery + 토큰등록/revoke/목록/읽음 스키마
+  - `packages/shared/src/enums/notification-channel.ts` — `WEB_PUSH` 추가
+  - `packages/shared/src/contracts/user-me.ts` — `notificationSettings.webPushEnabled` (응답 + BE all-fields PATCH)
+  - MSW mock(`apps/web/src/mocks/handlers.ts`) webPushEnabled 반영
+- **Phase 2 UI/FE** (2026-06-11 완료, PR #324):
+  - `apps/web/src/features/notification/model/firebase.ts` — FCM 초기화(지원환경 가드)
+  - `apps/web/src/features/notification/api.ts` — registerNotificationToken(POST)/revokeNotificationToken(DELETE)
+  - `apps/web/src/features/notification/model/usePush.ts` — `useEnablePush()`(gesture 트리거) + `silentReregisterPush()`
+  - `apps/web/src/features/notification/model/pushToken.ts` — 토큰 로컬 보관(revoke 대상)
+  - `apps/web/src/features/notification/ui/PushMessageListener.tsx` — 포그라운드 onMessage→토스트 + silent 재등록
+  - `apps/web/public/firebase-messaging-sw.js` — onBackgroundMessage + notificationclick deepLink (config 하드코딩, 공개값)
+  - `apps/web/src/features/auth/logout/useLogout.ts` — 로그아웃 시 revoke(best-effort)
+  - `apps/web/.env.example` — NEXT_PUBLIC_FIREBASE_* 7키
+  - 변경: 계획상 `useFcmToken`/`PushPermissionPrompt` 대신 `useEnablePush`/`PushMessageListener`로 구현
+- **Phase 2 API (BE, 태성) — 미구현**: `POST /notifications/tokens`, `DELETE /notifications/tokens/:fcmToken`, `notificationSettings.webPushEnabled` 컬럼+엔드포인트 반영, (Phase 3) FCM Admin SDK 발송 + BullMQ 워커
 - **Phase 3 API**: `GET /notifications`, `PATCH /notifications/:id/read`, `PATCH /notifications/read-all`, 도메인 훅 연결 (U-1~U-15, P-1~P-9)
 - **Phase 3 UI**: 인앱 알림센터, Web Push 옵트아웃 토글 UI (webPushEnabled + artworkEnabled, [MVP 소거 후보] marketingEnabled)
 
@@ -374,14 +413,17 @@ PATCH /notifications/read-all
 - 2026-06-11: **NotificationPreference 별도 엔티티 신설 안 함**. 기존 `notificationSettings`(user 모듈, `/users/me/notification-settings`)로 통합. `/notifications/preferences` 엔드포인트 폐기.
 - 2026-06-11: **`notificationSettings`에 `webPushEnabled` 필드 추가**. 소유: user 모듈(태성). `packages/shared/src/contracts/user-me.ts:59` `notificationSettingsSchema` 변경 대상.
 - 2026-06-11: quiet hours, P-5 단계 정체, marketingEnabled Web Push — 풀스펙 plan 유지, [MVP 소거 후보] 태깅
-- 2026-06-11 (미해결): Open decision #1 (DESIGN.md 알림 UI 토큰), #2 (P-5 N일 임계값), #3 (next-pwa 도입 여부), #4 (webPushEnabled BE 추가 시점 싱크)
+- 2026-06-11: next-pwa 미도입 확정 (firebase SW scope 충돌 회피)
+- 2026-06-11: Phase 1 PWA dev 머지(#314/PR #323), Phase 2 contract dev 머지(#315/PR #322), Phase 2 FE PR #324 오픈
+- 2026-06-11: Phase 2 FE는 `useEnablePush`/`PushMessageListener`로 구현(계획상 `useFcmToken`/`PushPermissionPrompt` 대체). SW config 하드코딩(env 미접근 정적파일 제약)
+- 2026-06-11 (미해결): Open decision #1 (DESIGN.md 알림 UI 토큰) — Phase 3 선행, #2 (P-5 N일 임계값) — [MVP 소거 후보]
 
 ---
 
 ## Outcome
 
-- Status: 계획 갱신 완료 (2026-06-11). Open decisions #1·#2·#3·#4 해결 후 Phase 1 시작 가능.
+- Status (2026-06-11): Phase 1 완료(dev), Phase 2 contract 완료(dev), Phase 2 FE 완료(PR #324 오픈, BE 대기). Phase 3 미착수.
 - Follow-up:
-  - 태성: `user-me.ts` `notificationSettingsSchema`에 `webPushEnabled` 추가 → Phase 2 BE 우선 작업
-  - FE: DESIGN.md 알림 UI 토큰 확보 (Open decision #1) → Phase 3 UI 시작 조건
+  - **태성(BE) 우선**: `POST/DELETE /notifications/tokens` + `notificationSettings.webPushEnabled` 컬럼/엔드포인트 → Phase 2 동작 잠금 해제
+  - **FE**: BE 토큰 API 완료 시 PR #324 머지 + 실 연동 테스트 / Phase 3 알림센터·설정토글(useEnablePush 배선)은 DESIGN.md 토큰(Open decision #1) 확인 후 착수
   - P-5 N일 임계값 BE 결정 후 [MVP 소거 후보] 태그 해제 또는 MVP 제외 확정
