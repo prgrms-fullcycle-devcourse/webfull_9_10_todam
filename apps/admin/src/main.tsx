@@ -4,8 +4,23 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 
 import { router } from './app/router';
+import {
+    connectAdminAuthTokenGetter,
+    useAdminAuthStore,
+} from './features/auth/model/adminAuthStore';
+import { ApiError, setApiErrorHandler } from './shared/api';
 
 import './index.css';
+
+// auth-token getter를 스토어와 연결 → adminApiFetch가 Bearer 자동 주입.
+connectAdminAuthTokenGetter();
+
+// 401 만료 시 인증 해제 → RequireAuth가 /login으로 리다이렉트.
+setApiErrorHandler((error: ApiError) => {
+    if (error.statusCode === 401) {
+        useAdminAuthStore.getState().clearAuth();
+    }
+});
 
 const queryClient = new QueryClient({
     defaultOptions: {

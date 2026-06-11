@@ -60,6 +60,9 @@ function controllers(): ControllerClass[] {
     const { AdminController } = jest.requireActual<
         typeof import('./admin/presentation/controllers/admin.controller')
     >('./admin/presentation/controllers/admin.controller');
+    const { NotificationController } = jest.requireActual<
+        typeof import('./notification/presentation/controllers/notification.controller')
+    >('./notification/presentation/controllers/notification.controller');
 
     return [
         AuthController,
@@ -74,6 +77,7 @@ function controllers(): ControllerClass[] {
         UserController,
         ReviewController,
         AdminController,
+        NotificationController,
     ];
 }
 
@@ -705,6 +709,20 @@ describe('API route baseline', () => {
                 guards: ['AuthGuard'],
             },
             {
+                controller: 'UserController',
+                handler: 'getNotificationSettingsHandler',
+                method: 'GET',
+                path: '/users/me/notification-settings',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'UserController',
+                handler: 'patchNotificationSettingsHandler',
+                method: 'PATCH',
+                path: '/users/me/notification-settings',
+                guards: ['AuthGuard'],
+            },
+            {
                 controller: 'ReviewController',
                 handler: 'createReviewHandler',
                 method: 'POST',
@@ -787,6 +805,20 @@ describe('API route baseline', () => {
                 method: 'PATCH',
                 path: '/admin/stores/:storeId/restore',
                 guards: ['AdminGuard'],
+            },
+            {
+                controller: 'NotificationController',
+                handler: 'registerNotificationToken',
+                method: 'POST',
+                path: '/notifications/tokens',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'NotificationController',
+                handler: 'revokeNotificationToken',
+                method: 'DELETE',
+                path: '/notifications/tokens/:fcmToken',
+                guards: ['AuthGuard'],
             },
         ]);
     });

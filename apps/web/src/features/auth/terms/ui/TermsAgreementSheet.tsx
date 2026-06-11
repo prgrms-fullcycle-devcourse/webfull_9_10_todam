@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { FormBottomSheet, CheckboxInput } from '@todam/ui';
 
+import { useLatestPolicies } from '../queries';
 import { TERMS } from '../model/termsContent';
 import type { TermsAgreement, TermsKey } from '../model/termsContent';
 
@@ -22,6 +23,9 @@ export type TermsAgreementSheetProps = {
 
 export function TermsAgreementSheet({ onConfirm, onClose }: TermsAgreementSheetProps) {
     const [agreement, setAgreement] = useState<TermsAgreement>(INITIAL_AGREEMENT);
+
+    // GET /policies/latest — 최신 약관 URL 조회. 빈 배열(시드 없음)·에러 시 urlMap이 빈 객체.
+    const { urlMap } = useLatestPolicies();
 
     const requiredAllChecked = useMemo(
         () => TERMS.filter((term) => term.required).every((term) => agreement[term.key]),
@@ -74,14 +78,16 @@ export function TermsAgreementSheet({ onConfirm, onClose }: TermsAgreementSheetP
                                 checked={agreement[term.key]}
                                 onCheckedChange={(checked) => handleToggle(term.key, checked)}
                                 action={
-                                    <a
-                                        href={term.notionUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="shrink-0 text-sm text-foreground-tertiary underline"
-                                    >
-                                        보기
-                                    </a>
+                                    urlMap[term.key] ? (
+                                        <a
+                                            href={urlMap[term.key]}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="shrink-0 text-sm text-foreground-tertiary underline"
+                                        >
+                                            보기
+                                        </a>
+                                    ) : undefined
                                 }
                             />
                         </li>
