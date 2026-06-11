@@ -60,7 +60,8 @@ verifiedAt          DateTime?           @map("verified_at") @db.Timestamptz(6)
   // 진위확인 VERIFIED 통과 시에만 기록. MISMATCH/ERROR는 null.
   // 기존 schema.prisma에 verifiedAt이 있으나 의미 미확정 상태였음 → 이 plan에서 "VERIFIED 통과 시각"으로 확정.
 verificationCheckedAt DateTime?         @map("verification_checked_at") @db.Timestamptz(6)
-  // verify 엔드포인트 매 호출 시 갱신 (결과 무관).
+  // 제출 시 국세청 재검증을 실제 수행한 경우에만 기록(결과 무관). 미검증(startDate 없음=PENDING)이면 null.
+  // (verify 엔드포인트는 stateless라 이 컬럼을 쓰지 않는다.)
 businessState       BusinessState?      @map("business_state")
   // 국세청 상태조회 결과(ACTIVE/CLOSED/SUSPENDED). 진위 통과(VERIFIED) 시 기록. MISMATCH/ERROR는 null.
 
@@ -223,14 +224,14 @@ export enum BusinessState {
 
 verify 게이트가 stateless이므로, 진위확인 결과의 **영구 기록은 공방 등록 제출 시점에 서버가 수행**한다. 기존 store 생성 유스케이스(`BusinessDocument` 생성 구간)에 다음을 추가한다:
 
-1. BusinessDocument 생성 직전, `NtsService`로 **국세청 1회 재검증**(`validate` + 필요 시 `status`). 입력은 제출 바디의 `businessNumber`/`ownerName`/`startDate`.
-2. 결과를 BusinessDocument 생성 데이터에 포함해 저장:
-   - `verificationCheckedAt = now()` (항상)
-   - VERIFIED 시: `verificationStatus = VERIFIED`, `verifiedAt = now()`, `businessState`
-   - MISMATCH/CLOSED/SUSPENDED 시: `verificationStatus`/`businessState`만, `verifiedAt = null`
-   - ERROR 시: `verificationStatus = ERROR` (best-effort 저장, 제출 자체는 막지 않음 — 관리자 심사에서 재확인)
+1. BusinessDocument 생성 직전, `startDate`가 있으면 `NtsService`로 **국세청 1회 재검증**(`validate` + `b_stt` 없으면 `status`). 입력은 제출 바디의 `businessNumber`/`ownerName`/`startDate`. **`startDate`가 없으면 재검증을 생략**하고 PENDING으로 저장한다.
+2. 결과를 BusinessDocument 생성 데이터에 포함해 저장(직교 설계·fail-closed 정책 반영):
+   - `verificationCheckedAt`: **재검증을 실제 수행한 경우에만 `now()`. 미검증(`startDate` 없음 → PENDING)이면 `null`.**
+   - 진위 통과(`valid='01'`) → `verificationStatus = VERIFIED`, `verifiedAt = now()`, `businessState`(ACTIVE/CLOSED/SUSPENDED). **폐업·휴업도 진위는 통과이므로 VERIFIED + `verifiedAt` 기록**(직교 설계). 등록 가능 여부는 `businessState===ACTIVE` 파생 판단.
+   - 불일치(`valid='02'`) → `verificationStatus = MISMATCH`, `verifiedAt = null`, `businessState = null`.
+   - ERROR(빈 응답·예상 못한 `valid`·`b_stt` 미상·API 장애) → `verificationStatus = ERROR`, `verifiedAt = null`, `businessState = null`. fail-closed — 영업상태를 확신 못 하면 승인 안 함. best-effort 저장, 제출 자체는 막지 않음.
    - `ntsRaw`에 국세청 원본 응답 저장(신규 컬럼)
-3. **정책 결정 필요(Open decision)**: 제출 시 재검증이 MISMATCH/CLOSED면 제출을 거부(4xx)할지, 일단 저장하고 관리자 심사로 넘길지. 기본은 **저장 후 심사 위임**(동기 게이트에서 이미 1차 차단했으므로). verify 게이트를 우회한 직접 제출 방어용으로 ERROR가 아닌 한 기록만 남기고 통과시킨다.
+3. **정책 결정 필요(Open decision)**: 제출 시 재검증이 MISMATCH거나 `businessState`가 ACTIVE 아님(CLOSED/SUSPENDED)이면 제출을 거부(4xx)할지, 일단 저장하고 관리자 심사로 넘길지. 기본은 **저장 후 심사 위임**(동기 게이트에서 이미 1차 차단했으므로). verify 게이트를 우회한 직접 제출 방어용으로 기록만 남기고 통과시킨다.
 
 > **국세청 호출 2회**(1단계 게이트 + 제출 시 재검증)가 발생한다. 공공데이터포털 API 무료·일일한도 내라 부담은 작다. 재검증을 생략하고 게이트 결과를 신뢰하려면 프론트가 결과를 동봉해야 하는데, 이는 신뢰경계 위반이라 채택하지 않는다.
 
