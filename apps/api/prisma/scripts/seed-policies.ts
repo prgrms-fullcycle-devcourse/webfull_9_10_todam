@@ -21,9 +21,12 @@
 import { PrismaClient, PolicyType } from '@prisma/client';
 
 // TODO: ops(운영)이 실제 노션 링크 제공 후 아래 URL을 교체할 것.
-const PLACEHOLDER_URL_TERMS = 'https://notion.so/todam/terms-of-service-placeholder';
-const PLACEHOLDER_URL_PRIVACY = 'https://notion.so/todam/privacy-policy-placeholder';
-const PLACEHOLDER_URL_LOCATION = 'https://notion.so/todam/location-based-service-placeholder';
+const PLACEHOLDER_URL_TERMS =
+    'https://clean-crocus-36c.notion.site/37d2ee66b06c80e4af1ae8e2e1f077e3?pvs=74';
+const PLACEHOLDER_URL_PRIVACY =
+    'https://clean-crocus-36c.notion.site/37d2ee66b06c80498b42c5bf903e36e0';
+const PLACEHOLDER_URL_LOCATION =
+    'https://clean-crocus-36c.notion.site/37d2ee66b06c8032b5f8f4d7f6c72351?pvs=74';
 
 const EFFECTIVE_AT = new Date('2026-01-01T00:00:00.000Z');
 const VERSION = 'v1.0';
