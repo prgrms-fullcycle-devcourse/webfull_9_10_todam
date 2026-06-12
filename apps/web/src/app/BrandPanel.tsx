@@ -2,7 +2,7 @@ import { Logo } from '@todam/ui';
 import Link from 'next/link';
 import QRCode from 'qrcode';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://todam.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://todam.app';
 
 // QR 진입 출처 추적용 UTM (GA4에서 utm_source=qr 비율 확인).
 function qrUrl(path: string, campaign: string): string {
