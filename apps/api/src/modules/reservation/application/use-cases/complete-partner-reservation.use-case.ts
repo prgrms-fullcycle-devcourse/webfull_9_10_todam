@@ -2,7 +2,8 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ReservationStatus } from '@prisma/client';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { PartnerReservationRepository } from '../../domain/repositories/partner-reservation.repository';
-import { PartnerReservationPolicy } from '../../domain/services/partner-reservation-policy.service';
+// [TEMP] 체험일 미래 차단 임시 해제 동안 미사용 — 복구 시 import도 함께 복구.
+// import { PartnerReservationPolicy } from '../../domain/services/partner-reservation-policy.service';
 import type { PartnerReservationStatusResponseDto } from '../../presentation/dto/partner-reservation.dto';
 import { findPartnerReservationForAction } from './partner-reservation-action-access';
 
@@ -26,19 +27,20 @@ export class CompletePartnerReservationUseCase {
                 HttpStatus.CONFLICT,
             );
         }
-        if (
-            !PartnerReservationPolicy.canComplete(
-                reservation.status,
-                reservation.scheduledAt,
-                new Date(),
-            )
-        ) {
-            throw new BusinessException(
-                'EXPERIENCE_NOT_STARTED',
-                'Experience has not started.',
-                HttpStatus.BAD_REQUEST,
-            );
-        }
+        // [TEMP] 체험일 미래 차단 임시 해제 (테스트용). 복구 시 아래 블록 주석 해제.
+        // if (
+        //     !PartnerReservationPolicy.canComplete(
+        //         reservation.status,
+        //         reservation.scheduledAt,
+        //         new Date(),
+        //     )
+        // ) {
+        //     throw new BusinessException(
+        //         'EXPERIENCE_NOT_STARTED',
+        //         'Experience has not started.',
+        //         HttpStatus.BAD_REQUEST,
+        //     );
+        // }
 
         const updated = await this.reservations.complete(reservation);
 
