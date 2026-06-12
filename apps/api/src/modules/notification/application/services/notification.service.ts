@@ -77,7 +77,13 @@ export class NotificationService {
                 );
                 return;
             }
-            throw err;
+            // 인앱 알림 생성 실패도 원 비즈니스 결과(상태전이)를 덮어쓰면 안 됨(정책 §2: 발송 실패는
+            // 원 상태에 영향 없음). side-effect로 호출되므로 에러를 삼키고 로깅만 한다.
+            this.logger.error(
+                `createAndDispatch failed to create notification — idempotencyKey=${idempotencyKey}`,
+                err,
+            );
+            return;
         }
 
         // 2. 발송 job enqueue
