@@ -39,6 +39,7 @@ import {
     type UserArtworkDetailRow,
 } from '../../domain/repositories/artwork.repository';
 import { ARTWORK_SEQUENCE, ArtworkPolicy } from '../../domain/services/artwork-policy.service';
+import { NotificationService } from '../../../notification/application/services/notification.service';
 
 const TERMINAL_RESERVATION_STATUSES = [
     ReservationStatus.SHIPPED,
@@ -146,6 +147,7 @@ export class PrismaArtworkRepository extends ArtworkRepository {
         private readonly prisma: PrismaService,
         private readonly ownership: StoreOwnershipService,
         private readonly s3: S3Service,
+        private readonly notificationService: NotificationService,
     ) {
         super();
     }
@@ -378,8 +380,13 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                     memo: dto.memo,
                 },
             });
-            await this.createNotification(tx, {
-                userId: row.reservation.userId,
+            return updated;
+        });
+
+        // 알림은 트랜잭션 커밋 이후 side-effect — 발송 실패가 작품 상태 롤백시키면 안 됨 (plan §2).
+        if (row.reservation.userId) {
+            await this.notificationService.createAndDispatch({
+                recipientId: row.reservation.userId,
                 artworkId,
                 reservationId: row.reservationId,
                 eventType: 'U-ARTWORK_STATUS',
@@ -387,9 +394,10 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                 title: 'Artwork update',
                 body: 'Your artwork status has been updated.',
                 deepLink: `/artworks/${artworkId}`,
+                idempotencyKey: `U-ARTWORK_STATUS:${artworkId}:${row.reservation.userId}`,
             });
-            return updated;
-        });
+        }
+
         return { artwork: { ...artwork, updatedAt: artwork.updatedAt.toISOString() } };
     }
 
@@ -455,8 +463,14 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                         toStatus: dto.toStatus as ArtworkStatus,
                     },
                 });
-                await this.createNotification(tx, {
-                    userId: row.reservation.userId,
+            }
+        });
+
+        // 알림은 트랜잭션 커밋 이후 side-effect — 발송 실패가 작품 상태 롤백시키면 안 됨 (plan §2).
+        for (const row of rows) {
+            if (row.reservation.userId) {
+                await this.notificationService.createAndDispatch({
+                    recipientId: row.reservation.userId,
                     artworkId: row.id,
                     reservationId: row.reservationId,
                     eventType: 'U-ARTWORK_STATUS',
@@ -464,9 +478,11 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                     title: 'Artwork update',
                     body: 'Your artwork status has been updated.',
                     deepLink: `/artworks/${row.id}`,
+                    idempotencyKey: `U-ARTWORK_STATUS:${row.id}:${row.reservation.userId}`,
                 });
             }
-        });
+        }
+
         return { updatedCount: rows.length, status: dto.toStatus };
     }
 
@@ -672,11 +688,17 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                 },
                 include: { delivery: true },
             });
-            await this.createNotification(tx, {
-                userId: row.reservation.userId,
+            return updated;
+        });
+
+        // 알림은 트랜잭션 커밋 이후 side-effect — 발송 실패가 작품 상태 롤백시키면 안 됨 (plan §2).
+        if (row.reservation.userId) {
+            const deliveryEventType = dto.action === 'SHIP' ? 'U-11' : 'U-DELIVERY_STATUS';
+            await this.notificationService.createAndDispatch({
+                recipientId: row.reservation.userId,
                 artworkId,
                 reservationId: row.reservationId,
-                eventType: dto.action === 'SHIP' ? 'U-11' : 'U-DELIVERY_STATUS',
+                eventType: deliveryEventType,
                 category: NotificationCategory.DELIVERY,
                 title: dto.action === 'SHIP' ? 'Shipping started' : 'Delivery update',
                 body:
@@ -684,9 +706,10 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                         ? 'Your artwork has been shipped.'
                         : 'Your artwork delivery status has been updated.',
                 deepLink: `/reservations/${row.reservationId}`,
+                idempotencyKey: `${deliveryEventType}:${row.reservationId}:${row.reservation.userId}`,
             });
-            return updated;
-        });
+        }
+
         return {
             reservation: {
                 id: reservation.id,
@@ -697,6 +720,10 @@ export class PrismaArtworkRepository extends ArtworkRepository {
             },
         };
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Private helpers
+    // ──────────────────────────────────────────────────────────────────────────
 
     // Includes differ by use case; ownership and existence are normalized here.
     private async findOwnedArtwork(
@@ -730,40 +757,6 @@ export class PrismaArtworkRepository extends ArtworkRepository {
         });
         if (!photo) throw this.error('PHOTO_NOT_FOUND', 'Photo not found.', HttpStatus.NOT_FOUND);
         return photo;
-    }
-
-    private async createNotification(
-        tx: Prisma.TransactionClient,
-        params: {
-            userId: string | null;
-            artworkId: string;
-            reservationId: string;
-            eventType: string;
-            category: NotificationCategory;
-            title: string;
-            body: string;
-            deepLink?: string;
-        },
-    ) {
-        if (!params.userId) return;
-        // idempotencyKey: eventType:artworkId:recipientId
-        const idempotencyKey = `${params.eventType}:${params.artworkId}:${params.userId}`;
-        // 멱등성 키 중복 시 silent skip (insert or do nothing 패턴)
-        await tx.notification.upsert({
-            where: { idempotencyKey },
-            create: {
-                userId: params.userId,
-                artworkId: params.artworkId,
-                reservationId: params.reservationId,
-                eventType: params.eventType,
-                category: params.category,
-                title: params.title,
-                body: params.body,
-                deepLink: params.deepLink,
-                idempotencyKey,
-            },
-            update: {},
-        });
     }
 
     private deliveryData(dto: UpdateArtworkDeliveryInfoRequest) {

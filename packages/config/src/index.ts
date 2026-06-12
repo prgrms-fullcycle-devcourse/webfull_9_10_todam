@@ -35,6 +35,9 @@ const apiSchema = z.object({
     GOOGLE_VISION_CLIENT_EMAIL: z.string().email().optional(),
     GOOGLE_VISION_PRIVATE_KEY: z.string().optional(),
     NTS_API_KEY: z.string().optional(),
+    // FCM Admin SDK 서비스 계정 키 (base64 encoded JSON). 없으면 init skip + 경고 로그.
+    // 인앱 레코드는 항상 생성되므로 폴백 정책 준수.
+    FIREBASE_SERVICE_ACCOUNT_BASE64: z.string().optional(),
 });
 
 // ─── Web 환경변수 스키마 ──────────────────────────────────

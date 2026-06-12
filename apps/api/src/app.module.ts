@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
+import { createApiEnv } from '@todam/config';
 import { DatabaseModule } from './database/database.module';
 import { AccessModule } from './common/access/access.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -22,6 +24,12 @@ import { NotificationModule } from './modules/notification/notification.module';
     imports: [
         DatabaseModule,
         AccessModule,
+        // BullMQ 전역 Redis 연결 — config(apiSchema)의 REDIS_URL 경유(기본값 포함).
+        BullModule.forRoot({
+            connection: {
+                url: createApiEnv().REDIS_URL,
+            },
+        }),
         RedisModule,
         AuthModule,
         HealthModule,

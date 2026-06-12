@@ -43,8 +43,30 @@ Phase별 완료가 아니라 기능 전체가 완료돼야 체크.
 - typecheck 0 에러, 전체 테스트 416개 통과
   - 구현 상세: 아래 "Phase 3a API (BE)" Out 항목 참조
 
+### BE 완료 (태성) — Phase 3b 구현 완료 (2026-06-11)
+- **config**: `packages/config/src/index.ts` `FIREBASE_SERVICE_ACCOUNT_BASE64: z.string().optional()` 추가
+- **FcmModule/FcmService** (`apps/api/src/modules/notification/infrastructure/fcm/`):
+  - firebase-admin v14 named export(initializeApp/getApps/cert/getMessaging) 사용
+  - 키 없으면 init skip + 경고 로그 (no-op 폴백)
+  - `sendToToken()`: 무효 토큰 코드(registration-token-not-registered 등) → `invalidToken:true` 반환
+- **BullMQ 큐 + 워커** (`apps/api/src/modules/notification/infrastructure/queue/`):
+  - `NotificationWorker (@Processor('notification'))`: webPushEnabled 확인 → 토큰 조회 → FCM 발송 → NotificationDelivery 기록 → 무효 토큰 revoke
+  - `app.module.ts`에 `BullModule.forRoot(connection: REDIS_URL)` 등록
+- **NotificationService** (`apps/api/src/modules/notification/application/services/notification.service.ts`):
+  - `createAndDispatch()`: Notification DB 생성 + job enqueue(attempts:3, backoff:exponential, jobId=notification:<idempotencyKey>)
+  - idempotencyKey unique 충돌(P2002) → 생성·enqueue skip (멱등)
+  - enqueue 실패는 삼킴 (인앱 레코드 유지 폴백)
+  - `NotificationModule`에서 export
+- **artwork 트리거 배선** (`prisma-artwork.repository.ts`):
+  - `createNotification(tx)` private 메서드 제거
+  - `updateStatus`, `bulkUpdateStatus`, `updateDelivery` 에서 트랜잭션 커밋 이후 `notificationService.createAndDispatch()` 호출
+  - `ArtworkModule`이 `NotificationModule` import 추가 (PrismaArtworkRepository DI)
+- **의존성**: `firebase-admin`, `@nestjs/bullmq`, `bullmq` 기설치 확인
+- **테스트**: typecheck 0 에러, 전체 테스트 454개 통과
+  - 신규 케이스: FcmService 6 + NotificationWorker 6 + NotificationService 5 + artwork 배선 2 = 19개
+
 ### 다음 시작점
-- **Phase 3b (#316)** → FCM Admin SDK 발송 + BullMQ 워커 + NotificationDelivery 기록 + 상태전이 훅 연결 (U-1~U-15, P-1~P-9)
+- **Phase 3b 미배선 트리거** → reservation/store/partner 도메인 = Phase 3c
 - **Phase 3 FE** → 인앱 알림센터 UI + Web Push 옵트아웃 토글 (DESIGN.md 토큰 확인 후)
 
 ### 테스트 보류 사유
@@ -423,7 +445,19 @@ PATCH /notifications/read-all
     - `notification.module.ts` — 신규 use-case 3종 + NotificationRepository DI 등록
   - `apps/api/src/modules/api-routes.snapshot.spec.ts` — 신규 3개 라우트 항목 추가
   - **테스트**: 총 416개 전체 통과 (신규 11케이스: getNotifications 6 + readNotification 3 + readAllNotifications 2)
-- **Phase 3b API**: FCM Admin SDK 발송 + BullMQ 워커 + NotificationDelivery 기록 + 상태전이 훅 연결 (U-1~U-15, P-1~P-9)
+- **Phase 3b API** (2026-06-11 완료, branch: feature/push-notification-phase3b-fcm):
+  - `packages/config/src/index.ts` — `FIREBASE_SERVICE_ACCOUNT_BASE64: z.string().optional()` 추가
+  - `apps/api/src/app.module.ts` — `BullModule.forRoot(connection: REDIS_URL)` 등록
+  - `apps/api/src/modules/notification/infrastructure/fcm/fcm.service.ts` — firebase-admin v14 named export, sendToToken, 무효 토큰 구분
+  - `apps/api/src/modules/notification/infrastructure/fcm/fcm.module.ts` — FcmService 모듈
+  - `apps/api/src/modules/notification/infrastructure/queue/notification-job.type.ts` — job payload 타입
+  - `apps/api/src/modules/notification/infrastructure/queue/notification.worker.ts` — BullMQ @Processor 워커
+  - `apps/api/src/modules/notification/application/services/notification.service.ts` — createAndDispatch (인앱+큐 통합)
+  - `apps/api/src/modules/notification/notification.module.ts` — FcmModule, BullMQ 큐, Worker, NotificationService 등록 + export
+  - `apps/api/src/modules/artwork/artwork.module.ts` — NotificationModule import 추가
+  - `apps/api/src/modules/artwork/infrastructure/persistence/prisma-artwork.repository.ts` — createNotification 제거, NotificationService.createAndDispatch(트랜잭션 후 side-effect) 배선
+  - 단위 테스트 19케이스 신규 (FcmService/Worker/Service/artwork 연동)
+  - 배포 메모: `FIREBASE_SERVICE_ACCOUNT_BASE64`는 EC2 `.env.api`에 주입 (base64 encoded service account JSON)
 - **Phase 3 UI**: 인앱 알림센터, Web Push 옵트아웃 토글 UI (webPushEnabled + artworkEnabled, [MVP 소거 후보] marketingEnabled)
 
 ---
