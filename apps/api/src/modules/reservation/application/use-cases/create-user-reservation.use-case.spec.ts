@@ -4,12 +4,23 @@ import { ReservationStatus } from '@prisma/client';
 // dto 입력 타입은 shared(zod) enum 기준 — 컨트롤러 ZodValidationPipe 와 동일 SSOT.
 import { ReservationDeliveryMethod } from '@todam/shared';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
+import { NotificationService } from '../../../notification/application/services/notification.service';
 import { CreateUserReservationUseCase } from './create-user-reservation.use-case';
+
+const PARTNER_USER_ID = 'partner-user-001';
+
+function makeNotificationService(): jest.Mocked<Pick<NotificationService, 'createAndDispatch'>> {
+    return { createAndDispatch: jest.fn().mockResolvedValue(undefined) };
+}
 
 describe('CreateUserReservationUseCase', () => {
     const createCustomer = jest.fn();
+    const notificationService = makeNotificationService();
 
-    const useCase = new CreateUserReservationUseCase({ createCustomer } as never);
+    const useCase = new CreateUserReservationUseCase(
+        { createCustomer } as never,
+        notificationService as unknown as NotificationService,
+    );
 
     const USER_ID = 'user-001';
     const dto = {
@@ -37,6 +48,7 @@ describe('CreateUserReservationUseCase', () => {
                 status: ReservationStatus.PENDING,
                 createdAt: new Date('2026-05-25T19:35:00.000Z'),
             },
+            partnerUserId: PARTNER_USER_ID,
         });
 
         const result = await useCase.execute(USER_ID, dto);
@@ -62,6 +74,7 @@ describe('CreateUserReservationUseCase', () => {
                 status: ReservationStatus.CONFIRMED,
                 createdAt: new Date('2026-05-25T19:36:00.000Z'),
             },
+            partnerUserId: null,
         });
 
         const result = await useCase.execute(USER_ID, dto);
@@ -161,6 +174,7 @@ describe('CreateUserReservationUseCase', () => {
                 status: ReservationStatus.PENDING,
                 createdAt: new Date('2026-05-25T19:35:00.000Z'),
             },
+            partnerUserId: PARTNER_USER_ID,
         });
 
         await useCase.execute(USER_ID, dto);
@@ -173,6 +187,55 @@ describe('CreateUserReservationUseCase', () => {
             participantCount: dto.participantCount,
             deliveryMethod: dto.deliveryMethod,
             requestMemo: dto.requestMemo,
+        });
+    });
+
+    // ── P-1 알림 배선 ──
+    describe('P-1 — 신규 PENDING 예약 시 파트너 알림', () => {
+        it('PENDING 예약 생성 + partnerUserId 있을 때 createAndDispatch가 P-1 eventType으로 호출된다', async () => {
+            notificationService.createAndDispatch.mockClear();
+            createCustomer.mockResolvedValue({
+                reservation: {
+                    id: 'res-p1',
+                    programId: 'prog-001',
+                    storeTimeSlotId: 'slot-001',
+                    reserverName: '김토담',
+                    participantCount: 2,
+                    status: ReservationStatus.PENDING,
+                    createdAt: new Date('2026-05-25T19:35:00.000Z'),
+                },
+                partnerUserId: PARTNER_USER_ID,
+            });
+
+            await useCase.execute(USER_ID, dto);
+
+            expect(notificationService.createAndDispatch).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    recipientId: PARTNER_USER_ID,
+                    eventType: 'P-1',
+                    idempotencyKey: `P-1:res-p1:${PARTNER_USER_ID}`,
+                }),
+            );
+        });
+
+        it('CONFIRMED 예약(autoConfirm) + partnerUserId=null 이면 createAndDispatch가 호출되지 않는다', async () => {
+            notificationService.createAndDispatch.mockClear();
+            createCustomer.mockResolvedValue({
+                reservation: {
+                    id: 'res-confirmed',
+                    programId: 'prog-001',
+                    storeTimeSlotId: 'slot-001',
+                    reserverName: '김토담',
+                    participantCount: 2,
+                    status: ReservationStatus.CONFIRMED,
+                    createdAt: new Date('2026-05-25T19:35:00.000Z'),
+                },
+                partnerUserId: null,
+            });
+
+            await useCase.execute(USER_ID, dto);
+
+            expect(notificationService.createAndDispatch).not.toHaveBeenCalled();
         });
     });
 });

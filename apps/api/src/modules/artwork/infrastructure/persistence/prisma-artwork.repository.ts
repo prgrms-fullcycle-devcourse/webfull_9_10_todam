@@ -693,21 +693,67 @@ export class PrismaArtworkRepository extends ArtworkRepository {
 
         // 알림은 트랜잭션 커밋 이후 side-effect — 발송 실패가 작품 상태 롤백시키면 안 됨 (plan §2).
         if (row.reservation.userId) {
-            const deliveryEventType = dto.action === 'SHIP' ? 'U-11' : 'U-DELIVERY_STATUS';
-            await this.notificationService.createAndDispatch({
-                recipientId: row.reservation.userId,
-                artworkId,
-                reservationId: row.reservationId,
-                eventType: deliveryEventType,
-                category: NotificationCategory.DELIVERY,
-                title: dto.action === 'SHIP' ? 'Shipping started' : 'Delivery update',
-                body:
-                    dto.action === 'SHIP'
-                        ? 'Your artwork has been shipped.'
-                        : 'Your artwork delivery status has been updated.',
-                deepLink: `/reservations/${row.reservationId}`,
-                idempotencyKey: `${deliveryEventType}:${row.reservationId}:${row.reservation.userId}`,
-            });
+            const recipientId = row.reservation.userId;
+
+            // 액션별 eventType·메시지 매핑 (contract §4 U-11~U-14)
+            type DeliveryNotif = {
+                eventType: string;
+                title: string;
+                body: string;
+            };
+            const deliveryNotifMap: Record<string, DeliveryNotif> = {
+                SHIP: {
+                    eventType: 'U-11',
+                    title: '작품 발송',
+                    body: `작품을 발송했어요. 운송장: ${reservation.delivery?.trackingNumber ?? ''}`,
+                },
+                PICKUP_READY: {
+                    eventType: 'U-12',
+                    title: '픽업 준비 완료',
+                    body: '작품 픽업이 준비됐어요. 방문해 주세요.',
+                },
+                DELIVERED: {
+                    eventType: 'U-13',
+                    title: '배송 완료',
+                    body: '작품이 배송 완료됐어요.',
+                },
+                PICKUP_DONE: {
+                    eventType: 'U-14',
+                    title: '픽업 완료',
+                    body: '픽업이 완료됐어요.',
+                },
+            };
+
+            const notif = deliveryNotifMap[dto.action];
+            if (notif) {
+                await this.notificationService.createAndDispatch({
+                    recipientId,
+                    artworkId,
+                    reservationId: row.reservationId,
+                    eventType: notif.eventType,
+                    category: NotificationCategory.DELIVERY,
+                    title: notif.title,
+                    body: notif.body,
+                    deepLink: `/reservations/${row.reservationId}`,
+                    idempotencyKey: `${notif.eventType}:${row.reservationId}:${recipientId}`,
+                });
+            }
+
+            // U-15 리뷰 요청: DELIVERED 또는 PICKUP_DONE 도달 시 함께 발송 (contract §4 U-15)
+            // eventType 다르므로 idempotencyKey 충돌 없음
+            if (dto.action === 'DELIVERED' || dto.action === 'PICKUP_DONE') {
+                await this.notificationService.createAndDispatch({
+                    recipientId,
+                    artworkId,
+                    reservationId: row.reservationId,
+                    eventType: 'U-15',
+                    category: NotificationCategory.ENGAGEMENT,
+                    title: '리뷰 작성',
+                    body: '체험은 어떠셨어요? 리뷰를 남겨주세요.',
+                    deepLink: `/reservations/${row.reservationId}/review`,
+                    idempotencyKey: `U-15:${row.reservationId}:${recipientId}`,
+                });
+            }
         }
 
         return {

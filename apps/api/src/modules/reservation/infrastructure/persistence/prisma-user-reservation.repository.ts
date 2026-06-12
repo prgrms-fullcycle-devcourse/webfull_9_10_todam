@@ -228,7 +228,11 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
                 });
             }
 
-            return { reservation };
+            return {
+                reservation,
+                // autoConfirm=false(PENDING) 일 때 파트너에게 P-1 알림을 발송하기 위해 전달
+                partnerUserId: autoConfirm ? null : program.store.partner.userId,
+            };
         });
     }
 
@@ -367,7 +371,12 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
                 scheduledAt: true,
                 participantCount: true,
                 storeTimeSlotId: true,
-                store: { select: { cancelDeadlineDays: true } },
+                store: {
+                    select: {
+                        cancelDeadlineDays: true,
+                        partner: { select: { userId: true } },
+                    },
+                },
                 artwork: { select: { id: true, status: true } },
             },
         });
@@ -385,6 +394,7 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
             cancelDeadlineDays: row.store.cancelDeadlineDays,
             artworkId: row.artwork?.id ?? null,
             artworkStatus: row.artwork?.status ?? null,
+            partnerUserId: row.store.partner.userId,
         };
     }
 

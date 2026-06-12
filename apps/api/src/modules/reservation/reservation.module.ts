@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { NotificationModule } from '../notification/notification.module';
 import { PartnerGuard } from '../../common/guards/partner.guard';
 import { CancelPartnerReservationUseCase } from './application/use-cases/cancel-partner-reservation.use-case';
 import { CancelUserReservationUseCase } from './application/use-cases/cancel-user-reservation.use-case';
@@ -24,7 +25,7 @@ import { PartnerReservationController } from './presentation/controllers/partner
 import { UserReservationController } from './presentation/controllers/user-reservation.controller';
 
 @Module({
-    imports: [AuthModule],
+    imports: [AuthModule, NotificationModule],
     controllers: [PartnerReservationController, UserReservationController],
     providers: [
         GetPartnerReservationCalendarUseCase,

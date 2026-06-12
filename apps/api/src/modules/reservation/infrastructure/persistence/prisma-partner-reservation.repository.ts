@@ -300,6 +300,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
             where: { id: reservationId },
             select: {
                 id: true,
+                userId: true,
                 storeId: true,
                 storeTimeSlotId: true,
                 status: true,
@@ -322,6 +323,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
             artwork: row.artwork,
             programTitle: row.program.title,
             partnerUserId: row.store.partner.userId,
+            customerUserId: row.userId,
         };
     }
 

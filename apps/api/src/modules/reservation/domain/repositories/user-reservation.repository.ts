@@ -25,6 +25,8 @@ export interface CreateCustomerReservationResult {
         status: ReservationStatus;
         createdAt: Date;
     };
+    /** 파트너 알림(P-1) 발송에 필요한 파트너 User id. autoConfirm=false(PENDING)인 경우 설정됨 */
+    partnerUserId: string | null;
 }
 
 /** GET /reservations/me 목록 조회용 행 */
@@ -58,6 +60,8 @@ export interface UserReservationCancelRow {
     cancelDeadlineDays: number | null;
     artworkId: string | null;
     artworkStatus: ArtworkStatus | null;
+    /** 파트너 알림(P-2) 발송에 필요한 파트너 User id */
+    partnerUserId: string;
 }
 
 /** PATCH /reservations/:reservationId/delivery 가드용 행 */
