@@ -345,7 +345,7 @@ export class ApproveStoreUseCase extends StoreActionUseCase {
                 category: NotificationCategory.OPERATION,
                 title: '공방 검수 승인',
                 body: '공방 검수가 승인됐어요. 운영을 시작하세요.',
-                deepLink: `/partner/center`,
+                deepLink: `/partner`,
                 idempotencyKey: `P-6:${storeId}:${partnerUserId}`,
             });
         }
@@ -383,7 +383,7 @@ export class RejectStoreUseCase extends StoreActionUseCase {
                 category: NotificationCategory.OPERATION,
                 title: '공방 검수 반려',
                 body: '공방 검수가 반려됐어요. 사유를 확인하세요.',
-                deepLink: `/partner/center`,
+                deepLink: `/partner`,
                 idempotencyKey: `P-7:${storeId}:${partnerUserId}`,
             });
         }
@@ -421,7 +421,7 @@ export class SuspendStoreUseCase extends StoreActionUseCase {
                 category: NotificationCategory.OPERATION,
                 title: '공방 노출 중단',
                 body: '공방 노출이 중단됐어요.',
-                deepLink: `/partner/center`,
+                deepLink: `/partner`,
                 idempotencyKey: `P-8:${storeId}:${partnerUserId}`,
             });
         }

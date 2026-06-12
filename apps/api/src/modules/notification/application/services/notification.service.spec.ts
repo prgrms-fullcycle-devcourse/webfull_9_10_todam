@@ -55,7 +55,7 @@ describe('NotificationService', () => {
             expect.objectContaining({ notificationId: NOTIFICATION_ID, recipientId: RECIPIENT_ID }),
             expect.objectContaining({
                 attempts: 3,
-                jobId: `notification:${IDEM_KEY}`,
+                jobId: `notification_${IDEM_KEY.replace(/:/g, '_')}`,
             }),
         );
     });
@@ -90,7 +90,7 @@ describe('NotificationService', () => {
         await expect(service.createAndDispatch(makeParams())).resolves.toBeUndefined();
     });
 
-    it('job enqueue jobId = notification:<idempotencyKey> (dedup)', async () => {
+    it('job enqueue jobId = notification_<idempotencyKey 콜론치환> (dedup)', async () => {
         const prisma = makePrisma({ id: NOTIFICATION_ID });
         const queue = makeQueue();
         const service = new NotificationService(prisma as never, queue as never);
@@ -99,7 +99,7 @@ describe('NotificationService', () => {
 
         const callArgs = queue.add.mock.calls[0] as unknown[];
         const options = callArgs[2] as { jobId: string };
-        expect(options.jobId).toBe(`notification:${IDEM_KEY}`);
+        expect(options.jobId).toBe(`notification_${IDEM_KEY.replace(/:/g, '_')}`);
     });
 
     it('backoff type=exponential, delay=2000', async () => {

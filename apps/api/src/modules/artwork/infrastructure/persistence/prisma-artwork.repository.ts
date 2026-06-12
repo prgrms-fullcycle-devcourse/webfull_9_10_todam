@@ -393,7 +393,7 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                 category: NotificationCategory.ARTWORK,
                 title: '작품 제작 단계 변경',
                 body: '작품 제작 단계가 업데이트됐어요.',
-                deepLink: `/artworks/${artworkId}`,
+                deepLink: `/my/artworks/${artworkId}`,
                 idempotencyKey: `U-ARTWORK_STATUS:${dto.status}:${artworkId}:${row.reservation.userId}`,
             });
         }
@@ -477,7 +477,7 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                     category: NotificationCategory.ARTWORK,
                     title: '작품 제작 단계 변경',
                     body: '작품 제작 단계가 업데이트됐어요.',
-                    deepLink: `/artworks/${row.id}`,
+                    deepLink: `/my/artworks/${row.id}`,
                     idempotencyKey: `U-ARTWORK_STATUS:${dto.toStatus}:${row.id}:${row.reservation.userId}`,
                 });
             }
@@ -734,7 +734,7 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                     category: NotificationCategory.DELIVERY,
                     title: notif.title,
                     body: notif.body,
-                    deepLink: `/reservations/${row.reservationId}`,
+                    deepLink: `/my/reservations/${row.reservationId}`,
                     idempotencyKey: `${notif.eventType}:${row.reservationId}:${recipientId}`,
                 });
             }
@@ -750,7 +750,7 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                     category: NotificationCategory.ENGAGEMENT,
                     title: '리뷰 작성',
                     body: '체험은 어떠셨어요? 리뷰를 남겨주세요.',
-                    deepLink: `/reservations/${row.reservationId}/review`,
+                    deepLink: `/my/reservations/${row.reservationId}/review`,
                     idempotencyKey: `U-15:${row.reservationId}:${recipientId}`,
                 });
             }
