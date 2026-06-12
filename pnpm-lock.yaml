@@ -287,6 +287,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@next/third-parties':
+        specifier: ^16.2.9
+        version: 16.2.9(next@16.2.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react@19.2.6)
       '@tanstack/react-query':
         specifier: ^5.100.14
         version: 5.100.14(react@19.2.6)
@@ -2010,6 +2013,12 @@ packages:
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
+
+  '@next/third-parties@16.2.9':
+    resolution: {integrity: sha512-JZPGQRN8eQs2WMfBXOf6Zjrma+JIN0KyA24MvmIa3bUI4BwTaJ1UlxmYVc5ri6l30LQ8fPv6Kmx20447hCltrg==}
+    peerDependencies:
+      next: ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0-beta.0
+      react: ^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0
 
   '@nodable/entities@2.1.0':
     resolution: {integrity: sha512-nyT7T3nbMyBI/lvr6L5TyWbFJAI9FTgVRakNoBqCD+PmID8DzFrrNdLLtHMwMszOtqZa8PAOV24ZqDnQrhQINA==}
@@ -6450,6 +6459,9 @@ packages:
   text-segmentation@1.0.3:
     resolution: {integrity: sha512-iOiPUo/BGnZ6+54OsWxZidGCsdU8YbE4PSpdPinp7DeMtUJNJBoJ/ouUSTJjHkh1KntHaltHl/gDs2FC4i5+Nw==}
 
+  third-party-capital@1.0.20:
+    resolution: {integrity: sha512-oB7yIimd8SuGptespDAZnNkzIz+NWaJCu2RMsbs4Wmp9zSDUM8Nhi3s2OOcqYuv3mN4hitXc8DVx+LyUmbUDiA==}
+
   tiny-invariant@1.3.3:
     resolution: {integrity: sha512-+FbBPE1o9QAYvviau/qC5SE3caw21q3xkvWKBtja5vgqOWIHHJ3ioaq1VPfn/Szqctz2bU/oYeKd9/z5BL+PVg==}
 
@@ -8892,6 +8904,12 @@ snapshots:
 
   '@next/swc-win32-x64-msvc@16.2.6':
     optional: true
+
+  '@next/third-parties@16.2.9(next@16.2.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react@19.2.6)':
+    dependencies:
+      next: 16.2.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      react: 19.2.6
+      third-party-capital: 1.0.20
 
   '@nodable/entities@2.1.0': {}
 
@@ -14007,6 +14025,8 @@ snapshots:
     dependencies:
       utrie: 1.0.2
     optional: true
+
+  third-party-capital@1.0.20: {}
 
   tiny-invariant@1.3.3: {}
 
