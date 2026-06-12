@@ -212,13 +212,6 @@ describe('API route baseline', () => {
                 guards: [],
             },
             {
-                controller: 'HealthController',
-                handler: 'checkS3',
-                method: 'GET',
-                path: '/health/s3',
-                guards: [],
-            },
-            {
                 controller: 'StoreController',
                 handler: 'listStores',
                 method: 'GET',
