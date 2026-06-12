@@ -5,6 +5,8 @@ const ALLOWED_PREFIXES = [
     '/api/v1/',
     '/auth/',
     '/partner/',
+    '/partners/',
+    '/policies/',
     '/stores', // 컬렉션(`/stores`, `/stores?...`) + 하위(`/stores/search/...`, `/stores/:slug`) 모두 허용
     '/programs', // 퍼블릭 클래스 상세(`/programs/:id`)·리뷰(`/programs/:id/reviews`)·슬롯(`/programs/:id/available-slots`)
     '/users/',
