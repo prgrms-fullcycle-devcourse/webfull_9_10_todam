@@ -12,11 +12,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             throw new Error('DATABASE_URL is required');
         }
 
+        // 로컬 docker postgres 는 SSL 미지원 → localhost 면 SSL 비활성(원격은 기존대로 강제).
+        const isLocal = /@(localhost|127\.0\.0\.1)[:/]/.test(databaseUrl);
         const adapter = new PrismaPg({
             connectionString: databaseUrl,
-            ssl: {
-                rejectUnauthorized: false,
-            },
+            ssl: isLocal ? false : { rejectUnauthorized: false },
         });
 
         super({ adapter });
