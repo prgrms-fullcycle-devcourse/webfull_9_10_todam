@@ -36,13 +36,7 @@ export function MyPageHub({
     const enablePush = useEnablePush();
     const { push: toast } = useToast();
 
-    const artworkEnabled = notifData?.notificationSettings.artworkEnabled ?? true;
-    const marketingEnabled = notifData?.notificationSettings.marketingEnabled ?? false;
     const webPushEnabled = notifData?.notificationSettings.webPushEnabled ?? false;
-
-    const handleToggle = (field: 'artworkEnabled' | 'marketingEnabled', value: boolean) => {
-        patchNotif.mutate({ [field]: value });
-    };
 
     // 푸시 알림 토글. ON = 브라우저 권한 요청 + 토큰 발급/등록(useEnablePush) 성공 시에만 서버 반영.
     // 권한 거부/미지원이면 토스트 안내 후 서버 patch 생략(토글은 서버값 유지 → 원복).
@@ -88,8 +82,8 @@ export function MyPageHub({
             <section className="flex flex-col gap-3">
                 <h2 className="text-lg font-semibold text-foreground">알림 설정</h2>
                 <div className="flex flex-col rounded-2xl bg-surface px-4 py-1 w-full">
-                    {/* 푸시 알림 토글 — ON 시 브라우저 권한+토큰 등록 */}
-                    <div className="flex items-center justify-between gap-3 py-3 border-b border-border-subtle">
+                    {/* 푸시 알림 토글 — ON 시 브라우저 권한+토큰 등록. 카테고리 분류·수신자는 서버가 처리 */}
+                    <div className="flex items-center justify-between gap-3 py-3">
                         <div className="flex flex-col gap-0.5">
                             <span className="text-xs font-semibold text-foreground">푸시 알림</span>
                             <span className="text-xs text-foreground-tertiary">
@@ -101,40 +95,6 @@ export function MyPageHub({
                             onCheckedChange={(v) => void handleWebPushToggle(v)}
                             disabled={patchNotif.isPending}
                             aria-label="푸시 알림"
-                        />
-                    </div>
-                    {/* 내 작품 소식 토글 */}
-                    <div className="flex items-center justify-between gap-3 py-3 border-b border-border-subtle">
-                        <div className="flex flex-col gap-0.5">
-                            <span className="text-xs font-semibold text-foreground">
-                                내 작품 소식
-                            </span>
-                            <span className="text-xs text-foreground-tertiary">
-                                제작 단계가 바뀌면 알려드려요
-                            </span>
-                        </div>
-                        <Toggle
-                            checked={artworkEnabled}
-                            onCheckedChange={(v) => handleToggle('artworkEnabled', v)}
-                            disabled={patchNotif.isPending}
-                            aria-label="내 작품 소식 알림"
-                        />
-                    </div>
-                    {/* 혜택 및 이벤트 소식 토글 */}
-                    <div className="flex items-center justify-between gap-3 py-3">
-                        <div className="flex flex-col gap-0.5">
-                            <span className="text-xs font-semibold text-foreground">
-                                혜택 및 이벤트 소식
-                            </span>
-                            <span className="text-xs text-foreground-tertiary">
-                                새로운 공방과 이벤트를 알려드려요
-                            </span>
-                        </div>
-                        <Toggle
-                            checked={marketingEnabled}
-                            onCheckedChange={(v) => handleToggle('marketingEnabled', v)}
-                            disabled={patchNotif.isPending}
-                            aria-label="혜택 및 이벤트 소식 알림"
                         />
                     </div>
                 </div>

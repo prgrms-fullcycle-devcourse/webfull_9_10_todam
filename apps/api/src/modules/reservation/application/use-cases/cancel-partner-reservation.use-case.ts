@@ -56,7 +56,7 @@ export class CancelPartnerReservationUseCase {
                 category: NotificationCategory.TRANSACTION,
                 title: '예약 취소',
                 body,
-                deepLink: `/reservations/${reservationId}`,
+                deepLink: `/my/reservations/${reservationId}`,
                 idempotencyKey: `${eventType}:${reservationId}:${reservation.customerUserId}`,
             });
         }

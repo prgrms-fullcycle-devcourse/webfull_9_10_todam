@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 import { Logo, Button } from '@todam/ui';
 import { CloseIcon, LeftIcon, NotiIcon } from '@todam/ui';
@@ -21,6 +21,7 @@ type HeaderViewProps = {
     rightAction?: ReactNode;
     onNoti?: () => void;
     hasUnread?: boolean;
+    hideNoti?: boolean;
     onAction?: () => void;
     onBack?: () => void;
     onClose?: () => void;
@@ -36,6 +37,7 @@ function HeaderView({
     rightAction,
     onNoti,
     hasUnread,
+    hideNoti,
     onAction,
     onBack,
     onClose,
@@ -47,7 +49,7 @@ function HeaderView({
         <span className="relative inline-flex">
             <NotiIcon />
             {hasUnread && (
-                <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-primary" />
+                <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-danger" />
             )}
         </span>
     );
@@ -61,26 +63,7 @@ function HeaderView({
                         <div className="flex flex-1 items-center px-4">
                             <Logo color="brand" height={34} />
                         </div>
-                        <Button
-                            variant="ghost"
-                            layout="onlyIcon"
-                            size="lg"
-                            icon={bellIcon}
-                            aria-label="알림"
-                            onClick={onNoti}
-                            className="hover:!bg-transparent hover:!text-foreground"
-                        />
-                    </>
-                )}
-
-                {type === 'main' && (
-                    <>
-                        <div className="flex flex-1 items-center pl-[18px]">
-                            <span className="truncate text-2xl font-semibold text-foreground">
-                                {title}
-                            </span>
-                        </div>
-                        {rightAction ?? (
+                        {!hideNoti && (
                             <Button
                                 variant="ghost"
                                 layout="onlyIcon"
@@ -91,6 +74,28 @@ function HeaderView({
                                 className="hover:!bg-transparent hover:!text-foreground"
                             />
                         )}
+                    </>
+                )}
+
+                {type === 'main' && (
+                    <>
+                        <div className="flex flex-1 items-center pl-[18px]">
+                            <span className="truncate text-2xl font-semibold text-foreground">
+                                {title}
+                            </span>
+                        </div>
+                        {rightAction ??
+                            (hideNoti ? null : (
+                                <Button
+                                    variant="ghost"
+                                    layout="onlyIcon"
+                                    size="lg"
+                                    icon={bellIcon}
+                                    aria-label="알림"
+                                    onClick={onNoti}
+                                    className="hover:!bg-transparent hover:!text-foreground"
+                                />
+                            ))}
                     </>
                 )}
 
@@ -138,7 +143,7 @@ function HeaderView({
                                     onClick={onClose}
                                     className="hover:!bg-transparent hover:!text-foreground"
                                 />
-                            ) : (
+                            ) : hideNoti ? null : (
                                 <Button
                                     variant="ghost"
                                     layout="onlyIcon"
@@ -232,11 +237,15 @@ type WidgetHeaderProps = Omit<Partial<HeaderViewProps>, 'type'>;
 export function Header(props: WidgetHeaderProps) {
     const header = useHeader();
     const router = useRouter();
+    const pathname = usePathname();
     const rightAction = useHeaderActionStore((s) => s.action);
     const isAuthenticated = useAuthStore((s) => s.state === 'AUTHENTICATED');
     const { data: unreadCount } = useUnreadNotificationCount(isAuthenticated);
 
     if (!header.visible) return null;
+
+    // 알림센터 자기 페이지에선 우측 알림 벨 숨김.
+    const hideNoti = pathname === '/notifications';
 
     return (
         <HeaderView
@@ -246,6 +255,7 @@ export function Header(props: WidgetHeaderProps) {
             onClose={header.onClose}
             onNoti={() => router.push('/notifications')}
             hasUnread={(unreadCount ?? 0) > 0}
+            hideNoti={hideNoti}
             rightAction={rightAction}
             {...props}
         />

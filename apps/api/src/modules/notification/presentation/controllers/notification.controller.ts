@@ -22,6 +22,7 @@ import {
     getNotificationsQuerySchema,
     registerNotificationTokenBodySchema,
     type GetNotificationsQuery,
+    type RegisterNotificationTokenBody,
 } from '@todam/shared';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { BodyZodValidationPipe } from '../../../../common/pipes/body-zod-validation.pipe';
@@ -70,7 +71,7 @@ export class NotificationController {
     async registerNotificationToken(
         @CurrentUser() user: RequestUser,
         @Body(new BodyZodValidationPipe(registerNotificationTokenBodySchema))
-        dto: RegisterNotificationTokenBodyDto,
+        dto: RegisterNotificationTokenBody,
     ): Promise<RegisterNotificationTokenResponseDto> {
         return this.registerToken.execute({
             userId: user.id,

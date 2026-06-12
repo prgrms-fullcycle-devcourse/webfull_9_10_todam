@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Modal, SectionTitle, Toggle } from '@todam/ui';
 
@@ -57,10 +56,6 @@ export function PartnerSettingsHub() {
         patchNotif.mutate({ webPushEnabled: true });
     };
 
-    // 카테고리 토글은 영속 API 미연동(후속). 화면 표시용 로컬 상태만 유지.
-    const [reservationNoti, setReservationNoti] = useState(true);
-    const [marketingNoti, setMarketingNoti] = useState(false);
-
     // 공방 관리 = 현재 작업 공방 상세. review 보기 상태 해제 후 진입.
     const goStore = () => {
         setReviewStoreId(null);
@@ -115,12 +110,12 @@ export function PartnerSettingsHub() {
                 <MenuTable rows={myInfoRows} />
             </section>
 
-            {/* 알림 설정 섹션 (UI only) */}
+            {/* 알림 설정 섹션 */}
             <section className="flex flex-col gap-1 py-2">
                 <SectionTitle size="md" title="알림 설정" />
                 <div className="flex w-full flex-col rounded-2xl bg-surface px-4 py-1">
-                    {/* 푸시 알림 — 계정 단위 채널 스위치. ON 시 권한+토큰 등록 */}
-                    <div className="flex items-center justify-between gap-3 border-b border-border-subtle py-4">
+                    {/* 푸시 알림 — 계정 단위 채널 스위치. ON 시 권한+토큰 등록. 카테고리·수신자는 서버 처리 */}
+                    <div className="flex items-center justify-between gap-3 py-4">
                         <div className="flex flex-col gap-1">
                             <span className="text-xs font-semibold text-foreground">푸시 알림</span>
                             <span className="text-xs text-foreground-tertiary">
@@ -132,38 +127,6 @@ export function PartnerSettingsHub() {
                             onCheckedChange={(v) => void handleWebPushToggle(v)}
                             disabled={patchNotif.isPending}
                             aria-label="푸시 알림"
-                        />
-                    </div>
-                    {/* 새 예약 알림 */}
-                    <div className="flex items-center justify-between gap-3 border-b border-border-subtle py-4">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-xs font-semibold text-foreground">
-                                새 예약 알림
-                            </span>
-                            <span className="text-xs text-foreground-tertiary">
-                                새로운 예약이 들어오면 알려드려요
-                            </span>
-                        </div>
-                        <Toggle
-                            checked={reservationNoti}
-                            onCheckedChange={setReservationNoti}
-                            aria-label="새 예약 알림"
-                        />
-                    </div>
-                    {/* 혜택 및 이벤트 소식 */}
-                    <div className="flex items-center justify-between gap-3 py-4">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-xs font-semibold text-foreground">
-                                혜택 및 이벤트 소식
-                            </span>
-                            <span className="text-xs text-foreground-tertiary">
-                                새로운 공방과 이벤트를 알려드려요
-                            </span>
-                        </div>
-                        <Toggle
-                            checked={marketingNoti}
-                            onCheckedChange={setMarketingNoti}
-                            aria-label="혜택 및 이벤트 소식"
                         />
                     </div>
                 </div>

@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { onMessage } from 'firebase/messaging';
+import { NotiIcon } from '@todam/ui';
 
 import { useToast } from '@/shared/model/toast';
 
@@ -16,6 +18,7 @@ import { silentReregisterPush } from '../model/usePush';
  */
 export function PushMessageListener() {
     const { push } = useToast();
+    const router = useRouter();
 
     useEffect(() => {
         let unsubscribe: (() => void) | undefined;
@@ -28,12 +31,19 @@ export function PushMessageListener() {
 
             unsubscribe = onMessage(messaging, (payload) => {
                 const message = payload.notification?.title ?? payload.data?.title ?? '새 알림';
-                push({ message });
+                push({
+                    type: 'button',
+                    message,
+                    icon: <NotiIcon />,
+                    actionLabel: '바로가기',
+                    onAction: () => router.push('/notifications'),
+                    duration: 5000,
+                });
             });
         })();
 
         return () => unsubscribe?.();
-    }, [push]);
+    }, [push, router]);
 
     return null;
 }

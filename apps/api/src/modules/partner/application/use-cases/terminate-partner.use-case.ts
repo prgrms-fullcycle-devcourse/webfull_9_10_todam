@@ -50,7 +50,7 @@ export class TerminatePartnerUseCase {
             category: NotificationCategory.OPERATION,
             title: '파트너 자격 변경',
             body: '파트너 자격 상태가 변경됐어요.',
-            deepLink: `/partner/center`,
+            deepLink: `/partner`,
             idempotencyKey: `P-9:${result.partnerId}:${userId}`,
         });
 

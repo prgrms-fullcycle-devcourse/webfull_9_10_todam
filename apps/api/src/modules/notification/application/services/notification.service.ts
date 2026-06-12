@@ -104,7 +104,8 @@ export class NotificationService {
                         delay: 2000,
                     },
                     // job dedup: idempotencyKey를 jobId로 사용 → 동일 알림 2회 enqueue 시 1회만 처리.
-                    jobId: `notification:${idempotencyKey}`,
+                    // BullMQ는 custom jobId에 ':' 금지 → idempotencyKey의 콜론을 '_'로 치환.
+                    jobId: `notification_${idempotencyKey.replace(/:/g, '_')}`,
                     removeOnComplete: 100,
                     removeOnFail: 50,
                 },
