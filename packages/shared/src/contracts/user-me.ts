@@ -76,11 +76,12 @@ export const getNotificationSettingsResponseSchema = z.object({
 });
 export type GetNotificationSettingsResponse = z.infer<typeof getNotificationSettingsResponseSchema>;
 
-// PATCH /users/me/notification-settings 요청 body — FE scope (마이페이지 허브 토글 2개)
-// FE는 artworkEnabled·marketingEnabled 2개만 전송.
+// PATCH /users/me/notification-settings 요청 body — FE scope (마이페이지 허브 토글)
+// FE는 artworkEnabled·marketingEnabled·webPushEnabled 전송.
 export const patchNotificationSettingsBodySchema = z.object({
     artworkEnabled: z.boolean().optional(),
     marketingEnabled: z.boolean().optional(),
+    webPushEnabled: z.boolean().optional(), // Web Push 채널 on/off (#316)
 });
 export type PatchNotificationSettingsBody = z.infer<typeof patchNotificationSettingsBodySchema>;
 

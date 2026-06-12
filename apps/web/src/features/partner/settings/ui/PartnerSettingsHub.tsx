@@ -7,9 +7,14 @@ import { Modal, SectionTitle, Toggle } from '@todam/ui';
 import { useLogout } from '@/features/auth/logout';
 import { useLatestPolicies } from '@/features/auth/terms';
 import type { TermsKey } from '@/features/auth/terms';
+import { useEnablePush } from '@/features/notification';
+import {
+    useNotificationSettings,
+    usePatchNotificationSettings,
+} from '@/features/user/notification-settings';
 import { useReviewStore } from '@/entities/studio';
 import { MenuTable } from '@/shared/ui';
-import { useModal } from '@/shared/model';
+import { useModal, useToast } from '@/shared/model';
 
 // 고객지원 약관 — figma 라벨 기준. URL은 GET /policies/latest API 응답(urlMap)에서 조회.
 const CUSTOMER_SUPPORT_TERMS = [
@@ -26,7 +31,33 @@ export function PartnerSettingsHub() {
     const runLogout = useLogout();
     const { urlMap } = useLatestPolicies();
 
-    // 알림 토글은 영속 API 미연동(후속). 화면 표시용 로컬 상태만 유지.
+    // webPush는 계정 단위 채널 스위치 — 고객 마이페이지와 같은 notificationSettings 공유.
+    const { data: notifData } = useNotificationSettings();
+    const patchNotif = usePatchNotificationSettings();
+    const enablePush = useEnablePush();
+    const { push: toast } = useToast();
+    const webPushEnabled = notifData?.notificationSettings.webPushEnabled ?? false;
+
+    const handleWebPushToggle = async (value: boolean) => {
+        if (!value) {
+            patchNotif.mutate({ webPushEnabled: false });
+            return;
+        }
+        const result = await enablePush();
+        if (!result.ok) {
+            const message =
+                result.reason === 'denied'
+                    ? '브라우저 알림 권한이 거부됐어요. 브라우저 설정에서 허용해 주세요.'
+                    : result.reason === 'unsupported'
+                      ? '이 브라우저는 웹 푸시를 지원하지 않아요.'
+                      : '알림을 켜지 못했어요. 잠시 후 다시 시도해 주세요.';
+            toast({ message });
+            return;
+        }
+        patchNotif.mutate({ webPushEnabled: true });
+    };
+
+    // 카테고리 토글은 영속 API 미연동(후속). 화면 표시용 로컬 상태만 유지.
     const [reservationNoti, setReservationNoti] = useState(true);
     const [marketingNoti, setMarketingNoti] = useState(false);
 
@@ -88,6 +119,21 @@ export function PartnerSettingsHub() {
             <section className="flex flex-col gap-1 py-2">
                 <SectionTitle size="md" title="알림 설정" />
                 <div className="flex w-full flex-col rounded-2xl bg-surface px-4 py-1">
+                    {/* 푸시 알림 — 계정 단위 채널 스위치. ON 시 권한+토큰 등록 */}
+                    <div className="flex items-center justify-between gap-3 border-b border-border-subtle py-4">
+                        <div className="flex flex-col gap-1">
+                            <span className="text-xs font-semibold text-foreground">푸시 알림</span>
+                            <span className="text-xs text-foreground-tertiary">
+                                기기로 알림을 받아요
+                            </span>
+                        </div>
+                        <Toggle
+                            checked={webPushEnabled}
+                            onCheckedChange={(v) => void handleWebPushToggle(v)}
+                            disabled={patchNotif.isPending}
+                            aria-label="푸시 알림"
+                        />
+                    </div>
                     {/* 새 예약 알림 */}
                     <div className="flex items-center justify-between gap-3 border-b border-border-subtle py-4">
                         <div className="flex flex-col gap-1">
