@@ -12,6 +12,7 @@ const ALLOWED_PREFIXES = [
     '/reviews/',
     '/review/',
     '/artworks/',
+    '/notifications', // 알림센터(`/notifications`, `?...`) + 토큰(`/notifications/tokens`) + 읽음(`/notifications/:id/read`)
 ];
 const BODY_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
