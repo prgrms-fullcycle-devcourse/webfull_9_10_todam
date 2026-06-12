@@ -19,7 +19,7 @@ import { QueryProvider } from './providers/QueryProvider';
 
 import '../styles/globals.css';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://todam.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://todam.app';
 const APP_NAME = '토담';
 const APP_SLOGAN = '당신의 작품이 머무는 시간';
 const APP_DESCRIPTION = '도자기 공방 예약부터 완성까지, 내 작품의 여정을 기록하세요.';
