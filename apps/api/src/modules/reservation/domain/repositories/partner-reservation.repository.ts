@@ -65,6 +65,8 @@ export interface PartnerReservationActionRow {
     artwork: { id: string; status: ArtworkStatus } | null;
     programTitle: string;
     partnerUserId: string;
+    /** 예약한 고객 userId (PARTNER_MANUAL 이면 null). 알림 수신자 매핑에 사용 */
+    customerUserId: string | null;
 }
 
 export interface CreateManualReservationInput {

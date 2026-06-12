@@ -1,13 +1,17 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ReservationSource, ReservationStatus } from '@prisma/client';
+import { NotificationCategory, ReservationSource, ReservationStatus } from '@prisma/client';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
+import { NotificationService } from '../../../notification/application/services/notification.service';
 import { isCancellationDeadlineExceeded } from '../../domain/cancellation-policy';
 import { UserReservationRepository } from '../../domain/repositories/user-reservation.repository';
 import type { CancelReservationResponseDto } from '../../presentation/dto/user-reservation.dto';
 
 @Injectable()
 export class CancelUserReservationUseCase {
-    constructor(private readonly reservations: UserReservationRepository) {}
+    constructor(
+        private readonly reservations: UserReservationRepository,
+        private readonly notificationService: NotificationService,
+    ) {}
 
     async execute(
         currentUserId: string,
@@ -64,6 +68,19 @@ export class CancelUserReservationUseCase {
 
         // 4. 트랜잭션 취소 처리
         const result = await this.reservations.cancelReservation(row, currentUserId);
+
+        // P-2: 고객 취소(PENDING/CONFIRMED→CANCELED, source=CUSTOMER) 시 파트너에게 알림
+        // 트랜잭션 커밋 이후 side-effect — 발송 실패가 상태 롤백 유발 금지 (plan §2)
+        await this.notificationService.createAndDispatch({
+            recipientId: row.partnerUserId,
+            reservationId,
+            eventType: 'P-2',
+            category: NotificationCategory.OPERATION,
+            title: '예약 취소',
+            body: '고객이 예약을 취소했어요.',
+            deepLink: `/partner/reservations/${reservationId}`,
+            idempotencyKey: `P-2:${reservationId}:${row.partnerUserId}`,
+        });
 
         // canceledBy는 userId(비어있지 않음), cancelReason은 항상 null(바디 없는 취소),
         // canceledAt은 트랜잭션 내에서 new Date()로 항상 설정됨.

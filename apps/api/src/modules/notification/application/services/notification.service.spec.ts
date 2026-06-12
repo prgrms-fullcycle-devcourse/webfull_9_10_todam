@@ -17,11 +17,13 @@ function makeParams(overrides = {}) {
     };
 }
 
-function makePrisma(createResult: { id: string } | 'UNIQUE_VIOLATION') {
+function makePrisma(createResult: { id: string } | 'UNIQUE_VIOLATION' | 'DB_ERROR') {
     const create = jest.fn();
     if (createResult === 'UNIQUE_VIOLATION') {
         const err = Object.assign(new Error('Unique constraint'), { code: 'P2002' });
         create.mockRejectedValue(err);
+    } else if (createResult === 'DB_ERROR') {
+        create.mockRejectedValue(new Error('DB connection lost'));
     } else {
         create.mockResolvedValue(createResult);
     }
@@ -65,6 +67,16 @@ describe('NotificationService', () => {
 
         await expect(service.createAndDispatch(makeParams())).resolves.toBeUndefined();
 
+        expect(queue.add).not.toHaveBeenCalled();
+    });
+
+    it('인앱 생성 DB 에러(비-P2002) → 예외 전파 없음 (정책 §2: 원 상태전이 보호) + enqueue 안 함', async () => {
+        const prisma = makePrisma('DB_ERROR');
+        const queue = makeQueue();
+        const service = new NotificationService(prisma as never, queue as never);
+
+        // side-effect 호출이므로 use-case를 실패시키면 안 됨 — 예외 전파 없이 resolve.
+        await expect(service.createAndDispatch(makeParams())).resolves.toBeUndefined();
         expect(queue.add).not.toHaveBeenCalled();
     });
 

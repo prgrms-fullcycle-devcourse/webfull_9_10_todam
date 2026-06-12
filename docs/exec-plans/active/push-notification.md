@@ -65,8 +65,33 @@ Phase별 완료가 아니라 기능 전체가 완료돼야 체크.
 - **테스트**: typecheck 0 에러, 전체 테스트 454개 통과
   - 신규 케이스: FcmService 6 + NotificationWorker 6 + NotificationService 5 + artwork 배선 2 = 19개
 
+### BE 완료 (태성) — Phase 3c 구현 완료 (2026-06-12)
+- **reservation 도메인 트리거 배선**:
+  - U-1 (PENDING→CONFIRMED, 파트너 확인): 고객에게 TRANSACTION 알림 — `confirm-partner-reservation.use-case.ts`
+  - U-2 (PENDING→CANCELED, 파트너 취소): 고객에게 TRANSACTION 알림 — `cancel-partner-reservation.use-case.ts`
+  - U-3 (CONFIRMED→CANCELED, 파트너 취소): 고객에게 TRANSACTION 알림 — `cancel-partner-reservation.use-case.ts`
+  - P-1 (신규 PENDING 예약 생성, 수동확정 공방): 파트너에게 OPERATION 알림 — `create-user-reservation.use-case.ts`
+  - P-2 (고객 취소): 파트너에게 OPERATION 알림 — `cancel-user-reservation.use-case.ts`
+- **artwork 도메인 트리거 배선 개선** (U-11~U-15):
+  - U-11 (SHIP): `작품을 발송했어요. 운송장: ○○` — 기존 U-11 유지, body에 trackingNumber 포함
+  - U-12 (PICKUP_READY): 고객에게 DELIVERY 알림 — eventType 분리 (기존 U-DELIVERY_STATUS에서 변경)
+  - U-13 (DELIVERED): 고객에게 DELIVERY 알림 — eventType 분리
+  - U-14 (PICKUP_DONE): 고객에게 DELIVERY 알림 — eventType 분리
+  - U-15 (리뷰 요청): DELIVERED/PICKUP_DONE 도달 시 함께 발송 — eventType 다르므로 idempotencyKey 충돌 없음
+  - 배선 위치: `prisma-artwork.repository.ts` updateDelivery (U-11~U-14 중복발송 없음: artwork에서만 처리)
+- **admin 도메인 트리거 배선** (P-6~P-8):
+  - P-6 (PENDING→PUBLISHED, 검수 승인): 파트너에게 OPERATION 알림 — `ApproveStoreUseCase`
+  - P-7 (PENDING→REJECTED, 검수 반려): 파트너에게 OPERATION 알림 — `RejectStoreUseCase`
+  - P-8 (PUBLISHED→SUSPENDED, 노출 중단): 파트너에게 OPERATION 알림 — `SuspendStoreUseCase`
+  - 파트너 userId 해석: `store.partnerId → partner.userId` (fetchPartnerUserId 헬퍼)
+- **partner 도메인 트리거 배선** (P-9):
+  - P-9 (TERMINATED): 파트너에게 OPERATION 알림 — `TerminatePartnerUseCase`
+  - 파트너 userId 해석: `terminate(userId)` 인자 그대로 사용 (파트너 = 본인 요청)
+- **모듈 의존 추가**: ReservationModule, AdminModule, PartnerModule에 NotificationModule import
+- **단위 테스트**: 471개 전체 통과 (신규 17케이스: reservation-notification 7 + cancel-user P-2 2 + create-user P-1 2 + admin store P-6/P-7/P-8 3 + partner P-9 3)
+- **typecheck**: 0 에러
+
 ### 다음 시작점
-- **Phase 3b 미배선 트리거** → reservation/store/partner 도메인 = Phase 3c
 - **Phase 3 FE** → 인앱 알림센터 UI + Web Push 옵트아웃 토글 (DESIGN.md 토큰 확인 후)
 
 ### 테스트 보류 사유
@@ -458,6 +483,20 @@ PATCH /notifications/read-all
   - `apps/api/src/modules/artwork/infrastructure/persistence/prisma-artwork.repository.ts` — createNotification 제거, NotificationService.createAndDispatch(트랜잭션 후 side-effect) 배선
   - 단위 테스트 19케이스 신규 (FcmService/Worker/Service/artwork 연동)
   - 배포 메모: `FIREBASE_SERVICE_ACCOUNT_BASE64`는 EC2 `.env.api`에 주입 (base64 encoded service account JSON)
+- **Phase 3c API (BE, 태성) — 구현 완료 (2026-06-12, branch: feature/push-notification-phase3c-triggers)**:
+  - **reservation 도메인**: `confirm-partner-reservation.use-case.ts` (U-1), `cancel-partner-reservation.use-case.ts` (U-2/U-3), `create-user-reservation.use-case.ts` (P-1), `cancel-user-reservation.use-case.ts` (P-2)
+    - `domain/repositories/partner-reservation.repository.ts` — `PartnerReservationActionRow`에 `customerUserId: string | null` 추가
+    - `domain/repositories/user-reservation.repository.ts` — `CreateCustomerReservationResult`에 `partnerUserId: string | null`, `UserReservationCancelRow`에 `partnerUserId: string` 추가
+    - `infrastructure/persistence/prisma-partner-reservation.repository.ts` — `findForAction`에서 `userId` 조회 추가
+    - `infrastructure/persistence/prisma-user-reservation.repository.ts` — `createCustomer`에서 `partnerUserId` 반환, `findForCancel`에서 `store.partner.userId` 조회 추가
+    - `reservation.module.ts` — NotificationModule import 추가
+  - **artwork 도메인 배선 개선**: `prisma-artwork.repository.ts` `updateDelivery` — U-12/U-13/U-14 각각 분리, U-15 리뷰요청 동시 발송
+  - **admin 도메인**: `admin-store.use-cases.ts` `ApproveStoreUseCase`(P-6) / `RejectStoreUseCase`(P-7) / `SuspendStoreUseCase`(P-8) — `StoreActionUseCase`에 NotificationService 주입, fetchPartnerUserId 헬퍼
+    - `admin.module.ts` — NotificationModule import 추가
+  - **partner 도메인**: `terminate-partner.use-case.ts` (P-9) — NotificationService 주입
+    - `partner.module.ts` — NotificationModule import 추가
+  - **테스트**: `reservation-notification.use-case.spec.ts` (신규), 기존 spec 업데이트 (cancel-user, create-user, admin-store, terminate-partner) — 471개 전체 통과
+  - **deepLink 패턴**: 고객 예약상세 `/reservations/:id`, 파트너 예약상세 `/partner/reservations/:id`, 파트너 센터 `/partner/center`, 리뷰 작성 `/reservations/:id/review` (FE 라우트 확정 시 조정 필요)
 - **Phase 3 UI**: 인앱 알림센터, Web Push 옵트아웃 토글 UI (webPushEnabled + artworkEnabled, [MVP 소거 후보] marketingEnabled)
 
 ---

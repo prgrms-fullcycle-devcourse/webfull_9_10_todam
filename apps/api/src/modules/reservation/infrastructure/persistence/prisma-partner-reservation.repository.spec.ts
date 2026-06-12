@@ -11,6 +11,7 @@ const reservation = {
     artwork: null,
     programTitle: 'Pottery',
     partnerUserId: 'partner-user-1',
+    customerUserId: null,
 };
 
 describe('PrismaPartnerReservationRepository artwork logs', () => {

@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { PartnerStatus, Prisma, StoreStatus } from '@prisma/client';
+import { NotificationCategory, PartnerStatus, Prisma, StoreStatus } from '@prisma/client';
 import {
     BusinessState,
     VerificationStatus,
@@ -14,6 +14,7 @@ import { BusinessException } from '../../../../common/exceptions/business.except
 import { keyFromImageUrl } from '../../../../common/s3/s3-object.util';
 import { S3Service } from '../../../../common/s3/s3.service';
 import { PrismaService } from '../../../../database/prisma.service';
+import { NotificationService } from '../../../notification/application/services/notification.service';
 
 const storeDetailSelect = {
     id: true,
@@ -282,17 +283,29 @@ export class GetAdminStoreDetailUseCase {
 
 abstract class StoreActionUseCase {
     protected readonly logger = new Logger(this.constructor.name);
-    constructor(protected readonly prisma: PrismaService) {}
+    constructor(
+        protected readonly prisma: PrismaService,
+        protected readonly notificationService: NotificationService,
+    ) {}
 
     protected log(adminId: string, storeId: string, action: string): void {
         this.logger.log({ adminId, storeId, action, timestamp: new Date().toISOString() });
+    }
+
+    /** store.partnerId 로 파트너 User id 조회 */
+    protected async fetchPartnerUserId(partnerId: string): Promise<string | null> {
+        const partner = await this.prisma.partner.findUnique({
+            where: { id: partnerId },
+            select: { userId: true },
+        });
+        return partner?.userId ?? null;
     }
 }
 
 @Injectable()
 export class ApproveStoreUseCase extends StoreActionUseCase {
-    constructor(prisma: PrismaService) {
-        super(prisma);
+    constructor(prisma: PrismaService, notificationService: NotificationService) {
+        super(prisma, notificationService);
     }
 
     async execute(adminId: string, storeId: string): Promise<AdminStoreActionResponse> {
@@ -321,14 +334,30 @@ export class ApproveStoreUseCase extends StoreActionUseCase {
             return store;
         });
         this.log(adminId, storeId, 'approve');
+
+        // P-6: PENDING→PUBLISHED(검수 승인) 시 파트너에게 알림 (plan §5 P-6, 정책 §5.3)
+        // 트랜잭션 커밋 이후 side-effect — 발송 실패가 상태 전이 롤백 유발 금지 (plan §2)
+        const partnerUserId = await this.fetchPartnerUserId(updated.partnerId);
+        if (partnerUserId) {
+            await this.notificationService.createAndDispatch({
+                recipientId: partnerUserId,
+                eventType: 'P-6',
+                category: NotificationCategory.OPERATION,
+                title: '공방 검수 승인',
+                body: '공방 검수가 승인됐어요. 운영을 시작하세요.',
+                deepLink: `/partner/center`,
+                idempotencyKey: `P-6:${storeId}:${partnerUserId}`,
+            });
+        }
+
         return actionResponse(updated);
     }
 }
 
 @Injectable()
 export class RejectStoreUseCase extends StoreActionUseCase {
-    constructor(prisma: PrismaService) {
-        super(prisma);
+    constructor(prisma: PrismaService, notificationService: NotificationService) {
+        super(prisma, notificationService);
     }
 
     async execute(
@@ -343,14 +372,30 @@ export class RejectStoreUseCase extends StoreActionUseCase {
             }),
         );
         this.log(adminId, storeId, 'reject');
+
+        // P-7: PENDING→REJECTED(검수 반려) 시 파트너에게 알림 (plan §5 P-7, 정책 §5.3)
+        // 트랜잭션 커밋 이후 side-effect — 발송 실패가 상태 전이 롤백 유발 금지 (plan §2)
+        const partnerUserId = await this.fetchPartnerUserId(updated.partnerId);
+        if (partnerUserId) {
+            await this.notificationService.createAndDispatch({
+                recipientId: partnerUserId,
+                eventType: 'P-7',
+                category: NotificationCategory.OPERATION,
+                title: '공방 검수 반려',
+                body: '공방 검수가 반려됐어요. 사유를 확인하세요.',
+                deepLink: `/partner/center`,
+                idempotencyKey: `P-7:${storeId}:${partnerUserId}`,
+            });
+        }
+
         return actionResponse(updated);
     }
 }
 
 @Injectable()
 export class SuspendStoreUseCase extends StoreActionUseCase {
-    constructor(prisma: PrismaService) {
-        super(prisma);
+    constructor(prisma: PrismaService, notificationService: NotificationService) {
+        super(prisma, notificationService);
     }
 
     async execute(
@@ -365,14 +410,30 @@ export class SuspendStoreUseCase extends StoreActionUseCase {
             }),
         );
         this.log(adminId, storeId, 'suspend');
+
+        // P-8: PUBLISHED→SUSPENDED(노출 중단) 시 파트너에게 알림 (plan §5 P-8, 정책 §5.3)
+        // 트랜잭션 커밋 이후 side-effect — 발송 실패가 상태 전이 롤백 유발 금지 (plan §2)
+        const partnerUserId = await this.fetchPartnerUserId(updated.partnerId);
+        if (partnerUserId) {
+            await this.notificationService.createAndDispatch({
+                recipientId: partnerUserId,
+                eventType: 'P-8',
+                category: NotificationCategory.OPERATION,
+                title: '공방 노출 중단',
+                body: '공방 노출이 중단됐어요.',
+                deepLink: `/partner/center`,
+                idempotencyKey: `P-8:${storeId}:${partnerUserId}`,
+            });
+        }
+
         return actionResponse(updated);
     }
 }
 
 @Injectable()
 export class RestoreStoreUseCase extends StoreActionUseCase {
-    constructor(prisma: PrismaService) {
-        super(prisma);
+    constructor(prisma: PrismaService, notificationService: NotificationService) {
+        super(prisma, notificationService);
     }
 
     async execute(adminId: string, storeId: string): Promise<AdminStoreActionResponse> {

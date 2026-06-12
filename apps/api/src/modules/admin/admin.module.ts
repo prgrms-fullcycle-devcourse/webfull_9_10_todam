@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { NotificationModule } from '../notification/notification.module';
 import { AdminLoginUseCase } from './application/use-cases/admin-login.use-case';
 import {
     ApproveStoreUseCase,
@@ -23,6 +24,7 @@ import { AdminGuard } from './presentation/guards/admin.guard';
                 signOptions: { expiresIn: '1h' },
             }),
         }),
+        NotificationModule,
     ],
     controllers: [AdminController],
     providers: [
