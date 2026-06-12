@@ -1,5 +1,11 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { ApiBody, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiBody,
+    ApiCreatedResponse,
+    ApiOkResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import {
     loginRequestSchema,
     oauthCodeRequestSchema,
@@ -116,6 +122,7 @@ export class AuthController {
     @Post('logout')
     @HttpCode(HttpStatus.OK)
     @UseGuards(AuthGuard)
+    @ApiBearerAuth()
     @ApiOkResponse({ description: '로그아웃 성공' })
     async logout(
         @CurrentUser() user: RequestUser,
