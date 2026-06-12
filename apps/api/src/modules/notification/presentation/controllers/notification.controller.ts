@@ -18,7 +18,11 @@ import {
     ApiOkResponse,
     ApiTags,
 } from '@nestjs/swagger';
-import { getNotificationsQuerySchema, registerNotificationTokenBodySchema } from '@todam/shared';
+import {
+    getNotificationsQuerySchema,
+    registerNotificationTokenBodySchema,
+    type GetNotificationsQuery,
+} from '@todam/shared';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { BodyZodValidationPipe } from '../../../../common/pipes/body-zod-validation.pipe';
 import { QueryZodValidationPipe } from '../../../../common/pipes/query-zod-validation.pipe';
@@ -35,7 +39,6 @@ import {
     RegisterNotificationTokenResponseDto,
 } from '../dto/notification-token.dto';
 import {
-    GetNotificationsQueryDto,
     GetNotificationsResponseDto,
     ReadNotificationResponseDto,
     ReadAllNotificationsResponseDto,
@@ -107,7 +110,7 @@ export class NotificationController {
     async listNotifications(
         @CurrentUser() user: RequestUser,
         @Query(new QueryZodValidationPipe(getNotificationsQuerySchema))
-        query: GetNotificationsQueryDto,
+        query: GetNotificationsQuery,
     ): Promise<GetNotificationsResponseDto> {
         return this.getNotifications.execute({
             userId: user.id,

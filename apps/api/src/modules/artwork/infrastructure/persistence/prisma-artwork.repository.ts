@@ -391,10 +391,10 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                 reservationId: row.reservationId,
                 eventType: 'U-ARTWORK_STATUS',
                 category: NotificationCategory.ARTWORK,
-                title: 'Artwork update',
-                body: 'Your artwork status has been updated.',
+                title: '작품 제작 단계 변경',
+                body: '작품 제작 단계가 업데이트됐어요.',
                 deepLink: `/artworks/${artworkId}`,
-                idempotencyKey: `U-ARTWORK_STATUS:${artworkId}:${row.reservation.userId}`,
+                idempotencyKey: `U-ARTWORK_STATUS:${dto.status}:${artworkId}:${row.reservation.userId}`,
             });
         }
 
@@ -475,10 +475,10 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                     reservationId: row.reservationId,
                     eventType: 'U-ARTWORK_STATUS',
                     category: NotificationCategory.ARTWORK,
-                    title: 'Artwork update',
-                    body: 'Your artwork status has been updated.',
+                    title: '작품 제작 단계 변경',
+                    body: '작품 제작 단계가 업데이트됐어요.',
                     deepLink: `/artworks/${row.id}`,
-                    idempotencyKey: `U-ARTWORK_STATUS:${row.id}:${row.reservation.userId}`,
+                    idempotencyKey: `U-ARTWORK_STATUS:${dto.toStatus}:${row.id}:${row.reservation.userId}`,
                 });
             }
         }
