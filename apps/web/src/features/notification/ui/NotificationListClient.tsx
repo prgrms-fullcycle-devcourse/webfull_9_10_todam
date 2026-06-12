@@ -57,7 +57,7 @@ export function NotificationListClient() {
                         type="button"
                         onClick={() => readAll.mutate()}
                         disabled={readAll.isPending}
-                        className="text-xs font-semibold text-foreground-secondary disabled:opacity-50"
+                        className="text-xs font-semibold text-foreground-secondary disabled:opacity-50 cursor-pointer"
                     >
                         모두 읽음
                     </button>

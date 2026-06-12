@@ -17,7 +17,9 @@ export function useInfiniteNotifications() {
             getNotifications({ cursor: pageParam ?? undefined, limit: NOTIFICATIONS_LIMIT }),
         initialPageParam: null as string | null,
         getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-        staleTime: 1000 * 30,
+        // 페이지 진입 때마다 최신 목록 — 캐시 무시하고 항상 재조회.
+        staleTime: 0,
+        refetchOnMount: 'always',
     });
 }
 
