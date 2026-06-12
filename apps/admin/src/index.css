@@ -1,5 +1,7 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 @import "tailwindcss";
+/* @todam/ui 컴포넌트는 node_modules(워크스페이스 심볼릭)라 기본 스캔 제외 → 명시적 @source로 클래스 생성. */
+@source "../../../packages/ui/src";
 @import "@todam/ui/styles/primitives.css";
 @import "@todam/ui/styles/semantic.css";
 @import "@todam/ui/styles/fonts.css";

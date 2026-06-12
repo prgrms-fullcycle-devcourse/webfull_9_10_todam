@@ -36,10 +36,16 @@ Phase별 완료가 아니라 기능 전체가 완료돼야 체크.
 3. `DELETE /notifications/tokens/:fcmToken` (revokedAt 기록) 완료
    - 구현 상세: 아래 "Phase 2 API (BE)" 항목 참조
 
+### BE 완료 (태성) — Phase 3a 구현 완료 (2026-06-11)
+- **Notification 모델 reconcile (Option A)**: `notifications` 테이블 contract 형태로 재편 완료 (공유 RDS 마이그레이션 적용)
+- **인앱 알림센터 엔드포인트**: `GET /notifications`, `PATCH /notifications/:id/read`, `PATCH /notifications/read-all` 구현 완료
+- **artwork 알림 생성 새 shape 흡수**: `prisma-artwork.repository.ts` `createNotification` 신규 모델 형태로 수정 완료
+- typecheck 0 에러, 전체 테스트 416개 통과
+  - 구현 상세: 아래 "Phase 3a API (BE)" Out 항목 참조
+
 ### 다음 시작점
-- **BE 1~3 완료 시** → PR #324 머지 + 실 연동 테스트 (임시 트리거 버튼으로 getToken→Firebase 콘솔 테스트 전송→수신 확인)
-- **Phase 3 (#316)** → 인앱 알림센터(목록/읽음) + 설정 토글에 `useEnablePush()` 배선 + BE 상태전이 훅→큐→FCM Admin SDK 발송
-  - Phase 3 FE는 BE 발송과 독립적으로 UI 골격 선행 가능 (Open decision #1 DESIGN.md 토큰 확인 후)
+- **Phase 3b (#316)** → FCM Admin SDK 발송 + BullMQ 워커 + NotificationDelivery 기록 + 상태전이 훅 연결 (U-1~U-15, P-1~P-9)
+- **Phase 3 FE** → 인앱 알림센터 UI + Web Push 옵트아웃 토글 (DESIGN.md 토큰 확인 후)
 
 ### 테스트 보류 사유
 - BE 토큰 API 미구현 + `useEnablePush()` 호출 트리거 버튼 없음(Phase 3 토글에서 연결 예정)
@@ -390,7 +396,34 @@ PATCH /notifications/read-all
   - **테스트**: 총 20개 케이스 통과 (token upsert/revoke, settings GET/PATCH, lazy-default, no-op, webPushEnabled 반영)
   - **주의(prisma generate 필요)**: Windows Defender로 로컬 prisma CLI 실행 불가 → repository 구현에 `as PrismaAny` 임시 캐스팅 적용. CI/CD 또는 실보호 해제 후 `prisma generate` 실행 + `as PrismaAny` 제거 필요. store 모듈 기존 5개 typecheck 에러(VerificationStatus/BusinessState)도 같은 원인으로 pre-existing.
   - **(Phase 3 이월)** FCM Admin SDK 발송 + BullMQ 워커 + NotificationDelivery 엔티티
-- **Phase 3 API**: `GET /notifications`, `PATCH /notifications/:id/read`, `PATCH /notifications/read-all`, 도메인 훅 연결 (U-1~U-15, P-1~P-9)
+- **Phase 3a API (BE, 태성) — 구현 완료 (2026-06-11, branch: feature/push-notification-phase3-be)**:
+  - **Notification 모델 reconcile (Option A)**: `apps/api/prisma/schema.prisma` — Notification 모델 contract 형태 재편 + NotificationDelivery 모델 신설
+    - 제거: type(NotificationType)/isRead/sentAt/status/channel/errorReason → NotificationDelivery로 분리
+    - 추가: eventType(String)/category(NotificationCategory)/deepLink?/idempotencyKey(@unique)
+    - 유지: userId(컬럼)/artworkId?/reservationId?(내부용)/title/body/readAt/createdAt
+    - 신규 enum: NotificationCategory / NotificationDeliveryChannel / NotificationDeliveryStatus
+    - 구 enum 제거: NotificationType / NotificationStatus / NotificationChannel
+  - **Prisma 마이그레이션**: `apps/api/prisma/migrations/20260611200000_notification_model_reconcile_phase3/migration.sql`
+    - 백필 SQL 포함 (legacy rows: idempotencyKey=id, category=type매핑, eventType=type문자열)
+    - `notification_deliveries` 테이블 신설
+    - 공유 RDS 적용 완료. prisma generate 완료. typecheck 0 에러.
+    - Prisma 보조 migration `20260611081755_notification_model_reconcile_phase3` (id DEFAULT 정리, 자동 생성)
+  - **artwork 알림 생성 새 shape 흡수**: `apps/api/src/modules/artwork/infrastructure/persistence/prisma-artwork.repository.ts`
+    - `createNotification` 메서드 재설계: NotificationType 제거, eventType/category/deepLink/idempotencyKey로 변경
+    - idempotencyKey: `${eventType}:${artworkId}:${userId}` — upsert 멱등성 처리
+    - 호출 3곳 수정: updateStatus(U-ARTWORK_STATUS/ARTWORK), bulkUpdateStatus(U-ARTWORK_STATUS/ARTWORK), updateDelivery(U-11/DELIVERY)
+  - **notification 모듈 신규** (`apps/api/src/modules/notification/`):
+    - `domain/repositories/notification.repository.ts` — port (listByUser/findById/markRead/markAllRead)
+    - `infrastructure/persistence/prisma-notification.repository.ts` — Prisma 구현 (커서 페이지네이션: createdAt+id DESC)
+    - `application/use-cases/get-notifications.use-case.ts` + `.spec.ts` — 6 케이스
+    - `application/use-cases/read-notification.use-case.ts` + `.spec.ts` — 3 케이스 (본인/없음/타인403)
+    - `application/use-cases/read-all-notifications.use-case.ts` + `.spec.ts` — 2 케이스
+    - `presentation/controllers/notification.controller.ts` — GET/PATCH 엔드포인트 3종 추가
+    - `presentation/dto/notification.dto.ts` — createZodDto(shared contract 소비)
+    - `notification.module.ts` — 신규 use-case 3종 + NotificationRepository DI 등록
+  - `apps/api/src/modules/api-routes.snapshot.spec.ts` — 신규 3개 라우트 항목 추가
+  - **테스트**: 총 416개 전체 통과 (신규 11케이스: getNotifications 6 + readNotification 3 + readAllNotifications 2)
+- **Phase 3b API**: FCM Admin SDK 발송 + BullMQ 워커 + NotificationDelivery 기록 + 상태전이 훅 연결 (U-1~U-15, P-1~P-9)
 - **Phase 3 UI**: 인앱 알림센터, Web Push 옵트아웃 토글 UI (webPushEnabled + artworkEnabled, [MVP 소거 후보] marketingEnabled)
 
 ---

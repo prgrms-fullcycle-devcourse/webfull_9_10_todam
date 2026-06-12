@@ -14,6 +14,7 @@ const apiSchema = z.object({
     DATABASE_URL: z.string(),
     JWT_ACCESS_SECRET: z.string(),
     JWT_REFRESH_SECRET: z.string(),
+    JWT_ADMIN_SECRET: z.string(),
     REDIS_URL: z.string().default('redis://localhost:6379'),
     S3_BUCKET_NAME: z.string(),
     S3_REGION: z.string().default('ap-northeast-2'),

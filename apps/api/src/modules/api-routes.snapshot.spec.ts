@@ -57,6 +57,9 @@ function controllers(): ControllerClass[] {
     const { ReviewController } = jest.requireActual<
         typeof import('./review/presentation/controllers/review.controller')
     >('./review/presentation/controllers/review.controller');
+    const { AdminController } = jest.requireActual<
+        typeof import('./admin/presentation/controllers/admin.controller')
+    >('./admin/presentation/controllers/admin.controller');
     const { NotificationController } = jest.requireActual<
         typeof import('./notification/presentation/controllers/notification.controller')
     >('./notification/presentation/controllers/notification.controller');
@@ -73,6 +76,7 @@ function controllers(): ControllerClass[] {
         PartnerController,
         UserController,
         ReviewController,
+        AdminController,
         NotificationController,
     ];
 }
@@ -754,6 +758,55 @@ describe('API route baseline', () => {
                 guards: ['AuthGuard'],
             },
             {
+                controller: 'AdminController',
+                handler: 'login',
+                method: 'POST',
+                path: '/admin/auth/login',
+                guards: [],
+            },
+            {
+                controller: 'AdminController',
+                handler: 'listStores',
+                method: 'GET',
+                path: '/admin/stores',
+                guards: ['AdminGuard'],
+            },
+            {
+                controller: 'AdminController',
+                handler: 'getStoreDetail',
+                method: 'GET',
+                path: '/admin/stores/:storeId',
+                guards: ['AdminGuard'],
+            },
+            {
+                controller: 'AdminController',
+                handler: 'approve',
+                method: 'PATCH',
+                path: '/admin/stores/:storeId/approve',
+                guards: ['AdminGuard'],
+            },
+            {
+                controller: 'AdminController',
+                handler: 'reject',
+                method: 'PATCH',
+                path: '/admin/stores/:storeId/reject',
+                guards: ['AdminGuard'],
+            },
+            {
+                controller: 'AdminController',
+                handler: 'suspend',
+                method: 'PATCH',
+                path: '/admin/stores/:storeId/suspend',
+                guards: ['AdminGuard'],
+            },
+            {
+                controller: 'AdminController',
+                handler: 'restore',
+                method: 'PATCH',
+                path: '/admin/stores/:storeId/restore',
+                guards: ['AdminGuard'],
+            },
+            {
                 controller: 'NotificationController',
                 handler: 'registerNotificationToken',
                 method: 'POST',
@@ -765,6 +818,28 @@ describe('API route baseline', () => {
                 handler: 'revokeNotificationToken',
                 method: 'DELETE',
                 path: '/notifications/tokens/:fcmToken',
+                guards: ['AuthGuard'],
+            },
+            // Phase 3a: 인앱 알림센터
+            {
+                controller: 'NotificationController',
+                handler: 'listNotifications',
+                method: 'GET',
+                path: '/notifications/',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'NotificationController',
+                handler: 'readAllNotificationsHandler',
+                method: 'PATCH',
+                path: '/notifications/read-all',
+                guards: ['AuthGuard'],
+            },
+            {
+                controller: 'NotificationController',
+                handler: 'readNotificationHandler',
+                method: 'PATCH',
+                path: '/notifications/:id/read',
                 guards: ['AuthGuard'],
             },
         ]);

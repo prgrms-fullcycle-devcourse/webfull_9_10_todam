@@ -2,8 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import {
     ArtworkStatus,
     ImageUploadStatus,
-    NotificationStatus,
-    NotificationType,
+    NotificationCategory,
     Prisma,
     ReservationDeliveryMethod,
     ReservationStatus,
@@ -379,13 +378,16 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                     memo: dto.memo,
                 },
             });
-            await this.createNotification(
-                tx,
-                row.reservation.userId,
+            await this.createNotification(tx, {
+                userId: row.reservation.userId,
                 artworkId,
-                row.reservationId,
-                NotificationType.ARTWORK_STATUS,
-            );
+                reservationId: row.reservationId,
+                eventType: 'U-ARTWORK_STATUS',
+                category: NotificationCategory.ARTWORK,
+                title: 'Artwork update',
+                body: 'Your artwork status has been updated.',
+                deepLink: `/artworks/${artworkId}`,
+            });
             return updated;
         });
         return { artwork: { ...artwork, updatedAt: artwork.updatedAt.toISOString() } };
@@ -453,13 +455,16 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                         toStatus: dto.toStatus as ArtworkStatus,
                     },
                 });
-                await this.createNotification(
-                    tx,
-                    row.reservation.userId,
-                    row.id,
-                    row.reservationId,
-                    NotificationType.ARTWORK_STATUS,
-                );
+                await this.createNotification(tx, {
+                    userId: row.reservation.userId,
+                    artworkId: row.id,
+                    reservationId: row.reservationId,
+                    eventType: 'U-ARTWORK_STATUS',
+                    category: NotificationCategory.ARTWORK,
+                    title: 'Artwork update',
+                    body: 'Your artwork status has been updated.',
+                    deepLink: `/artworks/${row.id}`,
+                });
             }
         });
         return { updatedCount: rows.length, status: dto.toStatus };
@@ -667,15 +672,19 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                 },
                 include: { delivery: true },
             });
-            await this.createNotification(
-                tx,
-                row.reservation.userId,
+            await this.createNotification(tx, {
+                userId: row.reservation.userId,
                 artworkId,
-                row.reservationId,
-                dto.action === 'SHIP'
-                    ? NotificationType.SHIPPING_STARTED
-                    : NotificationType.ARTWORK_STATUS,
-            );
+                reservationId: row.reservationId,
+                eventType: dto.action === 'SHIP' ? 'U-11' : 'U-DELIVERY_STATUS',
+                category: NotificationCategory.DELIVERY,
+                title: dto.action === 'SHIP' ? 'Shipping started' : 'Delivery update',
+                body:
+                    dto.action === 'SHIP'
+                        ? 'Your artwork has been shipped.'
+                        : 'Your artwork delivery status has been updated.',
+                deepLink: `/reservations/${row.reservationId}`,
+            });
             return updated;
         });
         return {
@@ -725,22 +734,35 @@ export class PrismaArtworkRepository extends ArtworkRepository {
 
     private async createNotification(
         tx: Prisma.TransactionClient,
-        userId: string | null,
-        artworkId: string,
-        reservationId: string,
-        type: NotificationType,
+        params: {
+            userId: string | null;
+            artworkId: string;
+            reservationId: string;
+            eventType: string;
+            category: NotificationCategory;
+            title: string;
+            body: string;
+            deepLink?: string;
+        },
     ) {
-        if (!userId) return;
-        await tx.notification.create({
-            data: {
-                userId,
-                artworkId,
-                reservationId,
-                type,
-                title: 'Artwork update',
-                body: 'Your artwork status has been updated.',
-                status: NotificationStatus.PENDING,
+        if (!params.userId) return;
+        // idempotencyKey: eventType:artworkId:recipientId
+        const idempotencyKey = `${params.eventType}:${params.artworkId}:${params.userId}`;
+        // 멱등성 키 중복 시 silent skip (insert or do nothing 패턴)
+        await tx.notification.upsert({
+            where: { idempotencyKey },
+            create: {
+                userId: params.userId,
+                artworkId: params.artworkId,
+                reservationId: params.reservationId,
+                eventType: params.eventType,
+                category: params.category,
+                title: params.title,
+                body: params.body,
+                deepLink: params.deepLink,
+                idempotencyKey,
             },
+            update: {},
         });
     }
 

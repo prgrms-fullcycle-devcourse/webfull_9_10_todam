@@ -15,6 +15,7 @@ import { PartnerModule } from './modules/partner/partner.module';
 import { UserModule } from './modules/user/user.module';
 import { ReviewModule } from './modules/review/review.module';
 import { PolicyModule } from './modules/policy/policy.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
@@ -35,6 +36,7 @@ import { NotificationModule } from './modules/notification/notification.module';
         UserModule,
         ReviewModule,
         PolicyModule,
+        AdminModule,
         NotificationModule,
     ],
 })
