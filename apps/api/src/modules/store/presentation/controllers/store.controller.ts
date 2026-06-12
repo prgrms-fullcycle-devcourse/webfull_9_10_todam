@@ -27,6 +27,7 @@ import {
     createStoreImageRequestSchema,
     createStoreRequestSchema,
     favoriteStoresQuerySchema,
+    type FavoriteStoresQuery,
     listStoreReviewsQuerySchema,
     programReviewListQuerySchema,
     listStoresQuerySchema,
@@ -106,10 +107,7 @@ import { GetPartnerStoreDetailResponseDto } from '../dto/get-partner-store-detai
 import { GetPartnerOnboardingResponseDto } from '../dto/get-partner-onboarding.dto';
 import { GetStoreDetailResponseDto } from '../dto/get-store-detail.dto';
 import { ToggleFavoriteStoreResponseDto } from '../dto/toggle-favorite-store.dto';
-import {
-    ListFavoriteStoresQueryDto,
-    ListFavoriteStoresResponseDto,
-} from '../dto/list-favorite-stores.dto';
+import { ListFavoriteStoresResponseDto } from '../dto/list-favorite-stores.dto';
 import { ListStoreProgramsResponseDto } from '../dto/list-store-programs.dto';
 import { ListProgramReviewsResponseDto } from '../dto/list-program-reviews.dto';
 import {
@@ -555,8 +553,11 @@ export class StoreController {
     })
     async listFavoriteStores(
         @CurrentUser() user: RequestUser,
+        // 쿼리 타입은 inferred type(클래스 아님) — 글로벌 ValidationPipe(forbidNonWhitelisted)가
+        // createZodDto 클래스를 metatype 으로 잡아 limit/cursor 를 거부하는 것을 피한다(타 쿼리 라우트 정합).
+        // 실검증은 QueryZodValidationPipe(favoriteStoresQuerySchema)가 수행.
         @Query(new QueryZodValidationPipe(favoriteStoresQuerySchema))
-        query: ListFavoriteStoresQueryDto,
+        query: FavoriteStoresQuery,
     ): Promise<ListFavoriteStoresResponseDto> {
         return this.listFavoriteStoresUseCase.execute(user.id, query);
     }

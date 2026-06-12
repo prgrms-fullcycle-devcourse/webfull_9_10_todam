@@ -1,9 +1,10 @@
-import { favoriteStoreListResultSchema, favoriteStoresQuerySchema } from '@todam/shared';
+import { favoriteStoreListResultSchema } from '@todam/shared';
 import { createZodDto } from 'nestjs-zod';
 
 // ─── GET /users/me/favorite-stores 쿼리 DTO ──────────────────────────────────
-// 쿼리 SSOT = @todam/shared(zod).
-export class ListFavoriteStoresQueryDto extends createZodDto(favoriteStoresQuerySchema) {}
+// 쿼리 검증은 컨트롤러의 QueryZodValidationPipe(favoriteStoresQuerySchema)가 수행하고
+// 파라미터 타입은 inferred type(FavoriteStoresQuery)을 쓴다. createZodDto 클래스를 @Query
+// 타입으로 쓰면 글로벌 ValidationPipe(forbidNonWhitelisted)가 limit/cursor 를 거부하므로 두지 않음.
 
 // ─── GET /users/me/favorite-stores 응답 DTO ──────────────────────────────────
 // 응답 SSOT = @todam/shared(zod). Reconcile(2026-06-09) 후속으로 shared+FE 에서

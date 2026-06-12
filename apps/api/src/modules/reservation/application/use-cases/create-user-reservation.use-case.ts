@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { NotificationCategory, ReservationStatus } from '@prisma/client';
+import { NotificationService } from '../../../notification/application/services/notification.service';
 import { calcDisplayState } from '../../domain/display-state.util';
 import { UserReservationRepository } from '../../domain/repositories/user-reservation.repository';
 import type {
@@ -8,7 +10,10 @@ import type {
 
 @Injectable()
 export class CreateUserReservationUseCase {
-    constructor(private readonly reservations: UserReservationRepository) {}
+    constructor(
+        private readonly reservations: UserReservationRepository,
+        private readonly notificationService: NotificationService,
+    ) {}
 
     async execute(
         userId: string,
@@ -24,8 +29,23 @@ export class CreateUserReservationUseCase {
             requestMemo: dto.requestMemo,
         });
 
-        const { reservation } = result;
+        const { reservation, partnerUserId } = result;
         const displayState = calcDisplayState(reservation.status);
+
+        // P-1: 신규 PENDING 예약 생성 시 파트너에게 알림 (수동확정 공방만 — autoConfirm=false)
+        // 트랜잭션 커밋 이후 side-effect — 발송 실패가 상태 롤백 유발 금지 (plan §2)
+        if (reservation.status === ReservationStatus.PENDING && partnerUserId) {
+            await this.notificationService.createAndDispatch({
+                recipientId: partnerUserId,
+                reservationId: reservation.id,
+                eventType: 'P-1',
+                category: NotificationCategory.OPERATION,
+                title: '새 예약 요청',
+                body: '새 예약 요청이 있어요. 확인해 주세요.',
+                deepLink: `/partner/reservations/${reservation.id}`,
+                idempotencyKey: `P-1:${reservation.id}:${partnerUserId}`,
+            });
+        }
 
         return {
             reservation: {

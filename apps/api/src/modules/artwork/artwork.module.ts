@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PartnerGuard } from '../../common/guards/partner.guard';
 import { AuthModule } from '../auth/auth.module';
+import { NotificationModule } from '../notification/notification.module';
 import { BulkUpdateArtworkStatusUseCase } from './application/use-cases/bulk-update-artwork-status.use-case';
 import { ConfirmArtworkPhotoUseCase } from './application/use-cases/confirm-artwork-photo.use-case';
 import { CountPartnerArtworksUseCase } from './application/use-cases/count-partner-artworks.use-case';
@@ -18,7 +19,7 @@ import { ArtworkController } from './presentation/controllers/artwork.controller
 import { PartnerArtworkController } from './presentation/controllers/partner-artwork.controller';
 
 @Module({
-    imports: [AuthModule],
+    imports: [AuthModule, NotificationModule],
     controllers: [PartnerArtworkController, ArtworkController],
     providers: [
         ListPartnerArtworksUseCase,

@@ -43,8 +43,55 @@ Phase별 완료가 아니라 기능 전체가 완료돼야 체크.
 - typecheck 0 에러, 전체 테스트 416개 통과
   - 구현 상세: 아래 "Phase 3a API (BE)" Out 항목 참조
 
+### BE 완료 (태성) — Phase 3b 구현 완료 (2026-06-11)
+- **config**: `packages/config/src/index.ts` `FIREBASE_SERVICE_ACCOUNT_BASE64: z.string().optional()` 추가
+- **FcmModule/FcmService** (`apps/api/src/modules/notification/infrastructure/fcm/`):
+  - firebase-admin v14 named export(initializeApp/getApps/cert/getMessaging) 사용
+  - 키 없으면 init skip + 경고 로그 (no-op 폴백)
+  - `sendToToken()`: 무효 토큰 코드(registration-token-not-registered 등) → `invalidToken:true` 반환
+- **BullMQ 큐 + 워커** (`apps/api/src/modules/notification/infrastructure/queue/`):
+  - `NotificationWorker (@Processor('notification'))`: webPushEnabled 확인 → 토큰 조회 → FCM 발송 → NotificationDelivery 기록 → 무효 토큰 revoke
+  - `app.module.ts`에 `BullModule.forRoot(connection: REDIS_URL)` 등록
+- **NotificationService** (`apps/api/src/modules/notification/application/services/notification.service.ts`):
+  - `createAndDispatch()`: Notification DB 생성 + job enqueue(attempts:3, backoff:exponential, jobId=notification:<idempotencyKey>)
+  - idempotencyKey unique 충돌(P2002) → 생성·enqueue skip (멱등)
+  - enqueue 실패는 삼킴 (인앱 레코드 유지 폴백)
+  - `NotificationModule`에서 export
+- **artwork 트리거 배선** (`prisma-artwork.repository.ts`):
+  - `createNotification(tx)` private 메서드 제거
+  - `updateStatus`, `bulkUpdateStatus`, `updateDelivery` 에서 트랜잭션 커밋 이후 `notificationService.createAndDispatch()` 호출
+  - `ArtworkModule`이 `NotificationModule` import 추가 (PrismaArtworkRepository DI)
+- **의존성**: `firebase-admin`, `@nestjs/bullmq`, `bullmq` 기설치 확인
+- **테스트**: typecheck 0 에러, 전체 테스트 454개 통과
+  - 신규 케이스: FcmService 6 + NotificationWorker 6 + NotificationService 5 + artwork 배선 2 = 19개
+
+### BE 완료 (태성) — Phase 3c 구현 완료 (2026-06-12)
+- **reservation 도메인 트리거 배선**:
+  - U-1 (PENDING→CONFIRMED, 파트너 확인): 고객에게 TRANSACTION 알림 — `confirm-partner-reservation.use-case.ts`
+  - U-2 (PENDING→CANCELED, 파트너 취소): 고객에게 TRANSACTION 알림 — `cancel-partner-reservation.use-case.ts`
+  - U-3 (CONFIRMED→CANCELED, 파트너 취소): 고객에게 TRANSACTION 알림 — `cancel-partner-reservation.use-case.ts`
+  - P-1 (신규 PENDING 예약 생성, 수동확정 공방): 파트너에게 OPERATION 알림 — `create-user-reservation.use-case.ts`
+  - P-2 (고객 취소): 파트너에게 OPERATION 알림 — `cancel-user-reservation.use-case.ts`
+- **artwork 도메인 트리거 배선 개선** (U-11~U-15):
+  - U-11 (SHIP): `작품을 발송했어요. 운송장: ○○` — 기존 U-11 유지, body에 trackingNumber 포함
+  - U-12 (PICKUP_READY): 고객에게 DELIVERY 알림 — eventType 분리 (기존 U-DELIVERY_STATUS에서 변경)
+  - U-13 (DELIVERED): 고객에게 DELIVERY 알림 — eventType 분리
+  - U-14 (PICKUP_DONE): 고객에게 DELIVERY 알림 — eventType 분리
+  - U-15 (리뷰 요청): DELIVERED/PICKUP_DONE 도달 시 함께 발송 — eventType 다르므로 idempotencyKey 충돌 없음
+  - 배선 위치: `prisma-artwork.repository.ts` updateDelivery (U-11~U-14 중복발송 없음: artwork에서만 처리)
+- **admin 도메인 트리거 배선** (P-6~P-8):
+  - P-6 (PENDING→PUBLISHED, 검수 승인): 파트너에게 OPERATION 알림 — `ApproveStoreUseCase`
+  - P-7 (PENDING→REJECTED, 검수 반려): 파트너에게 OPERATION 알림 — `RejectStoreUseCase`
+  - P-8 (PUBLISHED→SUSPENDED, 노출 중단): 파트너에게 OPERATION 알림 — `SuspendStoreUseCase`
+  - 파트너 userId 해석: `store.partnerId → partner.userId` (fetchPartnerUserId 헬퍼)
+- **partner 도메인 트리거 배선** (P-9):
+  - P-9 (TERMINATED): 파트너에게 OPERATION 알림 — `TerminatePartnerUseCase`
+  - 파트너 userId 해석: `terminate(userId)` 인자 그대로 사용 (파트너 = 본인 요청)
+- **모듈 의존 추가**: ReservationModule, AdminModule, PartnerModule에 NotificationModule import
+- **단위 테스트**: 471개 전체 통과 (신규 17케이스: reservation-notification 7 + cancel-user P-2 2 + create-user P-1 2 + admin store P-6/P-7/P-8 3 + partner P-9 3)
+- **typecheck**: 0 에러
+
 ### 다음 시작점
-- **Phase 3b (#316)** → FCM Admin SDK 발송 + BullMQ 워커 + NotificationDelivery 기록 + 상태전이 훅 연결 (U-1~U-15, P-1~P-9)
 - **Phase 3 FE** → 인앱 알림센터 UI + Web Push 옵트아웃 토글 (DESIGN.md 토큰 확인 후)
 
 ### 테스트 보류 사유
@@ -423,7 +470,33 @@ PATCH /notifications/read-all
     - `notification.module.ts` — 신규 use-case 3종 + NotificationRepository DI 등록
   - `apps/api/src/modules/api-routes.snapshot.spec.ts` — 신규 3개 라우트 항목 추가
   - **테스트**: 총 416개 전체 통과 (신규 11케이스: getNotifications 6 + readNotification 3 + readAllNotifications 2)
-- **Phase 3b API**: FCM Admin SDK 발송 + BullMQ 워커 + NotificationDelivery 기록 + 상태전이 훅 연결 (U-1~U-15, P-1~P-9)
+- **Phase 3b API** (2026-06-11 완료, branch: feature/push-notification-phase3b-fcm):
+  - `packages/config/src/index.ts` — `FIREBASE_SERVICE_ACCOUNT_BASE64: z.string().optional()` 추가
+  - `apps/api/src/app.module.ts` — `BullModule.forRoot(connection: REDIS_URL)` 등록
+  - `apps/api/src/modules/notification/infrastructure/fcm/fcm.service.ts` — firebase-admin v14 named export, sendToToken, 무효 토큰 구분
+  - `apps/api/src/modules/notification/infrastructure/fcm/fcm.module.ts` — FcmService 모듈
+  - `apps/api/src/modules/notification/infrastructure/queue/notification-job.type.ts` — job payload 타입
+  - `apps/api/src/modules/notification/infrastructure/queue/notification.worker.ts` — BullMQ @Processor 워커
+  - `apps/api/src/modules/notification/application/services/notification.service.ts` — createAndDispatch (인앱+큐 통합)
+  - `apps/api/src/modules/notification/notification.module.ts` — FcmModule, BullMQ 큐, Worker, NotificationService 등록 + export
+  - `apps/api/src/modules/artwork/artwork.module.ts` — NotificationModule import 추가
+  - `apps/api/src/modules/artwork/infrastructure/persistence/prisma-artwork.repository.ts` — createNotification 제거, NotificationService.createAndDispatch(트랜잭션 후 side-effect) 배선
+  - 단위 테스트 19케이스 신규 (FcmService/Worker/Service/artwork 연동)
+  - 배포 메모: `FIREBASE_SERVICE_ACCOUNT_BASE64`는 EC2 `.env.api`에 주입 (base64 encoded service account JSON)
+- **Phase 3c API (BE, 태성) — 구현 완료 (2026-06-12, branch: feature/push-notification-phase3c-triggers)**:
+  - **reservation 도메인**: `confirm-partner-reservation.use-case.ts` (U-1), `cancel-partner-reservation.use-case.ts` (U-2/U-3), `create-user-reservation.use-case.ts` (P-1), `cancel-user-reservation.use-case.ts` (P-2)
+    - `domain/repositories/partner-reservation.repository.ts` — `PartnerReservationActionRow`에 `customerUserId: string | null` 추가
+    - `domain/repositories/user-reservation.repository.ts` — `CreateCustomerReservationResult`에 `partnerUserId: string | null`, `UserReservationCancelRow`에 `partnerUserId: string` 추가
+    - `infrastructure/persistence/prisma-partner-reservation.repository.ts` — `findForAction`에서 `userId` 조회 추가
+    - `infrastructure/persistence/prisma-user-reservation.repository.ts` — `createCustomer`에서 `partnerUserId` 반환, `findForCancel`에서 `store.partner.userId` 조회 추가
+    - `reservation.module.ts` — NotificationModule import 추가
+  - **artwork 도메인 배선 개선**: `prisma-artwork.repository.ts` `updateDelivery` — U-12/U-13/U-14 각각 분리, U-15 리뷰요청 동시 발송
+  - **admin 도메인**: `admin-store.use-cases.ts` `ApproveStoreUseCase`(P-6) / `RejectStoreUseCase`(P-7) / `SuspendStoreUseCase`(P-8) — `StoreActionUseCase`에 NotificationService 주입, fetchPartnerUserId 헬퍼
+    - `admin.module.ts` — NotificationModule import 추가
+  - **partner 도메인**: `terminate-partner.use-case.ts` (P-9) — NotificationService 주입
+    - `partner.module.ts` — NotificationModule import 추가
+  - **테스트**: `reservation-notification.use-case.spec.ts` (신규), 기존 spec 업데이트 (cancel-user, create-user, admin-store, terminate-partner) — 471개 전체 통과
+  - **deepLink 패턴**: 고객 예약상세 `/reservations/:id`, 파트너 예약상세 `/partner/reservations/:id`, 파트너 센터 `/partner/center`, 리뷰 작성 `/reservations/:id/review` (FE 라우트 확정 시 조정 필요)
 - **Phase 3 UI**: 인앱 알림센터, Web Push 옵트아웃 토글 UI (webPushEnabled + artworkEnabled, [MVP 소거 후보] marketingEnabled)
 
 ---

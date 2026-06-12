@@ -5,6 +5,8 @@ const ALLOWED_PREFIXES = [
     '/api/v1/',
     '/auth/',
     '/partner/',
+    '/partners/',
+    '/policies/',
     '/stores', // 컬렉션(`/stores`, `/stores?...`) + 하위(`/stores/search/...`, `/stores/:slug`) 모두 허용
     '/programs', // 퍼블릭 클래스 상세(`/programs/:id`)·리뷰(`/programs/:id/reviews`)·슬롯(`/programs/:id/available-slots`)
     '/users/',
@@ -12,6 +14,7 @@ const ALLOWED_PREFIXES = [
     '/reviews/',
     '/review/',
     '/artworks/',
+    '/notifications', // 알림센터(`/notifications`, `?...`) + 토큰(`/notifications/tokens`) + 읽음(`/notifications/:id/read`)
 ];
 const BODY_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 

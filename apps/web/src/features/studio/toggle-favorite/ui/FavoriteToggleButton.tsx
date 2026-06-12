@@ -3,6 +3,9 @@
 import { Button, HeartFillIcon, HeartIcon } from '@todam/ui';
 import { useState } from 'react';
 
+import { ApiError } from '@/shared/api';
+import { useToast } from '@/shared/model';
+
 import { useToggleFavorite } from '../queries';
 
 export type FavoriteToggleButtonProps = {
@@ -25,6 +28,7 @@ export function FavoriteToggleButton({
 }: FavoriteToggleButtonProps) {
     const [isFavorite, setIsFavorite] = useState(initialFavorite);
     const toggle = useToggleFavorite();
+    const { push } = useToast();
 
     const handleClick = () => {
         const next = !isFavorite;
@@ -33,9 +37,13 @@ export function FavoriteToggleButton({
         toggle.mutate(
             { storeId },
             {
-                onError: () => {
+                onError: (err) => {
                     setIsFavorite(!next); // 롤백
                     onChange?.(!next);
+                    // 401 은 AuthProvider 전역 핸들러가 로그인 모달로 안내하므로 토스트 생략.
+                    // (그 외 404/500/네트워크 실패는 무반응이 되지 않도록 토스트 노출 — FavoritesListClient 정합.)
+                    if (err instanceof ApiError && err.statusCode === 401) return;
+                    push({ type: 'icon', message: '찜 상태 변경에 실패했습니다.' });
                 },
                 onSuccess: (res) => {
                     const resolved = res.isFavorite;

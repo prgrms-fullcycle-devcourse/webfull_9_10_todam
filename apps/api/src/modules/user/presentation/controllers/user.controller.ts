@@ -14,6 +14,7 @@ import {
     patchNotificationSettingsAllFieldsBodySchema,
     updateMyProfileBodySchema,
     withdrawBodySchema,
+    type PatchNotificationSettingsAllFieldsBody,
 } from '@todam/shared';
 import type { Response } from 'express';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
@@ -128,7 +129,7 @@ export class UserController {
     async patchNotificationSettingsHandler(
         @CurrentUser() user: RequestUser,
         @Body(new BodyZodValidationPipe(patchNotificationSettingsAllFieldsBodySchema))
-        dto: PatchNotificationSettingsBodyDto,
+        dto: PatchNotificationSettingsAllFieldsBody,
     ): Promise<PatchNotificationSettingsResponseDto> {
         return this.patchNotificationSettings.execute(user.id, dto);
     }

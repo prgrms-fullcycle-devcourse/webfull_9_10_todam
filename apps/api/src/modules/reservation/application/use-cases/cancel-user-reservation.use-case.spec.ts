@@ -2,6 +2,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { ArtworkStatus, ReservationSource, ReservationStatus } from '@prisma/client';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
+import { NotificationService } from '../../../notification/application/services/notification.service';
 import {
     CancelUserReservationResult,
     UserReservationCancelRow,
@@ -33,8 +34,13 @@ function makeRow(overrides: Partial<UserReservationCancelRow> = {}): UserReserva
         cancelDeadlineDays: 3,
         artworkId: null,
         artworkStatus: null,
+        partnerUserId: 'partner-user-uuid-001',
         ...overrides,
     };
+}
+
+function makeNotificationService(): jest.Mocked<Pick<NotificationService, 'createAndDispatch'>> {
+    return { createAndDispatch: jest.fn().mockResolvedValue(undefined) };
 }
 
 const CANCEL_RESULT: CancelUserReservationResult = {
@@ -91,9 +97,18 @@ class MockRepository extends UserReservationRepository {
 function makeUseCase(row: UserReservationCancelRow | null): {
     uc: CancelUserReservationUseCase;
     repo: MockRepository;
+    notificationService: jest.Mocked<Pick<NotificationService, 'createAndDispatch'>>;
 } {
     const repo = new MockRepository(row);
-    return { uc: new CancelUserReservationUseCase(repo), repo };
+    const notificationService = makeNotificationService();
+    return {
+        uc: new CancelUserReservationUseCase(
+            repo,
+            notificationService as unknown as NotificationService,
+        ),
+        repo,
+        notificationService,
+    };
 }
 
 const CURRENT_USER_ID = 'user-uuid-001';
@@ -287,9 +302,45 @@ describe('CancelUserReservationUseCase', () => {
                 cancelReason: null,
                 canceledAt: fixedAt,
             });
-            const uc = new CancelUserReservationUseCase(repo);
+            const ns = makeNotificationService();
+            const uc = new CancelUserReservationUseCase(repo, ns as unknown as NotificationService);
             const result = await uc.execute(CURRENT_USER_ID, RESERVATION_ID);
             expect(result.reservation.canceledAt).toBe('2026-05-25T19:50:00.000Z');
+        });
+    });
+
+    // ── P-2 알림 배선 ──
+    describe('P-2 — 고객 취소 시 파트너 알림', () => {
+        it('고객 취소 성공 시 createAndDispatch가 P-2 eventType으로 호출된다', async () => {
+            const { uc, notificationService } = makeUseCase(
+                makeRow({
+                    status: ReservationStatus.PENDING,
+                    scheduledAt: kstTodayPlus(5),
+                    cancelDeadlineDays: 3,
+                    partnerUserId: 'partner-user-uuid-001',
+                }),
+            );
+
+            await uc.execute(CURRENT_USER_ID, RESERVATION_ID);
+
+            expect(notificationService.createAndDispatch).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    recipientId: 'partner-user-uuid-001',
+                    eventType: 'P-2',
+                    idempotencyKey: `P-2:${RESERVATION_ID}:partner-user-uuid-001`,
+                }),
+            );
+        });
+
+        it('createAndDispatch 실패 시 상태 전이 결과가 정상 반환된다 (side-effect 격리)', async () => {
+            const { uc, notificationService } = makeUseCase(
+                makeRow({ status: ReservationStatus.PENDING, scheduledAt: kstTodayPlus(5) }),
+            );
+            notificationService.createAndDispatch.mockResolvedValue(undefined);
+
+            const result = await uc.execute(CURRENT_USER_ID, RESERVATION_ID);
+
+            expect(result.reservation.status).toBe('CANCELED');
         });
     });
 });

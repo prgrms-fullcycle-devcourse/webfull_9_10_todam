@@ -1,4 +1,8 @@
 import type {
+    GetNotificationsQuery,
+    GetNotificationsResponse,
+    ReadAllNotificationsResponse,
+    ReadNotificationResponse,
     RegisterNotificationTokenBody,
     RegisterNotificationTokenResponse,
 } from '@todam/shared';
@@ -18,5 +22,32 @@ export function registerNotificationToken(body: RegisterNotificationTokenBody) {
 export function revokeNotificationToken(fcmToken: string) {
     return clientApiFetch<unknown>(`/notifications/tokens/${encodeURIComponent(fcmToken)}`, {
         method: 'DELETE',
+    });
+}
+
+// GET /notifications — 인앱 알림 목록(커서 페이지네이션).
+export function getNotifications(query: Partial<GetNotificationsQuery> = {}) {
+    const params = new URLSearchParams();
+    if (query.cursor) params.set('cursor', query.cursor);
+    if (query.limit != null) params.set('limit', String(query.limit));
+    if (query.unreadOnly != null) params.set('unreadOnly', String(query.unreadOnly));
+    const qs = params.toString();
+    return clientApiFetch<GetNotificationsResponse>(`/notifications${qs ? `?${qs}` : ''}`, {
+        method: 'GET',
+    });
+}
+
+// PATCH /notifications/:id/read — 단건 읽음.
+export function readNotification(id: string) {
+    return clientApiFetch<ReadNotificationResponse>(
+        `/notifications/${encodeURIComponent(id)}/read`,
+        { method: 'PATCH' },
+    );
+}
+
+// PATCH /notifications/read-all — 전체 읽음.
+export function readAllNotifications() {
+    return clientApiFetch<ReadAllNotificationsResponse>('/notifications/read-all', {
+        method: 'PATCH',
     });
 }
