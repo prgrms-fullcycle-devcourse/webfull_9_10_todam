@@ -8,6 +8,8 @@ import {
     SuspendStoreUseCase,
 } from './admin-store.use-cases';
 
+jest.mock('../../../../common/s3/s3.service', () => ({ S3Service: class S3Service {} }));
+
 describe('admin store actions', () => {
     const updateMany = jest.fn();
     const findUnique = jest.fn();

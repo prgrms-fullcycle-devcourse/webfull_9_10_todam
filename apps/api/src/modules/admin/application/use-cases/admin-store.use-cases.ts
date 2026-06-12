@@ -11,6 +11,8 @@ import {
     type AdminStoreSuspendRequest,
 } from '@todam/shared';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
+import { keyFromImageUrl } from '../../../../common/s3/s3-object.util';
+import { S3Service } from '../../../../common/s3/s3.service';
 import { PrismaService } from '../../../../database/prisma.service';
 
 const storeDetailSelect = {
@@ -221,7 +223,10 @@ export class ListAdminStoresUseCase {
 
 @Injectable()
 export class GetAdminStoreDetailUseCase {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly s3: S3Service,
+    ) {}
 
     async execute(storeId: string): Promise<AdminStoreDetailResponse> {
         const store = await this.prisma.store.findUnique({
@@ -230,6 +235,9 @@ export class GetAdminStoreDetailUseCase {
         });
         if (!store) throw notFound();
         const doc = store.businessDocs[0] ?? null;
+        const documentUrl = doc?.documentUrl
+            ? await this.s3.createPresignedGetUrl(keyFromImageUrl(doc.documentUrl))
+            : null;
 
         return {
             store: {
@@ -257,6 +265,7 @@ export class GetAdminStoreDetailUseCase {
             businessDocument: doc
                 ? {
                       ...doc,
+                      documentUrl,
                       verificationStatus: doc.verificationStatus as VerificationStatus,
                       businessState: doc.businessState as BusinessState | null,
                       verifiedAt: doc.verifiedAt?.toISOString() ?? null,
