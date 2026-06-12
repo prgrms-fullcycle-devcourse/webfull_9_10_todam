@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
 import { AuthModule } from '../auth/auth.module';
 // Phase 2: FCM 토큰 관리
 import { RegisterNotificationTokenUseCase } from './application/use-cases/register-notification-token.use-case';
@@ -12,6 +13,10 @@ import { ReadAllNotificationsUseCase } from './application/use-cases/read-all-no
 import { NotificationRepository } from './domain/repositories/notification.repository';
 import { PrismaNotificationRepository } from './infrastructure/persistence/prisma-notification.repository';
 import { NotificationController } from './presentation/controllers/notification.controller';
+// Phase 3b: FCM 발송 파이프라인
+import { FcmModule } from './infrastructure/fcm/fcm.module';
+import { NotificationWorker, NOTIFICATION_QUEUE } from './infrastructure/queue/notification.worker';
+import { NotificationService } from './application/services/notification.service';
 
 // POST /notifications/tokens — FCM 토큰 등록/갱신 (upsert)
 // DELETE /notifications/tokens/:fcmToken — FCM 토큰 revoke
@@ -20,7 +25,12 @@ import { NotificationController } from './presentation/controllers/notification.
 // PATCH /notifications/read-all — 전체 읽음 일괄 처리
 // DatabaseModule은 @Global() 이므로 PrismaService 별도 import 불필요.
 @Module({
-    imports: [AuthModule],
+    imports: [
+        AuthModule,
+        FcmModule,
+        // BullMQ 큐 등록 — REDIS_URL은 app.module.ts BullModule.forRoot 에서 설정됨.
+        BullModule.registerQueue({ name: NOTIFICATION_QUEUE }),
+    ],
     controllers: [NotificationController],
     providers: [
         // Phase 2
@@ -32,6 +42,10 @@ import { NotificationController } from './presentation/controllers/notification.
         ReadNotificationUseCase,
         ReadAllNotificationsUseCase,
         { provide: NotificationRepository, useClass: PrismaNotificationRepository },
+        // Phase 3b
+        NotificationWorker,
+        NotificationService,
     ],
+    exports: [NotificationService],
 })
 export class NotificationModule {}
