@@ -2,10 +2,13 @@
 
 import React from 'react';
 import type { ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { Logo, Button } from '@todam/ui';
 import { CloseIcon, LeftIcon, NotiIcon } from '@todam/ui';
 
+import { useAuthStore } from '@/features/auth/login';
+import { useUnreadNotificationCount } from '@/features/notification';
 import { useHeaderActionStore } from '@/shared/model';
 import { useHeader } from '../model/useHeader';
 
@@ -17,6 +20,7 @@ type HeaderViewProps = {
     actionLabel?: string;
     rightAction?: ReactNode;
     onNoti?: () => void;
+    hasUnread?: boolean;
     onAction?: () => void;
     onBack?: () => void;
     onClose?: () => void;
@@ -31,6 +35,7 @@ function HeaderView({
     actionLabel = '선택',
     rightAction,
     onNoti,
+    hasUnread,
     onAction,
     onBack,
     onClose,
@@ -38,6 +43,14 @@ function HeaderView({
     onSearchChange,
     onSearchClear,
 }: HeaderViewProps) {
+    const bellIcon = (
+        <span className="relative inline-flex">
+            <NotiIcon />
+            {hasUnread && (
+                <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-primary" />
+            )}
+        </span>
+    );
     return (
         <header className="shrink-0 bg-transparent pt-safe">
             <div
@@ -52,7 +65,7 @@ function HeaderView({
                             variant="ghost"
                             layout="onlyIcon"
                             size="lg"
-                            icon={<NotiIcon />}
+                            icon={bellIcon}
                             aria-label="알림"
                             onClick={onNoti}
                             className="hover:!bg-transparent hover:!text-foreground"
@@ -72,7 +85,7 @@ function HeaderView({
                                 variant="ghost"
                                 layout="onlyIcon"
                                 size="lg"
-                                icon={<NotiIcon />}
+                                icon={bellIcon}
                                 aria-label="알림"
                                 onClick={onNoti}
                                 className="hover:!bg-transparent hover:!text-foreground"
@@ -130,7 +143,7 @@ function HeaderView({
                                     variant="ghost"
                                     layout="onlyIcon"
                                     size="lg"
-                                    icon={<NotiIcon />}
+                                    icon={bellIcon}
                                     aria-label="알림"
                                     onClick={onNoti}
                                     className="hover:!bg-transparent hover:!text-foreground"
@@ -218,7 +231,11 @@ type WidgetHeaderProps = Omit<Partial<HeaderViewProps>, 'type'>;
 
 export function Header(props: WidgetHeaderProps) {
     const header = useHeader();
+    const router = useRouter();
     const rightAction = useHeaderActionStore((s) => s.action);
+    const isAuthenticated = useAuthStore((s) => s.state === 'AUTHENTICATED');
+    const { data: unreadCount } = useUnreadNotificationCount(isAuthenticated);
+
     if (!header.visible) return null;
 
     return (
@@ -227,6 +244,8 @@ export function Header(props: WidgetHeaderProps) {
             title={header.title}
             onBack={header.onBack}
             onClose={header.onClose}
+            onNoti={() => router.push('/notifications')}
+            hasUnread={(unreadCount ?? 0) > 0}
             rightAction={rightAction}
             {...props}
         />
