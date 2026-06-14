@@ -65,7 +65,7 @@ export function CurrentStudioSection() {
             <ChangeStudioCard
                 storeName={detail.store.name}
                 status={detail.store.status}
-                showSwitch={stores.length > 1}
+                showSwitch={stores.length >= 1}
                 onSwitch={openSwitchSheet}
             />
         </section>

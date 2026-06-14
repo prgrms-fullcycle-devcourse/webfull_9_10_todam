@@ -113,7 +113,6 @@ export const ReservationCreateErrorCode = {
     RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
     SLOT_BLOCKED: 'SLOT_BLOCKED',
     INVALID_SLOT: 'INVALID_SLOT',
-    SLOT_OVERLAP: 'SLOT_OVERLAP',
     INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
 } as const;
 export type ReservationCreateErrorCode =

@@ -12,7 +12,7 @@ const hours = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((dayOfWeek) 
 const startAt = new Date('2026-06-10T01:00:00.000Z');
 const endAt = new Date('2026-06-10T02:00:00.000Z');
 
-function makeTx(overlaps: unknown[] = []) {
+function makeTx(overlaps: unknown[] = [], blocked = false) {
     const calls: string[] = [];
     const tx = {
         $queryRaw: jest.fn(async () => {
@@ -36,6 +36,7 @@ function makeTx(overlaps: unknown[] = []) {
             findUniqueOrThrow: jest.fn(async () => ({ id: 'slot-1', startAt, endAt })),
             updateMany: jest.fn(async () => ({ count: 1 })),
         },
+        timeSlotBlock: { findFirst: jest.fn(async () => (blocked ? { id: 'block-1' } : null)) },
         reservationRestriction: { findFirst: jest.fn(async () => null) },
         reservation: { findMany: jest.fn(async () => overlaps) },
     };
@@ -67,7 +68,7 @@ describe('materializeBookingSlot', () => {
         );
     });
 
-    it('rejects a reservation that spills outside the requested virtual slot', async () => {
+    it('uses a cross-boundary reservation as occupied capacity and allows remaining capacity', async () => {
         const { tx } = makeTx([
             {
                 storeTimeSlotId: 'old-slot',
@@ -85,7 +86,26 @@ describe('materializeBookingSlot', () => {
                 startAt: startAt.toISOString(),
                 allowPast: true,
             }),
-        ).rejects.toMatchObject({ errorCode: 'SLOT_OVERLAP' });
+        ).resolves.toEqual({ id: 'slot-1', startAt, endAt });
+        expect(tx.storeTimeSlot.updateMany).toHaveBeenCalledWith(
+            expect.objectContaining({
+                where: expect.objectContaining({ reservedCount: { lte: 3 } }),
+            }),
+        );
+    });
+
+    it('rejects a reservation overlapping a time slot block', async () => {
+        const { tx } = makeTx([], true);
+
+        await expect(
+            materializeBookingSlot(tx as never, {
+                storeId: '11111111-1111-1111-1111-111111111111',
+                programId: '22222222-2222-2222-2222-222222222222',
+                participantCount: 1,
+                startAt: startAt.toISOString(),
+                allowPast: true,
+            }),
+        ).rejects.toMatchObject({ errorCode: 'SLOT_BLOCKED' });
         expect(tx.storeTimeSlot.createMany).not.toHaveBeenCalled();
     });
 });

@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
-import { StoreTimeSlotRepository } from '../../domain/repositories/store-time-slot.repository';
+import { TimeSlotBlockRepository } from '../../domain/repositories/time-slot-block.repository';
 import type {
     UpdateTimeSlotStatusDto,
     UpdateTimeSlotStatusResponseDto,
@@ -13,7 +13,7 @@ export class UpdateTimeSlotStatusUseCase {
 
     constructor(
         private readonly ownership: StoreOwnershipService,
-        private readonly slots: StoreTimeSlotRepository,
+        private readonly blocks: TimeSlotBlockRepository,
     ) {}
 
     async execute(
@@ -28,7 +28,7 @@ export class UpdateTimeSlotStatusUseCase {
 
         let updated;
         try {
-            updated = await this.slots.setStatusByKey({
+            updated = await this.blocks.setStatus({
                 storeId,
                 startAt,
                 endAt,

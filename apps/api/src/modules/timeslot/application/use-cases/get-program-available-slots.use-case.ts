@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { kstMonthRange } from '../../../../common/date/kst-date.util';
-import { StoreTimeSlotRepository } from '../../domain/repositories/store-time-slot.repository';
+import { TimeSlotBlockRepository } from '../../domain/repositories/time-slot-block.repository';
 import { ReservationRestrictionRepository } from '../../domain/repositories/reservation-restriction.repository';
 import { TimeslotSupportReader } from '../../domain/repositories/timeslot-support.reader';
 import { TimeSlotGenerationService } from '../../domain/services/time-slot-generation.service';
@@ -15,7 +15,7 @@ import type {
 export class GetProgramAvailableSlotsUseCase {
     constructor(
         private readonly support: TimeslotSupportReader,
-        private readonly slots: StoreTimeSlotRepository,
+        private readonly blocks: TimeSlotBlockRepository,
         private readonly restrictions: ReservationRestrictionRepository,
     ) {}
 
@@ -48,7 +48,7 @@ export class GetProgramAvailableSlotsUseCase {
 
         const [reservations, blockedSlots, restrictions] = await Promise.all([
             this.support.findActiveReservationWindows(program.storeId, range),
-            this.slots.findOverlappingBlocked(program.storeId, range),
+            this.blocks.findOverlapping(program.storeId, range),
             this.restrictions.findOverlapping(program.storeId, range),
         ]);
         const blockedWindows = [

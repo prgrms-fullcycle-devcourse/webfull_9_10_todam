@@ -92,9 +92,7 @@ export function useSubmitStudioRegistration() {
             // 3) 심사 제출 (DRAFT → PENDING)
             await submitStudio(storeId);
 
-            // 타임슬롯 자동 생성은 어드민 승인(APPROVED) 시점으로 이관.
-            // 등록 직후엔 PENDING 이라 time-slots/generate(PartnerGuard) 가 403 → 로그인 모달 오작동.
-            // PENDING 공방은 예약을 받지 않으므로 타임슬롯 불필요. 승인 트랜잭션에서 status 전환과 함께 생성한다.
+            // 타임슬롯은 조회/예약 시 영업시간 기준으로 계산되므로 등록 시 별도 생성하지 않는다.
             return { storeId };
         },
     });

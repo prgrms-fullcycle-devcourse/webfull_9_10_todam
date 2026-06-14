@@ -4,14 +4,14 @@ import { UpdateTimeSlotStatusUseCase } from './update-time-slot-status.use-case'
 
 describe('UpdateTimeSlotStatusUseCase', () => {
     const ownership = { verify: jest.fn() };
-    const slots = { setStatusByKey: jest.fn() };
-    const useCase = new UpdateTimeSlotStatusUseCase(ownership as never, slots as never);
+    const blocks = { setStatus: jest.fn() };
+    const useCase = new UpdateTimeSlotStatusUseCase(ownership as never, blocks as never);
     const slotKey = '2026-06-10T01:00:00.000Z|2026-06-10T02:00:00.000Z';
 
     beforeEach(() => {
         jest.clearAllMocks();
         ownership.verify.mockResolvedValue({ reservationIntervalMinutes: 60 });
-        slots.setStatusByKey.mockResolvedValue(null);
+        blocks.setStatus.mockResolvedValue(null);
     });
 
     it('materializes CLOSE by slotKey after current-grid validation', async () => {
@@ -20,7 +20,7 @@ describe('UpdateTimeSlotStatusUseCase', () => {
             status: StoreTimeSlotStatus.CLOSED,
         });
 
-        expect(slots.setStatusByKey).toHaveBeenCalledWith({
+        expect(blocks.setStatus).toHaveBeenCalledWith({
             storeId: 'store-1',
             startAt: new Date('2026-06-10T01:00:00.000Z'),
             endAt: new Date('2026-06-10T02:00:00.000Z'),
@@ -35,7 +35,7 @@ describe('UpdateTimeSlotStatusUseCase', () => {
             status: StoreTimeSlotStatus.OPEN,
         });
 
-        expect(slots.setStatusByKey).toHaveBeenCalledWith(
+        expect(blocks.setStatus).toHaveBeenCalledWith(
             expect.objectContaining({ validateCurrentCandidate: false }),
         );
     });

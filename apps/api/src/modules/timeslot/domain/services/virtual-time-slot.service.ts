@@ -14,7 +14,6 @@ export interface BlockedWindow {
 export interface VirtualSlotState {
     reservedCount: number;
     remainingCount: number;
-    hasSpill: boolean;
     isBlocked: boolean;
     isAvailable: boolean;
 }
@@ -29,17 +28,15 @@ export function evaluateVirtualSlot(
     maxCapacity: number,
 ): VirtualSlotState {
     const overlap = TimeSlotGenerationService.aggregateOverlaps(candidate, reservations);
-    const hasSpill = overlap.hasSpill;
-    const reservedCount = overlap.containedParticipantCount;
+    const reservedCount = overlap.overlappingParticipantCount;
     const remainingCount = Math.max(0, maxCapacity - reservedCount);
     const isBlocked = blockedWindows.some((blocked) => overlaps(candidate, blocked));
 
     return {
         reservedCount,
         remainingCount,
-        hasSpill,
         isBlocked,
-        isAvailable: !hasSpill && !isBlocked && remainingCount > 0,
+        isAvailable: !isBlocked && remainingCount > 0,
     };
 }
 

@@ -57,8 +57,7 @@ export interface ReservationIntervalInput {
 }
 
 export interface OverlapAggregationResult {
-    containedParticipantCount: number;
-    hasSpill: boolean;
+    overlappingParticipantCount: number;
 }
 
 export class TimeSlotGenerationService {
@@ -156,25 +155,16 @@ export class TimeSlotGenerationService {
         candidate: SlotCandidate,
         reservations: ReservationIntervalInput[],
     ): OverlapAggregationResult {
-        let containedParticipantCount = 0;
-        let hasSpill = false;
+        let overlappingParticipantCount = 0;
 
         for (const reservation of reservations) {
             const overlaps =
                 reservation.startAt.getTime() < candidate.endAt.getTime() &&
                 candidate.startAt.getTime() < reservation.endAt.getTime();
             if (!overlaps) continue;
-
-            if (
-                reservation.startAt.getTime() < candidate.startAt.getTime() ||
-                reservation.endAt.getTime() > candidate.endAt.getTime()
-            ) {
-                hasSpill = true;
-            } else {
-                containedParticipantCount += reservation.participantCount;
-            }
+            overlappingParticipantCount += reservation.participantCount;
         }
 
-        return { containedParticipantCount, hasSpill };
+        return { overlappingParticipantCount };
     }
 }

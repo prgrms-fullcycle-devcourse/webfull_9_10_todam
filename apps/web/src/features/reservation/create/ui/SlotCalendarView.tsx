@@ -190,7 +190,7 @@ export interface SlotCalendarViewProps {
     year: number;
     month: number;
     slots: AvailableSlotItem[];
-    selectedSlotId: string | null;
+    selectedSlotKey: string | null;
     onMonthChange: (year: number, month: number) => void;
     onSlotSelect: (slot: AvailableSlotItem) => void;
 }
@@ -199,7 +199,7 @@ export function SlotCalendarView({
     year,
     month,
     slots,
-    selectedSlotId,
+    selectedSlotKey,
     onMonthChange,
     onSlotSelect,
 }: SlotCalendarViewProps) {
@@ -302,8 +302,8 @@ export function SlotCalendarView({
                     <div className="grid grid-cols-3 gap-3">
                         {slotsForDate.map((slot) => (
                             <Slot
-                                key={slot.slotId}
-                                selected={selectedSlotId === slot.slotId}
+                                key={slot.slotKey}
+                                selected={selectedSlotKey === slot.slotKey}
                                 disabled={!slot.isAvailable}
                                 onClick={() => onSlotSelect(slot)}
                             >

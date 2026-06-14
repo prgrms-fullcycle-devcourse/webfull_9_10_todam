@@ -22,8 +22,6 @@ import {
     useStudioDetail,
     useUpdateStudio,
 } from '../queries';
-import { generateTimeSlots, rollingGenerateRange } from '../../timeslot/api';
-
 import { InfoEditSection } from './InfoEditSection';
 import { OperatingEditSection } from './OperatingEditSection';
 import { ReservationEditSection } from './ReservationEditSection';
@@ -134,17 +132,6 @@ export function StudioEditLayout({ storeId, section, returnTo }: StudioEditLayou
                 if (imageIds) body.images = imageIds;
             }
             await updateMutation.mutateAsync(body);
-
-            // 영업정보(영업시간/요일) 또는 예약 간격(interval) 변경 시 타임슬롯 재생성 (#169 — 향후 30일 롤링).
-            // BE generate 가 새 격자 기준으로 멱등 생성 + 예약없는 미래 빈 슬롯 prune(삭제) 수행.
-            // best-effort: 실패해도 저장 완료 유지.
-            if (section === 'operating' || section === 'reservation') {
-                try {
-                    await generateTimeSlots(storeId, rollingGenerateRange());
-                } catch (err) {
-                    console.warn('[store-edit] 타임슬롯 재생성 실패', err);
-                }
-            }
 
             reset();
             push({

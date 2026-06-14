@@ -2,7 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
 import { kstDayRange, parseDateOnly } from '../../../../common/date/kst-date.util';
-import { StoreTimeSlotRepository } from '../../domain/repositories/store-time-slot.repository';
+import { TimeSlotBlockRepository } from '../../domain/repositories/time-slot-block.repository';
 import { ReservationRestrictionRepository } from '../../domain/repositories/reservation-restriction.repository';
 import { TimeslotSupportReader } from '../../domain/repositories/timeslot-support.reader';
 import { TimeSlotGenerationService } from '../../domain/services/time-slot-generation.service';
@@ -16,7 +16,7 @@ import type {
 export class ListTimeSlotsUseCase {
     constructor(
         private readonly ownership: StoreOwnershipService,
-        private readonly slots: StoreTimeSlotRepository,
+        private readonly blocks: TimeSlotBlockRepository,
         private readonly restrictions: ReservationRestrictionRepository,
         private readonly support: TimeslotSupportReader,
     ) {}
@@ -43,7 +43,7 @@ export class ListTimeSlotsUseCase {
         });
         const [reservations, blockedSlots, restrictions] = await Promise.all([
             this.support.findActiveReservationWindows(storeId, resolved.range),
-            this.slots.findOverlappingBlocked(storeId, resolved.range),
+            this.blocks.findOverlapping(storeId, resolved.range),
             this.restrictions.findOverlapping(storeId, resolved.range),
         ]);
 

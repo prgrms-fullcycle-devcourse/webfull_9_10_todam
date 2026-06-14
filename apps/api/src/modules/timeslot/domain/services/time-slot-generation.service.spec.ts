@@ -175,7 +175,7 @@ describe('TimeSlotGenerationService.aggregateOverlaps', () => {
         endAt: new Date('2026-06-10T06:00:00.000Z'),
     };
 
-    it('aggregates contained overlap without spill', () => {
+    it('aggregates reservations contained by the candidate', () => {
         const result = TimeSlotGenerationService.aggregateOverlaps(candidate, [
             {
                 startAt: new Date('2026-06-10T05:00:00.000Z'),
@@ -184,10 +184,10 @@ describe('TimeSlotGenerationService.aggregateOverlaps', () => {
             },
         ]);
 
-        expect(result).toEqual({ containedParticipantCount: 2, hasSpill: false });
+        expect(result).toEqual({ overlappingParticipantCount: 2 });
     });
 
-    it('marks an overlapping reservation outside the candidate as spill', () => {
+    it('aggregates reservations that cross candidate boundaries', () => {
         const result = TimeSlotGenerationService.aggregateOverlaps(candidate, [
             {
                 startAt: new Date('2026-06-10T05:00:00.000Z'),
@@ -201,7 +201,7 @@ describe('TimeSlotGenerationService.aggregateOverlaps', () => {
             },
         ]);
 
-        expect(result).toEqual({ containedParticipantCount: 3, hasSpill: true });
+        expect(result).toEqual({ overlappingParticipantCount: 5 });
     });
 
     it('excludes reservations that only touch candidate boundaries', () => {
@@ -218,6 +218,6 @@ describe('TimeSlotGenerationService.aggregateOverlaps', () => {
             },
         ]);
 
-        expect(result).toEqual({ containedParticipantCount: 0, hasSpill: false });
+        expect(result).toEqual({ overlappingParticipantCount: 0 });
     });
 });

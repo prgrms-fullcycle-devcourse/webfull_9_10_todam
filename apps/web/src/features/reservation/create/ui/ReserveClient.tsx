@@ -220,7 +220,7 @@ export function ReserveClient({
         createReservation(
             {
                 programId,
-                slotId: selectedSlot.slotId,
+                startAt: selectedSlot.startAt,
                 reserverName: reserverName.trim(),
                 reserverPhone,
                 participantCount,
@@ -295,7 +295,7 @@ export function ReserveClient({
                                 year={year}
                                 month={month}
                                 slots={slotsData?.slots ?? []}
-                                selectedSlotId={selectedSlot?.slotId ?? null}
+                                selectedSlotKey={selectedSlot?.slotKey ?? null}
                                 onMonthChange={(y, m) => {
                                     setYear(y);
                                     setMonth(m);

@@ -23,7 +23,6 @@ import {
     availableSlotsQuerySchema,
     createReservationRestrictionsRequestSchema,
     deleteReservationRestrictionsRequestSchema,
-    generateTimeSlotsRequestSchema,
     listTimeSlotsQuerySchema,
     programReservationCountsQuerySchema,
     StoreTimeSlotStatus,
@@ -33,7 +32,6 @@ import type {
     AvailableSlotsQuery,
     CreateReservationRestrictionsRequest,
     DeleteReservationRestrictionsRequest,
-    GenerateTimeSlotsRequest,
     ListTimeSlotsQuery,
     ProgramReservationCountsQuery,
     UpdateTimeSlotStatusRequest,
@@ -44,14 +42,12 @@ import { PartnerGuard } from '../../../../common/guards/partner.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../../../common/decorators/response-message.decorator';
 import type { RequestUser } from '../../../../common/types/request-user.type';
-import { GenerateTimeSlotsUseCase } from '../../application/use-cases/generate-time-slots.use-case';
 import { ListTimeSlotsUseCase } from '../../application/use-cases/list-time-slots.use-case';
 import { UpdateTimeSlotStatusUseCase } from '../../application/use-cases/update-time-slot-status.use-case';
 import { CreateReservationRestrictionsUseCase } from '../../application/use-cases/create-reservation-restrictions.use-case';
 import { DeleteReservationRestrictionsUseCase } from '../../application/use-cases/delete-reservation-restrictions.use-case';
 import { GetProgramReservationCountsUseCase } from '../../application/use-cases/get-program-reservation-counts.use-case';
 import { GetProgramAvailableSlotsUseCase } from '../../application/use-cases/get-program-available-slots.use-case';
-import { GenerateTimeSlotsDto, GenerateTimeSlotsResponseDto } from '../dto/generate-time-slots.dto';
 import { AvailableSlotsResponseDto } from '../dto/available-slots.dto';
 import { ListTimeSlotsResponseDto } from '../dto/list-time-slots.dto';
 import {
@@ -73,7 +69,6 @@ import { ProgramReservationCountsResponseDto } from '../dto/program-reservation-
 @Controller()
 export class TimeslotController {
     constructor(
-        private readonly generateTimeSlotsUseCase: GenerateTimeSlotsUseCase,
         private readonly listTimeSlotsUseCase: ListTimeSlotsUseCase,
         private readonly updateTimeSlotStatusUseCase: UpdateTimeSlotStatusUseCase,
         private readonly createReservationRestrictionsUseCase: CreateReservationRestrictionsUseCase,
@@ -81,22 +76,6 @@ export class TimeslotController {
         private readonly getProgramReservationCountsUseCase: GetProgramReservationCountsUseCase,
         private readonly getProgramAvailableSlotsUseCase: GetProgramAvailableSlotsUseCase,
     ) {}
-
-    @Post('partner/stores/:storeId/time-slots/generate')
-    @UseGuards(AuthGuard, PartnerGuard)
-    @ResponseMessage('타임슬롯이 성공적으로 생성되었습니다.')
-    @ApiBody({ type: GenerateTimeSlotsDto })
-    @ApiCreatedResponse({
-        description: '타임슬롯 자동 생성 성공',
-        type: GenerateTimeSlotsResponseDto,
-    })
-    async generateTimeSlots(
-        @CurrentUser() user: RequestUser,
-        @Param('storeId') storeId: string,
-        @Body(new ZodValidationPipe(generateTimeSlotsRequestSchema)) dto: GenerateTimeSlotsRequest,
-    ): Promise<GenerateTimeSlotsResponseDto> {
-        return this.generateTimeSlotsUseCase.execute(user.id, storeId, dto);
-    }
 
     @Get('partner/stores/:storeId/time-slots')
     @HttpCode(HttpStatus.OK)

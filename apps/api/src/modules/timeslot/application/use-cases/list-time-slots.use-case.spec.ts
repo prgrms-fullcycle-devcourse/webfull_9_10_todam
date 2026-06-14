@@ -3,7 +3,7 @@ import { ListTimeSlotsUseCase } from './list-time-slots.use-case';
 
 describe('ListTimeSlotsUseCase', () => {
     const ownership = { verify: jest.fn() };
-    const slots = { findOverlappingBlocked: jest.fn() };
+    const blocks = { findOverlapping: jest.fn() };
     const restrictions = { findOverlapping: jest.fn() };
     const support = {
         findOperatingHours: jest.fn(),
@@ -11,7 +11,7 @@ describe('ListTimeSlotsUseCase', () => {
     };
     const useCase = new ListTimeSlotsUseCase(
         ownership as never,
-        slots as never,
+        blocks as never,
         restrictions as never,
         support as never,
     );
@@ -32,7 +32,7 @@ describe('ListTimeSlotsUseCase', () => {
             },
         ]);
         support.findActiveReservationWindows.mockResolvedValue([]);
-        slots.findOverlappingBlocked.mockResolvedValue([]);
+        blocks.findOverlapping.mockResolvedValue([]);
         restrictions.findOverlapping.mockResolvedValue([]);
     });
 
@@ -61,11 +61,12 @@ describe('ListTimeSlotsUseCase', () => {
         ).rejects.toMatchObject({ errorCode: 'INVALID_DATE_RANGE' });
     });
 
-    it('marks a candidate unavailable when an overlapping reservation spills into it', async () => {
+    it('subtracts capacity but keeps a split candidate available when capacity remains', async () => {
         support.findActiveReservationWindows.mockResolvedValue([
             {
                 startAt: new Date('2026-06-10T00:30:00.000Z'),
                 endAt: new Date('2026-06-10T01:30:00.000Z'),
+                participantCount: 1,
                 isConfirmed: true,
             },
         ]);
@@ -73,14 +74,15 @@ describe('ListTimeSlotsUseCase', () => {
         const result = await useCase.execute('user-1', 'store-1', { date: '2026-06-10' });
 
         expect(result.slots[0]).toMatchObject({
-            reservedCount: 0,
+            reservedCount: 1,
+            remainingCount: 4,
             confirmedReservationCount: 1,
-            isAvailable: false,
+            isAvailable: true,
         });
     });
 
     it('exposes the exact stale blocked slotKey so the partner can reopen it', async () => {
-        slots.findOverlappingBlocked.mockResolvedValue([
+        blocks.findOverlapping.mockResolvedValue([
             {
                 startAt: new Date('2026-06-10T01:30:00.000Z'),
                 endAt: new Date('2026-06-10T02:30:00.000Z'),

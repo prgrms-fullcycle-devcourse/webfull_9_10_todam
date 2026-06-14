@@ -130,7 +130,7 @@ export async function materializeBookingSlot(
     }
 
     const [blocked, restriction, exactSlot, overlaps] = await Promise.all([
-        tx.storeTimeSlot.findFirst({
+        tx.timeSlotBlock.findFirst({
             where: {
                 storeId: input.storeId,
                 status: { in: [StoreTimeSlotStatus.CLOSED, StoreTimeSlotStatus.CANCELED] },
@@ -183,17 +183,6 @@ export async function materializeBookingSlot(
     }
 
     const otherOverlaps = overlaps.filter((item) => item.storeTimeSlotId !== exactSlot?.id);
-    if (
-        otherOverlaps.some(
-            (item) => item.scheduledAt < candidate.startAt || item.scheduledEndAt > candidate.endAt,
-        )
-    ) {
-        throw new BusinessException(
-            'SLOT_OVERLAP',
-            '기존 예약과 시간이 겹쳐 예약할 수 없습니다.',
-            HttpStatus.CONFLICT,
-        );
-    }
     const otherOverlap = otherOverlaps.reduce((sum, item) => sum + item.participantCount, 0);
 
     await tx.storeTimeSlot.createMany({
