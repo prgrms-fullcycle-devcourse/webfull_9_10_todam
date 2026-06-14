@@ -248,6 +248,7 @@ describe('PrismaPartnerReservationRepository concurrency integration', () => {
                 storeTimeSlotId: slotId,
                 programSnapshotId: snapshotId,
                 scheduledAt,
+                scheduledEndAt: new Date(scheduledAt.getTime() + 60 * 60 * 1000),
                 reserverName: suffix,
                 reserverPhone: '010-0000-0000',
                 participantCount,

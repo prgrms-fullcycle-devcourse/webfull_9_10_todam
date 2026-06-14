@@ -22,6 +22,7 @@ export class CreateUserReservationUseCase {
         const result = await this.reservations.createCustomer(userId, {
             programId: dto.programId,
             slotId: dto.slotId,
+            startAt: dto.startAt,
             reserverName: dto.reserverName,
             reserverPhone: dto.reserverPhone,
             participantCount: dto.participantCount,

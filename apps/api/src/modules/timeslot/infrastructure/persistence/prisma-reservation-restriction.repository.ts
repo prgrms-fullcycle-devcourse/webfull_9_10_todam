@@ -34,9 +34,29 @@ export class PrismaReservationRestrictionRepository extends ReservationRestricti
         return rows.map((r) => ReservationRestrictionMapper.toDomain(r));
     }
 
+    async findOverlapping(
+        storeId: string,
+        range: { start: Date; end: Date },
+    ): Promise<ReservationRestriction[]> {
+        const rows = await this.prisma.reservationRestriction.findMany({
+            where: {
+                storeId,
+                startAt: { lt: range.end },
+                endAt: { gt: range.start },
+            },
+            select: RESTRICTION_SELECT,
+        });
+        return rows.map((row) => ReservationRestrictionMapper.toDomain(row));
+    }
+
     async createManyIdempotent(items: NewRestriction[]): Promise<ReservationRestriction[]> {
         if (items.length === 0) return [];
         return this.prisma.$transaction(async (tx) => {
+            for (const storeId of [...new Set(items.map((item) => item.storeId))].sort()) {
+                await tx.$queryRaw(
+                    Prisma.sql`SELECT id FROM stores WHERE id = ${storeId}::uuid FOR UPDATE`,
+                );
+            }
             const created: ReservationRestriction[] = [];
             for (const item of items) {
                 const existing = await tx.reservationRestriction.findUnique({
@@ -47,9 +67,19 @@ export class PrismaReservationRestrictionRepository extends ReservationRestricti
                             programId: item.programId,
                         },
                     },
-                    select: { id: true },
+                    select: RESTRICTION_SELECT,
                 });
-                if (existing) continue; // 멱등 — 이미 있으면 스킵.
+                if (existing) {
+                    if (existing.endAt.getTime() !== item.endAt.getTime()) {
+                        const updated = await tx.reservationRestriction.update({
+                            where: { id: existing.id },
+                            data: { endAt: item.endAt, createdBy: item.createdBy },
+                            select: RESTRICTION_SELECT,
+                        });
+                        created.push(ReservationRestrictionMapper.toDomain(updated));
+                    }
+                    continue;
+                }
 
                 const row = await tx.reservationRestriction.create({
                     data: {
@@ -69,10 +99,15 @@ export class PrismaReservationRestrictionRepository extends ReservationRestricti
 
     async deleteByIds(storeId: string, ids: string[]): Promise<number> {
         if (ids.length === 0) return 0;
-        const result = await this.prisma.reservationRestriction.deleteMany({
-            where: { id: { in: ids }, storeId },
+        return this.prisma.$transaction(async (tx) => {
+            await tx.$queryRaw(
+                Prisma.sql`SELECT id FROM stores WHERE id = ${storeId}::uuid FOR UPDATE`,
+            );
+            const result = await tx.reservationRestriction.deleteMany({
+                where: { id: { in: ids }, storeId },
+            });
+            return result.count;
         });
-        return result.count;
     }
 
     async deleteByConditions(
@@ -80,15 +115,23 @@ export class PrismaReservationRestrictionRepository extends ReservationRestricti
         conditions: DeleteRestrictionConditions,
     ): Promise<number> {
         const where: Prisma.ReservationRestrictionWhereInput = { storeId };
-        if (conditions.startAts && conditions.startAts.length > 0) {
-            where.startAt = { in: conditions.startAts };
+        if (conditions.timeRanges && conditions.timeRanges.length > 0) {
+            where.OR = conditions.timeRanges.map((range) => ({
+                startAt: range.startAt,
+                endAt: range.endAt,
+            }));
         } else if (conditions.range) {
             where.startAt = { gte: conditions.range.start, lt: conditions.range.end };
         }
         if (conditions.programIds && conditions.programIds.length > 0) {
             where.programId = { in: conditions.programIds };
         }
-        const result = await this.prisma.reservationRestriction.deleteMany({ where });
-        return result.count;
+        return this.prisma.$transaction(async (tx) => {
+            await tx.$queryRaw(
+                Prisma.sql`SELECT id FROM stores WHERE id = ${storeId}::uuid FOR UPDATE`,
+            );
+            const result = await tx.reservationRestriction.deleteMany({ where });
+            return result.count;
+        });
     }
 }

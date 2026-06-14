@@ -7,7 +7,8 @@ import {
 
 export interface CreateCustomerReservationInput {
     programId: string;
-    slotId: string;
+    slotId?: string;
+    startAt?: string;
     reserverName: string;
     reserverPhone: string;
     participantCount: number;
@@ -51,6 +52,7 @@ export interface UserReservationListQuery {
 /** POST /reservations/:reservationId/cancel 취소 처리용 행 */
 export interface UserReservationCancelRow {
     id: string;
+    storeId: string;
     userId: string | null;
     status: ReservationStatus;
     source: ReservationSource;

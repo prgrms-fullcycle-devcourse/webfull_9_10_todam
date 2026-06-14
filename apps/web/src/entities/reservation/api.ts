@@ -83,11 +83,11 @@ export function getPartnerTimeSlotsByDate(storeId: string, date: string) {
 export function getPartnerProgramReservationCounts(
     storeId: string,
     date: string,
-    timeSlotIds?: string[],
+    slotKeys?: string[],
 ) {
     const params = new URLSearchParams({ date });
-    if (timeSlotIds?.length) {
-        params.set('timeSlotIds', timeSlotIds.join(','));
+    if (slotKeys?.length) {
+        params.set('slotKeys', slotKeys.join(','));
     }
 
     return clientApiFetch<ProgramReservationCountsResult>(

@@ -34,7 +34,7 @@ export function RestrictionPageClient({ date }: Props) {
 
     const [step, setStep] = useState<Step>('scope');
     const [scope, setScope] = useState<Scope>('ALL_DAY');
-    const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
+    const [selectedSlotKeys, setSelectedSlotKeys] = useState<string[]>([]);
     const [timeRanges, setTimeRanges] = useState<ReservationRestrictionTimeRange[]>([]);
     const [initialProgramIds, setInitialProgramIds] = useState<string[]>([]);
     // 기존 제한 있는 날 재진입 → 바텀시트 생략하고 timeslots부터(종일이었어도). 뒤로가기 동작 분기용.
@@ -52,7 +52,7 @@ export function RestrictionPageClient({ date }: Props) {
         if (restricted.length > 0) {
             // 전체/일부 무관 선택했던 시간대·클래스 그대로 복원, 바텀시트 생략 → timeslots 진입.
             setScope('TIME_SLOTS');
-            setSelectedSlotIds(restricted.map((s) => s.slotId));
+            setSelectedSlotKeys(restricted.map((s) => s.slotKey));
             setTimeRanges(
                 restricted.map((s) => ({
                     startAt: toKSTOffsetISO(s.startAt),
@@ -117,7 +117,7 @@ export function RestrictionPageClient({ date }: Props) {
             <RestrictionTimeSlotsClient
                 storeId={storeId}
                 date={date}
-                initialSelectedSlotIds={selectedSlotIds}
+                initialSelectedSlotKeys={selectedSlotKeys}
                 onUnrestrict={prefilled ? handleUnrestrict : undefined}
                 unrestrictPending={deleteMutation.isPending}
                 onBack={() => {
@@ -128,8 +128,8 @@ export function RestrictionPageClient({ date }: Props) {
                         setStep('scope');
                     }
                 }}
-                onNext={(slotIds, ranges) => {
-                    setSelectedSlotIds(slotIds);
+                onNext={(slotKeys, ranges) => {
+                    setSelectedSlotKeys(slotKeys);
                     setTimeRanges(ranges);
                     setStep('programs');
                 }}
@@ -143,7 +143,7 @@ export function RestrictionPageClient({ date }: Props) {
                 storeId={storeId}
                 date={date}
                 scope={scope}
-                selectedSlotIds={selectedSlotIds}
+                selectedSlotKeys={selectedSlotKeys}
                 timeRanges={timeRanges}
                 initialSelectedProgramIds={initialProgramIds}
                 onBack={() => {

@@ -7,7 +7,6 @@ import {
     ReservationSource,
     ReservationStatus,
     StoreStatus,
-    StoreTimeSlotStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
@@ -27,8 +26,8 @@ import {
 import {
     assertReservationStatusTransition,
     decrementReservedCount,
-    tryIncrementReservedCount,
 } from './reservation-slot-count';
+import { lockStore, materializeBookingSlot } from './booking-core';
 
 @Injectable()
 export class PrismaUserReservationRepository extends UserReservationRepository {
@@ -40,10 +39,22 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
         userId: string,
         input: CreateCustomerReservationInput,
     ): Promise<CreateCustomerReservationResult> {
+        const target = await this.prisma.program.findUnique({
+            where: { id: input.programId },
+            select: { storeId: true },
+        });
+        if (!target) {
+            throw new BusinessException(
+                'PROGRAM_NOT_FOUND',
+                '프로그램을 찾을 수 없습니다.',
+                HttpStatus.NOT_FOUND,
+            );
+        }
         return this.prisma.$transaction(async (tx) => {
+            await lockStore(tx, target.storeId);
             // 1. program 조회 (status=ACTIVE, store 조인)
             const program = await tx.program.findFirst({
-                where: { id: input.programId, status: 'ACTIVE' },
+                where: { id: input.programId, storeId: target.storeId, status: 'ACTIVE' },
                 select: {
                     id: true,
                     title: true,
@@ -90,55 +101,14 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
 
             const storeId = program.storeId;
 
-            // 3. slot 조회 (storeId 일치 확인)
-            const slot = await tx.storeTimeSlot.findFirst({
-                where: { id: input.slotId, storeId },
-                select: { id: true, startAt: true, status: true, reservedCount: true },
+            const slot = await materializeBookingSlot(tx, {
+                storeId,
+                programId: program.id,
+                participantCount: input.participantCount,
+                slotId: input.slotId,
+                startAt: input.startAt,
+                allowPast: false,
             });
-
-            if (!slot) {
-                throw new BusinessException(
-                    'RESOURCE_NOT_FOUND',
-                    '슬롯을 찾을 수 없습니다.',
-                    HttpStatus.NOT_FOUND,
-                );
-            }
-
-            if (slot.status !== StoreTimeSlotStatus.OPEN) {
-                throw new BusinessException(
-                    'SLOT_BLOCKED',
-                    '해당 시간대는 예약할 수 없습니다.',
-                    HttpStatus.CONFLICT,
-                );
-            }
-
-            // 4. ReservationRestriction 확인 (storeId, startAt=slot.startAt, programId)
-            const restriction = await tx.reservationRestriction.findFirst({
-                where: {
-                    storeId,
-                    startAt: slot.startAt,
-                    programId: program.id,
-                },
-                select: { id: true },
-            });
-
-            if (restriction) {
-                throw new BusinessException(
-                    'SLOT_BLOCKED',
-                    '해당 시간대는 예약이 차단되어 있습니다.',
-                    HttpStatus.CONFLICT,
-                );
-            }
-
-            // 5. 정원 확인: maxCapacityPerSlot null이면 예약 불가
-            const maxCapacity = program.store.maxCapacityPerSlot;
-            if (maxCapacity === null) {
-                throw new BusinessException(
-                    'INSUFFICIENT_CAPACITY',
-                    '해당 슬롯은 예약 정원이 설정되어 있지 않습니다.',
-                    HttpStatus.BAD_REQUEST,
-                );
-            }
 
             // 6. ProgramSnapshot 생성
             const snapshot = await tx.programSnapshot.create({
@@ -159,22 +129,6 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
                 ? ReservationStatus.CONFIRMED
                 : ReservationStatus.PENDING;
 
-            // 7. 조건부 원자 increment (동시성 안전)
-            const incremented = await tryIncrementReservedCount(
-                tx,
-                input.slotId,
-                input.participantCount,
-                maxCapacity,
-            );
-
-            if (!incremented) {
-                throw new BusinessException(
-                    'INSUFFICIENT_CAPACITY',
-                    '잔여 정원이 부족합니다.',
-                    HttpStatus.BAD_REQUEST,
-                );
-            }
-
             // 8. Reservation 생성
             const reservation = await tx.reservation.create({
                 data: {
@@ -184,6 +138,7 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
                     storeTimeSlotId: slot.id,
                     programSnapshotId: snapshot.id,
                     scheduledAt: slot.startAt,
+                    scheduledEndAt: slot.endAt,
                     reserverName: input.reserverName,
                     reserverPhone: input.reserverPhone,
                     participantCount: input.participantCount,
@@ -371,6 +326,7 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
                 scheduledAt: true,
                 participantCount: true,
                 storeTimeSlotId: true,
+                storeId: true,
                 store: {
                     select: {
                         cancelDeadlineDays: true,
@@ -389,6 +345,7 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
             status: row.status,
             source: row.source,
             scheduledAt: row.scheduledAt,
+            storeId: row.storeId,
             participantCount: row.participantCount,
             storeTimeSlotId: row.storeTimeSlotId,
             cancelDeadlineDays: row.store.cancelDeadlineDays,
@@ -403,6 +360,7 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
         userId: string,
     ): Promise<CancelUserReservationResult> {
         return this.prisma.$transaction(async (tx) => {
+            await lockStore(tx, row.storeId);
             // 1. Reservation 상태 전이 — 기대 상태일 때만 갱신(동시 취소 시 1건만 성공)
             await assertReservationStatusTransition(tx, row.id, row.status, {
                 status: ReservationStatus.CANCELED,

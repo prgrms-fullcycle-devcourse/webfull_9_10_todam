@@ -25,6 +25,7 @@ function kstTodayPlus(days: number): Date {
 function makeRow(overrides: Partial<UserReservationCancelRow> = {}): UserReservationCancelRow {
     return {
         id: 'res-uuid-001',
+        storeId: 'store-uuid-001',
         userId: 'user-uuid-001',
         status: ReservationStatus.CONFIRMED,
         source: ReservationSource.CUSTOMER,

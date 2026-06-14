@@ -11,9 +11,22 @@ export interface ProgramConfirmedCount {
     count: number;
 }
 
+export interface ActiveReservationWindow {
+    startAt: Date;
+    endAt: Date;
+    participantCount: number;
+    isConfirmed: boolean;
+}
+
 export abstract class TimeslotSupportReader {
     /** [store] 요일별 영업시간(생성용). */
     abstract findOperatingHours(storeId: string): Promise<OperatingHourInput[]>;
+
+    /** [reservation] 범위와 겹치는 비취소 예약. */
+    abstract findActiveReservationWindows(
+        storeId: string,
+        range: { start: Date; end: Date },
+    ): Promise<ActiveReservationWindow[]>;
 
     /** [reservation] 슬롯별 CONFIRMED 예약 수(목록 표시용). slotId → count. */
     abstract countConfirmedBySlotIds(
@@ -30,6 +43,12 @@ export abstract class TimeslotSupportReader {
         slotIds: string[],
     ): Promise<ProgramConfirmedCount[]>;
 
+    /** [reservation] 선택한 가상 슬롯 구간과 겹치는 CONFIRMED 예약의 프로그램별 집계. */
+    abstract groupConfirmedByWindows(
+        storeId: string,
+        windows: Array<{ startAt: Date; endAt: Date }>,
+    ): Promise<ProgramConfirmedCount[]>;
+
     /** [program] programIds 중 해당 공방 소속인 것만 반환(소속 검증용). */
     abstract findOwnedProgramIds(storeId: string, programIds: string[]): Promise<string[]>;
 
@@ -40,7 +59,9 @@ export abstract class TimeslotSupportReader {
      * [program] 공개 조회용: ACTIVE 프로그램의 소속 공방 id·정원(maxCapacityPerSlot).
      * 미존재 또는 비ACTIVE면 null(→ 404). available-slots(비소유자 조회)에서 사용.
      */
-    abstract findActiveProgramStore(
-        programId: string,
-    ): Promise<{ storeId: string; maxCapacityPerSlot: number | null } | null>;
+    abstract findActiveProgramStore(programId: string): Promise<{
+        storeId: string;
+        maxCapacityPerSlot: number | null;
+        reservationIntervalMinutes: number | null;
+    } | null>;
 }

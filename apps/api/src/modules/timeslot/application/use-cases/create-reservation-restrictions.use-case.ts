@@ -1,13 +1,13 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { StoreOwnershipService } from '../../../../common/access/store-ownership.service';
-import { StoreTimeSlotRepository } from '../../domain/repositories/store-time-slot.repository';
 import {
     NewRestriction,
     ReservationRestrictionRepository,
 } from '../../domain/repositories/reservation-restriction.repository';
 import { TimeslotSupportReader } from '../../domain/repositories/timeslot-support.reader';
 import { kstDayRange, parseDateOnly } from '../../../../common/date/kst-date.util';
+import { TimeSlotGenerationService } from '../../domain/services/time-slot-generation.service';
 import type {
     CreateReservationRestrictionsDto,
     CreateReservationRestrictionsResponseDto,
@@ -19,7 +19,6 @@ export class CreateReservationRestrictionsUseCase {
 
     constructor(
         private readonly ownership: StoreOwnershipService,
-        private readonly slots: StoreTimeSlotRepository,
         private readonly restrictions: ReservationRestrictionRepository,
         private readonly support: TimeslotSupportReader,
     ) {}
@@ -29,7 +28,7 @@ export class CreateReservationRestrictionsUseCase {
         storeId: string,
         dto: CreateReservationRestrictionsDto,
     ): Promise<CreateReservationRestrictionsResponseDto> {
-        await this.ownership.verify(userId, storeId);
+        const store = await this.ownership.verify(userId, storeId);
 
         const dateParts = parseDateOnly(dto.date);
         if (!dateParts) {
@@ -51,7 +50,12 @@ export class CreateReservationRestrictionsUseCase {
         }
 
         // 대상 시각대(timeRanges) 결정.
-        const ranges = await this.resolveTimeRanges(storeId, dto, dateParts);
+        const ranges = await this.resolveTimeRanges(
+            storeId,
+            dto,
+            dateParts,
+            store.reservationIntervalMinutes,
+        );
         if (ranges.length === 0) {
             throw new BusinessException(
                 'INVALID_RESTRICTION_REQUEST',
@@ -96,11 +100,19 @@ export class CreateReservationRestrictionsUseCase {
         storeId: string,
         dto: CreateReservationRestrictionsDto,
         dateParts: { year: number; month: number; day: number },
+        interval: number | null,
     ): Promise<{ startAt: Date; endAt: Date }[]> {
         if (dto.scope === 'ALL_DAY') {
-            const range = kstDayRange(dateParts);
-            const slots = await this.slots.findByStore(storeId, { range });
-            return slots.map((s) => ({ startAt: s.startAt, endAt: s.endAt }));
+            if (!interval) return [];
+            const operatingHours = await this.support.findOperatingHours(storeId);
+            return TimeSlotGenerationService.buildCandidates({
+                interval,
+                operatingHours,
+                startParts: dateParts,
+                endParts: dateParts,
+                now: Date.now(),
+                includePast: true,
+            }).candidates;
         }
 
         // TIME_SLOTS
@@ -111,13 +123,19 @@ export class CreateReservationRestrictionsUseCase {
                 HttpStatus.BAD_REQUEST,
             );
         }
+        const dayRange = kstDayRange(dateParts);
         return dto.timeRanges.map((r) => {
             const startAt = new Date(r.startAt);
             const endAt = new Date(r.endAt);
-            if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
+            if (
+                Number.isNaN(startAt.getTime()) ||
+                Number.isNaN(endAt.getTime()) ||
+                startAt < dayRange.start ||
+                endAt > dayRange.end
+            ) {
                 throw new BusinessException(
                     'INVALID_RESTRICTION_REQUEST',
-                    'timeRanges 시각 형식이 올바르지 않습니다.',
+                    'timeRanges는 요청 date 범위 안에 있어야 합니다.',
                     HttpStatus.BAD_REQUEST,
                 );
             }
