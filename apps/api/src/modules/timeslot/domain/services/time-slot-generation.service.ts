@@ -6,6 +6,7 @@ import {
     eachDateInclusive,
     kstDayOfWeek,
     kstWallClockToInstant,
+    toKstWallClock,
 } from '../../../../common/date/kst-date.util';
 import { timeColumnToMinutes } from '../time.util';
 
@@ -30,6 +31,7 @@ export interface BuildCandidatesInput {
     endParts: { year: number; month: number; day: number };
     /** 현재 시각(epoch ms). 이 시각 이하로 시작하는 슬롯은 과거로 스킵. */
     now: number;
+    includePast?: boolean;
 }
 
 export interface BuildCandidatesResult {
@@ -37,6 +39,26 @@ export interface BuildCandidatesResult {
     pastSkipped: number;
     /** 생성 범위 내 운영 요일이 하나라도 매칭됐는지(없으면 use-case 가 409). */
     anyOperatingDay: boolean;
+}
+
+export interface IsValidCandidateInput {
+    startAt: Date;
+    endAt: Date;
+    operatingHours: OperatingHourInput[];
+    interval: number;
+    now: number;
+    allowPast: boolean;
+}
+
+export interface ReservationIntervalInput {
+    startAt: Date;
+    endAt: Date;
+    participantCount: number;
+}
+
+export interface OverlapAggregationResult {
+    containedParticipantCount: number;
+    hasSpill: boolean;
 }
 
 export class TimeSlotGenerationService {
@@ -48,7 +70,7 @@ export class TimeSlotGenerationService {
      * - 과거(now 이하) 시작 슬롯은 pastSkipped 로 카운트만 하고 제외.
      */
     static buildCandidates(input: BuildCandidatesInput): BuildCandidatesResult {
-        const { interval, operatingHours, startParts, endParts, now } = input;
+        const { interval, operatingHours, startParts, endParts, now, includePast = false } = input;
 
         const hoursByDay = new Map<string, OperatingHourInput>();
         for (const h of operatingHours) {
@@ -93,7 +115,7 @@ export class TimeSlotGenerationService {
                     const startAt = kstWallClockToInstant(parts, slotStart);
                     const endAt = kstWallClockToInstant(parts, slotEnd);
 
-                    if (startAt.getTime() <= now) {
+                    if (!includePast && startAt.getTime() <= now) {
                         pastSkipped += 1;
                         continue;
                     }
@@ -105,5 +127,54 @@ export class TimeSlotGenerationService {
         const anyOperatingDay = dates.some((parts) => hoursByDay.has(kstDayOfWeek(parts)));
 
         return { candidates, pastSkipped, anyOperatingDay };
+    }
+
+    static isValidCandidate(input: IsValidCandidateInput): boolean {
+        const kstStart = toKstWallClock(input.startAt);
+        const day = {
+            year: kstStart.getUTCFullYear(),
+            month: kstStart.getUTCMonth() + 1,
+            day: kstStart.getUTCDate(),
+        };
+        const { candidates } = this.buildCandidates({
+            interval: input.interval,
+            operatingHours: input.operatingHours,
+            startParts: day,
+            endParts: day,
+            now: input.now,
+            includePast: input.allowPast,
+        });
+
+        return candidates.some(
+            (candidate) =>
+                candidate.startAt.getTime() === input.startAt.getTime() &&
+                candidate.endAt.getTime() === input.endAt.getTime(),
+        );
+    }
+
+    static aggregateOverlaps(
+        candidate: SlotCandidate,
+        reservations: ReservationIntervalInput[],
+    ): OverlapAggregationResult {
+        let containedParticipantCount = 0;
+        let hasSpill = false;
+
+        for (const reservation of reservations) {
+            const overlaps =
+                reservation.startAt.getTime() < candidate.endAt.getTime() &&
+                candidate.startAt.getTime() < reservation.endAt.getTime();
+            if (!overlaps) continue;
+
+            if (
+                reservation.startAt.getTime() < candidate.startAt.getTime() ||
+                reservation.endAt.getTime() > candidate.endAt.getTime()
+            ) {
+                hasSpill = true;
+            } else {
+                containedParticipantCount += reservation.participantCount;
+            }
+        }
+
+        return { containedParticipantCount, hasSpill };
     }
 }

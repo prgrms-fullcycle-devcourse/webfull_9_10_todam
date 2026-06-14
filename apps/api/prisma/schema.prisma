@@ -321,6 +321,7 @@ model Reservation {
   storeTimeSlotId   String                    @map("store_time_slot_id") @db.Uuid
   programSnapshotId String                    @map("program_snapshot_id") @db.Uuid
   scheduledAt       DateTime                  @map("scheduled_at") @db.Timestamptz(6)
+  scheduledEndAt    DateTime                  @map("scheduled_end_at") @db.Timestamptz(6)
   reserverName      String                    @map("reserver_name") @db.VarChar(100)
   reserverPhone     String                    @map("reserver_phone") @db.VarChar(20)
   participantCount  Int                       @default(1) @map("participant_count")

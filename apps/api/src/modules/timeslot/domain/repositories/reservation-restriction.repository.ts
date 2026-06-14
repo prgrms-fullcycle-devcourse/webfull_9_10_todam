@@ -12,8 +12,8 @@ export interface NewRestriction {
 }
 
 export interface DeleteRestrictionConditions {
-    /** 지정 시각대(startAt) 매칭 삭제. */
-    startAts?: Date[];
+    /** 지정 시각대(startAt, endAt) 쌍 매칭 삭제. */
+    timeRanges?: Array<{ startAt: Date; endAt: Date }>;
     /** 날짜 범위 [start, end) 매칭 삭제(시각대 미지정 시). */
     range?: { start: Date; end: Date };
     /** 프로그램 한정. */
@@ -23,6 +23,11 @@ export interface DeleteRestrictionConditions {
 export abstract class ReservationRestrictionRepository {
     /** 슬롯 startAt 들과 매칭되는 제한 조회(목록의 restrictedProgramIds 계산용). */
     abstract findByStartAts(storeId: string, startAts: Date[]): Promise<ReservationRestriction[]>;
+
+    abstract findOverlapping(
+        storeId: string,
+        range: { start: Date; end: Date },
+    ): Promise<ReservationRestriction[]>;
 
     /** (storeId, startAt, programId) 멱등 생성 — 이미 있으면 스킵, 신규만 반환. 트랜잭션. */
     abstract createManyIdempotent(items: NewRestriction[]): Promise<ReservationRestriction[]>;

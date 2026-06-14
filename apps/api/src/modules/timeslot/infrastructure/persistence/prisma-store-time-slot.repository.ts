@@ -1,14 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { Prisma, StoreTimeSlotStatus } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
+import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { StoreTimeSlot, TimeSlotStatus } from '../../domain/entities/store-time-slot.entity';
 import {
     ApplyGeneratedGridInput,
     ApplyGeneratedGridResult,
     FindSlotsQuery,
+    SetStatusByKeyInput,
     StoreTimeSlotRepository,
 } from '../../domain/repositories/store-time-slot.repository';
 import { StoreTimeSlotMapper } from './store-time-slot.mapper';
+import { TimeSlotGenerationService } from '../../domain/services/time-slot-generation.service';
 
 const SLOT_SELECT = {
     id: true,
@@ -69,6 +72,111 @@ export class PrismaStoreTimeSlotRepository extends StoreTimeSlotRepository {
         return StoreTimeSlotMapper.toDomain(row);
     }
 
+    async findOverlappingBlocked(
+        storeId: string,
+        range: { start: Date; end: Date },
+    ): Promise<StoreTimeSlot[]> {
+        const rows = await this.prisma.storeTimeSlot.findMany({
+            where: {
+                storeId,
+                status: { in: ['CLOSED', 'CANCELED'] },
+                startAt: { lt: range.end },
+                endAt: { gt: range.start },
+            },
+            orderBy: { startAt: 'asc' },
+            select: SLOT_SELECT,
+        });
+        return rows.map((row) => StoreTimeSlotMapper.toDomain(row));
+    }
+
+    async setStatusByKey(input: SetStatusByKeyInput): Promise<StoreTimeSlot | null> {
+        return this.prisma.$transaction(async (tx) => {
+            await tx.$queryRaw(
+                Prisma.sql`SELECT id FROM stores WHERE id = ${input.storeId}::uuid FOR UPDATE`,
+            );
+
+            if (input.validateCurrentCandidate) {
+                const store = await tx.store.findUnique({
+                    where: { id: input.storeId },
+                    select: {
+                        reservationIntervalMinutes: true,
+                        operatingHours: {
+                            select: {
+                                dayOfWeek: true,
+                                openTime: true,
+                                closeTime: true,
+                                breakStart: true,
+                                breakEnd: true,
+                            },
+                        },
+                    },
+                });
+                const valid =
+                    store?.reservationIntervalMinutes &&
+                    TimeSlotGenerationService.isValidCandidate({
+                        startAt: input.startAt,
+                        endAt: input.endAt,
+                        interval: store.reservationIntervalMinutes,
+                        operatingHours: store.operatingHours.map((hour) => ({
+                            ...hour,
+                            dayOfWeek: hour.dayOfWeek as string,
+                        })),
+                        now: Date.now(),
+                        allowPast: true,
+                    });
+                if (!valid) {
+                    throw new BusinessException(
+                        'INVALID_SLOT',
+                        '현재 운영 규칙에 유효한 타임슬롯이 아닙니다.',
+                        HttpStatus.BAD_REQUEST,
+                    );
+                }
+            }
+
+            const key = {
+                storeId: input.storeId,
+                startAt: input.startAt,
+                endAt: input.endAt,
+            };
+            const existing = await tx.storeTimeSlot.findUnique({
+                where: { storeId_startAt_endAt: key },
+                select: SLOT_SELECT,
+            });
+
+            if (input.status === 'OPEN' && !existing) {
+                return null;
+            }
+
+            const slot =
+                existing ??
+                (await tx.storeTimeSlot.create({
+                    data: { ...key, status: 'OPEN', reservedCount: 0 },
+                    select: SLOT_SELECT,
+                }));
+
+            if (input.status === 'CANCELED') {
+                const activeReservations = await tx.reservation.count({
+                    where: {
+                        storeId: input.storeId,
+                        status: { not: 'CANCELED' },
+                        scheduledAt: { lt: input.endAt },
+                        scheduledEndAt: { gt: input.startAt },
+                    },
+                });
+                if (activeReservations > 0) {
+                    throw new Error('ACTIVE_RESERVATIONS_EXIST');
+                }
+            }
+
+            const updated = await tx.storeTimeSlot.update({
+                where: { id: slot.id },
+                data: { status: input.status as StoreTimeSlotStatus },
+                select: SLOT_SELECT,
+            });
+            return StoreTimeSlotMapper.toDomain(updated);
+        });
+    }
+
     async applyGeneratedGrid(input: ApplyGeneratedGridInput): Promise<ApplyGeneratedGridResult> {
         const { storeId, candidates, window, now } = input;
 
@@ -79,6 +187,9 @@ export class PrismaStoreTimeSlotRepository extends StoreTimeSlotRepository {
         const candidatePairKeys = new Set(candidates.map((c) => pairKey(c.startAt, c.endAt)));
 
         return this.prisma.$transaction(async (tx) => {
+            await tx.$queryRaw(
+                Prisma.sql`SELECT id FROM stores WHERE id = ${storeId}::uuid FOR UPDATE`,
+            );
             // ── prune: 윈도우 내 미래 OPEN 슬롯 중 새 격자에 없는(stale) 것 정리.
             // 과거 슬롯·기존 CLOSED/CANCELED(파트너 수동 조치)는 애초에 조회 대상 제외.
             // (startAt,endAt) 둘 다 새 격자와 일치하면 stale 아님 → 손대지 않아 기존 status 유지.

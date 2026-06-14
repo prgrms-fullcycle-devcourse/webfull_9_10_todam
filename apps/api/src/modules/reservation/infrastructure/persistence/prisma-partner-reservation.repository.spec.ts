@@ -88,3 +88,35 @@ describe('PrismaPartnerReservationRepository artwork logs', () => {
         });
     });
 });
+
+describe('PrismaPartnerReservationRepository.createManual', () => {
+    it('requires the store to be published before creating a manual reservation', async () => {
+        const tx = {
+            $queryRaw: jest.fn(),
+            program: { findFirst: jest.fn().mockResolvedValue(null) },
+            store: { findUnique: jest.fn() },
+        };
+        const prisma = { $transaction: jest.fn((callback) => callback(tx)) };
+        const repository = new PrismaPartnerReservationRepository(prisma as never);
+
+        await expect(
+            repository.createManual('11111111-1111-1111-1111-111111111111', {
+                changedBy: 'user-1',
+                programId: 'program-1',
+                startAt: '2026-06-10T01:00:00.000Z',
+                reserverName: 'Customer',
+                reserverPhone: '010-0000-0000',
+                participantCount: 1,
+                initialStatus: 'CONFIRMED',
+            }),
+        ).resolves.toBeNull();
+
+        expect(tx.program.findFirst).toHaveBeenCalledWith(
+            expect.objectContaining({
+                where: expect.objectContaining({
+                    store: { status: 'PUBLISHED' },
+                }),
+            }),
+        );
+    });
+});

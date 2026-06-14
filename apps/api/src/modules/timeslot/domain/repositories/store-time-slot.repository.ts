@@ -27,11 +27,24 @@ export interface ApplyGeneratedGridResult {
     closedCount: number;
 }
 
+export interface SetStatusByKeyInput {
+    storeId: string;
+    startAt: Date;
+    endAt: Date;
+    status: TimeSlotStatus;
+    validateCurrentCandidate: boolean;
+}
+
 export abstract class StoreTimeSlotRepository {
     abstract findByStore(storeId: string, query: FindSlotsQuery): Promise<StoreTimeSlot[]>;
     abstract findById(id: string): Promise<StoreTimeSlot | null>;
     abstract findByIds(storeId: string, ids: string[]): Promise<StoreTimeSlot[]>;
     abstract updateStatus(id: string, status: TimeSlotStatus): Promise<StoreTimeSlot>;
+    abstract findOverlappingBlocked(
+        storeId: string,
+        range: { start: Date; end: Date },
+    ): Promise<StoreTimeSlot[]>;
+    abstract setStatusByKey(input: SetStatusByKeyInput): Promise<StoreTimeSlot | null>;
 
     /**
      * 멱등 생성 + prune 을 한 트랜잭션으로 적용.

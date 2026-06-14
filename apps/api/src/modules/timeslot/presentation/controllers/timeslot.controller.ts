@@ -115,7 +115,7 @@ export class TimeslotController {
         return this.listTimeSlotsUseCase.execute(user.id, storeId, query);
     }
 
-    @Patch('partner/stores/:storeId/time-slots/:timeSlotId/status')
+    @Patch('partner/stores/:storeId/time-slots/status')
     @HttpCode(HttpStatus.OK)
     @UseGuards(AuthGuard, PartnerGuard)
     @ResponseMessage('타임슬롯 상태가 성공적으로 변경되었습니다.')
@@ -127,11 +127,10 @@ export class TimeslotController {
     async updateTimeSlotStatus(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,
-        @Param('timeSlotId') timeSlotId: string,
         @Body(new ZodValidationPipe(updateTimeSlotStatusRequestSchema))
         dto: UpdateTimeSlotStatusRequest,
     ): Promise<UpdateTimeSlotStatusResponseDto> {
-        return this.updateTimeSlotStatusUseCase.execute(user.id, storeId, timeSlotId, dto);
+        return this.updateTimeSlotStatusUseCase.execute(user.id, storeId, dto);
     }
 
     @Post('partner/stores/:storeId/reservation-restrictions')
@@ -178,7 +177,12 @@ export class TimeslotController {
         type: ProgramReservationCountsResponseDto,
     })
     @ApiQuery({ name: 'date', type: String, example: '2026-06-10' })
-    @ApiQuery({ name: 'timeSlotIds', type: String, required: false, example: 'slot-1,slot-2' })
+    @ApiQuery({
+        name: 'slotKeys',
+        type: String,
+        required: false,
+        example: '2026-06-10T01:00:00.000Z|2026-06-10T02:00:00.000Z',
+    })
     async getProgramReservationCounts(
         @CurrentUser() user: RequestUser,
         @Param('storeId') storeId: string,

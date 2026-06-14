@@ -467,7 +467,7 @@ describe('API route baseline', () => {
                 controller: 'TimeslotController',
                 handler: 'updateTimeSlotStatus',
                 method: 'PATCH',
-                path: '/partner/stores/:storeId/time-slots/:timeSlotId/status',
+                path: '/partner/stores/:storeId/time-slots/status',
                 guards: ['AuthGuard', 'PartnerGuard'],
             },
             {

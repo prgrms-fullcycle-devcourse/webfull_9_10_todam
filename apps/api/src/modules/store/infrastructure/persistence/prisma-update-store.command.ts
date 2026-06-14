@@ -86,6 +86,10 @@ export class PrismaUpdateStoreCommand {
         }
 
         const updated = await this.prisma.$transaction(async (tx) => {
+            await tx.$queryRaw`
+                SELECT "id" FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE
+            `;
+
             // operatingHours 배열 전체 치환(DEC-4).
             if (dto.operatingHours !== undefined) {
                 await tx.storeOperatingHour.deleteMany({ where: { storeId } });

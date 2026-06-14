@@ -55,17 +55,24 @@ export class DeleteReservationRestrictionsUseCase {
         const conditions: DeleteRestrictionConditions = {};
 
         if (dto.timeRanges && dto.timeRanges.length > 0) {
-            // 지정 시각대의 startAt 들과 매칭.
-            conditions.startAts = dto.timeRanges.map((r) => {
+            // 지정 시각대의 startAt/endAt 쌍과 매칭.
+            const dayRange = kstDayRange(dateParts);
+            conditions.timeRanges = dto.timeRanges.map((r) => {
                 const startAt = new Date(r.startAt);
-                if (Number.isNaN(startAt.getTime())) {
+                const endAt = new Date(r.endAt);
+                if (
+                    Number.isNaN(startAt.getTime()) ||
+                    Number.isNaN(endAt.getTime()) ||
+                    startAt < dayRange.start ||
+                    endAt > dayRange.end
+                ) {
                     throw new BusinessException(
                         'INVALID_RESTRICTION_REQUEST',
-                        'timeRanges 시각 형식이 올바르지 않습니다.',
+                        'timeRanges는 요청 date 범위 안에 있어야 합니다.',
                         HttpStatus.BAD_REQUEST,
                     );
                 }
-                return startAt;
+                return { startAt, endAt };
             });
         } else {
             // timeRanges 미지정 → 그 날짜 전체 시각대.

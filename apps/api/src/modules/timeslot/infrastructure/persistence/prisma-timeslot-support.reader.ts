@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
 import { OperatingHourInput } from '../../domain/services/time-slot-generation.service';
 import {
+    ActiveReservationWindow,
     ProgramConfirmedCount,
     TimeslotSupportReader,
 } from '../../domain/repositories/timeslot-support.reader';
@@ -31,6 +32,32 @@ export class PrismaTimeslotSupportReader extends TimeslotSupportReader {
             closeTime: r.closeTime,
             breakStart: r.breakStart,
             breakEnd: r.breakEnd,
+        }));
+    }
+
+    async findActiveReservationWindows(
+        storeId: string,
+        range: { start: Date; end: Date },
+    ): Promise<ActiveReservationWindow[]> {
+        const rows = await this.prisma.reservation.findMany({
+            where: {
+                storeId,
+                status: { not: 'CANCELED' },
+                scheduledAt: { lt: range.end },
+                scheduledEndAt: { gt: range.start },
+            },
+            select: {
+                scheduledAt: true,
+                scheduledEndAt: true,
+                participantCount: true,
+                status: true,
+            },
+        });
+        return rows.map((row) => ({
+            startAt: row.scheduledAt,
+            endAt: row.scheduledEndAt,
+            participantCount: row.participantCount,
+            isConfirmed: row.status === 'CONFIRMED',
         }));
     }
 
@@ -75,6 +102,38 @@ export class PrismaTimeslotSupportReader extends TimeslotSupportReader {
         }));
     }
 
+    async groupConfirmedByWindows(
+        storeId: string,
+        windows: Array<{ startAt: Date; endAt: Date }>,
+    ): Promise<ProgramConfirmedCount[]> {
+        if (windows.length === 0) return [];
+        const range = {
+            start: new Date(Math.min(...windows.map((window) => window.startAt.getTime()))),
+            end: new Date(Math.max(...windows.map((window) => window.endAt.getTime()))),
+        };
+        const rows = await this.prisma.reservation.findMany({
+            where: {
+                storeId,
+                status: 'CONFIRMED',
+                scheduledAt: { lt: range.end },
+                scheduledEndAt: { gt: range.start },
+            },
+            select: { programId: true, scheduledAt: true, scheduledEndAt: true },
+        });
+        const counts = new Map<string, number>();
+        for (const row of rows) {
+            if (
+                windows.some(
+                    (window) =>
+                        row.scheduledAt < window.endAt && window.startAt < row.scheduledEndAt,
+                )
+            ) {
+                counts.set(row.programId, (counts.get(row.programId) ?? 0) + 1);
+            }
+        }
+        return [...counts].map(([programId, count]) => ({ programId, count }));
+    }
+
     async findOwnedProgramIds(storeId: string, programIds: string[]): Promise<string[]> {
         if (programIds.length === 0) return [];
         const rows = await this.prisma.program.findMany({
@@ -97,18 +156,29 @@ export class PrismaTimeslotSupportReader extends TimeslotSupportReader {
         return result;
     }
 
-    async findActiveProgramStore(
-        programId: string,
-    ): Promise<{ storeId: string; maxCapacityPerSlot: number | null } | null> {
+    async findActiveProgramStore(programId: string): Promise<{
+        storeId: string;
+        maxCapacityPerSlot: number | null;
+        reservationIntervalMinutes: number | null;
+    } | null> {
         // 비ACTIVE(DRAFT/INACTIVE)는 미존재 취급 — 공개 상세와 동일 정책.
         const program = await this.prisma.program.findFirst({
-            where: { id: programId, status: 'ACTIVE' },
-            select: { storeId: true, store: { select: { maxCapacityPerSlot: true } } },
+            where: { id: programId, status: 'ACTIVE', store: { status: 'PUBLISHED' } },
+            select: {
+                storeId: true,
+                store: {
+                    select: {
+                        maxCapacityPerSlot: true,
+                        reservationIntervalMinutes: true,
+                    },
+                },
+            },
         });
         if (!program) return null;
         return {
             storeId: program.storeId,
             maxCapacityPerSlot: program.store.maxCapacityPerSlot,
+            reservationIntervalMinutes: program.store.reservationIntervalMinutes,
         };
     }
 }
