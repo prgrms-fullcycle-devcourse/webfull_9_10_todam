@@ -21,6 +21,13 @@ const STAGE_INDEX: Partial<Record<ArtworkStatus, number>> = {
     [ArtworkStatus.GLAZE_FIRING]: 4,
 } as const;
 const FIRING_TOTAL = 4;
+const ARTWORK_VISIBLE_RESERVATION_STATUSES = new Set<ReservationStatus>([
+    ReservationStatus.IN_PROGRESS,
+    ReservationStatus.SHIPPED,
+    ReservationStatus.DELIVERED,
+    ReservationStatus.PICKUP_READY,
+    ReservationStatus.PICKUP_DONE,
+]);
 
 @Injectable()
 export class GetReservationDetailUseCase {
@@ -115,11 +122,19 @@ export class GetReservationDetailUseCase {
         artworkId: string | null,
         artworkStatus: ArtworkStatus | null,
     ): ReservationDetailArtwork | null {
-        if (status !== ReservationStatus.IN_PROGRESS) return null;
+        if (!ARTWORK_VISIBLE_RESERVATION_STATUSES.has(status)) return null;
         if (!artworkId || !artworkStatus) return null;
 
+        if (artworkStatus === ArtworkStatus.COMPLETED) {
+            return {
+                id: artworkId,
+                progressPercent: 100,
+                remainingSteps: 0,
+            };
+        }
+
         const idx = STAGE_INDEX[artworkStatus];
-        if (idx === undefined) return null; // RESERVED/VISITED/COMPLETED/CANCELED
+        if (idx === undefined) return null; // RESERVED/VISITED/CANCELED
 
         return {
             id: artworkId,
