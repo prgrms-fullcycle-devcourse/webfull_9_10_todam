@@ -102,7 +102,7 @@ export function ProfileEditScreen() {
                 <div className="flex justify-end">
                     <button
                         type="button"
-                        onClick={() => openSheet(<ResetRequestSheet />)}
+                        onClick={() => openSheet(<ResetRequestSheet initialEmail={email} />)}
                         className="text-xs font-semibold text-primary"
                     >
                         비밀번호 재설정
