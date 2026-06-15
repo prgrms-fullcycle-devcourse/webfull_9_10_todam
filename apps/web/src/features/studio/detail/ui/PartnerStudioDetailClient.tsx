@@ -72,9 +72,13 @@ export function PartnerStudioDetailClient() {
         setReviewStoreId(null);
         router.push('/partner');
     };
+    const goBack = () => {
+        setReviewStoreId(null);
+        router.back();
+    };
     useHeaderOverride({
         title: '공방 미리보기',
-        onBack: goHome,
+        onBack: goBack,
         hideRightAction: true,
         enabled: !isReviewScreen,
     });
