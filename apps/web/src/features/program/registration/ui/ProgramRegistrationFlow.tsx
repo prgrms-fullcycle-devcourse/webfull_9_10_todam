@@ -40,7 +40,7 @@ export function ProgramRegistrationFlow({
 
     const exit = () => {
         reset();
-        router.push(returnTo);
+        router.replace(returnTo);
     };
 
     // 작성 중이면 확인 모달, 아니면 즉시 이탈.
@@ -72,7 +72,7 @@ export function ProgramRegistrationFlow({
         try {
             const { imageFailed } = await submitRegistration(form);
             reset();
-            router.push(returnTo);
+            router.replace(returnTo);
             push({
                 message: imageFailed
                     ? '클래스 썸네일 등록에 실패했어요. 이미지를 다시 등록해 주세요.'
