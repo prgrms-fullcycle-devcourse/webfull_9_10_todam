@@ -23,37 +23,15 @@ import {
 
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { loadSavedReserverInfo, saveReserverInfo } from '@/shared/lib/reserverInfo';
 import { useToast } from '@/shared/model';
 import { ProgressBarWrapper } from '@/shared/ui/ProgressBarWrapper';
 
 import { useAvailableSlots, useCreateUserReservation } from '../queries';
 import { SlotCalendarView } from './SlotCalendarView';
 
-// localStorage 키 — 예약자 정보 기억하기
-const LS_KEY = 'todam_reserver_info';
 // sessionStorage 키 — 완료 화면(ReserveConfirmClient)으로 전달할 스냅샷
 const RESULT_SS_KEY = 'todam_reservation_result';
-
-interface SavedReserverInfo {
-    name: string;
-    phone: string;
-}
-
-function loadSavedReserverInfo(): SavedReserverInfo | null {
-    if (typeof window === 'undefined') return null;
-    try {
-        const raw = window.localStorage.getItem(LS_KEY);
-        if (!raw) return null;
-        return JSON.parse(raw) as SavedReserverInfo;
-    } catch {
-        return null;
-    }
-}
-
-function saveReserverInfo(info: SavedReserverInfo) {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(LS_KEY, JSON.stringify(info));
-}
 
 // ─── 에러 코드 → 사용자 메시지 ───────────────────────────────────────────────
 
