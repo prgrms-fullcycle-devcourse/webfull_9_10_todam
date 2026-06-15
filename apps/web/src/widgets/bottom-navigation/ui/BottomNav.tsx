@@ -7,7 +7,7 @@ import { primeMobileKeyboard } from '@/shared/lib/primeMobileKeyboard';
 
 import { useBottomNavigation } from '../model/useBottomNavigation';
 
-// 비로그인 시 진입을 막고 제자리 모달을 띄울 경로(클릭 가로채기).
+// 비로그인 시 진입을 막고 제자리 모달을 띄울 경로
 const AUTH_REQUIRED_PATHS = new Set(['/my', '/my/reservations']);
 
 export function BottomNav() {

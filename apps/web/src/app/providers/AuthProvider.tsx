@@ -5,9 +5,9 @@
 
 import { useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Modal } from '@todam/ui';
 import { useModal } from '@/shared/model';
 
+import { LoginRequiredModal } from '@/features/auth/guard';
 import { connectAuthTokenGetter, refreshSession, useAuthStore } from '@/features/auth/login';
 import { getMyProfile } from '@/features/user/profile';
 import { ApiError, setApiErrorHandler } from '@/shared/api';
@@ -57,17 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (isAuthRedirectPending) return;
             isAuthRedirectPending = true;
 
-            openModal(
-                <Modal
-                    type="shortText"
-                    title="로그인이 필요해요"
-                    description="로그인 후 다시 이용해 주세요."
-                    cancelLabel="닫기"
-                    confirmLabel="로그인하기"
-                    onCancel={dismiss}
-                    onConfirm={goLogin}
-                />,
-            );
+            openModal(<LoginRequiredModal onCancel={dismiss} onConfirm={goLogin} />);
         }
 
         connectAuthTokenGetter();
@@ -84,7 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const { accessToken } = await refreshSession();
                 if (cancelled) return;
                 setToken(accessToken); // 이후 /users/me 호출에 자동 주입
-                const { user } = await getMyProfile();
+                // 부팅 복원은 silent — 실패해도 공개 페이지에서 전역 로그인 모달 띄우지 않는다.
+                const { user } = await getMyProfile({ skipErrorHandler: true });
                 if (cancelled) return;
                 setAuth(accessToken, {
                     userId: user.userId,
