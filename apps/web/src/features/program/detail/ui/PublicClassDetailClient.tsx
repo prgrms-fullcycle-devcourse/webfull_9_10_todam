@@ -97,20 +97,20 @@ export function PublicClassDetailClient() {
 
     if (detailQuery.isError || !program) {
         return (
-            <main className="flex min-h-full flex-col items-center justify-center gap-4 px-4 text-center">
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 text-center">
                 <p className="text-sm text-foreground-secondary">
                     클래스 정보를 불러오지 못했어요.
                 </p>
                 <Button variant="outline" size="sm" onClick={() => detailQuery.refetch()}>
                     다시 시도
                 </Button>
-            </main>
+            </div>
         );
     }
 
     return (
         <>
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 {/* 대표 이미지 */}
                 <div className="py-2">
                     <ClassDetailHero
@@ -158,7 +158,7 @@ export function PublicClassDetailClient() {
                 <section className="py-2">
                     <ClassExperienceInfo leadTimeDays={program.leadTimeDays} />
                 </section>
-            </main>
+            </div>
 
             {/* 하단 고정 CTA */}
             <BottomBar>

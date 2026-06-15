@@ -51,11 +51,11 @@ export function ArtworkDetailClient({ artworkId }: ArtworkDetailClientProps) {
 
     if (isLoading) {
         return (
-            <main className="flex-1 overflow-y-auto bg-background px-4 pb-16">
+            <div className="bg-background px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     작품 정보를 불러오는 중입니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -63,25 +63,25 @@ export function ArtworkDetailClient({ artworkId }: ArtworkDetailClientProps) {
         // 401은 전역 인증 에러 핸들러가 처리한다.
         if (error.statusCode === 401) return null;
         return (
-            <main className="flex-1 overflow-y-auto bg-background px-4 pb-16">
+            <div className="bg-background px-4 pb-16">
                 <ArtworkDetailError statusCode={error.statusCode} />
-            </main>
+            </div>
         );
     }
 
     const artwork = data?.artwork;
     if (!artwork) {
         return (
-            <main className="flex-1 overflow-y-auto bg-background px-4 pb-16">
+            <div className="bg-background px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     작품 정보를 불러오지 못했습니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
     return (
-        <main className="flex-1 overflow-y-auto bg-background px-4 pb-16">
+        <div className="bg-background px-4 pb-16">
             {artwork.timeline.length === 0 ? (
                 <ArtworkDetailEmpty />
             ) : (
@@ -92,6 +92,6 @@ export function ArtworkDetailClient({ artworkId }: ArtworkDetailClientProps) {
                     />
                 </div>
             )}
-        </main>
+        </div>
     );
 }
