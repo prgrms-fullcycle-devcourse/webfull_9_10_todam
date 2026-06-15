@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ImageUploadStatus } from '@prisma/client';
+import { ArtworkStatus, ImageUploadStatus } from '@prisma/client';
 import type { ArtworkDetailResult } from '@todam/shared';
 import { ArtworkDetailErrorCode } from '@todam/shared';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
@@ -8,6 +8,12 @@ import {
     ARTWORK_STAGE_SEQUENCE,
 } from '../../domain/artwork-stage-display.util';
 import { ArtworkRepository } from '../../domain/repositories/artwork.repository';
+
+// createdAt 기준 최신 로그 1건. 후보가 없으면 null.
+function latestByCreatedAt<T extends { createdAt: Date }>(logs: T[]): T | null {
+    if (logs.length === 0) return null;
+    return logs.reduce((latest, curr) => (curr.createdAt > latest.createdAt ? curr : latest));
+}
 
 @Injectable()
 export class GetArtworkDetailUseCase {
@@ -46,13 +52,7 @@ export class GetArtworkDetailUseCase {
             const isCurrent = stage === row.status;
 
             // 해당 stage 의 ArtworkLog 중 createdAt 최신 1건.
-            const stageLogs = row.logs.filter((log) => log.toStatus === stage);
-            const log =
-                stageLogs.length > 0
-                    ? stageLogs.reduce((latest, curr) =>
-                          curr.createdAt > latest.createdAt ? curr : latest,
-                      )
-                    : null;
+            const log = latestByCreatedAt(row.logs.filter((entry) => entry.toStatus === stage));
 
             // photos: UPLOADED 만
             const photos = (log?.photos ?? [])
@@ -80,9 +80,18 @@ export class GetArtworkDetailUseCase {
                 entry.isCurrent = true;
             }
 
-            // completedAt: isCompleted && 로그 존재 시만 포함.
-            if (isCompleted && log) {
-                entry.completedAt = log.createdAt.toISOString();
+            // completedAt: 완료 단계만 포함.
+            //   - 일반 단계: 해당 stage 진입 로그(toStatus===stage)의 createdAt.
+            //   - VISITED("체험이 완료되었어요"): 작품은 RESERVED→DRYING 으로 직접 전이하며
+            //     VISITED 를 건너뛰어 toStatus===VISITED 로그가 없다. 체험 완료 시각 = 실제 방문일
+            //     이므로 reservation.scheduledAt 으로 파생한다. (RESERVED→DRYING 전이=건조 시작일과
+            //     구분 — Figma 8505:15922 는 체험일/건조일을 각각 노출)
+            if (isCompleted) {
+                if (log) {
+                    entry.completedAt = log.createdAt.toISOString();
+                } else if (stage === ArtworkStatus.VISITED) {
+                    entry.completedAt = row.reservation.scheduledAt.toISOString();
+                }
             }
 
             return entry;

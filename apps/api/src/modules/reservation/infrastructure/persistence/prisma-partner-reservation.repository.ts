@@ -413,32 +413,33 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                 select: { id: true, status: true, updatedAt: true },
             });
 
-            // 체험완료 = 제작 시작(건조). 작품 상태를 바로 DRYING 으로 두어
-            // statusView 가 IN_PROGRESS(제작 중) 그룹·건조 단계로 노출한다.
+            // 체험완료 = 작품을 VISITED("체험이 완료되었어요") 단계에서 멈춘다.
+            // 건조는 파트너가 작품 상세에서 "건조 시작"(VISITED→DRYING)으로 별도 진행한다.
+            // statusView 는 VISITED 를 WAITING(대기) 그룹으로 노출한다.
             // 기존 작품 있으면 update, 없으면 create — 둘 중 1회 write.
             const existing = reservation.artwork;
             const artwork = existing
                 ? await tx.artwork.update({
                       where: { id: existing.id },
-                      data: { status: ArtworkStatus.DRYING },
+                      data: { status: ArtworkStatus.VISITED },
                       select: { id: true, status: true },
                   })
                 : await tx.artwork.create({
                       data: {
                           reservationId: reservation.id,
                           title: reservation.programTitle,
-                          status: ArtworkStatus.DRYING,
+                          status: ArtworkStatus.VISITED,
                       },
                       select: { id: true, status: true },
                   });
 
-            if (!existing || existing.status !== ArtworkStatus.DRYING) {
+            if (!existing || existing.status !== ArtworkStatus.VISITED) {
                 await tx.artworkLog.create({
                     data: {
                         artworkId: artwork.id,
                         changedBy: reservation.partnerUserId,
                         fromStatus: existing?.status ?? null,
-                        toStatus: ArtworkStatus.DRYING,
+                        toStatus: ArtworkStatus.VISITED,
                     },
                 });
             }
