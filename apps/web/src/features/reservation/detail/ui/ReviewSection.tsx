@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 import { EditIcon, Rating, SectionTitle } from '@todam/ui';
@@ -68,11 +69,15 @@ export function ReviewSection({ reservation }: ReviewSectionProps) {
                     className="flex w-full items-start gap-3 rounded-2xl border border-border-subtle bg-surface p-3 text-left"
                 >
                     {data.review.photos[0] ? (
-                        <img
-                            src={data.review.photos[0].imageUrl}
-                            alt="리뷰 사진"
-                            className="h-14 w-14 shrink-0 rounded-lg object-cover"
-                        />
+                        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+                            <Image
+                                src={data.review.photos[0].imageUrl}
+                                alt="리뷰 사진"
+                                fill
+                                sizes="56px"
+                                className="object-cover"
+                            />
+                        </div>
                     ) : (
                         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-muted">
                             <span className="text-[10px] font-medium leading-[15px] text-foreground-secondary">
