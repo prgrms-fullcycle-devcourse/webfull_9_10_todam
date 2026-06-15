@@ -38,6 +38,7 @@ export class MyReservationItemDto {
     @ApiProperty() storeName!: string;
     @ApiProperty() programTitle!: string;
     @ApiProperty({ description: 'ISO 8601' }) scheduledAt!: string;
+    @ApiProperty({ description: 'ISO 8601' }) scheduledEndAt!: string;
     @ApiProperty() participantCount!: number;
     @ApiProperty({ enum: RESERVATION_STATUS_VALUES }) status!: ReservationStatus;
     @ApiProperty({ type: DisplayStateDto }) displayState!: DisplayStateDto;

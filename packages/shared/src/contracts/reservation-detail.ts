@@ -46,6 +46,7 @@ export const reservationDetailSchema = z.object({
     programId: z.string(),
     programTitle: z.string(),
     scheduledAt: z.string(), // ISO 8601
+    scheduledEndAt: z.string(), // ISO 8601 — 코스 종료 시각(시작~종료 범위 표시용)
     reserverName: z.string(),
     reserverPhone: z.string(),
     participantCount: z.number().int().min(1),
