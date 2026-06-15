@@ -15,7 +15,7 @@ import {
 import { useRecentSearches } from '@/shared/lib/useRecentSearches';
 import { EmptyState } from '@/shared/ui';
 
-const DEBOUNCE_MS = 300;
+const DEBOUNCE_MS = 150;
 
 // 마지막 글자가 미완성 자모(ㄱ, ㅏ 등 단독 / 조합 중)면 자동완성 보류.
 // 디자인 spec #10: "받침(완성형) 포함 시에만 자동완성 결과 출력" (예: "성ㅅ"은 미노출).
@@ -156,7 +156,7 @@ export function SearchClient() {
                     <input
                         type="search"
                         autoFocus
-                        className="flex-1 bg-transparent text-sm text-foreground placeholder:text-foreground-tertiary outline-none"
+                        className="flex-1 bg-transparent text-base text-foreground placeholder:text-foreground-tertiary outline-none"
                         placeholder="공방, 지역, 클래스 검색"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
