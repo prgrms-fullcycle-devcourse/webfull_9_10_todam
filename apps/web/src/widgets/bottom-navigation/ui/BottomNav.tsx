@@ -2,13 +2,10 @@
 
 import Link from 'next/link';
 
-import { useLoginRequiredGuard } from '@/features/auth/guard';
+import { isProtectedPath, useLoginRequiredGuard } from '@/features/auth/guard';
 import { primeMobileKeyboard } from '@/shared/lib/primeMobileKeyboard';
 
 import { useBottomNavigation } from '../model/useBottomNavigation';
-
-// 비로그인 시 진입을 막고 제자리 모달을 띄울 경로
-const AUTH_REQUIRED_PATHS = new Set(['/my', '/my/reservations']);
 
 export function BottomNav() {
     const { visible, items } = useBottomNavigation();
@@ -27,7 +24,7 @@ export function BottomNav() {
                         href={href}
                         onClick={(e) => {
                             // 로그인 필요 경로: 확정 미인증이면 진입을 막고 제자리 모달.
-                            if (AUTH_REQUIRED_PATHS.has(href) && guardLogin()) {
+                            if (isProtectedPath(href) && guardLogin()) {
                                 e.preventDefault();
                                 return;
                             }
