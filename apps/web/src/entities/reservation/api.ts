@@ -1,6 +1,7 @@
 import type {
     CalendarData,
     CancelPartnerReservationRequest,
+    CancelReservationResponse,
     CreatePartnerReservationRequest,
     CreatePartnerReservationResponse,
     CreateReservationRestrictionsRequest,
@@ -26,6 +27,13 @@ export function getReservationDetail(reservationId: string) {
     return clientApiFetch<ReservationDetailResponse>(`/reservations/${reservationId}`, {
         method: 'GET',
     });
+}
+
+export function cancelReservation(reservationId: string) {
+    return clientApiFetch<CancelReservationResponse>(
+        `/reservations/${encodeURIComponent(reservationId)}/cancel`,
+        { method: 'POST' },
+    );
 }
 
 export function getReservationReview(reservationId: string) {
