@@ -6,6 +6,7 @@ import { useEffect, type ReactNode } from 'react';
 
 import { useCurrentStudio } from '@/entities/studio';
 import { useCurrentStudioQuery, useUpdateCurrentStudioMutation } from '@/entities/studio';
+import { isProtectedPath, RequireAuth } from '@/features/auth/guard';
 import { StudioRegistrationComplete, usePartnerOnboarding } from '@/features/studio/registration';
 import { BottomNav } from '@/widgets/bottom-navigation';
 import { Header } from '@/widgets/header';
@@ -88,10 +89,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         );
     }
 
+    // 보호 라우트는 page 슬롯에서 RequireAuth 로 게이트(직접 URL/딥링크/새로고침 진입 커버).
+    // 모달 호스트(AppModal)·chrome(Header/BottomNav)보다 안쪽이라 차단해도 모달·헤더 유지.
+    const gatedChildren = isProtectedPath(pathname) ? (
+        <RequireAuth>{children}</RequireAuth>
+    ) : (
+        children
+    );
+
     return (
         <>
             <Header />
-            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+            <div className="flex min-h-0 flex-1 flex-col">{gatedChildren}</div>
             <BottomNav />
         </>
     );
