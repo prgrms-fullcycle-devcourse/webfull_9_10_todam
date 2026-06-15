@@ -167,7 +167,7 @@ export function BusinessStep() {
             <TextInput
                 label="이메일"
                 type="email"
-                placeholder="예) leadem@studio.com"
+                placeholder="예) todam@studio.com"
                 value={business.email}
                 onChange={(e) => patchBusiness({ email: e.target.value })}
             />
