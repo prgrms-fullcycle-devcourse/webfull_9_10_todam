@@ -1,6 +1,6 @@
 'use client';
 
-import { formatScheduled, type ReservationListItem } from '@todam/shared';
+import { formatScheduled, formatScheduledRange, type ReservationListItem } from '@todam/shared';
 
 import { ReservationStatusBadge } from '@/entities/reservation';
 
@@ -18,7 +18,8 @@ export type ReservationCardProps = {
 };
 
 export function ReservationCard({ item, onClick }: ReservationCardProps) {
-    const { date, day, time } = formatScheduled(item.scheduledAt);
+    const { date, day } = formatScheduled(item.scheduledAt);
+    const timeRange = formatScheduledRange(item.scheduledAt, item.scheduledEndAt);
     const hideMessage = shouldHideStatusMessage(item);
 
     return (
@@ -41,7 +42,7 @@ export function ReservationCard({ item, onClick }: ReservationCardProps) {
                 <div className="flex flex-col gap-1">
                     <p className="text-sm font-semibold text-foreground">{item.programTitle}</p>
                     <p className="text-xs text-foreground-tertiary">
-                        {item.storeName}・{time}
+                        {item.storeName}・{timeRange}
                     </p>
                 </div>
             </div>
