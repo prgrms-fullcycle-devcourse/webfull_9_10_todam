@@ -82,7 +82,7 @@ export function PartnerClassDetailClient() {
 
     return (
         <>
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 {/* 대표 이미지 */}
                 <div className="py-2">
                     <ClassDetailHero
@@ -129,7 +129,7 @@ export function PartnerClassDetailClient() {
                 <section className="py-2">
                     <ClassExperienceInfo leadTimeDays={program.leadTimeDays} />
                 </section>
-            </main>
+            </div>
 
             {/* 하단 고정 CTA */}
             <BottomBar>

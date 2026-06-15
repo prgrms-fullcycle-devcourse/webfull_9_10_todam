@@ -36,11 +36,11 @@ export function ReviewFormClient({ reservationId, mode }: ReviewFormClientProps)
 
     if (isEdit && isLoading) {
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     리뷰를 불러오는 중입니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -183,8 +183,9 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
     const scheduled = reservation ? formatScheduled(reservation.scheduledAt) : null;
 
     return (
-        <div className="flex flex-1 flex-col overflow-hidden">
-            <main className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-24 pt-2">
+        // 스크롤은 AppShell 단일 main 이 소유. BottomBar 는 sticky bottom-0 으로 하단 고정(#396).
+        <>
+            <div className="flex flex-col gap-6 px-4 pb-24 pt-2">
                 {/* 작품 정보 헤더 */}
                 {reservation && (
                     <div className="flex flex-col">
@@ -227,7 +228,7 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
                     accept={ACCEPT}
                     alt="리뷰 사진"
                 />
-            </main>
+            </div>
 
             <BottomBar>
                 <Button className="w-full" disabled={!canSubmit} onClick={handleSubmit}>
@@ -240,6 +241,6 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
                           : '리뷰 등록'}
                 </Button>
             </BottomBar>
-        </div>
+        </>
     );
 }

@@ -31,7 +31,7 @@ export default function PartnerClassesPage() {
     if (!storeId) return null;
 
     return (
-        <main className="flex-1 overflow-y-auto px-4 pb-16">
+        <div className="px-4 pb-16">
             {isLoading && (
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     클래스 목록을 불러오는 중입니다.
@@ -67,6 +67,6 @@ export default function PartnerClassesPage() {
                     ))}
                 </section>
             )}
-        </main>
+        </div>
     );
 }

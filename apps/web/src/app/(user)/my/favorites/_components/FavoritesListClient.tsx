@@ -105,7 +105,7 @@ export function FavoritesListClient() {
     const isNetworkError = isError && !(error instanceof ApiError && error.statusCode === 401);
 
     return (
-        <main className="flex-1 overflow-y-auto px-4 pb-16">
+        <div className="px-4 pb-16">
             {isLoading && (
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     찜한 공방을 불러오는 중입니다.
@@ -155,6 +155,6 @@ export function FavoritesListClient() {
                     )}
                 </section>
             )}
-        </main>
+        </div>
     );
 }

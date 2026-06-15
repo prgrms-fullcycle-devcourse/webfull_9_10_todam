@@ -105,11 +105,11 @@ export function PartnerDeliveryInfoClient({ artworkId }: PartnerDeliveryInfoClie
 
     if (isLoading) {
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     작품 정보를 불러오는 중입니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -122,19 +122,19 @@ export function PartnerDeliveryInfoClient({ artworkId }: PartnerDeliveryInfoClie
                   ? '이 작품에 접근할 권한이 없습니다.'
                   : '작품 정보를 불러오지 못했습니다.';
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">{message}</p>
-            </main>
+            </div>
         );
     }
 
     if (!artwork) {
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     작품 정보를 불러오지 못했습니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -253,8 +253,9 @@ function PartnerDeliveryInfoForm({ artworkId, artwork }: { artworkId: string; ar
     const disabled = updateMutation.isPending;
 
     return (
-        <main className="flex flex-1 flex-col overflow-hidden">
-            <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-4">
+        // 스크롤은 AppShell 단일 main 이 소유. BottomBar 는 sticky bottom-0 으로 하단 고정(#396).
+        <>
+            <div className="flex flex-col px-4 pb-4">
                 {/* 작품 수령 정보 */}
                 <section className="flex flex-col gap-4 py-2">
                     <SectionTitle size="md" title="작품 수령 정보" />
@@ -392,7 +393,7 @@ function PartnerDeliveryInfoForm({ artworkId, artwork }: { artworkId: string; ar
                     {disabled ? '저장 중…' : '저장'}
                 </Button>
             </BottomBar>
-        </main>
+        </>
     );
 }
 
