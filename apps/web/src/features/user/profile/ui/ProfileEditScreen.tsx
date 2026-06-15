@@ -24,6 +24,9 @@ export function ProfileEditScreen() {
     // 초기 닉네임: 프로필 로드 후 한 번만 세팅
     const currentNickname = profileData?.user.nickname ?? '';
     const email = profileData?.user.email ?? '';
+    // 구버전 API 응답/캐시에 hasPassword가 없더라도 탈퇴 진입은 허용한다.
+    // 이메일 계정의 body 없는 요청은 BE가 PASSWORD_MISMATCH로 차단한다.
+    const hasPassword = profileData?.user.hasPassword ?? false;
 
     const handleNicknameChange = (value: string) => {
         setNickname(value);
@@ -79,7 +82,7 @@ export function ProfileEditScreen() {
     };
 
     const handleWithdraw = () => {
-        openModal(<WithdrawModal />);
+        openModal(<WithdrawModal hasPassword={hasPassword} />);
     };
 
     return (

@@ -14,6 +14,7 @@ function makeRow(overrides: Partial<UserProfileRow> = {}): UserProfileRow {
         email: 'user@example.com',
         nickname: '토담이',
         isPartner: false,
+        hasPassword: true,
         status: 'ACTIVE',
         createdAt: new Date('2026-05-24T16:55:00.000Z'),
         updatedAt: new Date('2026-05-24T18:10:00.000Z'),

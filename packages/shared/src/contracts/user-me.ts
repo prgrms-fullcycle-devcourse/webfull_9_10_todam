@@ -18,6 +18,7 @@ export const getMyProfileUserSchema = z.object({
     email: z.string().email(),
     nickname: z.string(),
     isPartner: z.boolean(),
+    hasPassword: z.boolean(),
     createdAt: z.string().datetime(),
 });
 export type GetMyProfileUser = z.infer<typeof getMyProfileUserSchema>;
@@ -104,9 +105,12 @@ export type PatchNotificationSettingsAllFieldsBody = z.infer<
 
 // DELETE /users/me — 회원탈퇴 요청 body
 // 소셜 유저는 password 없이 요청 가능(optional). 이메일 유저는 password 필수(use-case에서 검증).
-export const withdrawBodySchema = z.object({
-    password: z.string().min(1).optional(),
-});
+export const withdrawBodySchema = z.preprocess(
+    (body) => body ?? {},
+    z.object({
+        password: z.string().min(1).optional(),
+    }),
+);
 export type WithdrawBody = z.infer<typeof withdrawBodySchema>;
 
 // DELETE /users/me 에러코드 (contract 기준)

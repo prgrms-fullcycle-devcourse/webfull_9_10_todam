@@ -4,6 +4,7 @@ export interface UserProfileRow {
     email: string;
     nickname: string;
     isPartner: boolean;
+    hasPassword: boolean;
     status: string;
     createdAt: Date;
     updatedAt: Date;

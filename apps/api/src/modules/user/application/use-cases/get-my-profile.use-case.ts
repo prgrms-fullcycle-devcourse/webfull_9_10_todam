@@ -24,6 +24,7 @@ export class GetMyProfileUseCase {
                 email: user.email,
                 nickname: user.nickname,
                 isPartner: user.isPartner,
+                hasPassword: user.hasPassword,
                 createdAt: user.createdAt.toISOString(),
             },
         };
