@@ -12,6 +12,7 @@ import { useState } from 'react';
 
 import { ApiError } from '@/shared/api';
 import { openPostcode } from '@/shared/lib/daumPostcode';
+import { getFileValidationIssues } from '@/shared/lib/imageFile';
 import { useEditableForm } from '@/shared/lib/useEditableForm';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useToast } from '@/shared/model';
@@ -130,6 +131,17 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
     const handleAddDocument = async (files: File[]) => {
         const file = files[0];
         if (!file || uploadDoc.isPending) return;
+        const issues = getFileValidationIssues([file], {
+            allowedTypes: ['image/jpeg', 'image/png'],
+        });
+        if (issues.oversized) {
+            push({ message: '5MB를 초과한 파일은 업로드할 수 없어요. 최대 파일 용량은 5MB예요.' });
+            return;
+        }
+        if (issues.unsupported) {
+            push({ message: 'JPG 또는 PNG 형식의 파일만 업로드할 수 있어요.' });
+            return;
+        }
         try {
             const { documentUrl } = await uploadDoc.mutateAsync(file);
             patch({ documentUrl });
@@ -190,7 +202,7 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
                     onAdd={handleAddDocument}
                     max={1}
                     multiple={false}
-                    accept="image/jpeg,image/png,application/pdf"
+                    accept="image/jpeg,image/png"
                     addDisabled={uploadDoc.isPending}
                 />
 

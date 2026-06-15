@@ -24,9 +24,6 @@ import { ReviewSection } from './ReviewSection';
 function isBeforeExperience(status: ReservationStatus): boolean {
     return status === ReservationStatus.PENDING || status === ReservationStatus.CONFIRMED;
 }
-function isInProgress(status: ReservationStatus): boolean {
-    return status === ReservationStatus.IN_PROGRESS;
-}
 function isExperienceDone(status: ReservationStatus): boolean {
     // 체험 완료 후 = IN_PROGRESS 이후 단계 (제작 중 ~ 픽업 완료).
     const experienceDoneStatuses: ReservationStatus[] = [
@@ -156,8 +153,10 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
                 {/* 변형 A — 체험 전: 다음 단계 안내 */}
                 {isBeforeExperience(reservation.status) && <NextStageDescription />}
 
-                {/* 작품 제작 단계 (IN_PROGRESS 시 노출) */}
-                {isInProgress(reservation.status) && <ArtworkStageCard reservation={reservation} />}
+                {/* 작품 제작 단계 (체험 완료 이후 노출) */}
+                {isExperienceDone(reservation.status) && (
+                    <ArtworkStageCard reservation={reservation} />
+                )}
 
                 {/* 배송 정보 (DELIVERY 시 노출) */}
                 {isDelivery && <DeliveryInfoSection reservation={reservation} />}

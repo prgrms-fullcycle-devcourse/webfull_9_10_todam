@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TextInput, Button } from '@todam/ui';
 
-import { useToast, useModal } from '@/shared/model';
+import { useToast, useModal, useSheet } from '@/shared/model';
 import { ApiError } from '@/shared/api';
 import { nicknameSchema } from '@todam/shared';
+import { ResetRequestSheet } from '@/features/auth/reset-password';
 import { useMyProfile, useUpdateMyProfile } from '../queries';
 import { WithdrawModal } from './WithdrawModal';
 
@@ -14,6 +15,7 @@ export function ProfileEditScreen() {
     const router = useRouter();
     const toast = useToast();
     const { open: openModal } = useModal();
+    const { open: openSheet } = useSheet();
 
     const { data: profileData, isLoading } = useMyProfile();
     const updateProfile = useUpdateMyProfile();
@@ -24,6 +26,9 @@ export function ProfileEditScreen() {
     // 초기 닉네임: 프로필 로드 후 한 번만 세팅
     const currentNickname = profileData?.user.nickname ?? '';
     const email = profileData?.user.email ?? '';
+    // 구버전 API 응답/캐시에 hasPassword가 없더라도 탈퇴 진입은 허용한다.
+    // 이메일 계정의 body 없는 요청은 BE가 PASSWORD_MISMATCH로 차단한다.
+    const hasPassword = profileData?.user.hasPassword ?? false;
 
     const handleNicknameChange = (value: string) => {
         setNickname(value);
@@ -79,7 +84,7 @@ export function ProfileEditScreen() {
     };
 
     const handleWithdraw = () => {
-        openModal(<WithdrawModal />);
+        openModal(<WithdrawModal hasPassword={hasPassword} />);
     };
 
     return (
@@ -95,6 +100,17 @@ export function ProfileEditScreen() {
                     disabled
                     placeholder="로딩 중..."
                 />
+
+                {/* 비밀번호 재설정 — 재설정 요청 시트 (파트너 설정과 동일 패턴) */}
+                <div className="flex justify-end">
+                    <button
+                        type="button"
+                        onClick={() => openSheet(<ResetRequestSheet initialEmail={email} />)}
+                        className="text-xs font-semibold text-primary"
+                    >
+                        비밀번호 재설정
+                    </button>
+                </div>
 
                 {/* 닉네임 */}
                 <TextInput
@@ -118,7 +134,7 @@ export function ProfileEditScreen() {
                     <button
                         type="button"
                         onClick={handleWithdraw}
-                        className="text-xs font-semibold text-foreground-tertiary underline underline-offset-2"
+                        className="cursor-pointer text-xs font-semibold text-foreground-tertiary underline underline-offset-2"
                     >
                         탈퇴하기
                     </button>

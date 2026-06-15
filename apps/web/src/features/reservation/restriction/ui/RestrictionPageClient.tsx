@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { InformationIcon } from '@todam/ui';
 import { formatKoreanMonthDayWithWeekday, toKSTOffsetISO } from '@todam/shared';
@@ -11,7 +11,7 @@ import {
     useDeletePartnerReservationRestrictionsMutation,
     usePartnerTimeSlotsByDate,
 } from '@/entities/reservation';
-import { useSheet, useToast } from '@/shared/model';
+import { useSheet, useSheetStore, useToast } from '@/shared/model';
 import { ReservationCalendarView } from '@/features/reservation/list/ui/ReservationCalendarView';
 
 import { RestrictionScopeBottomSheet } from './RestrictionScopeBottomSheet';
@@ -29,6 +29,7 @@ export function RestrictionPageClient({ date }: Props) {
     const storeId = useCurrentStudioId();
     const router = useRouter();
     const { open: openSheet, close: closeSheet } = useSheet();
+    const isSheetOpen = useSheetStore((s) => s.isOpen);
     const { push: pushToast } = useToast();
     const deleteMutation = useDeletePartnerReservationRestrictionsMutation(storeId ?? '');
 
@@ -88,6 +89,27 @@ export function RestrictionPageClient({ date }: Props) {
             );
         }
     }, [step, storeId, scope, seeded]);
+
+    // scope 시트를 딤/드래그로 닫으면(외부 dismiss) 제한 플로우 이탈 → 캘린더 복귀.
+    // 같은 URL 재진입은 리마운트가 없어 위 open 효과가 재실행되지 않으므로,
+    // 닫힘 시 라우트를 캘린더로 되돌려 '예약 제한' 재클릭이 실제 네비게이션이 되게 한다.
+    // (scope 단계 base는 ReservationCalendarView로, 자체 시트를 열지 않음 → isSheetOpen은 scope 시트 전용.)
+    const scopeSheetOpenedRef = useRef(false);
+    useEffect(() => {
+        if (step !== 'scope' || !seeded || !storeId) {
+            // scope 단계를 벗어나면(onNext로 다음 단계 진입 등) 추적 리셋 → 오탐 방지.
+            scopeSheetOpenedRef.current = false;
+            return;
+        }
+        if (isSheetOpen) {
+            scopeSheetOpenedRef.current = true;
+            return;
+        }
+        if (scopeSheetOpenedRef.current) {
+            scopeSheetOpenedRef.current = false;
+            router.push(`/partner/reservations?date=${date}`);
+        }
+    }, [isSheetOpen, step, seeded, storeId, date, router]);
 
     if (!storeId) return null;
 

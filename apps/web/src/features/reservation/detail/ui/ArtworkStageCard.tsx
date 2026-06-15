@@ -56,7 +56,7 @@ export function ArtworkStageCard({ reservation }: ArtworkStageCardProps) {
                         </span>
                         <Link
                             href={`/my/artworks/${artwork.id}`}
-                            className="flex items-center gap-1 text-xs text-foreground-secondary"
+                            className="flex cursor-pointer items-center gap-1 text-xs text-foreground-secondary"
                         >
                             자세히보기
                             <RightIcon size={16} />

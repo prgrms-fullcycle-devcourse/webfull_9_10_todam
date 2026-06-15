@@ -109,7 +109,7 @@ export function MyPageHub({
                             key={term.key}
                             type="button"
                             onClick={() => onOpenTerms(term.key)}
-                            className="flex items-center justify-between gap-3 py-3 border-b border-border-subtle last:border-b-0 text-left"
+                            className="flex cursor-pointer items-center justify-between gap-3 py-3 border-b border-border-subtle last:border-b-0 text-left"
                         >
                             <span className="flex-1 text-xs font-semibold text-foreground">
                                 {term.label}
@@ -121,7 +121,7 @@ export function MyPageHub({
                     <button
                         type="button"
                         onClick={onLogout}
-                        className="flex items-center py-3 text-left"
+                        className="flex cursor-pointer items-center py-3 text-left"
                     >
                         <span className="text-xs font-semibold text-foreground-tertiary">
                             로그아웃

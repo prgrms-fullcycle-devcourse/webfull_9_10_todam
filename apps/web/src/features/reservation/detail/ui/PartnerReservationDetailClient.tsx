@@ -284,6 +284,22 @@ export function PartnerReservationDetailClient({
         );
     };
 
+    // 체험 완료: BE가 체험 시각 전(400 EXPERIENCE_NOT_STARTED)·미확정(409) 등으로 거부하면
+    // 사용자에게 사유를 토스트로 안내한다(무반응처럼 보이던 문제 해결).
+    const handleComplete = () => {
+        completeMutation.mutate(undefined, {
+            onError: (err) => {
+                const message =
+                    err instanceof ApiError && err.code === 'EXPERIENCE_NOT_STARTED'
+                        ? '아직 체험 시작 날짜 전이에요. 체험일 이후에 완료할 수 있어요.'
+                        : err instanceof ApiError && err.code === 'INVALID_RESERVATION_STATUS'
+                          ? '확정된 예약만 체험 완료할 수 있어요.'
+                          : '체험 완료 처리에 실패했어요. 잠시 후 다시 시도해 주세요.';
+                pushToast({ message });
+            },
+        });
+    };
+
     const handleCall = () => {
         if (!reservation?.reserverPhone) return;
         window.location.href = `tel:${reservation.reserverPhone}`;
@@ -474,8 +490,10 @@ export function PartnerReservationDetailClient({
                                     className="h-14 flex-1"
                                     disabled={completeMutation.isPending}
                                     onClick={() =>
-                                        openActionModal('체험을 완료할까요?', '체험 완료하기', () =>
-                                            completeMutation.mutate(),
+                                        openActionModal(
+                                            '체험을 완료할까요?',
+                                            '체험 완료하기',
+                                            handleComplete,
                                         )
                                     }
                                 >

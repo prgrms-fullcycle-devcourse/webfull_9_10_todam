@@ -30,7 +30,7 @@ export const STEP_MAP: Partial<Record<ArtworkDetailStatus, StepMeta>> = {
 
 // 그룹별 고정 단계(칩) 순서. 작품 없는 단계도 0으로 항상 표기한다.
 export const GROUP_STEP_ORDER: Record<ArtworkStatusGroup, ArtworkDetailStatus[]> = {
-    [ArtworkStatusGroup.WAITING]: [ArtworkDetailStatus.RESERVED],
+    [ArtworkStatusGroup.WAITING]: [ArtworkDetailStatus.RESERVED, ArtworkDetailStatus.VISITED],
     [ArtworkStatusGroup.IN_PROGRESS]: [
         ArtworkDetailStatus.DRYING,
         ArtworkDetailStatus.BISQUE_FIRING,

@@ -1,4 +1,4 @@
-import { BoxIcon, PinIcon, StoreIcon } from '@todam/ui';
+import { ThreeDIcon, PinIcon, StoreIcon } from '@todam/ui';
 import type { Suggestion, SuggestionType } from '@todam/shared';
 
 type AutocompleteDropdownProps = {
@@ -11,7 +11,7 @@ function SuggestionIcon({ type }: { type: SuggestionType }) {
     if (type === 'REGION') return <PinIcon size={16} className="text-foreground-tertiary" />;
     if (type === 'STORE') return <StoreIcon size={16} className="text-foreground-tertiary" />;
     // PROGRAM
-    return <BoxIcon size={16} className="text-foreground-tertiary" />;
+    return <ThreeDIcon size={16} className="text-foreground-tertiary" />;
 }
 
 // 자동완성 드롭다운.
@@ -26,7 +26,7 @@ export function AutocompleteDropdown({ suggestions, onSelect }: AutocompleteDrop
                 <li key={`${suggestion.type}-${suggestion.id}`}>
                     <button
                         type="button"
-                        className="flex w-full items-center gap-2 text-left"
+                        className="flex w-full cursor-pointer items-center gap-2 text-left"
                         onClick={() => onSelect(suggestion)}
                     >
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">

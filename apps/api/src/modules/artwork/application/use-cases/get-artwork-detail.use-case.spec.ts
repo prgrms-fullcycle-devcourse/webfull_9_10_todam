@@ -30,14 +30,22 @@ function makeLog(toStatus: ArtworkStatus, createdAt: Date, photos: PhotoRow[] = 
     };
 }
 
+// 기본 방문(예약) 시각 — VISITED completedAt 파생 소스.
+const DEFAULT_SCHEDULED_AT = new Date('2026-04-03T12:30:00.000Z');
+
 function makeRow(overrides: Partial<UserArtworkDetailRow> = {}): UserArtworkDetailRow {
+    const { reservation, ...rest } = overrides;
     return {
         id: 'artwork-uuid-001',
         status: ArtworkStatus.DRYING,
         estimatedCompletedAt: new Date('2026-07-01T00:00:00.000Z'),
-        reservation: { userId: 'user-uuid-001' },
         logs: [],
-        ...overrides,
+        ...rest,
+        reservation: {
+            userId: 'user-uuid-001',
+            scheduledAt: DEFAULT_SCHEDULED_AT,
+            ...reservation,
+        },
     };
 }
 
@@ -105,7 +113,11 @@ describe('GetArtworkDetailUseCase', () => {
     // ── 403 ──
     describe('403 - 본인 가드', () => {
         it('userId 불일치이면 FORBIDDEN(403)을 던진다', async () => {
-            const uc = makeUseCase(makeRow({ reservation: { userId: 'other-user-uuid' } }));
+            const uc = makeUseCase(
+                makeRow({
+                    reservation: { userId: 'other-user-uuid', scheduledAt: DEFAULT_SCHEDULED_AT },
+                }),
+            );
             await expect(uc.execute(CURRENT_USER_ID, ARTWORK_ID)).rejects.toMatchObject({
                 errorCode: ArtworkDetailErrorCode.FORBIDDEN,
                 status: HttpStatus.FORBIDDEN,
@@ -113,7 +125,9 @@ describe('GetArtworkDetailUseCase', () => {
         });
 
         it('userId=null이면 403을 던진다', async () => {
-            const uc = makeUseCase(makeRow({ reservation: { userId: null } }));
+            const uc = makeUseCase(
+                makeRow({ reservation: { userId: null, scheduledAt: DEFAULT_SCHEDULED_AT } }),
+            );
             await expect(uc.execute(CURRENT_USER_ID, ARTWORK_ID)).rejects.toMatchObject({
                 errorCode: ArtworkDetailErrorCode.FORBIDDEN,
                 status: HttpStatus.FORBIDDEN,
@@ -198,11 +212,14 @@ describe('GetArtworkDetailUseCase', () => {
             expect(visited.completedAt).toBe(logDate.toISOString());
         });
 
-        it('완료 단계이지만 로그 없으면 completedAt 미포함', async () => {
-            const uc = makeUseCase(makeRow({ status: ArtworkStatus.DRYING, logs: [] }));
+        it('VISITED 외 완료 단계는 로그 없으면 completedAt 미포함', async () => {
+            // status=BISQUE_FIRING → VISITED·DRYING 완료. DRYING 은 진입 로그가 없으면 날짜 없음.
+            // (VISITED 는 scheduledAt 폴백이 있으므로 별도 테스트로 분리)
+            const uc = makeUseCase(makeRow({ status: ArtworkStatus.BISQUE_FIRING, logs: [] }));
             const result = await uc.execute(CURRENT_USER_ID, ARTWORK_ID);
-            const visited = result.artwork.timeline[0]!;
-            expect(visited.completedAt).toBeUndefined();
+            const drying = result.artwork.timeline[1]!; // DRYING = 완료, 로그 없음
+            expect(drying.isCompleted).toBe(true);
+            expect(drying.completedAt).toBeUndefined();
         });
 
         it('현재/미완료 단계는 completedAt 미포함', async () => {
@@ -215,6 +232,27 @@ describe('GetArtworkDetailUseCase', () => {
             const result = await uc.execute(CURRENT_USER_ID, ARTWORK_ID);
             const drying = result.artwork.timeline[1]!; // DRYING = 현재
             expect(drying.completedAt).toBeUndefined();
+        });
+
+        // 이슈 #372: 실제 작품은 VISITED 를 건너뛰고 RESERVED→DRYING 으로 전이하므로
+        // toStatus===VISITED 로그가 없다. 이때 VISITED 완료시각은 방문일(reservation.scheduledAt)
+        // 에서 파생되어야 하며, 건조 시작일(RESERVED→DRYING 전이)과는 구분된다(Figma 8505:15922).
+        it('VISITED 진입 로그 없으면 completedAt 을 reservation.scheduledAt 으로 파생', async () => {
+            const visitDate = new Date('2026-04-03T12:30:00.000Z');
+            const dryingStart = new Date('2026-04-05T15:00:00.000Z');
+            const uc = makeUseCase(
+                makeRow({
+                    status: ArtworkStatus.DRYING,
+                    reservation: { userId: CURRENT_USER_ID, scheduledAt: visitDate },
+                    // 건조 시작 전이만 존재. VISITED 진입 로그는 없음.
+                    logs: [makeLog(ArtworkStatus.DRYING, dryingStart)],
+                }),
+            );
+            const result = await uc.execute(CURRENT_USER_ID, ARTWORK_ID);
+            const visited = result.artwork.timeline[0]!;
+            expect(visited.isCompleted).toBe(true);
+            // 체험일 = 방문일(04-03), 건조 시작일(04-05)과 다른 날짜
+            expect(visited.completedAt).toBe(visitDate.toISOString());
         });
     });
 

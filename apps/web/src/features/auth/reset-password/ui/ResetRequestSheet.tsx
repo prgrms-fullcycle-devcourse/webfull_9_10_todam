@@ -15,13 +15,20 @@ const RESEND_COOLDOWN_SECONDS = 180;
 
 export type ResetRequestSheetProps = {
     onClose?: () => void;
+    /**
+     * 로그인 상태(개인정보 수정 등)에서 진입 시 가입 이메일을 프리필한다.
+     * 제공되면 이메일 입력칸을 고정(읽기 전용)하고 안내 문구를 재설정 맥락으로 전환한다.
+     */
+    initialEmail?: string;
 };
 
-export function ResetRequestSheet({ onClose }: ResetRequestSheetProps) {
+export function ResetRequestSheet({ onClose, initialEmail }: ResetRequestSheetProps) {
     const { close } = useSheet();
     const { push } = useToast();
 
-    const [email, setEmail] = useState('');
+    const [email, setEmail] = useState(initialEmail ?? '');
+    // 프리필된 경우 = 로그인 상태 진입 → 이메일 고정 + 문구 전환.
+    const prefilled = initialEmail != null && initialEmail !== '';
     const [pending, setPending] = useState(false);
     // sent: 전송 완료 후 "링크 전송 완료" 상태
     const [sent, setSent] = useState(false);
@@ -109,8 +116,12 @@ export function ResetRequestSheet({ onClose }: ResetRequestSheetProps) {
     if (!sent) {
         return (
             <FormBottomSheet
-                title="비밀번호를 잊으셨나요?"
-                subTitle="가입하신 이메일 주소를 입력해 주세요."
+                title={prefilled ? '비밀번호를 재설정할까요?' : '비밀번호를 잊으셨나요?'}
+                subTitle={
+                    prefilled
+                        ? '가입하신 이메일로 재설정 링크를 보내드려요.'
+                        : '가입하신 이메일 주소를 입력해 주세요.'
+                }
                 actionLabel="재설정 링크 보내기"
                 actionDisabled={!emailValid || pending}
                 onAction={() => void handleSend()}
@@ -126,6 +137,8 @@ export function ResetRequestSheet({ onClose }: ResetRequestSheetProps) {
                     placeholder="leadem@mail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    readOnly={prefilled}
+                    disabled={prefilled}
                 />
             </FormBottomSheet>
         );

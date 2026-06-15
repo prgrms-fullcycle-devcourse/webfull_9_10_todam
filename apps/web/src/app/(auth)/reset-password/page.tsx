@@ -35,17 +35,21 @@ function ResetPasswordContent() {
     const linkValid = !!email && !!code;
 
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [pending, setPending] = useState(false);
     const [expiredError, setExpiredError] = useState(false);
     const [passwordError, setPasswordError] = useState<string | null>(null);
 
     const passwordValid = passwordSchema.safeParse(password).success;
+    // 비밀번호 확인: 입력값이 있고 본 비밀번호와 다르면 불일치.
+    const confirmMismatch = confirmPassword !== '' && confirmPassword !== password;
+    const canSubmit = passwordValid && confirmPassword === password;
 
     // 전역 Header override: 타이틀 "비밀번호 재설정", 우측 액션 없음.
     useHeaderOverride({ title: '비밀번호 재설정', hideRightAction: true });
 
     const handleSubmit = async () => {
-        if (pending || !passwordValid || !linkValid) return;
+        if (pending || !canSubmit || !linkValid) return;
         setPending(true);
         setPasswordError(null);
         setExpiredError(false);
@@ -106,6 +110,19 @@ function ResetPasswordContent() {
                     }}
                     disabled={!linkValid || expiredError}
                 />
+
+                <TextInput
+                    id="reset-confirm-password"
+                    label="비밀번호 확인"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="비밀번호를 다시 입력해 주세요"
+                    value={confirmPassword}
+                    error={confirmMismatch}
+                    helperText={confirmMismatch ? '비밀번호가 일치하지 않습니다.' : undefined}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={!linkValid || expiredError}
+                />
             </main>
 
             <BottomBar>
@@ -113,7 +130,7 @@ function ResetPasswordContent() {
                     variant="filled"
                     size="lg"
                     className="w-full"
-                    disabled={!passwordValid || pending || !linkValid || expiredError}
+                    disabled={!canSubmit || pending || !linkValid || expiredError}
                     onClick={() => void handleSubmit()}
                 >
                     재설정 완료

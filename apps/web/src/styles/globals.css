@@ -14,6 +14,12 @@
     body {
         overscroll-behavior: none;
     }
+    /* 브라우저 기본 검색 입력 X 버튼 숨김 (커스텀 X 버튼만 노출) */
+    input[type="search"]::-webkit-search-cancel-button,
+    input[type="search"]::-webkit-search-decoration {
+        -webkit-appearance: none;
+        appearance: none;
+    }
 }
 
 @layer utilities {
