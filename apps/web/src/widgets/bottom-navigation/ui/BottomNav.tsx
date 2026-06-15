@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useAuthStore } from '@/features/auth/login';
+import { primeMobileKeyboard } from '@/shared/lib/primeMobileKeyboard';
 
 import { useBottomNavigation } from '../model/useBottomNavigation';
 
@@ -29,7 +30,10 @@ export function BottomNav() {
                             if (!isAuthenticated && AUTH_REQUIRED_PATHS.has(href)) {
                                 e.preventDefault();
                                 router.push('/login');
+                                return;
                             }
+                            // 검색 진입 — 탭 제스처 안에서 키보드를 미리 띄워 모바일 autofocus 한계를 회피.
+                            if (href === '/search') primeMobileKeyboard();
                         }}
                         className={`flex flex-1 flex-col items-center justify-start gap-1 self-stretch text-xs ${
                             active
