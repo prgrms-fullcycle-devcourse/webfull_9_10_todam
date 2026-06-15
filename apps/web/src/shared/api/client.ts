@@ -2,20 +2,9 @@ import { getAuthToken } from './auth-token';
 import { parseApiResponse } from './parse';
 import { ApiError } from './types';
 
-// 개발 편의: localStorage('todam_dev_api_base') 가 있으면 해당 베이스로 직결(실 dev 백엔드 지정용).
-function resolveDevRuntimeBaseUrl(): string {
-    if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
-        const devBase = window.localStorage.getItem('todam_dev_api_base');
-        if (devBase) return devBase;
-    }
-    return '';
-}
-
+// 항상 Next API 프록시 경유(쿠키 전달·CORS 회피). 프록시가 서버사이드에서 API_URL 로 전달.
 function resolveUrl(path: string): string {
     if (path.startsWith('http')) return path;
-    const devRuntimeBaseUrl = resolveDevRuntimeBaseUrl();
-    if (devRuntimeBaseUrl) return `${devRuntimeBaseUrl}${path}`;
-    // 항상 Next API 프록시 경유(쿠키 전달·CORS 회피).
     return `/api/proxy${path}`;
 }
 
