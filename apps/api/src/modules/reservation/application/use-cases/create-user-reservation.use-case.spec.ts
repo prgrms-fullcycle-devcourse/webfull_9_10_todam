@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import { HttpStatus } from '@nestjs/common';
-import { ReservationStatus } from '@prisma/client';
+import { NotificationCategory, ReservationStatus } from '@prisma/client';
 // dto 입력 타입은 shared(zod) enum 기준 — 컨트롤러 ZodValidationPipe 와 동일 SSOT.
 import { ReservationDeliveryMethod } from '@todam/shared';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
@@ -218,7 +218,7 @@ describe('CreateUserReservationUseCase', () => {
             );
         });
 
-        it('CONFIRMED 예약(autoConfirm) + partnerUserId=null 이면 createAndDispatch가 호출되지 않는다', async () => {
+        it('CONFIRMED 예약(autoConfirm) 시 고객 U-1 + 파트너 P-4 알림이 모두 발송된다', async () => {
             notificationService.createAndDispatch.mockClear();
             createCustomer.mockResolvedValue({
                 reservation: {
@@ -230,12 +230,30 @@ describe('CreateUserReservationUseCase', () => {
                     status: ReservationStatus.CONFIRMED,
                     createdAt: new Date('2026-05-25T19:35:00.000Z'),
                 },
-                partnerUserId: null,
+                partnerUserId: PARTNER_USER_ID,
             });
 
             await useCase.execute(USER_ID, dto);
 
-            expect(notificationService.createAndDispatch).not.toHaveBeenCalled();
+            // 고객 U-1 (예약 확정)
+            expect(notificationService.createAndDispatch).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    recipientId: USER_ID,
+                    eventType: 'U-1',
+                    category: NotificationCategory.TRANSACTION,
+                    body: '예약이 확정되었어요. 공방에서 곧 만나요!',
+                    idempotencyKey: `U-1:res-confirmed:${USER_ID}`,
+                }),
+            );
+            // 파트너 P-4 (예약 자동 확정)
+            expect(notificationService.createAndDispatch).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    recipientId: PARTNER_USER_ID,
+                    eventType: 'P-4',
+                    category: NotificationCategory.OPERATION,
+                    idempotencyKey: `P-4:res-confirmed:${PARTNER_USER_ID}`,
+                }),
+            );
         });
     });
 });
