@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { EditIcon, Rating, SectionTitle } from '@todam/ui';
 import type { ReservationDetail } from '@todam/shared';
 
+import { EmptyBox } from '@/shared/ui';
 import { useReservationReview } from '@/entities/reservation';
 
 // 디자인 정본 (변형 B/C) — 리뷰 섹션.
@@ -51,17 +52,11 @@ export function ReviewSection({ reservation }: ReviewSectionProps) {
             )}
 
             {!reservation.hasReview ? (
-                // 빈 상태 — DescriptionBlock 패턴.
-                <div className="flex w-full flex-col items-center gap-3 rounded-2xl border border-border p-4">
-                    <p className="text-xs text-foreground-tertiary">아직 작성한 리뷰가 없어요</p>
-                    <button
-                        type="button"
-                        onClick={handleWriteReview}
-                        className="text-xs font-semibold text-foreground-tertiary"
-                    >
-                        리뷰 쓰기
-                    </button>
-                </div>
+                <EmptyBox
+                    description="아직 작성한 리뷰가 없어요"
+                    actionLabel="리뷰 쓰기"
+                    action={handleWriteReview}
+                />
             ) : isLoading ? (
                 <p className="py-2 text-center text-xs text-foreground-tertiary">
                     리뷰를 불러오는 중입니다.
