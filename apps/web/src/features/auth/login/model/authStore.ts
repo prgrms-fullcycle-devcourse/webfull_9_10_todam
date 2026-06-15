@@ -16,7 +16,11 @@ type AuthStore = {
     state: AuthState;
     accessToken: string | null;
     user: LoginUser | null;
+    // 부팅 세션 복원(/auth/refresh) 완료 여부. RequireAuth 가 복원 끝나기 전 모달 깜빡임을 막는 데 사용.
+    initialized: boolean;
     setAuth: (accessToken: string, user: LoginUser) => void;
+    setToken: (accessToken: string) => void;
+    setInitialized: () => void;
     clearAuth: () => void;
 };
 
@@ -28,6 +32,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
             : 'UNAUTHENTICATED',
     accessToken: typeof window !== 'undefined' ? window.localStorage.getItem('accessToken') : null,
     user: null,
+    initialized: false,
 
     setAuth: (accessToken, user) => {
         // localStorage에 저장: 페이지 새로고침 후에도 인증 유지(stopgap).
@@ -37,6 +42,16 @@ export const useAuthStore = create<AuthStore>((set) => ({
         }
         set({ state: 'AUTHENTICATED', accessToken, user });
     },
+
+    // 토큰만 먼저 반영(부팅 복원: refresh → setToken → /users/me 호출 시 자동 주입 → setAuth).
+    setToken: (accessToken) => {
+        if (typeof window !== 'undefined') {
+            window.localStorage.setItem('accessToken', accessToken);
+        }
+        set({ state: 'AUTHENTICATED', accessToken });
+    },
+
+    setInitialized: () => set({ initialized: true }),
 
     clearAuth: () => {
         if (typeof window !== 'undefined') {

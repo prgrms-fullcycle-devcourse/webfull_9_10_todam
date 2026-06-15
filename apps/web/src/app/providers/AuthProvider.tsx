@@ -4,11 +4,13 @@
 // tokenGetter와 공통 인증 에러 핸들러를 연결하는 앱 초기화 Provider.
 
 import { useEffect, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { Modal } from '@todam/ui';
 import { useModal } from '@/shared/model';
 
-import { connectAuthTokenGetter } from '@/features/auth/login';
-import { setApiErrorHandler, type ApiError } from '@/shared/api';
+import { connectAuthTokenGetter, refreshSession, useAuthStore } from '@/features/auth/login';
+import { getMyProfile } from '@/features/user/profile';
+import { ApiError, setApiErrorHandler } from '@/shared/api';
 
 const LOGIN_PATH = '/login';
 const PARTNER_GUARD_MESSAGE = '파트너 권한이 없습니다.';
@@ -31,6 +33,7 @@ function redirectToLogin(): void {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const { open: openModal, close: closeModal } = useModal();
+    const router = useRouter();
 
     useEffect(() => {
         const goLogin = () => {
@@ -38,10 +41,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             redirectToLogin();
         };
 
-        // 닫기: 모달만 닫고 머문다. pending 리셋해 다음 401에 다시 안내.
+        // 닫기: 모달 닫고 직전 화면으로 돌아간다(데이터 미렌더 빈 화면 방지, #382-4).
         const dismiss = () => {
             isAuthRedirectPending = false;
             closeModal();
+            router.back();
         };
 
         function handleAuthError(error: ApiError): void {
@@ -68,7 +72,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         connectAuthTokenGetter();
         setApiErrorHandler(handleAuthError);
-    }, [closeModal, openModal]);
+
+        // 부팅 세션 복원(#382-2 PWA 로그인 유지):
+        // refresh_token 쿠키가 살아 있으면 새 access token + 프로필을 받아 세션을 복원한다.
+        // 실패(비로그인/만료)면 미인증 확정. 어느 쪽이든 initialized 로 RequireAuth 게이트 해제.
+        let cancelled = false;
+        const { setToken, setAuth, clearAuth, setInitialized } = useAuthStore.getState();
+
+        // dev mock 모드(프록시 미경유)에서는 /auth/refresh 핸들러가 없으므로 복원을 건너뛰고
+        // localStorage stopgap 상태를 그대로 신뢰한다. 프록시 경유(prod/mock disabled)에서만 복원.
+        const useMockDirect =
+            process.env.NODE_ENV !== 'production' &&
+            process.env.NEXT_PUBLIC_API_MOCKING !== 'disabled';
+
+        async function restoreSession() {
+            try {
+                const { accessToken } = await refreshSession();
+                if (cancelled) return;
+                setToken(accessToken); // 이후 /users/me 호출에 자동 주입
+                const { user } = await getMyProfile();
+                if (cancelled) return;
+                setAuth(accessToken, {
+                    userId: user.userId,
+                    email: user.email,
+                    nickname: user.nickname,
+                    isPartner: user.isPartner,
+                });
+            } catch (error) {
+                // 401(쿠키 없음/만료)만 미인증 확정. 네트워크/5xx 일시 오류는
+                // optimistic 상태를 유지해 유효 세션을 끊지 않는다.
+                if (!cancelled && error instanceof ApiError && error.statusCode === 401) {
+                    clearAuth();
+                }
+            } finally {
+                if (!cancelled) setInitialized();
+            }
+        }
+
+        if (useMockDirect) {
+            setInitialized();
+        } else {
+            void restoreSession();
+        }
+
+        return () => {
+            cancelled = true;
+        };
+    }, [closeModal, openModal, router]);
 
     return <>{children}</>;
 }
