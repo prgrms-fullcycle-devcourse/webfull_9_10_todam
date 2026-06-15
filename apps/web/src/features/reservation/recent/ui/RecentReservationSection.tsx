@@ -66,6 +66,9 @@ function RecentReservationCard({ item }: { item: ReservationListItem }) {
 export function RecentReservationSection() {
     const state = useRecentReservation();
 
+    // 비로그인 유저에게는 섹션 자체를 숨긴다.
+    if (state.kind === 'guest') return null;
+
     return (
         <section className="flex flex-col gap-3 py-2">
             {/* 섹션 헤더 */}
@@ -83,11 +86,6 @@ export function RecentReservationSection() {
                 <p className="py-6 text-center text-sm text-foreground-tertiary">
                     예약 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
                 </p>
-            )}
-
-            {/* 비회원 */}
-            {state.kind === 'guest' && (
-                <EmptyState message="로그인 후 최근 예약을 확인할 수 있어요." />
             )}
 
             {/* 예약 없음 */}
