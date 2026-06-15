@@ -133,7 +133,7 @@ export function MyPageHub({
             {/* Footer */}
             <footer className="mt-auto flex flex-col items-center gap-1 pt-4 pb-2">
                 <div className="h-px w-full bg-border-subtle mb-4" />
-                <span className="text-sm font-semibold text-foreground-tertiary">LEADEM</span>
+                <span className="text-sm font-semibold text-foreground-tertiary">TODAM</span>
                 <span className="text-xs text-foreground-tertiary">v1.0.0</span>
             </footer>
         </main>

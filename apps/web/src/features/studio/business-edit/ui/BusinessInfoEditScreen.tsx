@@ -240,7 +240,7 @@ function BusinessEditInner({ storeId, store }: { storeId: string; store: Partner
                 <TextInput
                     label="이메일"
                     type="email"
-                    placeholder="예) leadem@studio.com"
+                    placeholder="예) todam@studio.com"
                     value={form.email}
                     error={!!emailError}
                     helperText={emailError}

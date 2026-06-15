@@ -97,7 +97,7 @@ export function StudioInfoFields({
                 onChange={(e) => onChangeName(e.target.value)}
             />
 
-            {/* 공방 URL: leadem.com/ 프리픽스 고정 */}
+            {/* 공방 URL: todam.com/ 프리픽스 고정 */}
             <div className="flex w-full flex-col gap-2">
                 <label className="px-[5px] text-sm font-semibold text-foreground-tertiary">
                     공방 URL
@@ -111,7 +111,7 @@ export function StudioInfoFields({
                     ].join(' ')}
                 >
                     <span className="shrink-0 text-base text-foreground-tertiary group-focus-within:text-primary">
-                        leadem.com/
+                        todam.com/
                     </span>
                     <input
                         value={slug}

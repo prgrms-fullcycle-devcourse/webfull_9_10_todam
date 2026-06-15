@@ -37,7 +37,7 @@ export type StoreImage = z.infer<typeof storeImageSchema>;
 // ─── 사업자 서류 (수정 화면 비대상, 참조용) ──────────────────────
 export const storeBusinessDocumentSchema = z.object({
     ownerName: z.string().meta({ example: '김리듬' }),
-    email: z.string().meta({ example: 'leadem@studio.com' }).nullable(),
+    email: z.string().meta({ example: 'todam@studio.com' }).nullable(),
     businessName: z.string().meta({ example: '흙담' }),
     businessNumber: z.string().meta({ example: '555-55-55555' }),
     businessAddress: z.string().meta({ example: '서울특별시 성동구 둑섬로 273(성수동)' }),
@@ -206,7 +206,7 @@ export const businessDocumentUpdateRequestSchema = z.object({
         .max(500)
         .meta({ example: '서울특별시 성동구 둑섬로 273(성수동)' })
         .optional(),
-    email: emailSchema.max(255).meta({ example: 'leadem@studio.com' }).optional(),
+    email: emailSchema.max(255).meta({ example: 'todam@studio.com' }).optional(),
     documentUrl: z
         .string()
         .meta({
