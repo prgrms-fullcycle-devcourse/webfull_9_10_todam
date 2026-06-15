@@ -121,7 +121,7 @@ export function ProfileEditScreen() {
                     <button
                         type="button"
                         onClick={handleWithdraw}
-                        className="text-xs font-semibold text-foreground-tertiary underline underline-offset-2"
+                        className="cursor-pointer text-xs font-semibold text-foreground-tertiary underline underline-offset-2"
                     >
                         탈퇴하기
                     </button>
