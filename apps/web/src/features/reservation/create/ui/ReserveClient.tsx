@@ -337,7 +337,7 @@ export function ReserveClient({
                                 error={Boolean(reserverPhone) && !phoneValid}
                                 helperText={
                                     reserverPhone && !phoneValid
-                                        ? '010-0000-0000 형식으로 입력해 주세요.'
+                                        ? '휴대폰 번호 11자리를 정확히 입력해 주세요.'
                                         : undefined
                                 }
                             />
