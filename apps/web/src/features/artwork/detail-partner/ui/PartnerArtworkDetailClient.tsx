@@ -36,7 +36,8 @@ export type PartnerArtworkDetailClientProps = {
 // 현재 status → 다음 단계 CTA 라벨 맵.
 // Decision Log: UPDATE_STATUS → '다음단계 라벨'
 const NEXT_STATUS_MAP: Partial<Record<string, { label: string; nextStatus: ArtworkStatus }>> = {
-    [ArtworkStatus.RESERVED]: { label: '체험 완료', nextStatus: ArtworkStatus.DRYING },
+    [ArtworkStatus.RESERVED]: { label: '체험 완료', nextStatus: ArtworkStatus.VISITED },
+    [ArtworkStatus.VISITED]: { label: '건조 시작', nextStatus: ArtworkStatus.DRYING },
     [ArtworkStatus.DRYING]: { label: '초벌 시작', nextStatus: ArtworkStatus.BISQUE_FIRING },
     [ArtworkStatus.BISQUE_FIRING]: { label: '유약 시작', nextStatus: ArtworkStatus.GLAZING },
     [ArtworkStatus.GLAZING]: { label: '재벌 시작', nextStatus: ArtworkStatus.GLAZE_FIRING },
