@@ -3,32 +3,9 @@
 //   - completed → 체크, current/upcoming → 단계 아이콘. variant 별 색.
 // 유저 read-only entities/artwork/ui/Stepper 는 건드리지 않는다.
 
-import type { ComponentType } from 'react';
-import {
-    SunIcon,
-    FireIcon,
-    WaterIcon,
-    FireDoubleIcon,
-    DeliveryIcon,
-    FlagIcon,
-    LeafIcon,
-} from '@todam/ui';
+import { getStepIcon } from '@/entities/artwork';
 import { StepperIcon, ImageUploadGrid } from '@/shared/ui';
 import type { TimelineRow } from '../timeline';
-
-type SizeProps = { size?: number };
-
-const STEP_ICON_MAP: Record<string, ComponentType<SizeProps>> = {
-    VISITED: LeafIcon,
-    DRYING: SunIcon,
-    BISQUE_FIRING: FireIcon,
-    GLAZING: WaterIcon,
-    GLAZE_FIRING: FireDoubleIcon,
-    shipping: DeliveryIcon,
-    delivered: FlagIcon,
-    pickup_ready: DeliveryIcon,
-    pickup_done: FlagIcon,
-};
 
 export type PartnerArtworkStepperProps = {
     rows: TimelineRow[];
@@ -45,7 +22,7 @@ export function PartnerArtworkStepper({
         <div className="flex flex-col">
             {rows.map((row, idx) => {
                 const isLast = idx === rows.length - 1;
-                const StageIcon = STEP_ICON_MAP[row.key] ?? LeafIcon;
+                const StageIcon = getStepIcon(row.key);
 
                 const connectorClass =
                     row.state === 'completed' ? 'bg-success-lighter' : 'bg-muted';

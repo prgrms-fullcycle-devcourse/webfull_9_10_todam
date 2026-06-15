@@ -1,23 +1,10 @@
 'use client';
 
-import type { ComponentType } from 'react';
-import {
-    SunIcon,
-    FireIcon,
-    WaterIcon,
-    FireDoubleIcon,
-    FlagIcon,
-    LeafIcon,
-} from '@todam/ui';
-import {
-    ArtworkStatus,
-    formatYmdShort,
-    type ArtworkPhoto,
-    type ArtworkTimelineEntry,
-} from '@todam/shared';
+import { formatYmdShort, type ArtworkPhoto, type ArtworkTimelineEntry } from '@todam/shared';
 
 import { StepperIcon } from '@/shared/ui';
 
+import { getStepIcon } from './stepIcon';
 import { StepperItemMedia } from './StepperItemMedia';
 
 // 타임라인 단일 항목 (Figma `8505:15922` / `8505:16209` / QA `8716:16510`).
@@ -40,20 +27,6 @@ import { StepperItemMedia } from './StepperItemMedia';
 
 type Variant = 'completed' | 'current' | 'upcoming';
 
-type SizeProps = { size?: number };
-
-// stage(ArtworkStatus) → 단계 아이콘. 파트너 STEP_ICON_MAP 과 동일 아이콘 매핑.
-// 매핑 외 단계는 LeafIcon 으로 폴백(파트너 동작과 일치).
-const STEP_ICON_MAP: Partial<Record<ArtworkStatus, ComponentType<SizeProps>>> = {
-    [ArtworkStatus.RESERVED]: LeafIcon,
-    [ArtworkStatus.VISITED]: LeafIcon,
-    [ArtworkStatus.DRYING]: SunIcon,
-    [ArtworkStatus.BISQUE_FIRING]: FireIcon,
-    [ArtworkStatus.GLAZING]: WaterIcon,
-    [ArtworkStatus.GLAZE_FIRING]: FireDoubleIcon,
-    [ArtworkStatus.COMPLETED]: FlagIcon,
-};
-
 function pickVariant(entry: ArtworkTimelineEntry): Variant {
     if (entry.isCompleted) return 'completed';
     if (entry.isCurrent) return 'current';
@@ -68,31 +41,31 @@ export type StepperItemProps = {
 
 export function StepperItem({ entry, isLast, onSelectPhoto }: StepperItemProps) {
     const variant = pickVariant(entry);
-    const StageIcon = STEP_ICON_MAP[entry.stage] ?? LeafIcon;
+    const StageIcon = getStepIcon(entry.stage);
 
     // statusMessage: displayState.description (Figma — date + statusMessage 만 노출).
     const statusMessage = entry.displayState.description;
 
-    // 날짜 노출 정책 (Figma):
-    // - completed: completedAt 있으면 표시
-    // - current/upcoming: 미노출
     const dateText =
-        variant === 'completed' && entry.completedAt ? formatYmdShort(entry.completedAt) : null;
+        variant === 'completed' && entry.completedAt ? formatYmdShort(entry.completedAt) : '-';
 
     return (
         <div className="flex gap-3">
             {/* 좌측: 28 icon 컬럼 + connector */}
             <div className="flex w-7 shrink-0 flex-col items-center">
-                <StepperIcon shape="circle" status={variant} icon={StageIcon} className="shrink-0" />
+                <StepperIcon
+                    shape="circle"
+                    status={variant}
+                    icon={StageIcon}
+                    className="shrink-0"
+                />
                 {!isLast && <Connector variant={variant} />}
             </div>
 
             {/* 우측: child (width 288), padding pb-5 */}
             <div className="flex w-72 flex-col gap-3 pb-5">
                 <div className="flex flex-col gap-1">
-                    {dateText && (
-                        <p className="text-xs leading-4 text-foreground-tertiary">{dateText}</p>
-                    )}
+                    <p className="text-xs leading-4 text-foreground-tertiary">{dateText}</p>
                     <p className="text-base font-semibold leading-5 text-foreground">
                         {statusMessage}
                     </p>
