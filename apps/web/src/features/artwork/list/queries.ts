@@ -1,6 +1,6 @@
 'use client';
 
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import {
     DEFAULT_PAGE_SIZE,
     type ArtworkStatusGroup,
@@ -42,6 +42,8 @@ export function usePartnerArtworks({
         initialPageParam: null as string | null,
         getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.nextCursor : undefined),
         enabled: Boolean(storeId),
+        // 그룹/필터 변경 시 이전 목록 유지 → isLoading 미발생 → 모바일 깜빡임 방지.
+        placeholderData: keepPreviousData,
     });
 }
 
@@ -55,5 +57,7 @@ export function usePartnerArtworkCount({ storeId, group }: UsePartnerArtworkCoun
         queryKey: [...KEY, 'count', { storeId, group }] as const,
         queryFn: () => getPartnerArtworkCount({ storeId, group }),
         enabled: Boolean(storeId),
+        // 그룹 변경 시 이전 카운트 유지 → 칩 영역 깜빡임 방지.
+        placeholderData: keepPreviousData,
     });
 }

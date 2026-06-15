@@ -42,7 +42,7 @@ export class ConfirmPartnerReservationUseCase {
                 eventType: 'U-1',
                 category: NotificationCategory.TRANSACTION,
                 title: '예약 확정',
-                body: '예약이 확정됐어요. 작품 제작이 시작됩니다.',
+                body: '예약이 확정되었어요. 공방에서 곧 만나요!',
                 deepLink: `/my/reservations/${reservationId}`,
                 idempotencyKey: `U-1:${reservationId}:${reservation.customerUserId}`,
             });

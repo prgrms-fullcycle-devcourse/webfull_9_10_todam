@@ -3,10 +3,14 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
+import { useScrollLock } from '../lib/useScrollLock';
 import { useModalStore } from '../model/modal';
 
 export function AppModal() {
     const { isOpen, content, close } = useModalStore();
+
+    // 열린 동안 배경 스크롤 잠금 (dim 너머 본문 스크롤·모바일 흔들림 방지).
+    useScrollLock(isOpen);
 
     // Esc 키로 닫기 (열려 있을 때만).
     useEffect(() => {

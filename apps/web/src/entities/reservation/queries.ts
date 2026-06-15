@@ -13,6 +13,7 @@ import type {
 import { ApiError } from '@/shared/api';
 
 import {
+    cancelReservation,
     cancelPartnerReservation,
     completePartnerReservation,
     confirmPartnerReservation,
@@ -53,6 +54,18 @@ export function useReservationDetail(reservationId: string) {
         queryFn: () => getReservationDetail(reservationId),
         retry: retryExceptAuthOrNotFound,
         enabled: Boolean(reservationId),
+    });
+}
+
+export function useCancelReservationMutation(reservationId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: () => cancelReservation(reservationId),
+        onSuccess: () =>
+            Promise.all([
+                queryClient.invalidateQueries({ queryKey: [...KEY, reservationId] }),
+                queryClient.invalidateQueries({ queryKey: ['reservations', 'me'] }),
+            ]),
     });
 }
 
@@ -113,20 +126,20 @@ export function usePartnerTimeSlotsByDate(storeId: string, date: string) {
 export function usePartnerProgramReservationCounts(
     storeId: string,
     date: string,
-    timeSlotIds: string[],
+    slotKeys: string[],
     enabled = true,
-    // true 면 timeSlotIds가 빈 배열일 때도 쿼리 활성화 (ALL_DAY 경로: date 전체 슬롯 집계)
+    // true 면 slotKeys가 빈 배열일 때도 쿼리 활성화 (ALL_DAY 경로: date 전체 슬롯 집계)
     allowEmpty = false,
 ) {
     return useQuery({
-        queryKey: [...PARTNER_PROGRAM_COUNTS_KEY, storeId, date, timeSlotIds.join(',')] as const,
-        queryFn: () => getPartnerProgramReservationCounts(storeId, date, timeSlotIds),
+        queryKey: [...PARTNER_PROGRAM_COUNTS_KEY, storeId, date, slotKeys.join(',')] as const,
+        queryFn: () => getPartnerProgramReservationCounts(storeId, date, slotKeys),
         retry: retryExceptAuthOrNotFound,
         enabled:
             enabled &&
             Boolean(storeId) &&
             Boolean(date) &&
-            (allowEmpty ? true : timeSlotIds.length > 0),
+            (allowEmpty ? true : slotKeys.length > 0),
     });
 }
 

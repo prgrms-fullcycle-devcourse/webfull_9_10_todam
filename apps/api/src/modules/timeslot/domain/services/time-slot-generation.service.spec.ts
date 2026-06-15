@@ -79,6 +79,25 @@ describe('TimeSlotGenerationService.buildCandidates', () => {
         expect(result.candidates).toHaveLength(0);
     });
 
+    it('includes past and current-start candidates when includePast=true', () => {
+        const result = TimeSlotGenerationService.buildCandidates({
+            interval: 60,
+            operatingHours: hoursForAllDays({
+                openTime: time(10),
+                closeTime: time(12),
+                breakStart: null,
+                breakEnd: null,
+            }),
+            startParts: day,
+            endParts: day,
+            now: Date.parse('2026-06-10T02:00:00.000Z'),
+            includePast: true,
+        });
+
+        expect(result.pastSkipped).toBe(0);
+        expect(result.candidates).toHaveLength(2);
+    });
+
     it('운영시간 미설정이면 anyOperatingDay=false (use-case 409 트리거)', () => {
         const result = TimeSlotGenerationService.buildCandidates({
             interval: 60,
@@ -90,5 +109,115 @@ describe('TimeSlotGenerationService.buildCandidates', () => {
 
         expect(result.anyOperatingDay).toBe(false);
         expect(result.candidates).toHaveLength(0);
+    });
+});
+
+describe('TimeSlotGenerationService.isValidCandidate', () => {
+    const operatingHours = hoursForAllDays({
+        openTime: time(10),
+        closeTime: time(13),
+        breakStart: time(11),
+        breakEnd: time(12),
+    });
+
+    it('accepts only an exact candidate from the current operating-hours grid', () => {
+        const base = {
+            operatingHours,
+            interval: 60,
+            now: PAST_NOW,
+            allowPast: false,
+        };
+
+        expect(
+            TimeSlotGenerationService.isValidCandidate({
+                ...base,
+                startAt: new Date('2026-06-10T01:00:00.000Z'),
+                endAt: new Date('2026-06-10T02:00:00.000Z'),
+            }),
+        ).toBe(true);
+        expect(
+            TimeSlotGenerationService.isValidCandidate({
+                ...base,
+                startAt: new Date('2026-06-10T02:00:00.000Z'),
+                endAt: new Date('2026-06-10T03:00:00.000Z'),
+            }),
+        ).toBe(false);
+        expect(
+            TimeSlotGenerationService.isValidCandidate({
+                ...base,
+                startAt: new Date('2026-06-10T01:30:00.000Z'),
+                endAt: new Date('2026-06-10T02:30:00.000Z'),
+            }),
+        ).toBe(false);
+    });
+
+    it('branches past-candidate validation with allowPast', () => {
+        const candidate = {
+            startAt: new Date('2026-06-10T01:00:00.000Z'),
+            endAt: new Date('2026-06-10T02:00:00.000Z'),
+            operatingHours,
+            interval: 60,
+            now: Date.parse('2026-06-10T02:00:00.000Z'),
+        };
+
+        expect(TimeSlotGenerationService.isValidCandidate({ ...candidate, allowPast: false })).toBe(
+            false,
+        );
+        expect(TimeSlotGenerationService.isValidCandidate({ ...candidate, allowPast: true })).toBe(
+            true,
+        );
+    });
+});
+
+describe('TimeSlotGenerationService.aggregateOverlaps', () => {
+    const candidate = {
+        startAt: new Date('2026-06-10T04:00:00.000Z'),
+        endAt: new Date('2026-06-10T06:00:00.000Z'),
+    };
+
+    it('aggregates reservations contained by the candidate', () => {
+        const result = TimeSlotGenerationService.aggregateOverlaps(candidate, [
+            {
+                startAt: new Date('2026-06-10T05:00:00.000Z'),
+                endAt: new Date('2026-06-10T06:00:00.000Z'),
+                participantCount: 2,
+            },
+        ]);
+
+        expect(result).toEqual({ overlappingParticipantCount: 2 });
+    });
+
+    it('aggregates reservations that cross candidate boundaries', () => {
+        const result = TimeSlotGenerationService.aggregateOverlaps(candidate, [
+            {
+                startAt: new Date('2026-06-10T05:00:00.000Z'),
+                endAt: new Date('2026-06-10T07:00:00.000Z'),
+                participantCount: 2,
+            },
+            {
+                startAt: new Date('2026-06-10T04:00:00.000Z'),
+                endAt: new Date('2026-06-10T05:00:00.000Z'),
+                participantCount: 3,
+            },
+        ]);
+
+        expect(result).toEqual({ overlappingParticipantCount: 5 });
+    });
+
+    it('excludes reservations that only touch candidate boundaries', () => {
+        const result = TimeSlotGenerationService.aggregateOverlaps(candidate, [
+            {
+                startAt: new Date('2026-06-10T03:00:00.000Z'),
+                endAt: new Date('2026-06-10T04:00:00.000Z'),
+                participantCount: 2,
+            },
+            {
+                startAt: new Date('2026-06-10T06:00:00.000Z'),
+                endAt: new Date('2026-06-10T07:00:00.000Z'),
+                participantCount: 3,
+            },
+        ]);
+
+        expect(result).toEqual({ overlappingParticipantCount: 0 });
     });
 });

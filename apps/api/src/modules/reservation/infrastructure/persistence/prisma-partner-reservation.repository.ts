@@ -1,14 +1,13 @@
 import { randomUUID } from 'crypto';
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
     ArtworkStatus,
     Prisma,
     ReservationDeliveryMethod,
     ReservationSource,
     ReservationStatus,
-    StoreTimeSlotStatus,
+    StoreStatus,
 } from '@prisma/client';
-import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { PrismaService } from '../../../../database/prisma.service';
 import {
     CancelReservationResult,
@@ -28,8 +27,8 @@ import {
 import {
     assertReservationStatusTransition,
     decrementReservedCount,
-    tryIncrementReservedCount,
 } from './reservation-slot-count';
+import { lockStore, materializeBookingSlot } from './booking-core';
 
 @Injectable()
 export class PrismaPartnerReservationRepository extends PartnerReservationRepository {
@@ -154,59 +153,35 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
         input: CreateManualReservationInput,
     ): Promise<CreateManualReservationResult | null> {
         return this.prisma.$transaction(async (tx) => {
-            const [program, slot] = await Promise.all([
-                tx.program.findFirst({
-                    where: { id: input.programId, storeId, status: 'ACTIVE' },
-                    select: {
-                        id: true,
-                        title: true,
-                        price: true,
-                        leadTimeDays: true,
-                        deliverable: true,
-                        store: { select: { maxCapacityPerSlot: true } },
-                    },
-                }),
-                tx.storeTimeSlot.findFirst({
-                    where: { id: input.slotId, storeId },
-                    select: { id: true, startAt: true, status: true, reservedCount: true },
-                }),
-            ]);
-
-            if (!program || !slot) return null;
-
-            if (slot.status !== StoreTimeSlotStatus.OPEN) {
-                throw new BusinessException(
-                    'SLOT_BLOCKED',
-                    '해당 시간대는 예약할 수 없습니다.',
-                    HttpStatus.CONFLICT,
-                );
-            }
-
-            const restriction = await tx.reservationRestriction.findFirst({
+            await lockStore(tx, storeId);
+            const program = await tx.program.findFirst({
                 where: {
+                    id: input.programId,
                     storeId,
-                    startAt: slot.startAt,
-                    programId: program.id,
+                    status: 'ACTIVE',
+                    store: { status: StoreStatus.PUBLISHED },
                 },
-                select: { id: true },
+                select: {
+                    id: true,
+                    title: true,
+                    price: true,
+                    leadTimeDays: true,
+                    deliverable: true,
+                    store: { select: { maxCapacityPerSlot: true } },
+                },
             });
 
-            if (restriction) {
-                throw new BusinessException(
-                    'SLOT_BLOCKED',
-                    '해당 시간대는 예약이 차단되어 있습니다.',
-                    HttpStatus.CONFLICT,
-                );
-            }
-
-            const maxCapacity = program.store.maxCapacityPerSlot;
-            if (maxCapacity === null) {
-                throw new BusinessException(
-                    'INSUFFICIENT_CAPACITY',
-                    '해당 슬롯은 예약 정원이 설정되어 있지 않습니다.',
-                    HttpStatus.BAD_REQUEST,
-                );
-            }
+            if (!program) return null;
+            const [slotKeyStart, slotKeyEnd] = input.slotKey?.split('|') ?? [];
+            const slot = await materializeBookingSlot(tx, {
+                storeId,
+                programId: program.id,
+                participantCount: input.participantCount,
+                slotId: input.slotId,
+                startAt: input.startAt ?? slotKeyStart,
+                expectedEndAt: slotKeyEnd,
+                allowPast: true,
+            });
 
             const snapshot = await tx.programSnapshot.create({
                 data: {
@@ -229,6 +204,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                     storeTimeSlotId: slot.id,
                     programSnapshotId: snapshot.id,
                     scheduledAt: slot.startAt,
+                    scheduledEndAt: slot.endAt,
                     reserverName: input.reserverName,
                     reserverPhone: input.reserverPhone,
                     participantCount: input.participantCount,
@@ -245,21 +221,6 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
                     createdAt: true,
                 },
             });
-
-            const incremented = await tryIncrementReservedCount(
-                tx,
-                slot.id,
-                input.participantCount,
-                maxCapacity,
-            );
-
-            if (!incremented) {
-                throw new BusinessException(
-                    'INSUFFICIENT_CAPACITY',
-                    '잔여 정원이 부족합니다.',
-                    HttpStatus.BAD_REQUEST,
-                );
-            }
 
             // 체험완료(IN_PROGRESS)로 직접 등록하면 제작 시작 상태(건조)로 둔다.
             const artwork = await tx.artwork.create({
@@ -376,6 +337,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
         rejectReason: string | null,
     ): Promise<RejectReservationResult> {
         return this.prisma.$transaction(async (tx) => {
+            await lockStore(tx, reservation.storeId);
             await assertReservationStatusTransition(tx, reservation.id, reservation.status, {
                 status: ReservationStatus.CANCELED,
                 canceledBy: userId,
@@ -404,6 +366,7 @@ export class PrismaPartnerReservationRepository extends PartnerReservationReposi
         cancelReason: string,
     ): Promise<CancelReservationResult> {
         return this.prisma.$transaction(async (tx) => {
+            await lockStore(tx, reservation.storeId);
             await assertReservationStatusTransition(tx, reservation.id, reservation.status, {
                 status: ReservationStatus.CANCELED,
                 canceledBy: userId,

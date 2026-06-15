@@ -25,7 +25,7 @@ type Props = {
     storeId: string;
     date: string;
     scope: 'ALL_DAY' | 'TIME_SLOTS';
-    selectedSlotIds: string[];
+    selectedSlotKeys: string[];
     timeRanges: ReservationRestrictionTimeRange[];
     initialSelectedProgramIds?: string[];
     onBack: () => void;
@@ -45,7 +45,7 @@ export function RestrictionProgramsClient({
     storeId,
     date,
     scope,
-    selectedSlotIds,
+    selectedSlotKeys,
     timeRanges,
     initialSelectedProgramIds = [],
     onBack,
@@ -63,7 +63,7 @@ export function RestrictionProgramsClient({
     const countsQuery = usePartnerProgramReservationCounts(
         storeId,
         date,
-        selectedSlotIds,
+        selectedSlotKeys,
         true,
         scope === 'ALL_DAY',
     );

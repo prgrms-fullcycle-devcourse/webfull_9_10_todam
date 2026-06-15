@@ -1,22 +1,21 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { StoreTimeSlotRepository } from '../../domain/repositories/store-time-slot.repository';
+import { kstMonthRange } from '../../../../common/date/kst-date.util';
+import { TimeSlotBlockRepository } from '../../domain/repositories/time-slot-block.repository';
 import { ReservationRestrictionRepository } from '../../domain/repositories/reservation-restriction.repository';
 import { TimeslotSupportReader } from '../../domain/repositories/timeslot-support.reader';
-import { kstMonthRange } from '../../../../common/date/kst-date.util';
+import { TimeSlotGenerationService } from '../../domain/services/time-slot-generation.service';
+import { evaluateVirtualSlot, slotKey } from '../../domain/services/virtual-time-slot.service';
 import type {
     AvailableSlotsQueryDto,
     AvailableSlotsResponseDto,
 } from '../../presentation/dto/available-slots.dto';
 
-// 공개(User 인증) 예약 가능 시간 조회.
-// 파트너 list-time-slots 와 동일 read 흐름이되, 소유권 검증 대신 공개 program→store 해석을 쓰고,
-// 슬롯별 isAvailable(이 프로그램 기준 예약 가능 여부)을 가공해 반환한다.
 @Injectable()
 export class GetProgramAvailableSlotsUseCase {
     constructor(
         private readonly support: TimeslotSupportReader,
-        private readonly slots: StoreTimeSlotRepository,
+        private readonly blocks: TimeSlotBlockRepository,
         private readonly restrictions: ReservationRestrictionRepository,
     ) {}
 
@@ -32,44 +31,54 @@ export class GetProgramAvailableSlotsUseCase {
                 HttpStatus.NOT_FOUND,
             );
         }
-
-        const range = kstMonthRange(query.year, query.month);
-        // 고객 노출은 OPEN 격자만. CLOSED(영업시간/격자 변경으로 닫힘)·CANCELED 슬롯은
-        // 신규 예약자에게 보이지 않아야 한다(정원 마감은 status=OPEN 유지 → isAvailable=false 로 노출).
-        const slots = (await this.slots.findByStore(program.storeId, { range })).filter(
-            (s) => s.status === 'OPEN',
-        );
-
-        if (slots.length === 0) {
+        if (!program.reservationIntervalMinutes || !program.maxCapacityPerSlot) {
             return { slots: [] };
         }
 
-        // 제한(ReservationRestriction)은 시각 매칭 — 이 프로그램에 걸린 startAt 집합만 추린다.
-        const slotStartAts = slots.map((s) => s.startAt);
-        const restrictions = await this.restrictions.findByStartAts(program.storeId, slotStartAts);
-        const restrictedStartAts = new Set<number>();
-        for (const r of restrictions) {
-            if (r.programId === programId) {
-                restrictedStartAts.add(r.startAt.getTime());
-            }
-        }
+        const range = kstMonthRange(query.year, query.month);
+        const operatingHours = await this.support.findOperatingHours(program.storeId);
+        const lastDay = new Date(Date.UTC(query.year, query.month, 0)).getUTCDate();
+        const { candidates } = TimeSlotGenerationService.buildCandidates({
+            interval: program.reservationIntervalMinutes,
+            operatingHours,
+            startParts: { year: query.year, month: query.month, day: 1 },
+            endParts: { year: query.year, month: query.month, day: lastDay },
+            now: Date.now(),
+        });
 
-        const maxCapacity = program.maxCapacityPerSlot ?? 0;
+        const [reservations, blockedSlots, restrictions] = await Promise.all([
+            this.support.findActiveReservationWindows(program.storeId, range),
+            this.blocks.findOverlapping(program.storeId, range),
+            this.restrictions.findOverlapping(program.storeId, range),
+        ]);
+        const blockedWindows = [
+            ...blockedSlots,
+            ...restrictions.filter((restriction) => restriction.programId === programId),
+        ];
 
         return {
-            slots: slots.map((s) => {
-                const remainingCount = Math.max(0, s.remainingCount(maxCapacity));
-                const isRestricted = restrictedStartAts.has(s.startAt.getTime());
-                const isAvailable = s.status === 'OPEN' && !isRestricted && remainingCount > 0;
-                return {
-                    slotId: s.id,
-                    startAt: s.startAt.toISOString(),
-                    endAt: s.endAt.toISOString(),
-                    reservedCount: s.reservedCount,
-                    remainingCount,
-                    status: s.status,
-                    isAvailable,
-                };
+            slots: candidates.flatMap((candidate) => {
+                const isClosed = blockedSlots.some(
+                    (slot) => slot.startAt < candidate.endAt && candidate.startAt < slot.endAt,
+                );
+                if (isClosed) return [];
+                const state = evaluateVirtualSlot(
+                    candidate,
+                    reservations,
+                    blockedWindows,
+                    program.maxCapacityPerSlot!,
+                );
+                return [
+                    {
+                        slotKey: slotKey(candidate),
+                        startAt: candidate.startAt.toISOString(),
+                        endAt: candidate.endAt.toISOString(),
+                        reservedCount: state.reservedCount,
+                        remainingCount: state.remainingCount,
+                        status: 'OPEN' as const,
+                        isAvailable: state.isAvailable,
+                    },
+                ];
             }),
         };
     }

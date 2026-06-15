@@ -7,7 +7,8 @@ import {
 
 export interface CreateCustomerReservationInput {
     programId: string;
-    slotId: string;
+    slotId?: string;
+    startAt?: string;
     reserverName: string;
     reserverPhone: string;
     participantCount: number;
@@ -25,7 +26,7 @@ export interface CreateCustomerReservationResult {
         status: ReservationStatus;
         createdAt: Date;
     };
-    /** 파트너 알림(P-1) 발송에 필요한 파트너 User id. autoConfirm=false(PENDING)인 경우 설정됨 */
+    /** 파트너 알림 발송에 필요한 파트너 User id. 수동확정(P-1)·자동확정(P-4) 모두 사용 */
     partnerUserId: string | null;
 }
 
@@ -51,6 +52,7 @@ export interface UserReservationListQuery {
 /** POST /reservations/:reservationId/cancel 취소 처리용 행 */
 export interface UserReservationCancelRow {
     id: string;
+    storeId: string;
     userId: string | null;
     status: ReservationStatus;
     source: ReservationSource;

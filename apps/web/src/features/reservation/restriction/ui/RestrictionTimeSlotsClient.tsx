@@ -24,30 +24,30 @@ type SelectedTimeRange = {
 type Props = {
     storeId: string;
     date: string;
-    initialSelectedSlotIds?: string[];
+    initialSelectedSlotKeys?: string[];
     onUnrestrict?: () => void;
     unrestrictPending?: boolean;
     onBack: () => void;
-    onNext: (selectedSlotIds: string[], timeRanges: SelectedTimeRange[]) => void;
+    onNext: (selectedSlotKeys: string[], timeRanges: SelectedTimeRange[]) => void;
 };
 
 export function RestrictionTimeSlotsClient({
     storeId,
     date,
-    initialSelectedSlotIds = [],
+    initialSelectedSlotKeys = [],
     onUnrestrict,
     unrestrictPending = false,
     onBack,
     onNext,
 }: Props) {
-    const [selectedSlotIds, setSelectedSlotIds] = useState<Set<string>>(
-        () => new Set(initialSelectedSlotIds),
+    const [selectedSlotKeys, setSelectedSlotKeys] = useState<Set<string>>(
+        () => new Set(initialSelectedSlotKeys),
     );
 
     const timeSlotsQuery = usePartnerTimeSlotsByDate(storeId, date);
     const slots = timeSlotsQuery.data?.slots ?? [];
 
-    const allSelected = slots.length > 0 && selectedSlotIds.size === slots.length;
+    const allSelected = slots.length > 0 && selectedSlotKeys.size === slots.length;
     const totalConfirmedCount = slots.reduce((sum, s) => sum + s.confirmedReservationCount, 0);
 
     useHeaderOverride({
@@ -58,31 +58,31 @@ export function RestrictionTimeSlotsClient({
 
     const toggleAll = () => {
         if (allSelected) {
-            setSelectedSlotIds(new Set());
+            setSelectedSlotKeys(new Set());
         } else {
-            setSelectedSlotIds(new Set(slots.map((s) => s.slotId)));
+            setSelectedSlotKeys(new Set(slots.map((s) => s.slotKey)));
         }
     };
 
-    const toggleSlot = (slotId: string) => {
-        setSelectedSlotIds((prev) => {
+    const toggleSlot = (slotKey: string) => {
+        setSelectedSlotKeys((prev) => {
             const next = new Set(prev);
-            if (next.has(slotId)) {
-                next.delete(slotId);
+            if (next.has(slotKey)) {
+                next.delete(slotKey);
             } else {
-                next.add(slotId);
+                next.add(slotKey);
             }
             return next;
         });
     };
 
     const handleNext = () => {
-        const selected = slots.filter((s) => selectedSlotIds.has(s.slotId));
+        const selected = slots.filter((s) => selectedSlotKeys.has(s.slotKey));
         const timeRanges = selected.map((s) => ({
             startAt: toKSTOffsetISO(s.startAt),
             endAt: toKSTOffsetISO(s.endAt),
         }));
-        onNext(Array.from(selectedSlotIds), timeRanges);
+        onNext(Array.from(selectedSlotKeys), timeRanges);
     };
 
     return (
@@ -128,10 +128,10 @@ export function RestrictionTimeSlotsClient({
                             />
                             {slots.map((slot) => (
                                 <CheckboxInput
-                                    key={slot.slotId}
+                                    key={slot.slotKey}
                                     label={timeRange(slot)}
-                                    checked={selectedSlotIds.has(slot.slotId)}
-                                    onCheckedChange={() => toggleSlot(slot.slotId)}
+                                    checked={selectedSlotKeys.has(slot.slotKey)}
+                                    onCheckedChange={() => toggleSlot(slot.slotKey)}
                                     action={
                                         slot.confirmedReservationCount > 0 ? (
                                             <span className="shrink-0 text-sm text-primary">
@@ -150,7 +150,7 @@ export function RestrictionTimeSlotsClient({
                 <Button
                     size="lg"
                     className="w-full"
-                    disabled={selectedSlotIds.size === 0}
+                    disabled={selectedSlotKeys.size === 0}
                     onClick={handleNext}
                 >
                     제한 시간 선택 완료

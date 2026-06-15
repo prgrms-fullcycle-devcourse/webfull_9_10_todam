@@ -4,6 +4,7 @@ describe('PrismaUpdateStoreCommand', () => {
     it('deletes every store image without using an invalid UUID sentinel for an empty list', async () => {
         const deleteMany = jest.fn().mockResolvedValue({ count: 1 });
         const tx = {
+            $queryRaw: jest.fn(),
             storeImage: {
                 findMany: jest
                     .fn()

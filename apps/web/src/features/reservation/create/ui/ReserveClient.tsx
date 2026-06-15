@@ -220,7 +220,7 @@ export function ReserveClient({
         createReservation(
             {
                 programId,
-                slotId: selectedSlot.slotId,
+                startAt: selectedSlot.startAt,
                 reserverName: reserverName.trim(),
                 reserverPhone,
                 participantCount,
@@ -295,7 +295,7 @@ export function ReserveClient({
                                 year={year}
                                 month={month}
                                 slots={slotsData?.slots ?? []}
-                                selectedSlotId={selectedSlot?.slotId ?? null}
+                                selectedSlotKey={selectedSlot?.slotKey ?? null}
                                 onMonthChange={(y, m) => {
                                     setYear(y);
                                     setMonth(m);
@@ -337,7 +337,7 @@ export function ReserveClient({
                                 error={Boolean(reserverPhone) && !phoneValid}
                                 helperText={
                                     reserverPhone && !phoneValid
-                                        ? '010-0000-0000 형식으로 입력해 주세요.'
+                                        ? '휴대폰 번호 11자리를 정확히 입력해 주세요.'
                                         : undefined
                                 }
                             />

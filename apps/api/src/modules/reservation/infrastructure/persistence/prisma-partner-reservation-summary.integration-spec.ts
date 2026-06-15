@@ -135,6 +135,7 @@ describe('PrismaPartnerReservationRepository pending summary integration', () =>
                 storeTimeSlotId: slot.id,
                 programSnapshotId: fixture.snapshotId,
                 scheduledAt: startAt,
+                scheduledEndAt: new Date(startAt.getTime() + 60 * 60 * 1000),
                 reserverName: suffix,
                 reserverPhone: '010-0000-0000',
                 deliveryMethod: ReservationDeliveryMethod.PICKUP,

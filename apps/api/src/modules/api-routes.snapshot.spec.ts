@@ -451,13 +451,6 @@ describe('API route baseline', () => {
             },
             {
                 controller: 'TimeslotController',
-                handler: 'generateTimeSlots',
-                method: 'POST',
-                path: '/partner/stores/:storeId/time-slots/generate',
-                guards: ['AuthGuard', 'PartnerGuard'],
-            },
-            {
-                controller: 'TimeslotController',
                 handler: 'listTimeSlots',
                 method: 'GET',
                 path: '/partner/stores/:storeId/time-slots',
@@ -467,7 +460,7 @@ describe('API route baseline', () => {
                 controller: 'TimeslotController',
                 handler: 'updateTimeSlotStatus',
                 method: 'PATCH',
-                path: '/partner/stores/:storeId/time-slots/:timeSlotId/status',
+                path: '/partner/stores/:storeId/time-slots/status',
                 guards: ['AuthGuard', 'PartnerGuard'],
             },
             {

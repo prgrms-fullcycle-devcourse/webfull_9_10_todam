@@ -1,137 +1,128 @@
 /// <reference types="jest" />
-import { HttpStatus } from '@nestjs/common';
-import { BusinessException } from '../../../../common/exceptions/business.exception';
-import { StoreTimeSlot } from '../../domain/entities/store-time-slot.entity';
-import { ReservationRestriction } from '../../domain/entities/reservation-restriction.entity';
 import { GetProgramAvailableSlotsUseCase } from './get-program-available-slots.use-case';
 
-describe('GetProgramAvailableSlotsUseCase', () => {
-    const findActiveProgramStore = jest.fn();
-    const findByStore = jest.fn();
-    const findByStartAts = jest.fn();
+const time = (hour: number) => new Date(Date.UTC(1970, 0, 1, hour));
+const allDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((dayOfWeek) => ({
+    dayOfWeek,
+    openTime: time(10),
+    closeTime: time(12),
+    breakStart: null,
+    breakEnd: null,
+}));
 
+describe('GetProgramAvailableSlotsUseCase', () => {
+    const support = {
+        findActiveProgramStore: jest.fn(),
+        findOperatingHours: jest.fn(),
+        findActiveReservationWindows: jest.fn(),
+    };
+    const blocks = { findOverlapping: jest.fn() };
+    const restrictions = { findOverlapping: jest.fn() };
     const useCase = new GetProgramAvailableSlotsUseCase(
-        { findActiveProgramStore } as never,
-        { findByStore } as never,
-        { findByStartAts } as never,
+        support as never,
+        blocks as never,
+        restrictions as never,
     );
 
-    const PROGRAM_ID = 'prog-1';
-    const STORE_ID = 'store-1';
-    const query = { year: 2026, month: 6 };
-
-    // 헬퍼: StoreTimeSlot 엔티티 생성. endAt = startAt + 2h(구분되는 종료 시각).
-    const slot = (id: string, startAtIso: string, reservedCount: number, status: string) => {
-        const startAt = new Date(startAtIso);
-        const endAt = new Date(startAt.getTime() + 2 * 60 * 60 * 1000);
-        return new StoreTimeSlot(
-            id,
-            STORE_ID,
-            startAt,
-            endAt,
-            reservedCount,
-            status as never,
-            startAt,
-            startAt,
-        );
-    };
-
     beforeEach(() => {
-        findActiveProgramStore.mockReset();
-        findByStore.mockReset();
-        findByStartAts.mockReset();
-    });
-
-    it('프로그램이 없거나 비ACTIVE면 PROGRAM_NOT_FOUND(404)를 던진다', async () => {
-        findActiveProgramStore.mockResolvedValue(null);
-
-        try {
-            await useCase.execute(PROGRAM_ID, query);
-            throw new Error('Expected execute to throw');
-        } catch (error) {
-            expect(error).toBeInstanceOf(BusinessException);
-            expect((error as BusinessException).errorCode).toBe('PROGRAM_NOT_FOUND');
-            expect((error as BusinessException).getStatus()).toBe(HttpStatus.NOT_FOUND);
-        }
-        expect(findByStore).not.toHaveBeenCalled();
-    });
-
-    it('슬롯이 없으면 빈 배열을 반환한다', async () => {
-        findActiveProgramStore.mockResolvedValue({ storeId: STORE_ID, maxCapacityPerSlot: 4 });
-        findByStore.mockResolvedValue([]);
-
-        await expect(useCase.execute(PROGRAM_ID, query)).resolves.toEqual({ slots: [] });
-        expect(findByStartAts).not.toHaveBeenCalled();
-    });
-
-    it('해당 월 KST 범위로 findByStore를 호출한다(6월 → [05-31T15:00Z, 06-30T15:00Z))', async () => {
-        findActiveProgramStore.mockResolvedValue({ storeId: STORE_ID, maxCapacityPerSlot: 4 });
-        findByStore.mockResolvedValue([]);
-
-        await useCase.execute(PROGRAM_ID, query);
-
-        expect(findByStore).toHaveBeenCalledWith(STORE_ID, {
-            range: {
-                start: new Date('2026-05-31T15:00:00.000Z'),
-                end: new Date('2026-06-30T15:00:00.000Z'),
-            },
+        jest.useFakeTimers().setSystemTime(new Date('2026-05-01T00:00:00.000Z'));
+        jest.clearAllMocks();
+        support.findActiveProgramStore.mockResolvedValue({
+            storeId: 'store-1',
+            maxCapacityPerSlot: 5,
+            reservationIntervalMinutes: 120,
         });
+        support.findOperatingHours.mockResolvedValue(allDays);
+        support.findActiveReservationWindows.mockResolvedValue([]);
+        blocks.findOverlapping.mockResolvedValue([]);
+        restrictions.findOverlapping.mockResolvedValue([]);
     });
 
-    it('고객 노출은 OPEN 슬롯만: 만석·제한은 isAvailable=false 로 포함, CLOSED·CANCELED는 응답에서 제외', async () => {
-        findActiveProgramStore.mockResolvedValue({ storeId: STORE_ID, maxCapacityPerSlot: 4 });
-        findByStore.mockResolvedValue([
-            slot('s-open', '2026-06-01T01:00:00.000Z', 2, 'OPEN'), // 잔여 2 → true
-            slot('s-full', '2026-06-01T02:00:00.000Z', 4, 'OPEN'), // 잔여 0 → false(노출 O)
-            slot('s-closed', '2026-06-01T03:00:00.000Z', 0, 'CLOSED'), // 제외
-            slot('s-canceled', '2026-06-01T04:00:00.000Z', 0, 'CANCELED'), // 제외
-            slot('s-restricted', '2026-06-01T05:00:00.000Z', 0, 'OPEN'), // 제한 → false(노출 O)
-        ]);
-        findByStartAts.mockResolvedValue([
-            new ReservationRestriction(
-                'r-1',
-                STORE_ID,
-                new Date('2026-06-01T05:00:00.000Z'),
-                new Date('2026-06-01T05:00:00.000Z'),
-                PROGRAM_ID,
-                null,
-                new Date('2026-06-01T05:00:00.000Z'),
-            ),
+    afterEach(() => jest.useRealTimers());
+
+    it('builds virtual candidates and subtracts contained active reservation capacity', async () => {
+        support.findActiveReservationWindows.mockResolvedValue([
+            {
+                startAt: new Date('2026-06-10T02:00:00.000Z'),
+                endAt: new Date('2026-06-10T03:00:00.000Z'),
+                participantCount: 2,
+                isConfirmed: true,
+            },
         ]);
 
-        const result = await useCase.execute(PROGRAM_ID, query);
-        const byId = Object.fromEntries(result.slots.map((s) => [s.slotId, s]));
+        const result = await useCase.execute('program-1', { year: 2026, month: 6 });
+        const target = result.slots.find((slot) => slot.startAt === '2026-06-10T01:00:00.000Z')!;
 
-        // CLOSED·CANCELED 는 신규 예약자에게 노출되지 않으므로 응답에서 빠진다.
-        expect(byId['s-closed']).toBeUndefined();
-        expect(byId['s-canceled']).toBeUndefined();
-        // OPEN 슬롯만 남는다(만석·제한 포함 → isAvailable=false 로 노출).
-        expect(result.slots).toHaveLength(3);
-
-        expect(byId['s-open']!.isAvailable).toBe(true);
-        expect(byId['s-open']!.remainingCount).toBe(2);
-        expect(byId['s-open']!.startAt).toBe('2026-06-01T01:00:00.000Z');
-        expect(byId['s-open']!.endAt).toBe('2026-06-01T03:00:00.000Z');
-        expect(byId['s-full']!.isAvailable).toBe(false);
-        expect(byId['s-restricted']!.isAvailable).toBe(false);
+        expect(target.slotKey).toBe('2026-06-10T01:00:00.000Z|2026-06-10T03:00:00.000Z');
+        expect(target.reservedCount).toBe(2);
+        expect(target.remainingCount).toBe(3);
+        expect(target.isAvailable).toBe(true);
     });
 
-    it('다른 프로그램에 걸린 제한은 이 프로그램 가용성에 영향을 주지 않는다', async () => {
-        findActiveProgramStore.mockResolvedValue({ storeId: STORE_ID, maxCapacityPerSlot: 4 });
-        findByStore.mockResolvedValue([slot('s-open', '2026-06-01T05:00:00.000Z', 0, 'OPEN')]);
-        findByStartAts.mockResolvedValue([
-            new ReservationRestriction(
-                'r-other',
-                STORE_ID,
-                new Date('2026-06-01T05:00:00.000Z'),
-                new Date('2026-06-01T05:00:00.000Z'),
-                'other-program', // 다른 프로그램
-                null,
-                new Date('2026-06-01T05:00:00.000Z'),
-            ),
+    it('keeps both split candidates available while subtracting a cross-boundary reservation', async () => {
+        support.findActiveProgramStore.mockResolvedValue({
+            storeId: 'store-1',
+            maxCapacityPerSlot: 5,
+            reservationIntervalMinutes: 60,
+        });
+        support.findActiveReservationWindows.mockResolvedValue([
+            {
+                startAt: new Date('2026-06-10T01:00:00.000Z'),
+                endAt: new Date('2026-06-10T03:00:00.000Z'),
+                participantCount: 2,
+                isConfirmed: true,
+            },
         ]);
 
-        const result = await useCase.execute(PROGRAM_ID, query);
-        expect(result.slots[0]!.isAvailable).toBe(true);
+        const result = await useCase.execute('program-1', { year: 2026, month: 6 });
+        const splitSlots = result.slots.filter((slot) =>
+            ['2026-06-10T01:00:00.000Z', '2026-06-10T02:00:00.000Z'].includes(slot.startAt),
+        );
+
+        expect(splitSlots).toHaveLength(2);
+        expect(splitSlots).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ reservedCount: 2, remainingCount: 3, isAvailable: true }),
+                expect.objectContaining({ reservedCount: 2, remainingCount: 3, isAvailable: true }),
+            ]),
+        );
+    });
+
+    it('allows cross-boundary reservations but blocks CLOSED and this-program restrictions', async () => {
+        support.findActiveReservationWindows.mockResolvedValue([
+            {
+                startAt: new Date('2026-06-10T02:00:00.000Z'),
+                endAt: new Date('2026-06-10T04:00:00.000Z'),
+                participantCount: 1,
+                isConfirmed: true,
+            },
+        ]);
+        blocks.findOverlapping.mockResolvedValue([
+            {
+                startAt: new Date('2026-06-11T02:00:00.000Z'),
+                endAt: new Date('2026-06-11T03:00:00.000Z'),
+            },
+        ]);
+        restrictions.findOverlapping.mockResolvedValue([
+            {
+                programId: 'program-1',
+                startAt: new Date('2026-06-12T02:00:00.000Z'),
+                endAt: new Date('2026-06-12T03:00:00.000Z'),
+            },
+            {
+                programId: 'other-program',
+                startAt: new Date('2026-06-13T02:00:00.000Z'),
+                endAt: new Date('2026-06-13T03:00:00.000Z'),
+            },
+        ]);
+
+        const result = await useCase.execute('program-1', { year: 2026, month: 6 });
+        const availableByDay = new Map(
+            result.slots.map((slot) => [slot.startAt.slice(0, 10), slot.isAvailable]),
+        );
+        expect(availableByDay.get('2026-06-10')).toBe(true);
+        expect(availableByDay.has('2026-06-11')).toBe(false);
+        expect(availableByDay.get('2026-06-12')).toBe(false);
+        expect(availableByDay.get('2026-06-13')).toBe(true);
     });
 });

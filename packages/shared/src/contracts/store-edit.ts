@@ -118,7 +118,14 @@ export const storeUpdateRequestSchema = z.object({
         .nullable()
         .optional(),
     phone: phoneSchema.meta({ example: '02-9876-5432' }).optional(),
-    // 주소(address/위경도) 변경은 partner-store-edit Out scope(geocode 재변환 별도) — PATCH 대상 아님.
+    // 주소 변경 — FE에서 Kakao geocode로 좌표·행정구역 재변환 후 함께 전달(등록과 동일 소스).
+    // address 단독 전달은 무의미하므로 좌표와 세트로 보내되, 스키마상 각 필드는 부분 갱신(optional).
+    address: z.string().min(1).meta({ example: '서울특별시 성동구 성수이로 12길 34' }).optional(),
+    latitude: z.number().meta({ example: 37.5446 }).optional(),
+    longitude: z.number().meta({ example: 127.0556 }).optional(),
+    regionSido: z.string().nullable().optional().meta({ example: '서울' }),
+    regionSigungu: z.string().nullable().optional().meta({ example: '성동구' }),
+    regionDong: z.string().nullable().optional().meta({ example: '성수동' }),
     convenienceInfo: convenienceInfoSchema.optional(),
     autoConfirm: z.boolean().meta({ example: true }).optional(),
     cancelDeadlineDays: z.number().int().min(0).meta({ example: 1 }).optional(),

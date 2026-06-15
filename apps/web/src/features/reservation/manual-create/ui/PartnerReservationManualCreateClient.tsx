@@ -122,7 +122,7 @@ export function PartnerReservationManualCreateClient({ storeId, initialDate }: P
 
     const [step, setStep] = useState<Step>('time');
     const [selectedDate, setSelectedDate] = useState(initialDate || getTodayDateKey());
-    const [selectedSlotId, setSelectedSlotId] = useState('');
+    const [selectedSlotKey, setSelectedSlotKey] = useState('');
     const [selectedProgramId, setSelectedProgramId] = useState('');
     const [reserverName, setReserverName] = useState('');
     const [reserverPhone, setReserverPhone] = useState('');
@@ -145,12 +145,12 @@ export function PartnerReservationManualCreateClient({ storeId, initialDate }: P
         [timeSlotsQuery.data?.slots],
     );
 
-    const selectedSlot = slots.find((slot) => slot.slotId === selectedSlotId);
-    const selectedSlotIds = selectedSlot ? [selectedSlot.slotId] : [];
+    const selectedSlot = slots.find((slot) => slot.slotKey === selectedSlotKey);
+    const selectedSlotKeys = selectedSlot ? [selectedSlot.slotKey] : [];
     const countsQuery = usePartnerProgramReservationCounts(
         storeId,
         selectedDate,
-        selectedSlotIds,
+        selectedSlotKeys,
         step !== 'time',
     );
 
@@ -206,7 +206,7 @@ export function PartnerReservationManualCreateClient({ storeId, initialDate }: P
     });
 
     const resetDownstream = () => {
-        setSelectedSlotId('');
+        setSelectedSlotKey('');
         setSelectedProgramId('');
         setStep('time');
     };
@@ -217,7 +217,7 @@ export function PartnerReservationManualCreateClient({ storeId, initialDate }: P
     };
 
     const handleSlotSelect = (slot: TimeSlotItem) => {
-        setSelectedSlotId(slot.slotId);
+        setSelectedSlotKey(slot.slotKey);
         setSelectedProgramId('');
         setParticipantCount((current) => Math.min(current, Math.max(1, slot.remainingCount)));
     };
@@ -239,7 +239,7 @@ export function PartnerReservationManualCreateClient({ storeId, initialDate }: P
         mutation.mutate(
             {
                 programId: selectedProgram.id,
-                slotId: selectedSlot.slotId,
+                slotKey: selectedSlot.slotKey,
                 reserverName: reserverName.trim(),
                 reserverPhone,
                 participantCount,
@@ -324,7 +324,7 @@ export function PartnerReservationManualCreateClient({ storeId, initialDate }: P
                         <TimeStep
                             isLoading={timeSlotsQuery.isLoading}
                             slots={slots}
-                            selectedSlotId={selectedSlotId}
+                            selectedSlotKey={selectedSlotKey}
                             onSelect={handleSlotSelect}
                         />
                     )}
@@ -364,7 +364,7 @@ export function PartnerReservationManualCreateClient({ storeId, initialDate }: P
                     <Button
                         size="lg"
                         className="w-full"
-                        disabled={!selectedSlotId}
+                        disabled={!selectedSlotKey}
                         onClick={() => setStep('program')}
                     >
                         시간대 선택 완료
@@ -398,12 +398,12 @@ export function PartnerReservationManualCreateClient({ storeId, initialDate }: P
 function TimeStep({
     isLoading,
     slots,
-    selectedSlotId,
+    selectedSlotKey,
     onSelect,
 }: {
     isLoading: boolean;
     slots: TimeSlotItem[];
-    selectedSlotId: string;
+    selectedSlotKey: string;
     onSelect: (slot: TimeSlotItem) => void;
 }) {
     if (isLoading) {
@@ -426,14 +426,14 @@ function TimeStep({
         <div role="radiogroup" className="flex flex-col gap-3">
             {slots.map((slot) => (
                 <RadioInput
-                    key={slot.slotId}
+                    key={slot.slotKey}
                     title={timeRange(slot)}
                     description={
                         slot.confirmedReservationCount > 0
                             ? `확정 인원 ${slot.confirmedReservationCount}명`
                             : undefined
                     }
-                    selected={selectedSlotId === slot.slotId}
+                    selected={selectedSlotKey === slot.slotKey}
                     onSelect={() => onSelect(slot)}
                 />
             ))}
@@ -532,7 +532,7 @@ function FormStep({
                 error={Boolean(reserverPhone) && !phoneValid}
                 helperText={
                     reserverPhone && !phoneValid
-                        ? '010-0000-0000 형식으로 입력해 주세요.'
+                        ? '휴대폰 번호 11자리를 정확히 입력해 주세요.'
                         : undefined
                 }
                 onChange={(e) => onChangePhone(e.target.value)}
