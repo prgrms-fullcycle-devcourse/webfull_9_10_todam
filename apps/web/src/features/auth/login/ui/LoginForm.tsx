@@ -71,6 +71,8 @@ export function LoginForm({ onForgotPassword, onLoginSuccess }: LoginFormProps) 
                 icon: <InformationIcon />,
                 message: getEmailLoginErrorMessage(err),
             });
+            // 로그인 실패 시 비밀번호만 초기화(이메일은 사용자가 눈으로 확인 가능하므로 유지).
+            setPassword('');
         } finally {
             setPending(false);
         }
