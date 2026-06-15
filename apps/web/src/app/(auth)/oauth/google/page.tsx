@@ -9,7 +9,7 @@
 //   res 200: { accessToken, user: { userId, email, nickname, isPartner } }
 //   err:  400 INVALID_REQUEST / 403 GOOGLE_EMAIL_UNVERIFIED / 500 EXTERNAL_AUTH_SERVER_ERROR
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { InformationIcon } from '@todam/ui';
@@ -52,6 +52,7 @@ function GoogleOAuthCallbackContent() {
     const { push } = useToast();
     const setAuth = useAuthStore((s) => s.setAuth);
     const [status, setStatus] = useState<'processing' | 'error'>('processing');
+    const processingCode = useRef<string | null>(null);
 
     useEffect(() => {
         const code = searchParams.get('code');
@@ -62,6 +63,8 @@ function GoogleOAuthCallbackContent() {
             router.replace('/login');
             return;
         }
+        if (processingCode.current === code) return;
+        processingCode.current = code;
 
         void (async () => {
             try {
