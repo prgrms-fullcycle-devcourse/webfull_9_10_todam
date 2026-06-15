@@ -16,11 +16,11 @@ export default function PartnerHomePage() {
     if (!storeId) return null;
 
     return (
-        <div className="px-4 pb-6">
+        <main className="flex-1 overflow-y-auto px-4 pb-6">
             <CurrentStudioSection />
             <PendingReservationSection storeId={storeId} />
             <TodayScheduleSection storeId={storeId} />
             <ArtworkProgressSection storeId={storeId} />
-        </div>
+        </main>
     );
 }

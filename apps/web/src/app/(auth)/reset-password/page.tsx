@@ -82,8 +82,8 @@ function ResetPasswordContent() {
     };
 
     return (
-        <>
-            <div className="flex flex-col gap-3 bg-background px-4 py-2">
+        <div className="flex h-full flex-col bg-background">
+            <main className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-2">
                 {/* 링크 무효/만료 시 인라인 안내 */}
                 {(!linkValid || expiredError) && (
                     <div className="rounded-xl bg-danger-subtle px-4 py-3">
@@ -123,7 +123,7 @@ function ResetPasswordContent() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     disabled={!linkValid || expiredError}
                 />
-            </div>
+            </main>
 
             <BottomBar>
                 <Button
@@ -136,7 +136,7 @@ function ResetPasswordContent() {
                     재설정 완료
                 </Button>
             </BottomBar>
-        </>
+        </div>
     );
 }
 

@@ -71,7 +71,7 @@ export function ArtworkListClient({ storeId }: ArtworkListClientProps) {
     };
 
     return (
-        <div className="flex flex-col">
+        <main className="flex flex-1 flex-col overflow-y-auto">
             <div className="overflow-x-auto py-3">
                 <div className="flex w-max items-center gap-2 pr-4">
                     <FilterDropdown icon={<StatusIcon />} onClick={handleOpenGroupSheet}>
@@ -139,6 +139,6 @@ export function ArtworkListClient({ storeId }: ArtworkListClientProps) {
                     </p>
                 )}
             </div>
-        </div>
+        </main>
     );
 }

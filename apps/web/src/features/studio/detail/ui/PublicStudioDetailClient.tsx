@@ -36,7 +36,7 @@ export function PublicStudioDetailClient() {
     if (detailQuery.isError) {
         const is404 = detailQuery.error instanceof ApiError && detailQuery.error.statusCode === 404;
         return (
-            <div className="flex flex-1 flex-col items-center justify-center px-6 py-20 text-center">
+            <main className="flex min-h-full items-center justify-center px-6 py-20 text-center">
                 <EmptyState
                     message={is404 ? '공방을 찾을 수 없어요.' : '정보를 불러오지 못했어요.'}
                 >
@@ -53,7 +53,7 @@ export function PublicStudioDetailClient() {
                         {is404 ? '돌아가기' : '다시 시도'}
                     </Button>
                 </EmptyState>
-            </div>
+            </main>
         );
     }
 
@@ -74,7 +74,7 @@ export function PublicStudioDetailClient() {
     const hasPrograms = programs.length > 0;
 
     return (
-        <div className="bg-background pb-20">
+        <main className="min-h-full overflow-y-auto bg-background pb-20">
             <div className="relative">
                 <StudioImageCarousel images={carouselImages} paginationClassName="bottom-10" />
                 <div className="absolute inset-x-0 top-0 z-10 pt-safe">
@@ -165,6 +165,6 @@ export function PublicStudioDetailClient() {
                     />
                 </section>
             </div>
-        </div>
+        </main>
     );
 }

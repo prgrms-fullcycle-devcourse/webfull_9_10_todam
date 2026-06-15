@@ -19,7 +19,7 @@ export function PartnerBusinessInfoScreen() {
     const v = (value: string | null | undefined) => (isLoading ? '' : (value ?? ''));
 
     return (
-        <div className="flex flex-col px-4 pb-16">
+        <main className="flex flex-1 flex-col overflow-y-auto px-4 pb-16">
             <div className="flex flex-col gap-4 py-2">
                 <TextInput
                     id="biz-number"
@@ -65,6 +65,6 @@ export function PartnerBusinessInfoScreen() {
                 사업자 정보는 증빙을 위해 직접 수정이 불가합니다. 상호명 변경이나 사업자 전환이
                 필요하신 경우 고객센터로 문의해 주세요.
             </DescriptionBlock>
-        </div>
+        </main>
     );
 }

@@ -84,16 +84,20 @@ export function PartnerStudioDetailClient() {
 
     if (detail.isLoading) {
         return (
-            <div className="bg-background">
-                <StudioDetailSkeleton />
+            <div className="flex h-full flex-col bg-background">
+                <main className="flex-1 overflow-y-auto">
+                    <StudioDetailSkeleton />
+                </main>
             </div>
         );
     }
 
     if (detail.isError || !detail.data) {
         return (
-            <div className="bg-background px-4">
-                <EmptyState message={errorMessage(detail.error)} />
+            <div className="flex h-full flex-col bg-background">
+                <main className="flex-1 overflow-y-auto px-4">
+                    <EmptyState message={errorMessage(detail.error)} />
+                </main>
             </div>
         );
     }
@@ -120,8 +124,8 @@ export function PartnerStudioDetailClient() {
     // 게시중단 공방 보기 = 중단 안내(탈출 가능 — 홈으로). 작업 공방 lockout(SuspendedStudioGate)과 별개.
     if (store.status === StoreStatus.SUSPENDED) {
         return (
-            <>
-                <div className="flex flex-1 flex-col items-center justify-center gap-2 bg-background px-6 text-center">
+            <div className="flex h-full flex-col bg-background">
+                <main className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
                     <p className="text-base font-semibold text-foreground">
                         이용이 중단되었습니다.
                     </p>
@@ -132,13 +136,13 @@ export function PartnerStudioDetailClient() {
                     >
                         support.todam@gmail.com
                     </a>
-                </div>
+                </main>
                 <BottomBar>
                     <Button className="w-full" onClick={goHome}>
                         홈으로
                     </Button>
                 </BottomBar>
-            </>
+            </div>
         );
     }
 
@@ -146,8 +150,8 @@ export function PartnerStudioDetailClient() {
     const hasPrograms = programList.length > 0;
 
     return (
-        <>
-            <div className="bg-background pb-28">
+        <div className="flex h-full flex-col bg-background">
+            <main className="flex-1 overflow-y-auto pb-28">
                 <StudioImageCarousel images={store.images} />
 
                 <div className="flex flex-col px-4">
@@ -234,7 +238,7 @@ export function PartnerStudioDetailClient() {
                         />
                     </section>
                 </div>
-            </div>
+            </main>
 
             <BottomBar>
                 <Button
@@ -253,6 +257,6 @@ export function PartnerStudioDetailClient() {
                     공방 정보 수정하기
                 </Button>
             </BottomBar>
-        </>
+        </div>
     );
 }

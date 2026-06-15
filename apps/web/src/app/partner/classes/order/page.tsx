@@ -113,7 +113,7 @@ export default function PartnerClassOrderPage() {
                 </div>
             </header>
 
-            <div className="px-4 pb-16">
+            <main className="flex-1 overflow-y-auto px-4 pb-16">
                 <section className="flex flex-col gap-3 py-2">
                     {order.map((program, index) => (
                         <ClassOrderCardItem
@@ -127,7 +127,7 @@ export default function PartnerClassOrderPage() {
                         />
                     ))}
                 </section>
-            </div>
+            </main>
 
             <BottomBar>
                 <div className="flex w-full gap-2">

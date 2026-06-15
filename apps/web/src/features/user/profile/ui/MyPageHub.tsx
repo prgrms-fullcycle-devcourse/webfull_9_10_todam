@@ -80,7 +80,7 @@ export function MyPageHub({
     ];
 
     return (
-        <div className="flex flex-1 flex-col gap-6 bg-background px-4 py-6">
+        <main className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 bg-background">
             {/* 내 정보 섹션 */}
             <section className="flex flex-col gap-3">
                 <h2 className="text-lg font-semibold text-foreground">내 정보</h2>
@@ -115,10 +115,14 @@ export function MyPageHub({
                 <MenuTable rows={customerSupportRows} />
             </section>
 
-            <footer className="pt-5 flex justify-center">
-                <span className="text-xs text-foreground-tertiary">TODAM</span>
-                <span className="text-xs font-semibold text-foreground-tertiary">v1.0.0</span>
+            {/* Footer — TODAM v1.0.0 한 줄 가로 배치 (시안 Divider) */}
+            <footer className="mt-auto pt-4 pb-2">
+                <div className="h-px w-full bg-border-subtle mb-4" />
+                <div className="flex items-center justify-center gap-1">
+                    <span className="text-xs text-foreground-tertiary">TODAM</span>
+                    <span className="text-xs font-semibold text-foreground-tertiary">v1.0.0</span>
+                </div>
             </footer>
-        </div>
+        </main>
     );
 }

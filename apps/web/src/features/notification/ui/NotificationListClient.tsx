@@ -35,22 +35,22 @@ export function NotificationListClient() {
 
     if (isLoading) {
         return (
-            <div className="flex flex-1 flex-col items-center justify-center px-4 py-6">
+            <main className="flex flex-1 items-center justify-center px-4 py-6">
                 <p className="text-sm text-foreground-tertiary">불러오는 중...</p>
-            </div>
+            </main>
         );
     }
 
     if (notifications.length === 0) {
         return (
-            <div className="flex flex-1 flex-col items-center justify-center px-4 py-6">
+            <main className="flex flex-1 items-center justify-center px-4 py-6">
                 <EmptyState message="아직 도착한 알림이 없어요" />
-            </div>
+            </main>
         );
     }
 
     return (
-        <div className="flex flex-col gap-3 px-4 py-4">
+        <main className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
             {unreadCount > 0 && (
                 <div className="flex justify-end">
                     <button
@@ -79,6 +79,6 @@ export function NotificationListClient() {
             {isFetchingNextPage && (
                 <p className="py-2 text-center text-xs text-foreground-tertiary">불러오는 중...</p>
             )}
-        </div>
+        </main>
     );
 }

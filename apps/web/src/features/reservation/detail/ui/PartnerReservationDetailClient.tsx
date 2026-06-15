@@ -312,11 +312,11 @@ export function PartnerReservationDetailClient({
 
     if (isLoading) {
         return (
-            <div className="px-4 pb-16">
+            <main className="flex-1 overflow-y-auto px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     예약 상세를 불러오는 중입니다.
                 </p>
-            </div>
+            </main>
         );
     }
 
@@ -329,19 +329,19 @@ export function PartnerReservationDetailClient({
                   ? '해당 예약에 대한 접근 권한이 없습니다.'
                   : '예약 상세 정보를 불러오지 못했습니다.';
         return (
-            <div className="px-4 pb-16">
+            <main className="flex-1 overflow-y-auto px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">{message}</p>
-            </div>
+            </main>
         );
     }
 
     if (!reservation) {
         return (
-            <div className="px-4 pb-16">
+            <main className="flex-1 overflow-y-auto px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     예약 정보를 불러오지 못했습니다.
                 </p>
-            </div>
+            </main>
         );
     }
 
@@ -349,7 +349,7 @@ export function PartnerReservationDetailClient({
 
     return (
         <>
-            <div className="px-4 pb-6">
+            <main className="flex-1 overflow-y-auto px-4 pb-6">
                 <div className="flex flex-col gap-6 py-6">
                     <section className="flex flex-col gap-2">
                         <h1 className="text-2xl font-semibold leading-8 text-foreground">
@@ -421,7 +421,7 @@ export function PartnerReservationDetailClient({
                         className="min-h-[132px]"
                     />
                 </div>
-            </div>
+            </main>
 
             {visibility.hasBottomActions && (
                 <BottomBar className="gap-3">

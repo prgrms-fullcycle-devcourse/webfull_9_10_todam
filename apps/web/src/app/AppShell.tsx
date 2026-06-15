@@ -107,9 +107,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     return (
         <>
             <Header />
-            {/* 단일 스크롤 main(앱 전역). 페이지는 자체 <main>·overflow 없이 콘텐츠만 반환(#396).
-                패딩·bg 는 페이지 콘텐츠 래퍼가, sticky CTA(BottomBar)는 이 스크롤 안에서 bottom 고정. */}
-            <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">{gatedChildren}</main>
+            <div className="flex min-h-0 flex-1 flex-col">{gatedChildren}</div>
             <BottomNav />
         </>
     );

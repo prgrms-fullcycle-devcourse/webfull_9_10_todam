@@ -9,7 +9,7 @@ export function BottomBar({ children, className }: BottomBarProps) {
   return (
     <div
       className={[
-        "sticky bottom-0 bg-surface border-t border-border-subtle pt-4 px-4 pb-7 w-full flex flex-col items-center",
+        "bg-surface border-t border-border-subtle pt-4 px-4 pb-7 w-full flex flex-col items-center",
         className,
       ]
         .filter(Boolean)

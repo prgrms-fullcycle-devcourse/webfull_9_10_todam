@@ -86,7 +86,7 @@ export function StudioReviewsClient() {
     const isError = storeQuery.isError || reviewsQuery.isError;
 
     return (
-        <div className="bg-background px-4 pb-16">
+        <main className="min-h-full bg-background px-4 pb-16">
             <div className="sticky top-0 z-10 -mx-4 bg-background px-4 pb-9">
                 <SegmentedControl
                     options={SORT_OPTIONS.map((option) => option.label)}
@@ -139,7 +139,7 @@ export function StudioReviewsClient() {
                     리뷰를 더 불러오는 중...
                 </p>
             )}
-        </div>
+        </main>
     );
 }
 

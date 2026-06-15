@@ -114,7 +114,7 @@ export function ReserveConfirmClient() {
 
     return (
         <>
-            <>
+            <main className="flex-1 overflow-y-auto">
                 {/* 히어로 */}
                 <section
                     className="relative flex flex-col items-center gap-7 px-4 pb-2 pt-20"
@@ -153,7 +153,7 @@ export function ReserveConfirmClient() {
                         rows={rows}
                     />
                 </div>
-            </>
+            </main>
 
             <BottomBar>
                 <div className="flex w-full gap-2">

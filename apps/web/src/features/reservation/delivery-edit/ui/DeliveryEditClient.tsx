@@ -37,11 +37,11 @@ export function DeliveryEditClient({ reservationId }: DeliveryEditClientProps) {
 
     if (isLoading) {
         return (
-            <div className="px-4 pb-16">
+            <main className="flex-1 overflow-y-auto px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     예약 정보를 불러오는 중입니다.
                 </p>
-            </div>
+            </main>
         );
     }
 
@@ -54,26 +54,26 @@ export function DeliveryEditClient({ reservationId }: DeliveryEditClientProps) {
                   ? '해당 예약에 대한 접근 권한이 없습니다.'
                   : '예약 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.';
         return (
-            <div className="px-4 pb-16">
+            <main className="flex-1 overflow-y-auto px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">{message}</p>
-            </div>
+            </main>
         );
     }
 
     if (!reservation) {
         return (
-            <div className="px-4 pb-16">
+            <main className="flex-1 overflow-y-auto px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     예약 정보를 불러오지 못했습니다.
                 </p>
-            </div>
+            </main>
         );
     }
 
     // 가드 화면 — 본 라우트 진입은 가능하지만 contract상 수정 불가한 케이스.
     if (reservation.deliveryMethod === ReservationDeliveryMethod.PICKUP) {
         return (
-            <div className="flex flex-1 flex-col items-center justify-start gap-4 px-4 pb-16 pt-10">
+            <main className="flex flex-1 flex-col items-center justify-start gap-4 overflow-y-auto px-4 pb-16 pt-10">
                 <p className="text-center text-sm text-foreground-tertiary">
                     픽업 예약은 배송 정보가 필요하지 않아요.
                 </p>
@@ -84,13 +84,13 @@ export function DeliveryEditClient({ reservationId }: DeliveryEditClientProps) {
                 >
                     예약 상세로 돌아가기
                 </button>
-            </div>
+            </main>
         );
     }
 
     if (LOCKED_STATUSES.has(reservation.status)) {
         return (
-            <div className="flex flex-1 flex-col items-center justify-start gap-4 px-4 pb-16 pt-10">
+            <main className="flex flex-1 flex-col items-center justify-start gap-4 overflow-y-auto px-4 pb-16 pt-10">
                 <p className="text-center text-sm text-foreground-tertiary">
                     이미 발송된 작품의 배송 정보는 수정할 수 없어요.
                 </p>
@@ -101,7 +101,7 @@ export function DeliveryEditClient({ reservationId }: DeliveryEditClientProps) {
                 >
                     예약 상세로 돌아가기
                 </button>
-            </div>
+            </main>
         );
     }
 
@@ -237,16 +237,17 @@ function DeliveryEditForm({ reservationId, reservation }: DeliveryEditFormProps)
     };
 
     return (
-        // 스크롤은 AppShell 단일 main 이 소유. BottomBar 는 sticky bottom-0 으로 하단 고정(#396).
-        <>
-            <div className="flex flex-col gap-2 px-4 py-2">
-                <DeliveryForm
-                    values={values}
-                    errors={errors}
-                    onChange={handleChange}
-                    onAddressResolved={handleAddressResolved}
-                    disabled={updateMutation.isPending}
-                />
+        <main className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-4">
+                <div className="flex flex-col gap-2 py-2">
+                    <DeliveryForm
+                        values={values}
+                        errors={errors}
+                        onChange={handleChange}
+                        onAddressResolved={handleAddressResolved}
+                        disabled={updateMutation.isPending}
+                    />
+                </div>
             </div>
             <BottomBar>
                 <Button
@@ -260,6 +261,6 @@ function DeliveryEditForm({ reservationId, reservation }: DeliveryEditFormProps)
                     {updateMutation.isPending ? '저장 중…' : '저장'}
                 </Button>
             </BottomBar>
-        </>
+        </main>
     );
 }
