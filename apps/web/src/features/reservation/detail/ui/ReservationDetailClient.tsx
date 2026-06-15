@@ -53,11 +53,9 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
 
     const reservation = data?.reservation;
 
-    // 더보기 메뉴 - 체험 완료 후엔 메뉴 항목 없음 → more 버튼 자체 숨김.
-    const showMoreMenu = reservation
-        ? isBeforeExperience(reservation.status) ||
-          (isExperienceDone(reservation.status) && reservation.canCancel)
-        : false;
+    // 더보기 메뉴 - user 예약 수정 미지원이라 항목은 "예약 취소하기"뿐.
+    // 취소 불가(canCancel=false)면 메뉴 항목이 없으므로 more 버튼 자체 숨김.
+    const showMoreMenu = reservation ? reservation.canCancel : false;
 
     const handleCancelClick = () => {
         if (!reservation) return;
@@ -75,19 +73,11 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
         );
     };
 
-    const handleEditClick = () => {
-        pushToast({ message: '예약 수정은 곧 지원돼요.' });
-    };
-
     // 라우트 헤더(예약 자세히보기) 우측 more 메뉴. 메뉴 항목 없으면 미노출(기본값 유지).
     useHeaderOverride({
         rightAction:
             showMoreMenu && reservation ? (
-                <MoreMenu
-                    reservation={reservation}
-                    onEdit={handleEditClick}
-                    onCancel={handleCancelClick}
-                />
+                <MoreMenu reservation={reservation} onCancel={handleCancelClick} />
             ) : undefined,
     });
 

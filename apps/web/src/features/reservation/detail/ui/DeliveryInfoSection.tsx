@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Divider, EditIcon, PinIcon, SectionTitle } from '@todam/ui';
 import type { ReservationDetail } from '@todam/shared';
 
+import { EmptyBox } from '@/shared/ui';
 import { useToast } from '@/shared/model';
 
 // 디자인 정본 (변형 A/B/C) — 배송 정보 섹션.
@@ -55,19 +56,11 @@ export function DeliveryInfoSection({ reservation }: DeliveryInfoSectionProps) {
             )}
 
             {!hasDelivery ? (
-                // 빈 상태: 디자인 정본 — DescriptionBlock 패턴(transparent bg + border).
-                <div className="flex w-full flex-col items-center gap-3 rounded-2xl border border-border p-4">
-                    <p className="text-xs text-foreground-tertiary">
-                        작품을 받을 주소를 미리 입력해 볼까요?
-                    </p>
-                    <button
-                        type="button"
-                        onClick={goToDeliveryEdit}
-                        className="text-xs font-semibold text-foreground-tertiary"
-                    >
-                        배송지 입력하기
-                    </button>
-                </div>
+                <EmptyBox
+                    description="작품을 받을 주소를 미리 입력해 볼까요?"
+                    actionLabel="배송지 입력하기"
+                    action={goToDeliveryEdit}
+                />
             ) : (
                 <>
                     <div className="flex w-full flex-col rounded-2xl bg-surface px-4 py-2">
