@@ -39,6 +39,7 @@ export default function SignupPage() {
     const [email, setEmail] = useState('');
     const [code, setCode] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [codeError, setCodeError] = useState(false);
     const [passwordError, setPasswordError] = useState(false);
     const [secondsLeft, setSecondsLeft] = useState(VERIFY_SECONDS);
@@ -49,6 +50,9 @@ export default function SignupPage() {
     const emailValid = emailSchema.safeParse(email).success;
     const codeValid = verifyCodeSchema.safeParse(code).success;
     const passwordValid = passwordSchema.safeParse(password).success;
+    // 비밀번호 확인: 입력값이 있고 본 비밀번호와 다르면 불일치. 일치해야 가입 진행.
+    const confirmMismatch = confirmPassword !== '' && confirmPassword !== password;
+    const passwordStepValid = passwordValid && confirmPassword === password;
 
     // 회원가입 진입 시 약관 동의 게이트.
     // onConfirm에서 실제 동의값을 받아 저장 후 시트 닫음. 필수 미동의 닫기 시 로그인으로 복귀.
@@ -162,7 +166,7 @@ export default function SignupPage() {
         pending ||
         (step === 'email' && !emailValid) ||
         (step === 'code' && !codeValid) ||
-        (step === 'password' && !passwordValid);
+        (step === 'password' && !passwordStepValid);
 
     // 전역 Header override: 뒤로가기(단계 역행/이탈) + 타이틀. 우측 액션 없음.
     useHeaderOverride({ title: '회원가입', onBack: handleBack, hideRightAction: true });
@@ -222,20 +226,33 @@ export default function SignupPage() {
                 )}
 
                 {step === 'password' && (
-                    <TextInput
-                        label="비밀번호"
-                        type="password"
-                        placeholder="영문, 숫자, 특수기호 포함 8자 이상"
-                        value={password}
-                        error={passwordError}
-                        helperText={
-                            passwordError ? '영문, 숫자, 특수기호 포함 8자 이상' : undefined
-                        }
-                        onChange={(e) => {
-                            setPassword(e.target.value);
-                            setPasswordError(false);
-                        }}
-                    />
+                    <>
+                        <TextInput
+                            label="비밀번호"
+                            type="password"
+                            placeholder="영문, 숫자, 특수기호 포함 8자 이상"
+                            value={password}
+                            error={passwordError}
+                            helperText={
+                                passwordError ? '영문, 숫자, 특수기호 포함 8자 이상' : undefined
+                            }
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                                setPasswordError(false);
+                            }}
+                        />
+                        <TextInput
+                            label="비밀번호 확인"
+                            type="password"
+                            placeholder="비밀번호를 다시 입력해 주세요"
+                            value={confirmPassword}
+                            error={confirmMismatch}
+                            helperText={
+                                confirmMismatch ? '비밀번호가 일치하지 않습니다.' : undefined
+                            }
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                        />
+                    </>
                 )}
             </main>
 
