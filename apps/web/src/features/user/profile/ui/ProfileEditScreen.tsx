@@ -20,22 +20,25 @@ export function ProfileEditScreen() {
     const { data: profileData, isLoading } = useMyProfile();
     const updateProfile = useUpdateMyProfile();
 
-    const [nickname, setNickname] = useState('');
+    const [nickname, setNickname] = useState<string | null>(null);
     const [nicknameError, setNicknameError] = useState<string | null>(null);
 
     // 초기 닉네임: 프로필 로드 후 한 번만 세팅
     const currentNickname = profileData?.user.nickname ?? '';
     const email = profileData?.user.email ?? '';
+    // 구버전 API 응답/캐시에 hasPassword가 없더라도 탈퇴 진입은 허용한다.
+    // 이메일 계정의 body 없는 요청은 BE가 PASSWORD_MISMATCH로 차단한다.
+    const hasPassword = profileData?.user.hasPassword ?? false;
 
     const handleNicknameChange = (value: string) => {
         setNickname(value);
         setNicknameError(null);
     };
 
-    const displayNickname = nickname !== '' ? nickname : currentNickname;
+    const displayNickname = nickname ?? currentNickname;
 
     const handleSave = () => {
-        const trimmed = nickname.trim();
+        const trimmed = displayNickname.trim();
         // 변경 없음
         if (trimmed === currentNickname || trimmed === '') {
             toast.push({ message: '변경된 내용이 없습니다.' });
@@ -81,7 +84,7 @@ export function ProfileEditScreen() {
     };
 
     const handleWithdraw = () => {
-        openModal(<WithdrawModal />);
+        openModal(<WithdrawModal hasPassword={hasPassword} />);
     };
 
     return (
@@ -131,7 +134,7 @@ export function ProfileEditScreen() {
                     <button
                         type="button"
                         onClick={handleWithdraw}
-                        className="text-xs font-semibold text-foreground-tertiary underline underline-offset-2"
+                        className="cursor-pointer text-xs font-semibold text-foreground-tertiary underline underline-offset-2"
                     >
                         탈퇴하기
                     </button>

@@ -6,6 +6,11 @@
 @import "@todam/ui/styles/fonts.css";
 
 @layer base {
+    /* 스크롤바 거터 항상 예약 — 시트/모달 열고 닫을 때 body overflow 토글로
+       스크롤바가 나타났다 사라지며 생기는 가로 점프(Windows 등 persistent 스크롤바 환경) 방지. */
+    html {
+        scrollbar-gutter: stable;
+    }
     body {
         overscroll-behavior: none;
     }

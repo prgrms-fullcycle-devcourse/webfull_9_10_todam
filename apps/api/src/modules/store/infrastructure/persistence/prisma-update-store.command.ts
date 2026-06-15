@@ -73,6 +73,13 @@ export class PrismaUpdateStoreCommand {
         if (dto.slug !== undefined) data.slug = dto.slug;
         if (dto.description !== undefined) data.description = dto.description;
         if (dto.phone !== undefined) data.phone = dto.phone;
+        // 주소 변경 — address/위경도/행정구역 세트로 갱신(FE geocode 결과). 부분 갱신이라 각 필드 개별 반영.
+        if (dto.address !== undefined) data.address = dto.address;
+        if (dto.latitude !== undefined) data.latitude = dto.latitude;
+        if (dto.longitude !== undefined) data.longitude = dto.longitude;
+        if (dto.regionSido !== undefined) data.regionSido = dto.regionSido;
+        if (dto.regionSigungu !== undefined) data.regionSigungu = dto.regionSigungu;
+        if (dto.regionDong !== undefined) data.regionDong = dto.regionDong;
         if (dto.convenienceInfo !== undefined) {
             data.convenienceInfo = dto.convenienceInfo as unknown as Prisma.InputJsonValue;
         }

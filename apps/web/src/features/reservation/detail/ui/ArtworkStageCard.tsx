@@ -35,7 +35,7 @@ export function ArtworkStageCard({ reservation }: ArtworkStageCardProps) {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    {/* 디자인 정본 — fill 색 info-darker. ProgressBar 공용 컴포넌트는 fill 색 prop 미노출이라 직접 구현. */}
+                    {/* 디자인 정본 — fill 색 info(#1463A3). ProgressBar 공용 컴포넌트는 fill 색 prop 미노출이라 직접 구현. */}
                     <div
                         role="progressbar"
                         aria-valuenow={artwork.progressPercent}
@@ -44,7 +44,7 @@ export function ArtworkStageCard({ reservation }: ArtworkStageCardProps) {
                         className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
                     >
                         <div
-                            className="h-full rounded-full bg-info-darker transition-all duration-300"
+                            className="h-full rounded-full bg-info transition-all duration-300"
                             style={{
                                 width: `${Math.min(100, Math.max(0, artwork.progressPercent))}%`,
                             }}
@@ -56,7 +56,7 @@ export function ArtworkStageCard({ reservation }: ArtworkStageCardProps) {
                         </span>
                         <Link
                             href={`/my/artworks/${artwork.id}`}
-                            className="flex items-center gap-1 text-xs text-foreground-secondary"
+                            className="flex cursor-pointer items-center gap-1 text-xs text-foreground-secondary"
                         >
                             자세히보기
                             <RightIcon size={16} />

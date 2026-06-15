@@ -24,6 +24,15 @@ export interface StudioEditForm {
         slug: string;
         phone: string;
         description: string;
+        // 주소·좌표·행정구역 — 주소 변경 시 Kakao geocode로 재계산. GET 응답엔 region 없어 preload는 null.
+        // address = 도로명/지번, addressDetail = 상세주소. 저장 시 합쳐 단일 address로 전송(등록과 동일).
+        address: string;
+        addressDetail: string;
+        latitude: number | null;
+        longitude: number | null;
+        regionSido: string | null;
+        regionSigungu: string | null;
+        regionDong: string | null;
         convenienceInfo: ConvenienceState;
     };
     operating: OperatingState;
@@ -61,6 +70,15 @@ export function detailToForm(detail: PartnerStoreDetail): StudioEditForm {
             slug: detail.slug,
             phone: detail.phone ?? '',
             description: detail.description ?? '',
+            address: detail.address ?? '',
+            // 상세주소는 저장 시 address에 합쳐지므로 GET에서 분리 불가 → 빈 값. 주소 재선택 시 입력.
+            addressDetail: '',
+            latitude: detail.latitude,
+            longitude: detail.longitude,
+            // GET 상세에 행정구역 미포함 — 주소 재선택 시에만 채워진다.
+            regionSido: null,
+            regionSigungu: null,
+            regionDong: null,
             convenienceInfo: { ...detail.convenienceInfo },
         },
         operating: {

@@ -4,6 +4,7 @@
 // Plan step 10: FE 상세 — 타임라인, 수령방식카드, 예약정보 바텀시트, 현재 상태별 CTA.
 
 import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
 import { RightIcon, BottomBar, Button, Modal } from '@todam/ui';
 import {
     ArtworkAvailableAction,
@@ -171,10 +172,9 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
                 updateStatus({ status: ctaInfo.nextStatus });
                 return;
             case 'SHIP': {
-                // SHIP 은 배송 필수 정보(운송장/택배사/발송일) 필요.
-                // carrier 는 contract enum 이어야 하므로 캐스트 대신 값 검증.
+                // 저장된 운송장/택배사를 검증하고 실제 배송 시작일은 클릭 시점으로 기록.
                 const d = safeArtwork.delivery;
-                if (!d?.trackingNumber || !d?.shippedAt || !isDeliveryCarrier(d.carrier)) {
+                if (!d?.trackingNumber || !isDeliveryCarrier(d.carrier)) {
                     push({
                         message: '작품 수령 정보가 필요합니다.',
                         type: 'button',
@@ -187,7 +187,7 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
                     action: 'SHIP',
                     trackingNumber: d.trackingNumber,
                     carrier: d.carrier,
-                    shippedAt: d.shippedAt,
+                    shippedAt: format(new Date(), 'yyyy-MM-dd'),
                 });
                 return;
             }

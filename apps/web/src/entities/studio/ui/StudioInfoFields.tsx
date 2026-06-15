@@ -151,14 +151,19 @@ export function StudioInfoFields({
                         helperText={addressError}
                         onResolved={onResolveAddress}
                     />
-                    <TextInput
-                        placeholder={
-                            address ? '상세주소를 입력해 주세요' : '주소 검색 후 입력할 수 있어요'
-                        }
-                        value={addressDetail ?? ''}
-                        disabled={!address}
-                        onChange={(e) => onChangeAddressDetail?.(e.target.value)}
-                    />
+                    {/* 상세주소 — 핸들러 주입 시에만 노출(등록). 수정은 미사용(store 미보유 필드). */}
+                    {onChangeAddressDetail && (
+                        <TextInput
+                            placeholder={
+                                address
+                                    ? '상세주소를 입력해 주세요'
+                                    : '주소 검색 후 입력할 수 있어요'
+                            }
+                            value={addressDetail ?? ''}
+                            disabled={!address}
+                            onChange={(e) => onChangeAddressDetail(e.target.value)}
+                        />
+                    )}
                 </div>
             )}
 

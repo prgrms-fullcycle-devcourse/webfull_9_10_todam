@@ -2,18 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { Button, CloseIcon, EditIcon, Menu, MoreIcon, type MenuItem } from '@todam/ui';
+import { Button, CloseIcon, Menu, MoreIcon, type MenuItem } from '@todam/ui';
 import type { ReservationDetail } from '@todam/shared';
 
 // 예약 상세 헤더 우측 더보기 버튼 + 메뉴보기 드롭다운 (self-contained, StoreListHeaderMenu 패턴).
-// 항목: "수정하기" / "예약 취소하기"(canCancel 시, danger).
+// 항목: "예약 취소하기"(canCancel 시, danger). user 예약 수정은 미지원이라 노출하지 않음.
 export type MoreMenuProps = {
     reservation: ReservationDetail;
     onCancel: () => void;
-    onEdit: () => void;
 };
 
-export function MoreMenu({ reservation, onCancel, onEdit }: MoreMenuProps) {
+export function MoreMenu({ reservation, onCancel }: MoreMenuProps) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -26,12 +25,7 @@ export function MoreMenu({ reservation, onCancel, onEdit }: MoreMenuProps) {
         return () => document.removeEventListener('mousedown', onPointerDown);
     }, [open]);
 
-    const actions: Array<{ item: MenuItem; run: () => void }> = [
-        {
-            item: { label: '수정하기', icon: <EditIcon className="text-foreground-tertiary" /> },
-            run: onEdit,
-        },
-    ];
+    const actions: Array<{ item: MenuItem; run: () => void }> = [];
     if (reservation.canCancel) {
         actions.push({
             item: { label: '예약 취소하기', icon: <CloseIcon />, danger: true },

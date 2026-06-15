@@ -13,6 +13,7 @@ import type {
 import { ApiError } from '@/shared/api';
 
 import {
+    cancelReservation,
     cancelPartnerReservation,
     completePartnerReservation,
     confirmPartnerReservation,
@@ -53,6 +54,18 @@ export function useReservationDetail(reservationId: string) {
         queryFn: () => getReservationDetail(reservationId),
         retry: retryExceptAuthOrNotFound,
         enabled: Boolean(reservationId),
+    });
+}
+
+export function useCancelReservationMutation(reservationId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: () => cancelReservation(reservationId),
+        onSuccess: () =>
+            Promise.all([
+                queryClient.invalidateQueries({ queryKey: [...KEY, reservationId] }),
+                queryClient.invalidateQueries({ queryKey: ['reservations', 'me'] }),
+            ]),
     });
 }
 

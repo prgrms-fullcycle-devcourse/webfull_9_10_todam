@@ -94,7 +94,7 @@ export function PartnerProfileScreen() {
                     <button
                         type="button"
                         onClick={() => openSheet(<ResetRequestSheet initialEmail={email} />)}
-                        className="text-xs font-semibold text-primary"
+                        className="cursor-pointer text-xs font-semibold text-primary"
                     >
                         비밀번호 재설정
                     </button>
@@ -110,7 +110,7 @@ export function PartnerProfileScreen() {
                     type="button"
                     onClick={handleTerminate}
                     disabled={terminate.isPending}
-                    className="text-xs font-semibold text-foreground-tertiary underline disabled:opacity-60"
+                    className="cursor-pointer text-xs font-semibold text-foreground-tertiary underline disabled:opacity-60"
                 >
                     파트너 해지하기
                 </button>

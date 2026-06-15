@@ -1,12 +1,16 @@
 'use client';
 
-import { ReservationDeliveryMethod, ReservationStatus } from '@todam/shared';
+import {
+    ReservationCancelErrorCode,
+    ReservationDeliveryMethod,
+    ReservationStatus,
+} from '@todam/shared';
 
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useModal, useToast } from '@/shared/model';
 
-import { useReservationDetail } from '@/entities/reservation';
+import { useCancelReservationMutation, useReservationDetail } from '@/entities/reservation';
 import { ArtworkStageCard } from './ArtworkStageCard';
 import { CancelDialog } from './CancelDialog';
 import { DeliveryInfoSection } from './DeliveryInfoSection';
@@ -48,16 +52,15 @@ export type ReservationDetailClientProps = {
 
 export function ReservationDetailClient({ reservationId }: ReservationDetailClientProps) {
     const { data, error, isLoading, isError } = useReservationDetail(reservationId);
+    const cancelMutation = useCancelReservationMutation(reservationId);
     const { open: openModal, close: closeModal } = useModal();
     const { push: pushToast } = useToast();
 
     const reservation = data?.reservation;
 
-    // 더보기 메뉴 - 체험 완료 후엔 메뉴 항목 없음 → more 버튼 자체 숨김.
-    const showMoreMenu = reservation
-        ? isBeforeExperience(reservation.status) ||
-          (isExperienceDone(reservation.status) && reservation.canCancel)
-        : false;
+    // 더보기 메뉴 - user 예약 수정 미지원이라 항목은 "예약 취소하기"뿐.
+    // 취소 불가(canCancel=false)면 메뉴 항목이 없으므로 more 버튼 자체 숨김.
+    const showMoreMenu = reservation ? reservation.canCancel : false;
 
     const handleCancelClick = () => {
         if (!reservation) return;
@@ -66,7 +69,30 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
                 reservation={reservation}
                 onClose={closeModal}
                 onConfirmCancel={() => {
-                    pushToast({ message: '예약 취소는 곧 지원돼요.' });
+                    cancelMutation.mutate(undefined, {
+                        onSuccess: () => {
+                            pushToast({ message: '예약이 취소되었어요.' });
+                        },
+                        onError: (mutationError) => {
+                            if (mutationError instanceof ApiError) {
+                                switch (mutationError.code) {
+                                    case ReservationCancelErrorCode.CANCELLATION_DEADLINE_EXCEEDED:
+                                        pushToast({ message: '예약 취소 가능 시간이 지났어요.' });
+                                        return;
+                                    case ReservationCancelErrorCode.ALREADY_CANCELED:
+                                        pushToast({ message: '이미 취소된 예약이에요.' });
+                                        return;
+                                    case ReservationCancelErrorCode.INVALID_RESERVATION_STATUS:
+                                        pushToast({ message: '취소할 수 없는 상태의 예약이에요.' });
+                                        return;
+                                }
+                            }
+                            pushToast({
+                                message:
+                                    '예약 취소 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.',
+                            });
+                        },
+                    });
                 }}
                 onContactStore={() => {
                     pushToast({ message: '공방 문의 연결은 곧 지원돼요.' });
@@ -75,19 +101,11 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
         );
     };
 
-    const handleEditClick = () => {
-        pushToast({ message: '예약 수정은 곧 지원돼요.' });
-    };
-
     // 라우트 헤더(예약 자세히보기) 우측 more 메뉴. 메뉴 항목 없으면 미노출(기본값 유지).
     useHeaderOverride({
         rightAction:
             showMoreMenu && reservation ? (
-                <MoreMenu
-                    reservation={reservation}
-                    onEdit={handleEditClick}
-                    onCancel={handleCancelClick}
-                />
+                <MoreMenu reservation={reservation} onCancel={handleCancelClick} />
             ) : undefined,
     });
 

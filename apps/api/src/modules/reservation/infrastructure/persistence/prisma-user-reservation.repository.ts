@@ -185,8 +185,8 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
 
             return {
                 reservation,
-                // autoConfirm=false(PENDING) 일 때 파트너에게 P-1 알림을 발송하기 위해 전달
-                partnerUserId: autoConfirm ? null : program.store.partner.userId,
+                // 파트너 알림 발송용 파트너 User id. 수동확정(P-1)·자동확정(P-4) 모두 필요해 항상 전달.
+                partnerUserId: program.store.partner.userId,
             };
         });
     }

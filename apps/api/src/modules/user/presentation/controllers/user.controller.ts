@@ -15,6 +15,8 @@ import {
     updateMyProfileBodySchema,
     withdrawBodySchema,
     type PatchNotificationSettingsAllFieldsBody,
+    type UpdateMyProfileBody,
+    type WithdrawBody,
 } from '@todam/shared';
 import type { Response } from 'express';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
@@ -69,7 +71,7 @@ export class UserController {
     async patchProfile(
         @CurrentUser() user: RequestUser,
         @Body(new BodyZodValidationPipe(updateMyProfileBodySchema))
-        dto: UpdateMyProfileDto,
+        dto: UpdateMyProfileBody,
     ): Promise<UpdateMyProfileResponseDto> {
         return this.updateMyProfile.execute(user.id, dto.nickname);
     }
@@ -82,7 +84,7 @@ export class UserController {
     @ApiBody({ type: WithdrawDto })
     async withdraw(
         @CurrentUser() user: RequestUser,
-        @Body(new BodyZodValidationPipe(withdrawBodySchema)) dto: WithdrawDto,
+        @Body(new BodyZodValidationPipe(withdrawBodySchema)) dto: WithdrawBody,
         @Res({ passthrough: true }) res: Response,
     ): Promise<null> {
         await this.withdrawUseCase.execute(user.id, dto);

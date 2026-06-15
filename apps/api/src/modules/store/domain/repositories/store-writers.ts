@@ -45,6 +45,12 @@ export interface UpdateStoreInput {
     slug?: string;
     description?: string | null;
     phone?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+    regionSido?: string | null;
+    regionSigungu?: string | null;
+    regionDong?: string | null;
     convenienceInfo?: ConvenienceInfoInput;
     autoConfirm?: boolean;
     cancelDeadlineDays?: number;

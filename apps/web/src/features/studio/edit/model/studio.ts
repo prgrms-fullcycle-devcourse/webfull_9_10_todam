@@ -28,6 +28,13 @@ interface StudioEditStore {
     slugDuplicated: boolean;
     load: (form: StudioEditForm) => void;
     patchStudio: (p: Patch<StudioEditForm['store']>) => void;
+    // 주소 선택 → 좌표·행정구역 일괄 반영 (Kakao geocode 결과). 등록 setStoreAddress와 동일 시맨틱.
+    setStoreAddress: (
+        address: string,
+        latitude: number,
+        longitude: number,
+        region?: { sido: string; sigungu: string; dong: string } | null,
+    ) => void;
     // 파일 선택 → 대기 이미지 추가 (검증·정원 제한 포함). 즉시 업로드하지 않음.
     addImageFiles: (files: File[]) => void;
     // 기존 이미지 삭제 예정 처리 (form 에서 제거 + deletedImageIds 적재).
@@ -62,6 +69,22 @@ export const useStudioEditStore = create<StudioEditStore>((set) => ({
             const store = { ...s.form.store, ...p };
             const slugDuplicated = p.slug !== undefined ? false : s.slugDuplicated;
             return { form: { ...s.form, store }, slugDuplicated };
+        }),
+    setStoreAddress: (address, latitude, longitude, region) =>
+        set((s) => {
+            if (!s.form) return s;
+            const store = {
+                ...s.form.store,
+                address,
+                // 새 주소 선택 시 상세주소 초기화(등록과 동일) — 이전 주소의 상세가 남지 않도록.
+                addressDetail: '',
+                latitude,
+                longitude,
+                regionSido: region?.sido ?? null,
+                regionSigungu: region?.sigungu ?? null,
+                regionDong: region?.dong ?? null,
+            };
+            return { form: { ...s.form, store } };
         }),
     addImageFiles: (files) =>
         set((s) => {
@@ -231,6 +254,18 @@ export function buildPatchBody(
         if (s.slug !== i.slug) body.slug = s.slug;
         if (s.phone !== i.phone) body.phone = s.phone;
         if (s.description !== i.description) body.description = s.description || null;
+        // 주소 변경 — 도로명+상세주소를 합쳐 단일 address로 전송(등록과 동일).
+        // 좌표 확정(geocode 성공) 시에만 보낸다. 좌표 없으면 지도가 다시 깨지므로 전송 안 함.
+        const fullAddress = `${s.address} ${s.addressDetail}`.trim();
+        const initialFullAddress = `${i.address} ${i.addressDetail}`.trim();
+        if (fullAddress !== initialFullAddress && s.latitude !== null && s.longitude !== null) {
+            body.address = fullAddress;
+            body.latitude = s.latitude;
+            body.longitude = s.longitude;
+            body.regionSido = s.regionSido;
+            body.regionSigungu = s.regionSigungu;
+            body.regionDong = s.regionDong;
+        }
         if (!eq(s.convenienceInfo, i.convenienceInfo)) {
             body.convenienceInfo = { ...s.convenienceInfo };
         }
