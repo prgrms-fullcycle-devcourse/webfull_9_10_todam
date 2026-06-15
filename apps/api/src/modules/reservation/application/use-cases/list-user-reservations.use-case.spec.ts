@@ -14,6 +14,7 @@ function makeRow(overrides: Partial<UserReservationListRow> = {}): UserReservati
         storeName: 'test-store',
         programTitle: 'test-program',
         scheduledAt: new Date('2026-06-01T10:00:00.000Z'),
+        durationMinutes: 120,
         participantCount: 2,
         status: ReservationStatus.PENDING,
         artworkStatus: null,

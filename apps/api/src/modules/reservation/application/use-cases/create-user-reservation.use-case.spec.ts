@@ -43,6 +43,8 @@ describe('CreateUserReservationUseCase', () => {
                 id: 'res-001',
                 programId: 'prog-001',
                 storeTimeSlotId: 'slot-001',
+                scheduledAt: new Date('2026-06-01T10:00:00.000Z'),
+                scheduledEndAt: new Date('2026-06-01T12:00:00.000Z'),
                 reserverName: '김토담',
                 participantCount: 2,
                 status: ReservationStatus.PENDING,
@@ -60,6 +62,8 @@ describe('CreateUserReservationUseCase', () => {
         );
         expect(result.reservation.displayState.subLabel).toBeNull();
         expect(result.reservation.slotId).toBe('slot-001');
+        expect(result.reservation.scheduledAt).toBe('2026-06-01T10:00:00.000Z');
+        expect(result.reservation.scheduledEndAt).toBe('2026-06-01T12:00:00.000Z');
         expect(result.reservation.createdAt).toBe('2026-05-25T19:35:00.000Z');
     });
 
@@ -69,6 +73,8 @@ describe('CreateUserReservationUseCase', () => {
                 id: 'res-002',
                 programId: 'prog-001',
                 storeTimeSlotId: 'slot-001',
+                scheduledAt: new Date('2026-06-01T10:00:00.000Z'),
+                scheduledEndAt: new Date('2026-06-01T12:00:00.000Z'),
                 reserverName: '김토담',
                 participantCount: 1,
                 status: ReservationStatus.CONFIRMED,
@@ -169,6 +175,8 @@ describe('CreateUserReservationUseCase', () => {
                 id: 'res-003',
                 programId: 'prog-001',
                 storeTimeSlotId: 'slot-001',
+                scheduledAt: new Date('2026-06-01T10:00:00.000Z'),
+                scheduledEndAt: new Date('2026-06-01T12:00:00.000Z'),
                 reserverName: '김토담',
                 participantCount: 2,
                 status: ReservationStatus.PENDING,
@@ -199,6 +207,8 @@ describe('CreateUserReservationUseCase', () => {
                     id: 'res-p1',
                     programId: 'prog-001',
                     storeTimeSlotId: 'slot-001',
+                    scheduledAt: new Date('2026-06-01T10:00:00.000Z'),
+                    scheduledEndAt: new Date('2026-06-01T12:00:00.000Z'),
                     reserverName: '김토담',
                     participantCount: 2,
                     status: ReservationStatus.PENDING,
@@ -225,6 +235,8 @@ describe('CreateUserReservationUseCase', () => {
                     id: 'res-confirmed',
                     programId: 'prog-001',
                     storeTimeSlotId: 'slot-001',
+                    scheduledAt: new Date('2026-06-01T10:00:00.000Z'),
+                    scheduledEndAt: new Date('2026-06-01T12:00:00.000Z'),
                     reserverName: '김토담',
                     participantCount: 2,
                     status: ReservationStatus.CONFIRMED,
