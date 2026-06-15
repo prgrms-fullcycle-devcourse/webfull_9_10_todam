@@ -53,47 +53,60 @@ export function TermsAgreementSheet({ onConfirm, onClose }: TermsAgreementSheetP
     };
 
     return (
-        <FormBottomSheet
-            title="토담을 시작하기 전에 약관 동의가 필요해요"
-            actionLabel="동의하고 시작하기"
-            actionDisabled={!requiredAllChecked}
-            onAction={handleConfirm}
-            subLabel="닫기"
-            onSub={onClose}
-        >
-            <div className="flex flex-col gap-2">
-                <CheckboxInput
-                    bordered
-                    label="필수 항목 모두 체크하기"
-                    checked={requiredAllChecked}
-                    onCheckedChange={handleToggleRequired}
-                    className="!bg-muted font-semibold"
-                />
+        // 디자인(동의시트ui.png): 전체 너비를 채우지 않는 플로팅 카드(좌우·하단 여백 + 전체 라운드).
+        <div className="mx-4 mb-4 overflow-hidden rounded-3xl shadow-[0_0_10px_rgba(0,0,0,0.10)]">
+            <FormBottomSheet
+                actionLabel="동의하고 시작하기"
+                actionDisabled={!requiredAllChecked}
+                onAction={handleConfirm}
+                subLabel="닫기"
+                onSub={onClose}
+            >
+                {/* 제목 두 줄 고정: title prop은 string이라 줄바꿈 불가 → children에 직접 렌더. */}
+                <div className="flex flex-col gap-7">
+                    <h2 className="text-2xl font-bold leading-8 text-foreground">
+                        토담을 시작하기 전에
+                        <br />
+                        약관 동의가 필요해요
+                    </h2>
 
-                <ul className="flex flex-col">
-                    {TERMS.map((term) => (
-                        <li key={term.key}>
-                            <CheckboxInput
-                                label={`${term.required ? '[필수]' : '[선택]'} ${term.label}`}
-                                checked={agreement[term.key]}
-                                onCheckedChange={(checked) => handleToggle(term.key, checked)}
-                                action={
-                                    urlMap[term.key] ? (
-                                        <a
-                                            href={urlMap[term.key]}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="shrink-0 text-sm text-foreground-tertiary underline"
-                                        >
-                                            보기
-                                        </a>
-                                    ) : undefined
-                                }
-                            />
-                        </li>
-                    ))}
-                </ul>
-            </div>
-        </FormBottomSheet>
+                    <div className="flex flex-col gap-2">
+                        <CheckboxInput
+                            bordered
+                            label="필수 항목 모두 체크하기"
+                            checked={requiredAllChecked}
+                            onCheckedChange={handleToggleRequired}
+                            className="!bg-muted font-semibold"
+                        />
+
+                        <ul className="flex flex-col">
+                            {TERMS.map((term) => (
+                                <li key={term.key}>
+                                    <CheckboxInput
+                                        label={term.label}
+                                        checked={agreement[term.key]}
+                                        onCheckedChange={(checked) =>
+                                            handleToggle(term.key, checked)
+                                        }
+                                        action={
+                                            urlMap[term.key] ? (
+                                                <a
+                                                    href={urlMap[term.key]}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="shrink-0 text-sm text-foreground-tertiary underline"
+                                                >
+                                                    보기
+                                                </a>
+                                            ) : undefined
+                                        }
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            </FormBottomSheet>
+        </div>
     );
 }
