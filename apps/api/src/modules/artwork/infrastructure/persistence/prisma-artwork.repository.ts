@@ -881,7 +881,7 @@ export class PrismaArtworkRepository extends ArtworkRepository {
                 status: true,
                 estimatedCompletedAt: true,
                 reservation: {
-                    select: { userId: true },
+                    select: { userId: true, scheduledAt: true },
                 },
                 logs: {
                     orderBy: { createdAt: 'asc' },

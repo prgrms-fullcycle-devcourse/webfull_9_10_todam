@@ -56,7 +56,7 @@ export const WithChildren: Story = {
         subLabel="취소"
       >
         <div className="rounded-xl border border-primary px-4 py-3 text-base text-foreground-tertiary">
-          leadem@mail.com
+          todam@mail.com
         </div>
       </FormBottomSheet>
     </div>

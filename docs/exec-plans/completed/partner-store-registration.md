@@ -262,7 +262,7 @@
       "businessName": "흙담",
       "ownerName": "김리듬",
       "businessAddress": "서울특별시 성동구 둑섬로 273(성수동)",
-      "email": "leadem@studio.com",
+      "email": "todam@studio.com",
       "documentUrl": "https://cdn.todam.app/business-documents/{userId}/uuid.pdf"
     }
   }

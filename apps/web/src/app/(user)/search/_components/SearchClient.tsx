@@ -174,7 +174,7 @@ export function SearchClient() {
                     {inputValue && (
                         <button
                             type="button"
-                            className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted text-foreground-tertiary"
+                            className="flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-full bg-muted text-foreground-tertiary"
                             onClick={handleClear}
                             aria-label="검색어 지우기"
                         >
@@ -184,7 +184,7 @@ export function SearchClient() {
                 </div>
                 <button
                     type="button"
-                    className="shrink-0 text-sm text-foreground active:text-foreground-secondary"
+                    className="shrink-0 cursor-pointer text-sm text-foreground active:text-foreground-secondary"
                     onClick={() => router.back()}
                 >
                     닫기

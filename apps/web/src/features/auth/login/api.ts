@@ -1,7 +1,7 @@
 // API Contract 바인딩: docs/exec-plans/active/login.md ## API Contract (스냅샷)
 // 엔드포인트/스키마/필드명은 contract 그대로. 임의 변경 금지.
 
-import type { LoginRequest, LoginResponse } from '@todam/shared';
+import type { AccessTokenResponse, LoginRequest, LoginResponse } from '@todam/shared';
 
 import { clientApiFetch } from '@/shared/api';
 
@@ -20,6 +20,19 @@ export function emailLogin(input: EmailLoginInput): Promise<LoginResponse> {
         method: 'POST',
         body: input,
         credentials: 'include', // Refresh Token HttpOnly Cookie 수신
+    });
+}
+
+// ---------- 토큰 재발급(세션 복원) ----------
+// POST /auth/refresh
+// req:  body 없음 — HttpOnly refresh_token 쿠키로 인증(프록시가 쿠키 전달).
+// res 200: { data: { accessToken } }
+// err:  401 UNAUTHORIZED(쿠키 없음/만료) — 비로그인 부팅 시 정상 흐름이라 전역 모달 억제.
+export function refreshSession(): Promise<AccessTokenResponse> {
+    return clientApiFetch<AccessTokenResponse>('/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+        skipErrorHandler: true,
     });
 }
 

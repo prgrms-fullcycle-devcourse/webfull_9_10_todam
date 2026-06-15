@@ -138,9 +138,9 @@ export function PartnerSettingsHub() {
                 <MenuTable rows={customerSupportRows} />
             </section>
 
-            {/* Footer — LEADEM v1.0.0 한 줄 */}
+            {/* Footer — TODAM v1.0.0 한 줄 */}
             <footer className="mt-auto flex items-center justify-center gap-1 py-5">
-                <span className="text-xs leading-4 text-foreground-tertiary">LEADEM</span>
+                <span className="text-xs leading-4 text-foreground-tertiary">TODAM</span>
                 <span className="text-xs font-semibold leading-4 text-foreground-tertiary">
                     v1.0.0
                 </span>

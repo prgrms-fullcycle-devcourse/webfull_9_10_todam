@@ -130,7 +130,7 @@ export const businessDocumentInputSchema = z.object({
     businessName: z.string().min(1).meta({ example: '흙담' }),
     businessNumber: businessNumberSchema.meta({ example: '555-55-55555' }),
     businessAddress: z.string().min(1).meta({ example: '서울특별시 성동구 둑섬로 273(성수동)' }),
-    email: emailSchema.meta({ example: 'leadem@studio.com' }),
+    email: emailSchema.meta({ example: 'todam@studio.com' }),
 });
 
 export const storeRegistrationSubmitRequestSchema = z.object({
@@ -185,7 +185,7 @@ export const createStoreBusinessDocumentSchema = z.object({
     ownerName: z.string().min(1).max(100).meta({ example: '김리듬' }),
     // 등록증상 사업장 주소(선택값). 미입력 시 빈 문자열. DB NOT NULL 이라 null 대신 '' 저장.
     businessAddress: z.string().max(500).meta({ example: '서울특별시 성동구 둑섬로 273(성수동)' }),
-    email: emailSchema.max(255).meta({ example: 'leadem@studio.com' }).nullable().optional(),
+    email: emailSchema.max(255).meta({ example: 'todam@studio.com' }).nullable().optional(),
     // 사업자등록증 파일 S3 URL. POST /partner/business-documents/images 발급 URL. 미첨부 시 null.
     documentUrl: z
         .string()
@@ -355,7 +355,7 @@ export const storeRegistrationStatusResultSchema = z.object({
     createdAt: z.string().meta({ example: '2026-05-18T12:00:00.000Z' }),
     address: z.string().meta({ example: '서울특별시 성동구 성수이로 12길 34' }),
     businessNumber: z.string().meta({ example: '555-55-55555' }),
-    email: z.string().meta({ example: 'leadem@studio.com' }),
+    email: z.string().meta({ example: 'todam@studio.com' }),
 });
 export type StoreRegistrationStatusResult = z.infer<typeof storeRegistrationStatusResultSchema>;
 

@@ -15,6 +15,7 @@ import { usePendingImages } from '@/shared/model';
 import { PendingImageField } from '@/shared/ui';
 import { useEditableForm } from '@/shared/lib/useEditableForm';
 import { useFormValidation } from '@/shared/lib/useFormValidation';
+import { getFileValidationIssues } from '@/shared/lib/imageFile';
 import { useDeleteProgramImage, usePatchProgram, useUploadProgramImage } from '../queries';
 import { ProgramEditScaffold } from './ProgramEditScaffold';
 import { ProgramInfoEditForm, type ProgramInfoFields } from './ProgramInfoEditForm';
@@ -46,6 +47,17 @@ export function ProgramInfoEditScreen({ programId, program }: Props) {
     );
 
     const isDirty = fieldsDirty || images.isDirty;
+    const handleAddImages = (files: File[]) => {
+        const issues = getFileValidationIssues(files);
+        if (issues.oversized) {
+            pushToast({
+                message: '5MB를 초과한 이미지는 추가할 수 없어요. 최대 파일 용량은 5MB예요.',
+            });
+        } else if (issues.unsupported) {
+            pushToast({ message: 'JPG, PNG, HEIC 형식의 이미지만 추가할 수 있어요.' });
+        }
+        images.addFiles(files);
+    };
 
     // ─── 유효성 검사 ─────────────────────────────────────────────
     const { errors, validate } = useFormValidation<ProgramInfoFields>({
@@ -116,7 +128,7 @@ export function ProgramInfoEditScreen({ programId, program }: Props) {
                     label="클래스 이미지"
                     existingImages={images.existingImages}
                     pendingImages={images.pendingImages}
-                    onAdd={images.addFiles}
+                    onAdd={handleAddImages}
                     onRemoveExisting={images.removeExisting}
                     onRemovePending={images.removePending}
                     max={MAX_PROGRAM_IMAGE_COUNT}

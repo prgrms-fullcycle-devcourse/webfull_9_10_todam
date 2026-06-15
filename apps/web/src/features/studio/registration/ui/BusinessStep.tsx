@@ -5,6 +5,7 @@ import { DescriptionBlock, TextInput } from '@todam/ui';
 import { useState } from 'react';
 
 import { useToast } from '@/shared/model';
+import { getFileValidationIssues } from '@/shared/lib/imageFile';
 import { ImageUploadField, type ImageUploadGridItem } from '@/shared/ui';
 import { useStudioRegistrationStore } from '../model/studio';
 import { useOcrBusinessDocument, useUploadBusinessDocument } from '../queries';
@@ -38,6 +39,17 @@ export function BusinessStep() {
     const handleAddDocument = async (files: File[]) => {
         const file = files[0];
         if (!file || uploadDoc.isPending || ocr.isPending) return;
+        const issues = getFileValidationIssues([file], {
+            allowedTypes: ['image/jpeg', 'image/png'],
+        });
+        if (issues.oversized) {
+            push({ message: '5MB를 초과한 파일은 업로드할 수 없어요. 최대 파일 용량은 5MB예요.' });
+            return;
+        }
+        if (issues.unsupported) {
+            push({ message: 'JPG 또는 PNG 형식의 파일만 업로드할 수 있어요.' });
+            return;
+        }
         try {
             const { documentUrl } = await uploadDoc.mutateAsync(file);
             patchBusiness({ documentUrl });
@@ -155,7 +167,7 @@ export function BusinessStep() {
             <TextInput
                 label="이메일"
                 type="email"
-                placeholder="예) leadem@studio.com"
+                placeholder="예) todam@studio.com"
                 value={business.email}
                 onChange={(e) => patchBusiness({ email: e.target.value })}
             />

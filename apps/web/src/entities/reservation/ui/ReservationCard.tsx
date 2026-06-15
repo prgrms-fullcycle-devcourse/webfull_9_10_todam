@@ -1,31 +1,26 @@
 'use client';
 
+import Link from 'next/link';
+
 import { formatScheduled, formatScheduledRange, type ReservationListItem } from '@todam/shared';
 
-import { ReservationStatusBadge } from '@/entities/reservation';
+import { ReservationStatusBadge } from './ReservationStatusBadge';
 
-// status message UI 숨김 조건.
-// 1) 정본 명세: DELIVERED/PICKUP_DONE 종료 상태 카드는 status message frame 자체 hidden.
-// 2) displayState.description 이 비어있는 경우(=서버가 메시지 없음 의도).
-function shouldHideStatusMessage(item: ReservationListItem): boolean {
-    if (item.status === 'DELIVERED' || item.status === 'PICKUP_DONE') return true;
-    return !item.displayState.description.trim();
+// 예약 카드(공용) — 홈 최근예약·예약 목록 공유.
+// 카드 전체가 예약 상세(/my/reservations/{id}) 로 이동.
+// status message frame 노출은 데이터 유무로만 판단(종료상태 숨김 규칙 없음 — BE 가 메시지 자체로 제어).
+function hasStatusMessage(item: ReservationListItem): boolean {
+    return Boolean(item.displayState.description.trim() || item.displayState.subLabel);
 }
 
-export type ReservationCardProps = {
-    item: ReservationListItem;
-    onClick?: () => void;
-};
-
-export function ReservationCard({ item, onClick }: ReservationCardProps) {
+export function ReservationCard({ item }: { item: ReservationListItem }) {
     const { date, day } = formatScheduled(item.scheduledAt);
     const timeRange = formatScheduledRange(item.scheduledAt, item.scheduledEndAt);
-    const hideMessage = shouldHideStatusMessage(item);
+    const showMessage = hasStatusMessage(item);
 
     return (
-        <button
-            type="button"
-            onClick={onClick}
+        <Link
+            href={`/my/reservations/${item.id}`}
             className="flex w-full cursor-pointer flex-col gap-3 rounded-2xl border border-border-subtle bg-surface p-4 text-left"
         >
             <div className="flex flex-col gap-2">
@@ -38,7 +33,7 @@ export function ReservationCard({ item, onClick }: ReservationCardProps) {
                     <ReservationStatusBadge status={item.status} label={item.displayState.label} />
                 </div>
 
-                {/* 행 2: programTitle + meta(storeName・hh:mm) */}
+                {/* 행 2: programTitle + meta(storeName・시작~종료) */}
                 <div className="flex flex-col gap-1">
                     <p className="text-sm font-semibold text-foreground">{item.programTitle}</p>
                     <p className="text-xs text-foreground-tertiary">
@@ -47,8 +42,8 @@ export function ReservationCard({ item, onClick }: ReservationCardProps) {
                 </div>
             </div>
 
-            {/* 행 3: status message (옵션). displayState.description 그대로 렌더. */}
-            {!hideMessage && (
+            {/* 행 3: status message (옵션). displayState.description·subLabel 그대로 렌더. */}
+            {showMessage && (
                 <div className="flex h-8 items-center rounded-lg bg-muted px-3">
                     <p className="text-xs font-semibold text-foreground-secondary">
                         {item.displayState.description}
@@ -56,6 +51,6 @@ export function ReservationCard({ item, onClick }: ReservationCardProps) {
                     </p>
                 </div>
             )}
-        </button>
+        </Link>
     );
 }

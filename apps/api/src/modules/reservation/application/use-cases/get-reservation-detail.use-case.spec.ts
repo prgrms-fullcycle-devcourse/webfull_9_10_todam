@@ -326,6 +326,46 @@ describe('GetReservationDetailUseCase', () => {
         });
     });
 
+    describe('artwork after completion', () => {
+        it.each([
+            ReservationStatus.IN_PROGRESS,
+            ReservationStatus.SHIPPED,
+            ReservationStatus.DELIVERED,
+            ReservationStatus.PICKUP_READY,
+            ReservationStatus.PICKUP_DONE,
+        ])('%s + artworkStatus=COMPLETED returns completed artwork progress', async (status) => {
+            const uc = makeUseCase(
+                makeRow({
+                    status,
+                    artworkId: 'artwork-uuid-001',
+                    artworkStatus: ArtworkStatus.COMPLETED,
+                }),
+            );
+            const result = await uc.execute(CURRENT_USER_ID, RESERVATION_ID);
+            expect(result.reservation.artwork).toEqual({
+                id: 'artwork-uuid-001',
+                progressPercent: 100,
+                remainingSteps: 0,
+            });
+        });
+
+        it('returns artwork progress after IN_PROGRESS', async () => {
+            const uc = makeUseCase(
+                makeRow({
+                    status: ReservationStatus.SHIPPED,
+                    artworkId: 'artwork-uuid-001',
+                    artworkStatus: ArtworkStatus.GLAZE_FIRING,
+                }),
+            );
+            const result = await uc.execute(CURRENT_USER_ID, RESERVATION_ID);
+            expect(result.reservation.artwork).toEqual({
+                id: 'artwork-uuid-001',
+                progressPercent: 100,
+                remainingSteps: 0,
+            });
+        });
+    });
+
     // ── delivery ──
     describe('delivery', () => {
         it('deliveryMethod=DELIVERY + Delivery 레코드 있으면 delivery 객체 반환', async () => {

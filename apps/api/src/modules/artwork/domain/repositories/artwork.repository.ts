@@ -26,6 +26,8 @@ export interface UserArtworkDetailRow {
     estimatedCompletedAt: Date | null;
     reservation: {
         userId: string | null;
+        // VISITED("체험이 완료되었어요") 완료일 파생 소스 — 실제 방문(예약) 시각.
+        scheduledAt: Date;
     };
     logs: Array<{
         id: string;

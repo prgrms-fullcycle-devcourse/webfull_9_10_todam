@@ -179,7 +179,7 @@ export default function SignupPage() {
                         label="이메일"
                         type="email"
                         inputMode="email"
-                        placeholder="leadem@mail.com"
+                        placeholder="todam@mail.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                     />

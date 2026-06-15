@@ -19,7 +19,7 @@ export function RecentSearches({ searches, onSelect, onRemove, onClearAll }: Rec
                 {searches.length > 0 && (
                     <button
                         type="button"
-                        className="text-xs text-foreground-tertiary active:text-foreground"
+                        className="cursor-pointer text-xs text-foreground-tertiary active:text-foreground"
                         onClick={onClearAll}
                     >
                         전체삭제
@@ -36,19 +36,19 @@ export function RecentSearches({ searches, onSelect, onRemove, onClearAll }: Rec
 
             {/* 검색어 목록 */}
             {searches.length > 0 && (
-                <ul className="flex flex-col divide-y divide-border-subtle">
+                <ul className="flex flex-col">
                     {searches.map((keyword) => (
                         <li key={keyword} className="flex items-center gap-3 py-3">
                             <button
                                 type="button"
-                                className="min-w-0 flex-1 truncate text-left text-sm text-foreground active:text-foreground-secondary"
+                                className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-foreground active:text-foreground-secondary"
                                 onClick={() => onSelect(keyword)}
                             >
                                 {keyword}
                             </button>
                             <button
                                 type="button"
-                                className="flex h-4 w-4 shrink-0 items-center justify-center text-foreground-tertiary active:text-foreground"
+                                className="flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center text-foreground-tertiary active:text-foreground"
                                 aria-label={`'${keyword}' 검색어 삭제`}
                                 onClick={() => onRemove(keyword)}
                             >

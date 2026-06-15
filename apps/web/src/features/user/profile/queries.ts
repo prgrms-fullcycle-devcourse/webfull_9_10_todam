@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { useToast } from '@/shared/model';
 import { ApiError } from '@/shared/api';
+import { useAuthStore } from '@/features/auth/login';
 import { getMyProfile, updateMyProfile, withdrawAccount } from './api';
 
 export const MY_PROFILE_QUERY_KEY = ['users', 'me'] as const;
@@ -40,7 +41,7 @@ export function useWithdraw() {
     return useMutation({
         mutationFn: (body?: WithdrawBody) => withdrawAccount(body),
         onSuccess: () => {
-            window.localStorage.removeItem('accessToken');
+            useAuthStore.getState().clearAuth();
             toast.push({ message: '회원 탈퇴가 정상적으로 처리되었습니다.' });
             router.push('/');
         },

@@ -18,6 +18,7 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 import { reviewWriteRequestSchema, reviewImageUploadRequestSchema } from '@todam/shared';
+import type { ReviewImageUploadRequest, ReviewWriteRequest } from '@todam/shared';
 import { AuthGuard } from '../../../../common/guards/auth.guard';
 import { BodyZodValidationPipe } from '../../../../common/pipes/body-zod-validation.pipe';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
@@ -58,7 +59,7 @@ export class ReviewController {
     async createReviewHandler(
         @CurrentUser() user: RequestUser,
         @Param('reservationId') reservationId: string,
-        @Body(new BodyZodValidationPipe(reviewWriteRequestSchema)) dto: ReviewWriteRequestDto,
+        @Body(new BodyZodValidationPipe(reviewWriteRequestSchema)) dto: ReviewWriteRequest,
     ): Promise<ReviewCreateResultDto> {
         const row = await this.createReview.execute(user.id, reservationId, dto);
         return {
@@ -82,7 +83,7 @@ export class ReviewController {
     async updateReviewHandler(
         @CurrentUser() user: RequestUser,
         @Param('reviewId') reviewId: string,
-        @Body(new BodyZodValidationPipe(reviewWriteRequestSchema)) dto: ReviewWriteRequestDto,
+        @Body(new BodyZodValidationPipe(reviewWriteRequestSchema)) dto: ReviewWriteRequest,
     ): Promise<ReviewUpdateResultDto> {
         const row = await this.updateReview.execute(user.id, reviewId, dto);
         return {
@@ -110,7 +111,7 @@ export class ReviewController {
     async issuePresignedHandler(
         @CurrentUser() _user: RequestUser,
         @Body(new BodyZodValidationPipe(reviewImageUploadRequestSchema))
-        dto: ReviewImageUploadRequestDto,
+        dto: ReviewImageUploadRequest,
     ): Promise<ReviewImageUploadResultDto> {
         return this.issuePresigned.execute(dto);
     }

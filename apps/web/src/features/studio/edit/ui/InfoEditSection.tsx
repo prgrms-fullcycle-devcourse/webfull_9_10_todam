@@ -5,8 +5,10 @@ import { useEffect, useState } from 'react';
 
 import { StudioInfoFields } from '@/entities/studio';
 import { geocodeAddress, reverseGeocodeRegion } from '@/shared/lib/kakaoGeocode';
+import { getFileValidationIssues } from '@/shared/lib/imageFile';
 import { useToast } from '@/shared/model';
 import { useStudioEditStore } from '../model/studio';
+import { MAX_STORE_IMAGES } from '../model/types';
 import { useSlugAvailability } from '../queries';
 
 const isSlug = (v: string) => slugSchema.safeParse(v).success;
@@ -28,6 +30,23 @@ export function InfoEditSection({ storeId }: InfoEditSectionProps) {
     const setSlugDuplicated = useStudioEditStore((s) => s.setSlugDuplicated);
     const setStoreAddress = useStudioEditStore((s) => s.setStoreAddress);
     const { push } = useToast();
+
+    const handleAddImages = (files: File[]) => {
+        const remaining =
+            MAX_STORE_IMAGES - (form?.store.images.length ?? 0) - pendingImages.length;
+        if (files.length > remaining) {
+            push({ message: `대표 이미지는 최대 ${MAX_STORE_IMAGES}장까지 추가할 수 있어요.` });
+        }
+        const issues = getFileValidationIssues(files, {
+            allowedTypes: ['image/jpeg', 'image/png'],
+        });
+        if (issues.oversized) {
+            push({ message: '5MB를 초과한 이미지는 추가할 수 없어요. 최대 파일 용량은 5MB예요.' });
+        } else if (issues.unsupported) {
+            push({ message: 'JPG 또는 PNG 형식의 이미지만 추가할 수 있어요.' });
+        }
+        addImageFiles(files.slice(0, remaining));
+    };
 
     // 주소 선택 → Kakao 좌표변환 + 행정구역. 실패 시 좌표 없이 유지(저장은 좌표 있을 때만 전송).
     const handleResolveAddress = async ({ address }: { postalCode: string; address: string }) => {
@@ -98,7 +117,7 @@ export function InfoEditSection({ storeId }: InfoEditSectionProps) {
         <StudioInfoFields
             existingImages={existingImages}
             pendingImages={pendingImages}
-            onAddImages={addImageFiles}
+            onAddImages={handleAddImages}
             onRemoveExisting={removeExistingImage}
             onRemovePending={removePendingImage}
             name={store.name}
