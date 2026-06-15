@@ -29,7 +29,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
         const goLogin = () => {
             close();
-            // router.replace('/login')
+            router.replace('/login');
         };
         // 닫기: 홈으로 이동. 보호 화면 직접 진입/로그아웃 직후라 직전 화면이
         // 또 다른 보호 화면일 수 있어 back() 대신 항상 '/' 로 보낸다.
