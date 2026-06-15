@@ -21,13 +21,13 @@ export const TERMS: readonly TermsItem[] = [
         required: true,
     },
     {
-        key: 'privacy',
-        label: '개인정보 수집 · 이용 동의',
+        key: 'location',
+        label: '위치기반 서비스 이용약관',
         required: true,
     },
     {
-        key: 'location',
-        label: '위치기반 서비스 이용약관',
+        key: 'privacy',
+        label: '개인정보 수집 · 이용 동의',
         required: true,
     },
 ] as const;

@@ -49,7 +49,7 @@ describe('PrismaPartnerReservationRepository artwork logs', () => {
         });
     });
 
-    it('creates a RESERVED to DRYING log when an experience completes', async () => {
+    it('creates a RESERVED to VISITED log when an experience completes', async () => {
         const existing = {
             ...reservation,
             status: ReservationStatus.CONFIRMED,
@@ -68,7 +68,7 @@ describe('PrismaPartnerReservationRepository artwork logs', () => {
                 create: jest.fn(),
                 update: jest.fn().mockResolvedValue({
                     id: 'artwork-1',
-                    status: ArtworkStatus.DRYING,
+                    status: ArtworkStatus.VISITED,
                 }),
             },
             artworkLog: { create: jest.fn().mockResolvedValue({}) },
@@ -83,7 +83,7 @@ describe('PrismaPartnerReservationRepository artwork logs', () => {
                 artworkId: 'artwork-1',
                 changedBy: reservation.partnerUserId,
                 fromStatus: ArtworkStatus.RESERVED,
-                toStatus: ArtworkStatus.DRYING,
+                toStatus: ArtworkStatus.VISITED,
             },
         });
     });

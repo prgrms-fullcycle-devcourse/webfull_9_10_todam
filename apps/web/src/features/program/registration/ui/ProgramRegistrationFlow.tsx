@@ -17,11 +17,13 @@ import { OperatingStep } from './OperatingStep';
 export type ProgramRegistrationFlowProps = {
     storeId: string;
     returnTo?: string;
+    successReturnTo?: string;
 };
 
 export function ProgramRegistrationFlow({
     storeId,
     returnTo = '/partner/classes',
+    successReturnTo = returnTo,
 }: ProgramRegistrationFlowProps) {
     const router = useRouter();
     const step = useProgramRegistrationStore((s) => s.step);
@@ -38,9 +40,25 @@ export function ProgramRegistrationFlow({
     // 플로우 이탈 시 전역 store 초기화
     useEffect(() => () => reset(), [reset]);
 
+    // 등록 폼은 /partner/classes에서 push로 진입하므로, 이탈은 그 push를 되돌리는 back(pop)이 자연스럽다.
+    // replace를 쓰면 직전 /partner/classes와 중복 히스토리가 생겨 뒤로가기가 1번 헛돌고(2번 눌러야 이탈),
+    // push를 쓰면 무한 왕복이 발생한다. 따라서 히스토리가 있으면 back, 직접 진입(히스토리 없음)이면 returnTo replace.
+    const leaveFlow = () => {
+        if (typeof window !== 'undefined' && window.history.length > 1) {
+            router.back();
+        } else {
+            router.replace(returnTo);
+        }
+    };
+
     const exit = () => {
         reset();
-        router.push(returnTo);
+        leaveFlow();
+    };
+
+    const completeFlow = () => {
+        reset();
+        router.replace(successReturnTo);
     };
 
     // 작성 중이면 확인 모달, 아니면 즉시 이탈.
@@ -71,8 +89,7 @@ export function ProgramRegistrationFlow({
         if (!stepValid || isPending) return;
         try {
             const { imageFailed } = await submitRegistration(form);
-            reset();
-            router.push(returnTo);
+            completeFlow();
             push({
                 message: imageFailed
                     ? '클래스 썸네일 등록에 실패했어요. 이미지를 다시 등록해 주세요.'

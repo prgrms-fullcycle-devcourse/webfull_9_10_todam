@@ -7,6 +7,7 @@ export type StandardBottomSheetProps = {
   children?: ReactNode;
   actionLabel?: string;
   actionVariant?: ButtonVariant;
+  actionDisabled?: boolean;
   onAction?: () => void;
   subLabel?: string;
   onSub?: () => void;
@@ -18,6 +19,7 @@ export function StandardBottomSheet({
   children,
   actionLabel = "확인",
   actionVariant = "filled",
+  actionDisabled,
   onAction,
   subLabel,
   onSub,
@@ -50,7 +52,7 @@ export function StandardBottomSheet({
         )}
 
         <div className="flex w-full flex-col">
-          <Button variant={actionVariant} size="lg" className="w-full" onClick={onAction}>
+          <Button variant={actionVariant} size="lg" className="w-full" disabled={actionDisabled} onClick={onAction}>
             {actionLabel}
           </Button>
           {subLabel && (

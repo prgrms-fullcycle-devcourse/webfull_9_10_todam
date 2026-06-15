@@ -284,6 +284,22 @@ export function PartnerReservationDetailClient({
         );
     };
 
+    // 체험 완료: BE가 체험 시각 전(400 EXPERIENCE_NOT_STARTED)·미확정(409) 등으로 거부하면
+    // 사용자에게 사유를 토스트로 안내한다(무반응처럼 보이던 문제 해결).
+    const handleComplete = () => {
+        completeMutation.mutate(undefined, {
+            onError: (err) => {
+                const message =
+                    err instanceof ApiError && err.code === 'EXPERIENCE_NOT_STARTED'
+                        ? '아직 체험 시작 날짜 전이에요. 체험일 이후에 완료할 수 있어요.'
+                        : err instanceof ApiError && err.code === 'INVALID_RESERVATION_STATUS'
+                          ? '확정된 예약만 체험 완료할 수 있어요.'
+                          : '체험 완료 처리에 실패했어요. 잠시 후 다시 시도해 주세요.';
+                pushToast({ message });
+            },
+        });
+    };
+
     const handleCall = () => {
         if (!reservation?.reserverPhone) return;
         window.location.href = `tel:${reservation.reserverPhone}`;
@@ -296,11 +312,11 @@ export function PartnerReservationDetailClient({
 
     if (isLoading) {
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     예약 상세를 불러오는 중입니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -313,19 +329,19 @@ export function PartnerReservationDetailClient({
                   ? '해당 예약에 대한 접근 권한이 없습니다.'
                   : '예약 상세 정보를 불러오지 못했습니다.';
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">{message}</p>
-            </main>
+            </div>
         );
     }
 
     if (!reservation) {
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     예약 정보를 불러오지 못했습니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -333,7 +349,7 @@ export function PartnerReservationDetailClient({
 
     return (
         <>
-            <main className="flex-1 overflow-y-auto px-4 pb-6">
+            <div className="px-4 pb-6">
                 <div className="flex flex-col gap-6 py-6">
                     <section className="flex flex-col gap-2">
                         <h1 className="text-2xl font-semibold leading-8 text-foreground">
@@ -405,7 +421,7 @@ export function PartnerReservationDetailClient({
                         className="min-h-[132px]"
                     />
                 </div>
-            </main>
+            </div>
 
             {visibility.hasBottomActions && (
                 <BottomBar className="gap-3">
@@ -474,8 +490,10 @@ export function PartnerReservationDetailClient({
                                     className="h-14 flex-1"
                                     disabled={completeMutation.isPending}
                                     onClick={() =>
-                                        openActionModal('체험을 완료할까요?', '체험 완료하기', () =>
-                                            completeMutation.mutate(),
+                                        openActionModal(
+                                            '체험을 완료할까요?',
+                                            '체험 완료하기',
+                                            handleComplete,
                                         )
                                     }
                                 >

@@ -5,8 +5,10 @@ import { useEffect, useState } from 'react';
 
 import { StudioInfoFields } from '@/entities/studio';
 import { reverseGeocodeRegion } from '@/shared/lib/kakaoGeocode';
+import { getFileValidationIssues } from '@/shared/lib/imageFile';
 import { useToast } from '@/shared/model';
 import { useStudioRegistrationStore } from '../model/studio';
+import { MAX_STORE_IMAGES } from '../model/types';
 import { useGeocode, useSlugAvailability } from '../queries';
 
 const isSlug = (v: string) => slugSchema.safeParse(v).success;
@@ -20,6 +22,21 @@ export function StudioInfoStep() {
     const removeImage = useStudioRegistrationStore((s) => s.removeImage);
     const { push } = useToast();
     const geocodeMutation = useGeocode();
+    const handleAddImages = (files: File[]) => {
+        const remaining = MAX_STORE_IMAGES - store.images.length;
+        if (files.length > remaining) {
+            push({ message: `대표 이미지는 최대 ${MAX_STORE_IMAGES}장까지 추가할 수 있어요.` });
+        }
+        const issues = getFileValidationIssues(files, {
+            allowedTypes: ['image/jpeg', 'image/png'],
+        });
+        if (issues.oversized) {
+            push({ message: '5MB를 초과한 이미지는 추가할 수 없어요. 최대 파일 용량은 5MB예요.' });
+        } else if (issues.unsupported) {
+            push({ message: 'JPG 또는 PNG 형식의 이미지만 추가할 수 있어요.' });
+        }
+        addImageFiles(files.slice(0, remaining));
+    };
 
     // 공방 주소 선택 → Kakao 좌표변환 + 행정구역(지역검색 소스). 실패해도 주소는 유지.
     const handleResolveAddress = async ({ address }: { postalCode: string; address: string }) => {
@@ -78,7 +95,7 @@ export function StudioInfoStep() {
         <StudioInfoFields
             existingImages={[]}
             pendingImages={store.images}
-            onAddImages={addImageFiles}
+            onAddImages={handleAddImages}
             onRemoveExisting={() => {}}
             onRemovePending={removeImage}
             name={store.name}

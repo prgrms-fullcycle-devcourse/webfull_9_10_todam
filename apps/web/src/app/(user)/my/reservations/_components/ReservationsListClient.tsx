@@ -1,19 +1,16 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 
+import { ReservationCard } from '@/entities/reservation';
 import { useMyReservations } from '@/features/reservation/list';
 import { ApiError } from '@/shared/api';
 import { EmptyState } from '@/shared/ui';
-
-import { ReservationCard } from './ReservationCard';
 
 // 클라이언트 동작(react-query / IntersectionObserver) 캡슐화.
 // page.tsx 는 서버 컴포넌트로 두고 본 클라이언트 컴포넌트만 렌더.
 // 401 은 AuthProvider 전역 핸들러가 "로그인이 필요해요" 모달로 처리(화면별 리다이렉트 금지).
 export function ReservationsListClient() {
-    const router = useRouter();
     const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
         useMyReservations();
 
@@ -41,7 +38,7 @@ export function ReservationsListClient() {
     const isNetworkError = isError && !(error instanceof ApiError && error.statusCode === 401);
 
     return (
-        <main className="flex-1 overflow-y-auto px-4 pb-16">
+        <div className="px-4 pb-16">
             {isLoading && (
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     예약 목록을 불러오는 중입니다.
@@ -59,11 +56,7 @@ export function ReservationsListClient() {
             {items.length > 0 && (
                 <section className="flex flex-col gap-2.5 py-2">
                     {items.map((item) => (
-                        <ReservationCard
-                            key={item.id}
-                            item={item}
-                            onClick={() => router.push(`/my/reservations/${item.id}`)}
-                        />
+                        <ReservationCard key={item.id} item={item} />
                     ))}
                     <div ref={sentinelRef} aria-hidden className="h-1 w-full" />
                     {isFetchingNextPage && (
@@ -73,6 +66,6 @@ export function ReservationsListClient() {
                     )}
                 </section>
             )}
-        </main>
+        </div>
     );
 }

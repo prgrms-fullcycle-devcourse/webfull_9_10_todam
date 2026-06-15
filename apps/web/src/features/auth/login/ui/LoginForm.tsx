@@ -49,7 +49,9 @@ export function LoginForm({ onForgotPassword, onLoginSuccess }: LoginFormProps) 
     const [pending, setPending] = useState(false);
 
     // 전역 Header override: 닫기(X)만 있는 popup 헤더.
-    useHeaderOverride({ type: 'popup', onClose: () => router.back() });
+    // 닫기 → 홈. 로그아웃 직후 진입 시 직전 화면이 보호 화면이라 back() 하면
+    // 다시 로그인으로 튕기는 루프가 생기므로 항상 '/' 로 보낸다.
+    useHeaderOverride({ type: 'popup', onClose: () => router.replace('/') });
 
     // 이메일/비밀번호가 모두 입력되면 로그인 버튼 활성화(클라이언트 로컬 상태).
     const canSubmit = email.trim().length > 0 && password.trim().length > 0;
@@ -71,6 +73,8 @@ export function LoginForm({ onForgotPassword, onLoginSuccess }: LoginFormProps) 
                 icon: <InformationIcon />,
                 message: getEmailLoginErrorMessage(err),
             });
+            // 로그인 실패 시 비밀번호만 초기화(이메일은 사용자가 눈으로 확인 가능하므로 유지).
+            setPassword('');
         } finally {
             setPending(false);
         }
@@ -89,80 +93,84 @@ export function LoginForm({ onForgotPassword, onLoginSuccess }: LoginFormProps) 
     };
 
     return (
-        <div className="flex h-full flex-col bg-background">
-            <main className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-8 pt-2">
-                <div className="flex flex-col gap-3">
-                    <Logo color="brand" height={40} />
-                    <p className="text-lg font-medium leading-6 text-foreground-secondary">
-                        손끝에서 완성까지,
-                        <br />내 작품의 모든 시간을 함께해요
-                    </p>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                    <TextInput
-                        id="login-email"
-                        label="이메일"
-                        type="email"
-                        inputMode="email"
-                        autoComplete="email"
-                        placeholder="leadem@mail.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
-
-                    <div className="flex flex-col gap-2">
-                        <TextInput
-                            id="login-password"
-                            label="비밀번호"
-                            type="password"
-                            autoComplete="current-password"
-                            placeholder="영문, 숫자, 특수기호 포함 8자 이상"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                        <div className="flex justify-end">
-                            <button
-                                type="button"
-                                className="cursor-pointer text-sm font-semibold text-primary"
-                                onClick={onForgotPassword}
-                            >
-                                비밀번호를 잊으셨나요?
-                            </button>
-                        </div>
-                    </div>
-
-                    <Button
-                        variant="filled"
-                        size="lg"
-                        className="w-full"
-                        disabled={!canSubmit || pending}
-                        onClick={() => void handleSubmit()}
-                    >
-                        로그인
-                    </Button>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <Divider className="flex-1" />
-                    <span className="shrink-0 text-sm text-foreground-tertiary">
-                        다른 방법으로 시작하기
-                    </span>
-                    <Divider className="flex-1" />
-                </div>
-
-                <div className="flex flex-col gap-3">
-                    <KakaoLoginButton onClick={handleKakao} />
-                    <GoogleLoginButton onClick={handleGoogle} />
-                </div>
-
-                <p className="text-center text-sm text-foreground-tertiary">
-                    아직 회원이 아닌가요?{' '}
-                    <Link href="/signup" className="font-semibold text-foreground-secondary">
-                        회원가입
-                    </Link>
+        <div className="flex flex-col gap-6 bg-background px-4 pb-8 pt-2">
+            <div className="flex flex-col gap-3">
+                <Logo color="brand" height={40} />
+                <p className="text-lg font-medium leading-6 text-foreground-secondary">
+                    손끝에서 완성까지,
+                    <br />내 작품의 모든 시간을 함께해요
                 </p>
-            </main>
+            </div>
+
+            <form
+                className="flex flex-col gap-4"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    void handleSubmit();
+                }}
+            >
+                <TextInput
+                    id="login-email"
+                    label="이메일"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="todam@mail.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+
+                <div className="flex flex-col gap-2">
+                    <TextInput
+                        id="login-password"
+                        label="비밀번호"
+                        type="password"
+                        autoComplete="current-password"
+                        placeholder="영문, 숫자, 특수기호 포함 8자 이상"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <div className="flex justify-end">
+                        <button
+                            type="button"
+                            className="cursor-pointer text-sm font-semibold text-primary"
+                            onClick={onForgotPassword}
+                        >
+                            비밀번호를 잊으셨나요?
+                        </button>
+                    </div>
+                </div>
+
+                <Button
+                    type="submit"
+                    variant="filled"
+                    size="lg"
+                    className="w-full"
+                    disabled={!canSubmit || pending}
+                >
+                    로그인
+                </Button>
+            </form>
+
+            <div className="flex items-center gap-3">
+                <Divider className="flex-1" />
+                <span className="shrink-0 text-sm text-foreground-tertiary">
+                    다른 방법으로 시작하기
+                </span>
+                <Divider className="flex-1" />
+            </div>
+
+            <div className="flex flex-col gap-3">
+                <KakaoLoginButton onClick={handleKakao} />
+                <GoogleLoginButton onClick={handleGoogle} />
+            </div>
+
+            <p className="text-center text-sm text-foreground-tertiary">
+                아직 회원이 아닌가요?{' '}
+                <Link href="/signup" className="font-semibold text-foreground-secondary">
+                    회원가입
+                </Link>
+            </p>
         </div>
     );
 }

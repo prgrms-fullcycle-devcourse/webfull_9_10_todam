@@ -43,9 +43,20 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
 
     const headers = new Headers(request.headers);
     headers.delete('host');
-    headers.delete('cookie');
     headers.delete('content-length');
     headers.delete('x-todam-access-token');
+
+    // 백엔드 auth(`/auth/refresh`·`/auth/logout`)는 refresh_token 쿠키가 필요하다.
+    // Next 내부/서드파티 쿠키는 백엔드로 흘리지 않도록 refresh_token 만 추려서 전달한다.
+    const incomingCookie = request.headers.get('cookie');
+    headers.delete('cookie');
+    if (incomingCookie) {
+        const refreshCookie = incomingCookie
+            .split(';')
+            .map((part) => part.trim())
+            .find((part) => part.startsWith('refresh_token='));
+        if (refreshCookie) headers.set('cookie', refreshCookie);
+    }
 
     const accessToken = request.headers.get('x-todam-access-token');
     if (accessToken && !headers.has('Authorization')) {

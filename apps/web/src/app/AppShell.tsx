@@ -6,6 +6,8 @@ import { useEffect, type ReactNode } from 'react';
 
 import { useCurrentStudio } from '@/entities/studio';
 import { useCurrentStudioQuery, useUpdateCurrentStudioMutation } from '@/entities/studio';
+import { isProtectedPath, RequireAuth } from '@/features/auth/guard';
+import { useAuthStore } from '@/features/auth/login';
 import { StudioRegistrationComplete, usePartnerOnboarding } from '@/features/studio/registration';
 import { BottomNav } from '@/widgets/bottom-navigation';
 import { Header } from '@/widgets/header';
@@ -14,15 +16,19 @@ export function AppShell({ children }: { children: ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
 
+    const isAuthenticated = useAuthStore((s) => s.state === 'AUTHENTICATED');
+
     const isPartnerArea = pathname === '/partner' || pathname.startsWith('/partner/');
     const isApplyArea = pathname === '/apply' || pathname.startsWith('/apply/');
+    // 로그인 가드는 RequireAuth(아래 gatedChildren)가 담당. 파트너 상태 분기는 로그인 확정 후에만.
     const isGated = isPartnerArea || isApplyArea;
 
     // 반려 후 재제출용 편집 라우트는 게이트 예외(차단 시 정보수정 진입 불가 루프).
     // /partner/studio/{id}/business(반려 재제출 — 미승인이라 [id] 명시), /partner/studio/edit/*(정보수정)
     const isStoreEditRoute = /^\/partner\/studio\/([^/]+\/business|edit)(\/|$)/.test(pathname);
 
-    const { data, isLoading, isError } = usePartnerOnboarding(isGated);
+    // 로그인 확정 후에만 온보딩 조회(게스트 401·전역 모달 방지 — 게스트는 RequireAuth 가 처리).
+    const { data, isLoading, isError } = usePartnerOnboarding(isGated && isAuthenticated);
 
     const partnerStatus = data?.partnerStatus ?? null;
     const store = data?.store ?? null;
@@ -34,8 +40,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         store !== null &&
         (partnerStatus === PartnerStatus.PENDING || partnerStatus === PartnerStatus.REJECTED);
 
-    // 일반 유저가 파트너센터(/partner/*) 진입 → 온보딩(/apply)으로 리디렉션
-    const shouldRedirect = isPartnerArea && !isLoading && !isError && partnerStatus === null;
+    // 일반 유저가 파트너센터(/partner/*) 진입 → 온보딩(/apply)으로 리디렉션.
+    // 게스트는 onboarding 미조회(status null)라도 여기서 /apply 로 보내지 않는다(RequireAuth 가 로그인 처리).
+    const shouldRedirect =
+        isPartnerArea && isAuthenticated && !isLoading && !isError && partnerStatus === null;
 
     useEffect(() => {
         if (shouldRedirect) router.replace('/apply');
@@ -88,10 +96,20 @@ export function AppShell({ children }: { children: ReactNode }) {
         );
     }
 
+    // 보호 라우트는 page 슬롯에서 RequireAuth 로 게이트(직접 URL/딥링크/새로고침 진입 커버).
+    // 모달 호스트(AppModal)·chrome(Header/BottomNav)보다 안쪽이라 차단해도 모달·헤더 유지.
+    const gatedChildren = isProtectedPath(pathname) ? (
+        <RequireAuth>{children}</RequireAuth>
+    ) : (
+        children
+    );
+
     return (
         <>
             <Header />
-            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+            {/* 단일 스크롤 main(앱 전역). 페이지는 자체 <main>·overflow 없이 콘텐츠만 반환(#396).
+                패딩·bg 는 페이지 콘텐츠 래퍼가, sticky CTA(BottomBar)는 이 스크롤 안에서 bottom 고정. */}
+            <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">{gatedChildren}</main>
             <BottomNav />
         </>
     );

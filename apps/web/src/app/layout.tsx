@@ -10,7 +10,6 @@ import {
 } from '@/features/notification';
 import { SuspendedStudioGate } from '@/features/studio/switch';
 
-import { MswProvider } from '../mocks/MswProvider';
 import { AppModal, AppSheet, AppToast } from '../shared/ui';
 import { AppShell } from './AppShell';
 import { BrandPanel } from './BrandPanel';
@@ -98,26 +97,24 @@ export default function RootLayout({ children }: RootLayoutProps) {
                     <div className="absolute inset-0 bg-gradient-to-b from-[#efe9dd] from-20% via-[#efe9dd]/70 to-transparent" />
                 </div>
                 <BrandPanel />
-                <MswProvider>
-                    <QueryProvider>
-                        <AuthProvider>
-                            <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-background">
-                                <AppShell>{children}</AppShell>
-                                <AppModal />
-                                <AppSheet />
-                                <AppToast />
-                                {/* 작업 공방 게시중단 시 전체 takeover 오버레이(파트너 영역, 자체 가드). */}
-                                <SuspendedStudioGate />
-                                {/* SW 등록 (FCM 백그라운드 수신 전제). */}
-                                <ServiceWorkerRegistrar />
-                                {/* 포그라운드 FCM 메시지 → 토스트 + 토큰 silent 재등록. */}
-                                <PushMessageListener />
-                                {/* iOS Safari 미설치 환경 홈화면 추가 안내. */}
-                                <IosInstallBanner />
-                            </div>
-                        </AuthProvider>
-                    </QueryProvider>
-                </MswProvider>
+                <QueryProvider>
+                    <AuthProvider>
+                        <div className="relative flex h-dvh w-full max-w-[430px] flex-col bg-background">
+                            <AppShell>{children}</AppShell>
+                            <AppModal />
+                            <AppSheet />
+                            <AppToast />
+                            {/* 작업 공방 게시중단 시 전체 takeover 오버레이(파트너 영역, 자체 가드). */}
+                            <SuspendedStudioGate />
+                            {/* SW 등록 (FCM 백그라운드 수신 전제). */}
+                            <ServiceWorkerRegistrar />
+                            {/* 포그라운드 FCM 메시지 → 토스트 + 토큰 silent 재등록. */}
+                            <PushMessageListener />
+                            {/* iOS Safari 미설치 환경 홈화면 추가 안내. */}
+                            <IosInstallBanner />
+                        </div>
+                    </AuthProvider>
+                </QueryProvider>
             </body>
         </html>
     );

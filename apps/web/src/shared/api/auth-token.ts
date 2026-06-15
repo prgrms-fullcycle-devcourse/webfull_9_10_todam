@@ -2,10 +2,8 @@
 // 미연결 시 null → 헤더 미부착 (mock 단계).
 type TokenGetter = () => string | null;
 
-// 기본 getter: 브라우저 localStorage('accessToken') fallback.
-// (로그인 연동 전 수동 테스트용 stopgap. auth 모듈 연동 시 setAuthTokenGetter 로 교체.)
-let tokenGetter: TokenGetter = () =>
-    typeof window === 'undefined' ? null : window.localStorage.getItem('accessToken');
+// 기본 getter: null. 앱 초기화 시 authStore(connectAuthTokenGetter)가 메모리 토큰 getter로 교체.
+let tokenGetter: TokenGetter = () => null;
 
 export function setAuthTokenGetter(getter: TokenGetter): void {
     tokenGetter = getter;

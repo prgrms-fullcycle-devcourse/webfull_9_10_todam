@@ -5,12 +5,13 @@ import type {
     WithdrawBody,
 } from '@todam/shared';
 
-import { clientApiFetch } from '@/shared/api';
+import { clientApiFetch, type RequestOptions } from '@/shared/api';
 
 // GET /users/me — 내 프로필 조회
 // contract: docs/exec-plans/active/마이페이지.md
-export function getMyProfile() {
-    return clientApiFetch<GetMyProfileResponse>('/users/me', { method: 'GET' });
+// options 로 skipErrorHandler 등 전달 가능(부팅 세션 복원처럼 401 이 정상 흐름인 호출용).
+export function getMyProfile(options?: RequestOptions) {
+    return clientApiFetch<GetMyProfileResponse>('/users/me', { method: 'GET', ...options });
 }
 
 // PATCH /users/me — 닉네임 수정

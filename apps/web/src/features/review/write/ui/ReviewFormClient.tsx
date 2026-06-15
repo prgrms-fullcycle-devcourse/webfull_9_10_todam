@@ -10,6 +10,7 @@ import { BottomBar, Button, Modal, RatingInput, SectionTitle, TextArea } from '@
 import { useReservationDetail, useReservationReview } from '@/entities/reservation';
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { getFileValidationIssues } from '@/shared/lib/imageFile';
 import { useModal, useToast } from '@/shared/model';
 import { usePendingImages, type ExistingImage } from '@/shared/model';
 import { PendingImageField } from '@/shared/ui';
@@ -35,11 +36,11 @@ export function ReviewFormClient({ reservationId, mode }: ReviewFormClientProps)
 
     if (isEdit && isLoading) {
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     리뷰를 불러오는 중입니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -88,9 +89,22 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
     const dirty = ratingDirty || contentDirty || images.isDirty;
 
     const canSubmit = rating >= 1 && !submitting;
+    const handleAddImages = (files: File[]) => {
+        const issues = getFileValidationIssues(files);
+        const remaining =
+            MAX_REVIEW_PHOTO_COUNT - images.existingImages.length - images.pendingImages.length;
+        if (issues.oversized) {
+            push({ message: '5MB를 초과한 이미지는 추가할 수 없어요. 최대 파일 용량은 5MB예요.' });
+        } else if (issues.unsupported) {
+            push({ message: 'JPG, PNG, HEIC 형식의 이미지만 추가할 수 있어요.' });
+        } else if (files.length > remaining) {
+            push({ message: `사진은 최대 ${MAX_REVIEW_PHOTO_COUNT}장까지 추가할 수 있어요.` });
+        }
+        images.addFiles(files.slice(0, remaining));
+    };
 
     // ─── 이탈 가드 ───────────────────────────────────────────────
-    const leave = () => router.back();
+    const leave = () => router.push(`/my/reservations/${reservationId}`);
     const handleClose = () => {
         if (!dirty) {
             leave();
@@ -155,7 +169,7 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
             } else {
                 await createMutation.mutateAsync(body);
             }
-            // 성공 시 mutation onSuccess 가 toast + invalidate + router.back() 처리.
+            // 성공 시 mutation onSuccess 가 toast + invalidate + 다음 화면 이동 처리.
         } catch (err) {
             // mutation onError 가 ApiError 토스트 처리. presigned/S3 단계 실패만 별도 안내.
             if (!(err instanceof ApiError)) {
@@ -169,8 +183,9 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
     const scheduled = reservation ? formatScheduled(reservation.scheduledAt) : null;
 
     return (
-        <div className="flex flex-1 flex-col overflow-hidden">
-            <main className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-24 pt-2">
+        // 스크롤은 AppShell 단일 main 이 소유. BottomBar 는 sticky bottom-0 으로 하단 고정(#396).
+        <>
+            <div className="flex flex-col gap-6 px-4 pb-24 pt-2">
                 {/* 작품 정보 헤더 */}
                 {reservation && (
                     <div className="flex flex-col">
@@ -205,7 +220,7 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
                     label="사진"
                     existingImages={images.existingImages}
                     pendingImages={images.pendingImages}
-                    onAdd={images.addFiles}
+                    onAdd={handleAddImages}
                     onRemoveExisting={images.removeExisting}
                     onRemovePending={images.removePending}
                     max={MAX_REVIEW_PHOTO_COUNT}
@@ -213,7 +228,7 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
                     accept={ACCEPT}
                     alt="리뷰 사진"
                 />
-            </main>
+            </div>
 
             <BottomBar>
                 <Button className="w-full" disabled={!canSubmit} onClick={handleSubmit}>
@@ -226,6 +241,6 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
                           : '리뷰 등록'}
                 </Button>
             </BottomBar>
-        </div>
+        </>
     );
 }

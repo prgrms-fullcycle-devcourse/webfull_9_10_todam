@@ -7,6 +7,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Logo, Button } from '@todam/ui';
 import { CloseIcon, LeftIcon, NotiIcon } from '@todam/ui';
 
+import { useLoginRequiredGuard } from '@/features/auth/guard';
 import { useAuthStore } from '@/features/auth/login';
 import { useUnreadNotificationCount } from '@/features/notification';
 import { useHeaderActionStore } from '@/shared/model';
@@ -208,7 +209,7 @@ function HeaderView({
                             {searchValue && (
                                 <button
                                     type="button"
-                                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted"
+                                    className="flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-full bg-muted"
                                     onClick={onSearchClear}
                                     aria-label="검색어 지우기"
                                 >
@@ -241,6 +242,7 @@ export function Header(props: WidgetHeaderProps) {
     const rightAction = useHeaderActionStore((s) => s.action);
     const isAuthenticated = useAuthStore((s) => s.state === 'AUTHENTICATED');
     const { data: unreadCount } = useUnreadNotificationCount(isAuthenticated);
+    const guardLogin = useLoginRequiredGuard();
 
     if (!header.visible) return null;
 
@@ -253,7 +255,11 @@ export function Header(props: WidgetHeaderProps) {
             title={header.title}
             onBack={header.onBack}
             onClose={header.onClose}
-            onNoti={() => router.push('/notifications')}
+            onNoti={() => {
+                // 알림센터는 보호 라우트 — 미인증이면 진입 막고 제자리 모달.
+                if (guardLogin()) return;
+                router.push('/notifications');
+            }}
             hasUnread={(unreadCount ?? 0) > 0}
             hideNoti={hideNoti}
             rightAction={rightAction}

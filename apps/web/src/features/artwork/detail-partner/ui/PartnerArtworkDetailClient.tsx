@@ -15,6 +15,7 @@ import {
 
 import { ApiError } from '@/shared/api';
 import { uploadToPresignedUrl } from '@/shared/api/uploadToPresignedUrl';
+import { getFileValidationIssues } from '@/shared/lib/imageFile';
 import { useModal, useSheet, useToast } from '@/shared/model';
 
 import {
@@ -36,7 +37,8 @@ export type PartnerArtworkDetailClientProps = {
 // 현재 status → 다음 단계 CTA 라벨 맵.
 // Decision Log: UPDATE_STATUS → '다음단계 라벨'
 const NEXT_STATUS_MAP: Partial<Record<string, { label: string; nextStatus: ArtworkStatus }>> = {
-    [ArtworkStatus.RESERVED]: { label: '체험 완료', nextStatus: ArtworkStatus.DRYING },
+    [ArtworkStatus.RESERVED]: { label: '체험 완료', nextStatus: ArtworkStatus.VISITED },
+    [ArtworkStatus.VISITED]: { label: '건조 시작', nextStatus: ArtworkStatus.DRYING },
     [ArtworkStatus.DRYING]: { label: '초벌 시작', nextStatus: ArtworkStatus.BISQUE_FIRING },
     [ArtworkStatus.BISQUE_FIRING]: { label: '유약 시작', nextStatus: ArtworkStatus.GLAZING },
     [ArtworkStatus.GLAZING]: { label: '재벌 시작', nextStatus: ArtworkStatus.GLAZE_FIRING },
@@ -60,11 +62,11 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
     // 로딩
     if (isLoading) {
         return (
-            <main className="flex-1 overflow-y-auto bg-background px-4 pb-16">
+            <div className="bg-background px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     작품 정보를 불러오는 중입니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -72,7 +74,7 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
     if (isError && error instanceof ApiError) {
         if (error.statusCode === 401) return null;
         return (
-            <main className="flex-1 overflow-y-auto bg-background px-4 pb-16">
+            <div className="bg-background px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     {error.statusCode === 403
                         ? '이 작품에 접근할 권한이 없습니다.'
@@ -80,18 +82,18 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
                           ? '작품을 찾을 수 없습니다.'
                           : '작품 정보를 불러오지 못했습니다.'}
                 </p>
-            </main>
+            </div>
         );
     }
 
     const artwork = data?.artwork;
     if (!artwork) {
         return (
-            <main className="flex-1 overflow-y-auto bg-background px-4 pb-16">
+            <div className="bg-background px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     작품 정보를 불러오지 못했습니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -113,8 +115,22 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
 
     // 사진 첨부: 공용 ImageUploadGrid 가 파일 선택을 담당.
     // 선택 완료된 files 로 presign → S3 PUT → confirm 순차 처리.
-    async function handleUpload(_rowKey: string, artworkLogId: string, files: File[]) {
+    async function handleUpload(rowKey: string, artworkLogId: string, files: File[]) {
         if (files.length === 0) return;
+        const currentCount = timelineRows.find((row) => row.key === rowKey)?.photos.length ?? 0;
+        if (currentCount + files.length > 5) {
+            push({ message: '사진은 최대 5장까지 추가할 수 있어요.' });
+            return;
+        }
+        const issues = getFileValidationIssues(files);
+        if (issues.oversized) {
+            push({ message: '5MB를 초과한 이미지는 추가할 수 없어요. 최대 파일 용량은 5MB예요.' });
+            return;
+        }
+        if (issues.unsupported) {
+            push({ message: 'JPG, PNG, HEIC 형식의 이미지만 추가할 수 있어요.' });
+            return;
+        }
 
         try {
             const result = await presignPhotos({
@@ -242,40 +258,38 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
 
     return (
         <>
-            <main className="flex-1 overflow-y-auto">
-                <div className="px-4 pb-16">
+            <div className="px-4 pb-16">
+                <section className="flex flex-col gap-2 py-2">
+                    {/* 수령 방식 카드 */}
+                    <div className="rounded-2xl border border-border bg-surface p-4">
+                        <button
+                            type="button"
+                            className="flex w-full cursor-pointer items-center justify-between"
+                            onClick={goToDeliveryInfo}
+                        >
+                            <div className="flex flex-col gap-0.5 text-left">
+                                <span className="text-xs text-foreground-tertiary">
+                                    작품 수령 방식
+                                </span>
+                                <span className="text-base font-semibold text-foreground">
+                                    {deliveryMethodLabel}
+                                </span>
+                            </div>
+                            <RightIcon size={20} className="text-foreground-tertiary" />
+                        </button>
+                    </div>
                     <section className="flex flex-col gap-2 py-2">
-                        {/* 수령 방식 카드 */}
-                        <div className="rounded-2xl border border-border bg-surface p-4">
-                            <button
-                                type="button"
-                                className="flex w-full cursor-pointer items-center justify-between"
-                                onClick={goToDeliveryInfo}
-                            >
-                                <div className="flex flex-col gap-0.5 text-left">
-                                    <span className="text-xs text-foreground-tertiary">
-                                        작품 수령 방식
-                                    </span>
-                                    <span className="text-base font-semibold text-foreground">
-                                        {deliveryMethodLabel}
-                                    </span>
-                                </div>
-                                <RightIcon size={20} className="text-foreground-tertiary" />
-                            </button>
-                        </div>
-                        <section className="flex flex-col gap-2 py-2">
-                            {/* 타임라인 스텝퍼 */}
-                            <PartnerArtworkStepper
-                                rows={timelineRows}
-                                onUpload={(rowKey, logId, files) => {
-                                    void handleUpload(rowKey, logId, files);
-                                }}
-                                onRemovePhoto={handleRemovePhoto}
-                            />
-                        </section>
+                        {/* 타임라인 스텝퍼 */}
+                        <PartnerArtworkStepper
+                            rows={timelineRows}
+                            onUpload={(rowKey, logId, files) => {
+                                void handleUpload(rowKey, logId, files);
+                            }}
+                            onRemovePhoto={handleRemovePhoto}
+                        />
                     </section>
-                </div>
-            </main>
+                </section>
+            </div>
 
             {/* 하단 액션바 (공용 BottomBar) */}
             <BottomBar>

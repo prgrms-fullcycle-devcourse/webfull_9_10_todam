@@ -75,7 +75,7 @@ export function ReservationCalendarView({ storeId }: ReservationCalendarViewProp
     const canRestrictReservation = isFutureDateKey(selectedDate);
 
     return (
-        <main className="flex-1 overflow-y-auto px-4 pb-16">
+        <div className="px-4 pb-16">
             {/* 월간 캘린더 */}
             <MonthCalendar
                 data={calendarData}
@@ -128,6 +128,6 @@ export function ReservationCalendarView({ storeId }: ReservationCalendarViewProp
                     </Button>
                 )}
             </div>
-        </main>
+        </div>
     );
 }

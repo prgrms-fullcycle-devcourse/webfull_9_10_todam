@@ -38,7 +38,7 @@ function handleWriteError(
 }
 
 // 리뷰 작성 mutation. 최종 body(photos = key[])를 받아 POST.
-// onSuccess: 토스트 + invalidate + router.back() (예약 상세 복귀, plan §A-5).
+// onSuccess: 토스트 + invalidate + 예약 상세 복귀.
 export function useCreateReviewMutation(reservationId: string) {
     const qc = useQueryClient();
     const router = useRouter();
@@ -49,7 +49,7 @@ export function useCreateReviewMutation(reservationId: string) {
         onSuccess: () => {
             push({ message: '리뷰가 등록되었어요.' });
             invalidateReview(qc, reservationId);
-            router.back();
+            router.push(`/my/reservations/${reservationId}`);
         },
         onError: (error) =>
             handleWriteError(

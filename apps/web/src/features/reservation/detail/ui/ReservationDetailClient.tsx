@@ -24,9 +24,6 @@ import { ReviewSection } from './ReviewSection';
 function isBeforeExperience(status: ReservationStatus): boolean {
     return status === ReservationStatus.PENDING || status === ReservationStatus.CONFIRMED;
 }
-function isInProgress(status: ReservationStatus): boolean {
-    return status === ReservationStatus.IN_PROGRESS;
-}
 function isExperienceDone(status: ReservationStatus): boolean {
     // 체험 완료 후 = IN_PROGRESS 이후 단계 (제작 중 ~ 픽업 완료).
     const experienceDoneStatuses: ReservationStatus[] = [
@@ -111,11 +108,11 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
 
     if (isLoading) {
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     예약 상세를 불러오는 중입니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -129,26 +126,26 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
                   ? '해당 예약에 대한 접근 권한이 없습니다.'
                   : '예약 상세 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.';
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">{message}</p>
-            </main>
+            </div>
         );
     }
 
     if (!reservation) {
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     예약 정보를 불러오지 못했습니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
     const isDelivery = reservation.deliveryMethod === ReservationDeliveryMethod.DELIVERY;
 
     return (
-        <main className="flex-1 overflow-y-auto px-4 pb-16">
+        <div className="px-4 pb-16">
             <div className="flex flex-col gap-2 py-2">
                 <ReservationInfoCard reservation={reservation} />
                 <ReservationNumberButton reservationId={reservation.id} />
@@ -156,8 +153,10 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
                 {/* 변형 A — 체험 전: 다음 단계 안내 */}
                 {isBeforeExperience(reservation.status) && <NextStageDescription />}
 
-                {/* 작품 제작 단계 (IN_PROGRESS 시 노출) */}
-                {isInProgress(reservation.status) && <ArtworkStageCard reservation={reservation} />}
+                {/* 작품 제작 단계 (체험 완료 이후 노출) */}
+                {isExperienceDone(reservation.status) && (
+                    <ArtworkStageCard reservation={reservation} />
+                )}
 
                 {/* 배송 정보 (DELIVERY 시 노출) */}
                 {isDelivery && <DeliveryInfoSection reservation={reservation} />}
@@ -167,6 +166,6 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
                     <ReviewSection reservation={reservation} />
                 )}
             </div>
-        </main>
+        </div>
     );
 }
