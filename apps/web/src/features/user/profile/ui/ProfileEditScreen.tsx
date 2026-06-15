@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TextInput, Button } from '@todam/ui';
 
-import { useToast, useModal } from '@/shared/model';
+import { useToast, useModal, useSheet } from '@/shared/model';
 import { ApiError } from '@/shared/api';
 import { nicknameSchema } from '@todam/shared';
+import { ResetRequestSheet } from '@/features/auth/reset-password';
 import { useMyProfile, useUpdateMyProfile } from '../queries';
 import { WithdrawModal } from './WithdrawModal';
 
@@ -14,6 +15,7 @@ export function ProfileEditScreen() {
     const router = useRouter();
     const toast = useToast();
     const { open: openModal } = useModal();
+    const { open: openSheet } = useSheet();
 
     const { data: profileData, isLoading } = useMyProfile();
     const updateProfile = useUpdateMyProfile();
@@ -95,6 +97,17 @@ export function ProfileEditScreen() {
                     disabled
                     placeholder="로딩 중..."
                 />
+
+                {/* 비밀번호 재설정 — 재설정 요청 시트 (파트너 설정과 동일 패턴) */}
+                <div className="flex justify-end">
+                    <button
+                        type="button"
+                        onClick={() => openSheet(<ResetRequestSheet />)}
+                        className="text-xs font-semibold text-primary"
+                    >
+                        비밀번호 재설정
+                    </button>
+                </div>
 
                 {/* 닉네임 */}
                 <TextInput
