@@ -15,6 +15,7 @@ import {
 
 import { ApiError } from '@/shared/api';
 import { uploadToPresignedUrl } from '@/shared/api/uploadToPresignedUrl';
+import { getFileValidationIssues } from '@/shared/lib/imageFile';
 import { useModal, useSheet, useToast } from '@/shared/model';
 
 import {
@@ -114,8 +115,22 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
 
     // 사진 첨부: 공용 ImageUploadGrid 가 파일 선택을 담당.
     // 선택 완료된 files 로 presign → S3 PUT → confirm 순차 처리.
-    async function handleUpload(_rowKey: string, artworkLogId: string, files: File[]) {
+    async function handleUpload(rowKey: string, artworkLogId: string, files: File[]) {
         if (files.length === 0) return;
+        const currentCount = timelineRows.find((row) => row.key === rowKey)?.photos.length ?? 0;
+        if (currentCount + files.length > 5) {
+            push({ message: '사진은 최대 5장까지 추가할 수 있어요.' });
+            return;
+        }
+        const issues = getFileValidationIssues(files);
+        if (issues.oversized) {
+            push({ message: '5MB를 초과한 이미지는 추가할 수 없어요. 최대 파일 용량은 5MB예요.' });
+            return;
+        }
+        if (issues.unsupported) {
+            push({ message: 'JPG, PNG, HEIC 형식의 이미지만 추가할 수 있어요.' });
+            return;
+        }
 
         try {
             const result = await presignPhotos({
