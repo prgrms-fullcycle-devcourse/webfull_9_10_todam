@@ -9,6 +9,7 @@ import { StudioSearchCard } from '@/features/studio/search';
 import { DEFAULT_LAT, DEFAULT_LNG } from '@/features/studio/search/api';
 import { reverseGeocodeRegion } from '@/shared/lib/kakaoGeocode';
 import { useNearbyStudios } from '../queries';
+import { NearbyStudiosSkeleton } from './NearbyStudiosSkeleton';
 
 // 위치 권한 거부/획득 실패 시 기본 지역 라벨 (성수동 폴백 좌표와 일치).
 const FALLBACK_REGION_LABEL = '성수동';
@@ -112,12 +113,8 @@ export function NearbyStudiosSection() {
                 </span>
             </div>
 
-            {/* 위치 로딩 중 또는 쿼리 로딩 중 */}
-            {(!geoReady || isLoading) && (
-                <p className="py-6 text-center text-sm text-foreground-tertiary">
-                    주변 공방을 불러오는 중입니다.
-                </p>
-            )}
+            {/* 위치 로딩 중 또는 쿼리 로딩 중 → 카드 스켈레톤 */}
+            {(!geoReady || isLoading) && <NearbyStudiosSkeleton />}
 
             {/* 에러 */}
             {isError && geoReady && !isLoading && (
