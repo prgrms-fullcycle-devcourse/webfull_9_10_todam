@@ -101,7 +101,13 @@ export function LoginForm({ onForgotPassword, onLoginSuccess }: LoginFormProps) 
                     </p>
                 </div>
 
-                <div className="flex flex-col gap-4">
+                <form
+                    className="flex flex-col gap-4"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleSubmit();
+                    }}
+                >
                     <TextInput
                         id="login-email"
                         label="이메일"
@@ -135,15 +141,15 @@ export function LoginForm({ onForgotPassword, onLoginSuccess }: LoginFormProps) 
                     </div>
 
                     <Button
+                        type="submit"
                         variant="filled"
                         size="lg"
                         className="w-full"
                         disabled={!canSubmit || pending}
-                        onClick={() => void handleSubmit()}
                     >
                         로그인
                     </Button>
-                </div>
+                </form>
 
                 <div className="flex items-center gap-3">
                     <Divider className="flex-1" />
