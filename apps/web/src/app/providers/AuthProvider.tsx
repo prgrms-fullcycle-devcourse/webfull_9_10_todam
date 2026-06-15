@@ -27,7 +27,7 @@ function isAuthRedirectError(error: ApiError): boolean {
 }
 
 function redirectToLogin(): void {
-    window.localStorage.removeItem('accessToken');
+    useAuthStore.getState().clearAuth();
     window.location.replace(LOGIN_PATH);
 }
 
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (!isAuthRedirectError(error)) return;
             if (window.location.pathname === LOGIN_PATH) return;
 
-            window.localStorage.removeItem('accessToken');
+            useAuthStore.getState().clearAuth();
 
             if (isAuthRedirectPending) return;
             isAuthRedirectPending = true;
@@ -79,9 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         let cancelled = false;
         const { setToken, setAuth, clearAuth, setInitialized } = useAuthStore.getState();
 
+        // dev 전용 주입 토큰(QR 디바이스 테스트, /dev-login). prod 에선 항상 null.
+        // 토큰을 localStorage 에 영속하지 않으므로 dev 주입분만 부팅 시 1회 메모리로 끌어온다.
+        const devSeedToken =
+            process.env.NODE_ENV !== 'production' && typeof window !== 'undefined'
+                ? window.localStorage.getItem('accessToken')
+                : null;
+        // 1회성: 메모리로 끌어온 뒤 제거(이후 새로고침은 refresh 복원, dev 로그아웃 후 좀비 로그인 방지).
+        if (devSeedToken) window.localStorage.removeItem('accessToken');
+
         async function restoreSession() {
             try {
-                const { accessToken } = await refreshSession();
+                // dev 주입 토큰이 있으면 refresh 생략, 없으면 refresh 쿠키로 재발급.
+                const accessToken = devSeedToken ?? (await refreshSession()).accessToken;
                 if (cancelled) return;
                 setToken(accessToken); // 이후 /users/me 호출에 자동 주입
                 const { user } = await getMyProfile();
