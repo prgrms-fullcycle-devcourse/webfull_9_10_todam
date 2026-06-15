@@ -49,7 +49,9 @@ export function LoginForm({ onForgotPassword, onLoginSuccess }: LoginFormProps) 
     const [pending, setPending] = useState(false);
 
     // 전역 Header override: 닫기(X)만 있는 popup 헤더.
-    useHeaderOverride({ type: 'popup', onClose: () => router.back() });
+    // 닫기 → 홈. 로그아웃 직후 진입 시 직전 화면이 보호 화면이라 back() 하면
+    // 다시 로그인으로 튕기는 루프가 생기므로 항상 '/' 로 보낸다.
+    useHeaderOverride({ type: 'popup', onClose: () => router.replace('/') });
 
     // 이메일/비밀번호가 모두 입력되면 로그인 버튼 활성화(클라이언트 로컬 상태).
     const canSubmit = email.trim().length > 0 && password.trim().length > 0;
@@ -101,7 +103,13 @@ export function LoginForm({ onForgotPassword, onLoginSuccess }: LoginFormProps) 
                     </p>
                 </div>
 
-                <div className="flex flex-col gap-4">
+                <form
+                    className="flex flex-col gap-4"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleSubmit();
+                    }}
+                >
                     <TextInput
                         id="login-email"
                         label="이메일"
@@ -135,15 +143,15 @@ export function LoginForm({ onForgotPassword, onLoginSuccess }: LoginFormProps) 
                     </div>
 
                     <Button
+                        type="submit"
                         variant="filled"
                         size="lg"
                         className="w-full"
                         disabled={!canSubmit || pending}
-                        onClick={() => void handleSubmit()}
                     >
                         로그인
                     </Button>
-                </div>
+                </form>
 
                 <div className="flex items-center gap-3">
                     <Divider className="flex-1" />

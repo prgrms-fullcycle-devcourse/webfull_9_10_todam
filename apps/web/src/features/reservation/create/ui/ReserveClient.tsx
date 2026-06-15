@@ -22,7 +22,6 @@ import {
 } from '@todam/ui';
 
 import { ApiError } from '@/shared/api';
-import { useAuthStore } from '@/features/auth/login';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useToast } from '@/shared/model';
 import { ProgressBarWrapper } from '@/shared/ui/ProgressBarWrapper';
@@ -112,7 +111,6 @@ export function ReserveClient({
     initialParticipantCount,
 }: ReserveClientProps) {
     const router = useRouter();
-    const authState = useAuthStore((s) => s.state);
     const { push } = useToast();
 
     // 마법사 단계
@@ -152,13 +150,6 @@ export function ReserveClient({
 
         return () => window.clearTimeout(timer);
     }, []);
-
-    // 비인증 접근 시 로그인 유도
-    useEffect(() => {
-        if (authState === 'UNAUTHENTICATED') {
-            router.replace('/login');
-        }
-    }, [authState, router]);
 
     // 헤더: "{클래스명} 예약하기" + 뒤로가기(2단계면 1단계로, 1단계면 이전 화면).
     useHeaderOverride({
@@ -246,26 +237,13 @@ export function ReserveClient({
                     router.push(`/classes/${programId}/reserve/confirm`);
                 },
                 onError: (error) => {
-                    if (error instanceof ApiError && error.code === 'UNAUTHORIZED') {
-                        router.replace('/login');
-                        return;
-                    }
+                    // 401 은 전역 핸들러(AuthProvider)가 로그인 모달로 처리 → 여기선 토스트 억제.
+                    if (error instanceof ApiError && error.code === 'UNAUTHORIZED') return;
                     push({ message: getErrorMessage(error) });
                 },
             },
         );
     };
-
-    if (authState === 'UNAUTHENTICATED') {
-        return (
-            <div className="flex flex-col items-center justify-center py-16 gap-4 px-4">
-                <p className="text-sm text-foreground-secondary">
-                    예약을 위해 로그인이 필요합니다.
-                </p>
-                <Button onClick={() => router.replace('/login')}>로그인하기</Button>
-            </div>
-        );
-    }
 
     return (
         <>

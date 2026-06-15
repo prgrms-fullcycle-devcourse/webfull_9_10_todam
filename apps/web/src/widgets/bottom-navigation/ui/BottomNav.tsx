@@ -1,19 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
-import { useAuthStore } from '@/features/auth/login';
+import { isProtectedPath, useLoginRequiredGuard } from '@/features/auth/guard';
 import { primeMobileKeyboard } from '@/shared/lib/primeMobileKeyboard';
 
 import { useBottomNavigation } from '../model/useBottomNavigation';
 
-const AUTH_REQUIRED_PATHS = new Set(['/my', '/my/reservations']);
-
 export function BottomNav() {
     const { visible, items } = useBottomNavigation();
-    const isAuthenticated = useAuthStore((s) => s.state === 'AUTHENTICATED');
-    const router = useRouter();
+    const guardLogin = useLoginRequiredGuard();
 
     if (!visible) {
         return null;
@@ -27,9 +23,9 @@ export function BottomNav() {
                         key={label}
                         href={href}
                         onClick={(e) => {
-                            if (!isAuthenticated && AUTH_REQUIRED_PATHS.has(href)) {
+                            // 로그인 필요 경로: 확정 미인증이면 진입을 막고 제자리 모달.
+                            if (isProtectedPath(href) && guardLogin()) {
                                 e.preventDefault();
-                                router.push('/login');
                                 return;
                             }
                             // 검색 진입 — 탭 제스처 안에서 키보드를 미리 띄워 모바일 autofocus 한계를 회피.

@@ -12,9 +12,6 @@ coverage
 .env.production
 .env.test
 
-# mobile-dev 토큰 임시 파일
-.dev-login.json
-
 # 서비스 계정 키 (절대 커밋 금지 — env로 주입)
 **/firebase-service-account*.json
 **/secrets/
