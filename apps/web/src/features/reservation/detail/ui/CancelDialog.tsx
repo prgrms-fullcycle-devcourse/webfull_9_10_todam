@@ -6,7 +6,6 @@ import type { ReservationDetail } from '@todam/shared';
 // 디자인 정본 (변형 D) — 예약 취소 Modal 2종.
 // 가능 (`8505:15814`): "예약을 취소할까요?" / 유지하기·예약 취소하기(danger)
 // 불가 (`8505:15825`): "예약 취소가 마감되었어요" / 닫기·공방에 문의하기(primary-darker)
-// 실제 취소 호출은 본 작업 범위 밖 — 별도 endpoint/plan. onConfirm 은 placeholder.
 export type CancelDialogProps = {
     reservation: ReservationDetail;
     onClose: () => void;

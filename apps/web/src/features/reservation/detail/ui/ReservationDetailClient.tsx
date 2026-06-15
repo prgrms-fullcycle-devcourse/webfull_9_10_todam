@@ -1,12 +1,16 @@
 'use client';
 
-import { ReservationDeliveryMethod, ReservationStatus } from '@todam/shared';
+import {
+    ReservationCancelErrorCode,
+    ReservationDeliveryMethod,
+    ReservationStatus,
+} from '@todam/shared';
 
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
 import { useModal, useToast } from '@/shared/model';
 
-import { useReservationDetail } from '@/entities/reservation';
+import { useCancelReservationMutation, useReservationDetail } from '@/entities/reservation';
 import { ArtworkStageCard } from './ArtworkStageCard';
 import { CancelDialog } from './CancelDialog';
 import { DeliveryInfoSection } from './DeliveryInfoSection';
@@ -48,6 +52,7 @@ export type ReservationDetailClientProps = {
 
 export function ReservationDetailClient({ reservationId }: ReservationDetailClientProps) {
     const { data, error, isLoading, isError } = useReservationDetail(reservationId);
+    const cancelMutation = useCancelReservationMutation(reservationId);
     const { open: openModal, close: closeModal } = useModal();
     const { push: pushToast } = useToast();
 
@@ -64,7 +69,30 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
                 reservation={reservation}
                 onClose={closeModal}
                 onConfirmCancel={() => {
-                    pushToast({ message: '예약 취소는 곧 지원돼요.' });
+                    cancelMutation.mutate(undefined, {
+                        onSuccess: () => {
+                            pushToast({ message: '예약이 취소되었어요.' });
+                        },
+                        onError: (mutationError) => {
+                            if (mutationError instanceof ApiError) {
+                                switch (mutationError.code) {
+                                    case ReservationCancelErrorCode.CANCELLATION_DEADLINE_EXCEEDED:
+                                        pushToast({ message: '예약 취소 가능 시간이 지났어요.' });
+                                        return;
+                                    case ReservationCancelErrorCode.ALREADY_CANCELED:
+                                        pushToast({ message: '이미 취소된 예약이에요.' });
+                                        return;
+                                    case ReservationCancelErrorCode.INVALID_RESERVATION_STATUS:
+                                        pushToast({ message: '취소할 수 없는 상태의 예약이에요.' });
+                                        return;
+                                }
+                            }
+                            pushToast({
+                                message:
+                                    '예약 취소 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.',
+                            });
+                        },
+                    });
                 }}
                 onContactStore={() => {
                     pushToast({ message: '공방 문의 연결은 곧 지원돼요.' });
