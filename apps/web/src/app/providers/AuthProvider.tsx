@@ -41,11 +41,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             redirectToLogin();
         };
 
-        // 닫기: 모달 닫고 직전 화면으로 돌아간다(데이터 미렌더 빈 화면 방지, #382-4).
+        // 닫기: 홈으로. 세션 만료 시점이라 직전 화면이 보호면 back() 은 재401/모달 루프 위험.
         const dismiss = () => {
             isAuthRedirectPending = false;
             closeModal();
-            router.back();
+            router.replace('/');
         };
 
         function handleAuthError(error: ApiError): void {
