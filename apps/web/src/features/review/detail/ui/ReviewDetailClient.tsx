@@ -96,11 +96,11 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
 
     if (isLoading) {
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     리뷰를 불러오는 중입니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -114,27 +114,27 @@ export function ReviewDetailClient({ reservationId }: ReviewDetailClientProps) {
                   ? '해당 리뷰에 대한 접근 권한이 없습니다.'
                   : '리뷰 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.';
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">{message}</p>
-            </main>
+            </div>
         );
     }
 
     if (!review) {
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     리뷰 정보를 불러오지 못했습니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
     return (
-        <main className="flex-1 overflow-y-auto px-4 pb-16">
+        <div className="px-4 pb-16">
             <div className="py-2">
                 <ReviewDetailContent review={review} reservation={reservation} />
             </div>
-        </main>
+        </div>
     );
 }

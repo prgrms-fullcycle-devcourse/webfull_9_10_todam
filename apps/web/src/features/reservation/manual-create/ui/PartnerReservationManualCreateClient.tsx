@@ -275,7 +275,7 @@ export function PartnerReservationManualCreateClient({ storeId, initialDate }: P
 
     return (
         <>
-            <main className="flex-1 overflow-y-auto px-4 pb-28">
+            <div className="px-4 pb-28">
                 <section className="flex flex-col gap-3 py-2">
                     <div className="flex flex-col items-center gap-2 text-center">
                         <div className="flex items-center gap-4">
@@ -357,7 +357,7 @@ export function PartnerReservationManualCreateClient({ storeId, initialDate }: P
                         />
                     )}
                 </section>
-            </main>
+            </div>
 
             <BottomBar>
                 {step === 'time' && (

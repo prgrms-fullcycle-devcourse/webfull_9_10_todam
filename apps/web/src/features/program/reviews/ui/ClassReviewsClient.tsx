@@ -79,7 +79,7 @@ export function ClassReviewsClient() {
     const isError = reviewsQuery.isError;
 
     return (
-        <main className="min-h-full bg-background px-4 pb-16">
+        <div className="bg-background px-4 pb-16">
             <div className="sticky top-0 z-10 -mx-4 bg-background px-4 pb-9">
                 <SegmentedControl
                     options={SORT_OPTIONS.map((option) => option.label)}
@@ -127,7 +127,7 @@ export function ClassReviewsClient() {
                     리뷰를 더 불러오는 중...
                 </p>
             )}
-        </main>
+        </div>
     );
 }
 

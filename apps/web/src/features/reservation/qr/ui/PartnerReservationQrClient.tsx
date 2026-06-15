@@ -23,9 +23,9 @@ type InfoRow = { label: string; value: string };
 
 function MessageScreen({ message }: { message: string }) {
     return (
-        <main className="flex-1 overflow-y-auto px-4 pb-16">
+        <div className="px-4 pb-16">
             <p className="py-10 text-center text-sm text-foreground-tertiary">{message}</p>
-        </main>
+        </div>
     );
 }
 
@@ -125,7 +125,7 @@ export function PartnerReservationQrClient({ reservationId }: PartnerReservation
 
     return (
         <>
-            <main className="flex-1 overflow-y-auto px-4 pb-6">
+            <div className="px-4 pb-6">
                 <section className="flex flex-col items-center gap-4 py-2">
                     <div className="flex flex-col items-center gap-1">
                         <p className="text-lg text-foreground-secondary">예약 번호</p>
@@ -157,7 +157,7 @@ export function PartnerReservationQrClient({ reservationId }: PartnerReservation
                         </div>
                     ))}
                 </dl>
-            </main>
+            </div>
 
             <BottomBar>
                 <Button
