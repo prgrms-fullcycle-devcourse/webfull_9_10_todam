@@ -4,7 +4,8 @@ import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Toast } from '@todam/ui';
 
-import { useBottomNavigation } from '@/widgets/bottom-navigation';
+// 배럴(index) 대신 훅 모델만 직접 import — 배럴은 BottomNav(앱 alias 의존)까지 끌어와 Storybook 번들이 깨짐.
+import { useBottomNavigation } from '../../widgets/bottom-navigation/model/useBottomNavigation';
 
 import { useToastStore, type ToastItem } from '../model/toast';
 
