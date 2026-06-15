@@ -93,8 +93,8 @@ export function PartnerProfileScreen() {
                 <div className="flex justify-end">
                     <button
                         type="button"
-                        onClick={() => openSheet(<ResetRequestSheet />)}
-                        className="text-xs font-semibold text-primary"
+                        onClick={() => openSheet(<ResetRequestSheet initialEmail={email} />)}
+                        className="cursor-pointer text-xs font-semibold text-primary"
                     >
                         비밀번호 재설정
                     </button>
@@ -110,7 +110,7 @@ export function PartnerProfileScreen() {
                     type="button"
                     onClick={handleTerminate}
                     disabled={terminate.isPending}
-                    className="text-xs font-semibold text-foreground-tertiary underline disabled:opacity-60"
+                    className="cursor-pointer text-xs font-semibold text-foreground-tertiary underline disabled:opacity-60"
                 >
                     파트너 해지하기
                 </button>

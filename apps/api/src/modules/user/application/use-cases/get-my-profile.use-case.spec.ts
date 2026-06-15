@@ -12,6 +12,7 @@ function makeRow(overrides: Partial<UserProfileRow> = {}): UserProfileRow {
         email: 'user@example.com',
         nickname: '토담이',
         isPartner: false,
+        hasPassword: true,
         status: 'ACTIVE',
         createdAt: new Date('2026-05-24T16:55:00.000Z'),
         updatedAt: new Date('2026-05-24T16:55:00.000Z'),
@@ -40,9 +41,18 @@ describe('GetMyProfileUseCase', () => {
         expect(result.user.email).toBe('user@example.com');
         expect(result.user.nickname).toBe('토담이');
         expect(result.user.isPartner).toBe(false);
+        expect(result.user.hasPassword).toBe(true);
         expect(result.user.createdAt).toBe('2026-05-24T16:55:00.000Z');
         // updatedAt은 응답에 포함되지 않아야 함
         expect((result.user as Record<string, unknown>)['updatedAt']).toBeUndefined();
+    });
+
+    it('200: 소셜 유저는 hasPassword=false를 반환한다', async () => {
+        findById.mockResolvedValue(makeRow({ hasPassword: false }));
+
+        const result = await useCase.execute(USER_ID);
+
+        expect(result.user.hasPassword).toBe(false);
     });
 
     it('404: 유저 없음 → USER_NOT_FOUND', async () => {

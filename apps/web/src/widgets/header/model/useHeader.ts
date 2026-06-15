@@ -23,6 +23,7 @@ const routeConfig: Record<string, HeaderConfig> = {
     '/my': { type: 'main', title: '마이페이지' },
     '/notifications': { type: 'sub', title: '알림' },
     '/my/profile': { type: 'sub', title: '개인 정보 수정' },
+    '/my/favorites': { type: 'sub', title: '찜한 공방' },
     '/my/reservations': { type: 'sub', title: '나의 예약' },
     '/partner': { type: 'home' },
     '/partner/classes': { type: 'sub', title: '클래스 관리' },
