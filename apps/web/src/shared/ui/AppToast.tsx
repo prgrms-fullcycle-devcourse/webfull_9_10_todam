@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Toast } from '@todam/ui';
 
+import { useBottomNavigation } from '@/widgets/bottom-navigation';
+
 import { useToastStore, type ToastItem } from '../model/toast';
 
 function ToastView({ item }: { item: ToastItem }) {
@@ -40,9 +42,17 @@ function ToastView({ item }: { item: ToastItem }) {
 
 export function AppToast() {
     const toasts = useToastStore((s) => s.toasts);
+    // 하단 네비게이션 유무에 따라 토스트 기준 위치를 조정.
+    // 바가 있는 화면: 바 위로 띄움(bottom-28). 없는 화면(로그인/회원가입 등): 화면 맨 아래(safe-area 위)로 내려 표준 토스트 위치 확보.
+    const { visible: hasBottomNav } = useBottomNavigation();
+    const bottomClass = hasBottomNav
+        ? 'bottom-28'
+        : 'bottom-[calc(1.5rem+env(safe-area-inset-bottom))]';
 
     return (
-        <div className="pointer-events-none absolute inset-x-4 bottom-28 z-50 flex flex-col gap-2">
+        <div
+            className={`pointer-events-none absolute inset-x-4 ${bottomClass} z-50 flex flex-col gap-2`}
+        >
             <AnimatePresence initial={false}>
                 {toasts.map((item) => (
                     <ToastView key={item.id} item={item} />
