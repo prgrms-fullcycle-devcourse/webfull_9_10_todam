@@ -2,12 +2,17 @@
 
 import Link from 'next/link';
 
+import { useLoginRequiredGuard } from '@/features/auth/guard';
 import { primeMobileKeyboard } from '@/shared/lib/primeMobileKeyboard';
 
 import { useBottomNavigation } from '../model/useBottomNavigation';
 
+// 비로그인 시 진입을 막고 제자리 모달을 띄울 경로(클릭 가로채기).
+const AUTH_REQUIRED_PATHS = new Set(['/my', '/my/reservations']);
+
 export function BottomNav() {
     const { visible, items } = useBottomNavigation();
+    const guardLogin = useLoginRequiredGuard();
 
     if (!visible) {
         return null;
@@ -20,9 +25,13 @@ export function BottomNav() {
                     <Link
                         key={label}
                         href={href}
-                        onClick={() => {
+                        onClick={(e) => {
+                            // 로그인 필요 경로: 확정 미인증이면 진입을 막고 제자리 모달.
+                            if (AUTH_REQUIRED_PATHS.has(href) && guardLogin()) {
+                                e.preventDefault();
+                                return;
+                            }
                             // 검색 진입 — 탭 제스처 안에서 키보드를 미리 띄워 모바일 autofocus 한계를 회피.
-                            // 로그인 필요 경로(/my 등)는 가로채지 않고 진입 → RequireAuth 가 진입 전 모달 처리.
                             if (href === '/search') primeMobileKeyboard();
                         }}
                         className={`flex flex-1 flex-col items-center justify-start gap-1 self-stretch text-xs ${

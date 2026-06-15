@@ -1,18 +1,19 @@
 'use client';
 
-// 로그인 필요 화면 가드(#382-4).
-// 비로그인 상태로 보호 화면 접근 시 화면 "진입 전" 로그인 모달을 띄우고 보호 콘텐츠는 렌더하지 않는다.
-//   - 닫기  → router.back() 으로 직전 화면 복귀(데이터 미렌더 빈 화면 방지).
-//   - 로그인 → /login 이동.
-// 부팅 세션 복원(AuthProvider) 이 끝나기 전(initialized=false)에는 판단을 보류해 모달 깜빡임을 막는다.
-//   localStorage stopgap 으로 optimistic AUTHENTICATED 면 즉시 통과.
+// 로그인 필요 화면 가드(#382-4) — 직접 URL 진입/딥링크용 fallback.
+// (BottomNav 등 앱 내 탭 이동은 useLoginRequiredGuard 가 클릭 시점에 진입 자체를 막는다.)
+// 비로그인으로 보호 화면에 직접 진입하면 보호 콘텐츠를 렌더하지 않고 모달을 띄운다.
+//   - 닫기  → 홈('/')으로(직전이 또 보호 화면일 수 있어 back() 대신 '/').
+//   - 로그인 → /login.
+// 부팅 세션 복원(AuthProvider) 이 끝나기 전(initialized=false)에는 판단을 보류(깜빡임 방지).
 
 import { useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Modal } from '@todam/ui';
 
 import { useAuthStore } from '@/features/auth/login';
 import { useModal } from '@/shared/model';
+
+import { LoginRequiredModal } from './LoginRequiredModal';
 
 export function RequireAuth({ children }: { children: ReactNode }) {
     const router = useRouter();
@@ -37,17 +38,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
             router.replace('/');
         };
 
-        open(
-            <Modal
-                type="shortText"
-                title="로그인이 필요해요"
-                description="로그인 후 다시 이용해 주세요."
-                cancelLabel="닫기"
-                confirmLabel="로그인하기"
-                onCancel={dismiss}
-                onConfirm={goLogin}
-            />,
-        );
+        open(<LoginRequiredModal onCancel={dismiss} onConfirm={goLogin} />);
 
         return () => close();
     }, [blocked, open, close, router]);
