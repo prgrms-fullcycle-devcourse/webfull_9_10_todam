@@ -3,7 +3,8 @@
 // 새 보호 라우트는 여기만 추가.
 
 // prefix 매칭: 경로 자신 또는 그 하위 전부 보호.
-const PROTECTED_PREFIXES = ['/my', '/notifications'] as const;
+// /partner·/apply 는 로그인 필수(추가로 파트너 권한/온보딩 상태는 AppShell 이 별도 분기).
+const PROTECTED_PREFIXES = ['/my', '/notifications', '/partner', '/apply'] as const;
 
 // 정규식 매칭: 공개 세그먼트 안의 일부만 보호인 경우(예: /classes/:id 는 공개, /reserve 만 보호).
 const PROTECTED_PATTERNS: RegExp[] = [/^\/classes\/[^/]+\/reserve(\/|$)/];
