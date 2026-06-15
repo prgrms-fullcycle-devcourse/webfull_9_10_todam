@@ -104,7 +104,7 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
     };
 
     // ─── 이탈 가드 ───────────────────────────────────────────────
-    const leave = () => router.back();
+    const leave = () => router.push(`/my/reservations/${reservationId}`);
     const handleClose = () => {
         if (!dirty) {
             leave();
@@ -169,7 +169,7 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
             } else {
                 await createMutation.mutateAsync(body);
             }
-            // 성공 시 mutation onSuccess 가 toast + invalidate + router.back() 처리.
+            // 성공 시 mutation onSuccess 가 toast + invalidate + 다음 화면 이동 처리.
         } catch (err) {
             // mutation onError 가 ApiError 토스트 처리. presigned/S3 단계 실패만 별도 안내.
             if (!(err instanceof ApiError)) {
