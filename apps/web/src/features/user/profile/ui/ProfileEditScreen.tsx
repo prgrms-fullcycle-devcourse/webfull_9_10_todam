@@ -18,7 +18,7 @@ export function ProfileEditScreen() {
     const { data: profileData, isLoading } = useMyProfile();
     const updateProfile = useUpdateMyProfile();
 
-    const [nickname, setNickname] = useState('');
+    const [nickname, setNickname] = useState<string | null>(null);
     const [nicknameError, setNicknameError] = useState<string | null>(null);
 
     // 초기 닉네임: 프로필 로드 후 한 번만 세팅
@@ -30,10 +30,10 @@ export function ProfileEditScreen() {
         setNicknameError(null);
     };
 
-    const displayNickname = nickname !== '' ? nickname : currentNickname;
+    const displayNickname = nickname ?? currentNickname;
 
     const handleSave = () => {
-        const trimmed = nickname.trim();
+        const trimmed = displayNickname.trim();
         // 변경 없음
         if (trimmed === currentNickname || trimmed === '') {
             toast.push({ message: '변경된 내용이 없습니다.' });
