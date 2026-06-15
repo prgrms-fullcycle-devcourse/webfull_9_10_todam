@@ -10,6 +10,7 @@ import { BottomBar, Button, Modal, RatingInput, SectionTitle, TextArea } from '@
 import { useReservationDetail, useReservationReview } from '@/entities/reservation';
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
+import { getFileValidationIssues } from '@/shared/lib/imageFile';
 import { useModal, useToast } from '@/shared/model';
 import { usePendingImages, type ExistingImage } from '@/shared/model';
 import { PendingImageField } from '@/shared/ui';
@@ -88,6 +89,19 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
     const dirty = ratingDirty || contentDirty || images.isDirty;
 
     const canSubmit = rating >= 1 && !submitting;
+    const handleAddImages = (files: File[]) => {
+        const issues = getFileValidationIssues(files);
+        const remaining =
+            MAX_REVIEW_PHOTO_COUNT - images.existingImages.length - images.pendingImages.length;
+        if (issues.oversized) {
+            push({ message: '5MB를 초과한 이미지는 추가할 수 없어요. 최대 파일 용량은 5MB예요.' });
+        } else if (issues.unsupported) {
+            push({ message: 'JPG, PNG, HEIC 형식의 이미지만 추가할 수 있어요.' });
+        } else if (files.length > remaining) {
+            push({ message: `사진은 최대 ${MAX_REVIEW_PHOTO_COUNT}장까지 추가할 수 있어요.` });
+        }
+        images.addFiles(files.slice(0, remaining));
+    };
 
     // ─── 이탈 가드 ───────────────────────────────────────────────
     const leave = () => router.back();
@@ -205,7 +219,7 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
                     label="사진"
                     existingImages={images.existingImages}
                     pendingImages={images.pendingImages}
-                    onAdd={images.addFiles}
+                    onAdd={handleAddImages}
                     onRemoveExisting={images.removeExisting}
                     onRemovePending={images.removePending}
                     max={MAX_REVIEW_PHOTO_COUNT}
