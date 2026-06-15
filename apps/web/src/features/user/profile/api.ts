@@ -24,10 +24,10 @@ export function updateMyProfile(body: UpdateMyProfileBody) {
 
 // DELETE /users/me — 회원 탈퇴
 // contract: docs/exec-plans/active/마이 - 회원탈퇴.md
-// 이메일 유저: body { password }. 소셜 유저: body 없음(undefined).
+// 이메일 유저: body { password }. 소셜 유저: 빈 body 객체({}).
 export function withdrawAccount(body?: WithdrawBody) {
     return clientApiFetch<null>('/users/me', {
         method: 'DELETE',
-        ...(body ? { body } : {}),
+        body: body ?? {},
     });
 }

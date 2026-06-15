@@ -9,18 +9,18 @@ import { useWithdraw } from '../queries';
 // 탈퇴 확인 모달 — plan: docs/exec-plans/active/마이 - 회원탈퇴.md
 // Figma: 8505:19302/19303
 // 이메일 유저: 비밀번호 입력 후 탈퇴 요청
-// 소셜 유저: 비밀번호 입력 없이(빈 채로) 탈퇴 요청 — BE에서 password=null 유저는 검증 생략(D-2)
-//
-// FE에서 이메일/소셜 구분 필드(hasPassword 등)가 GET /users/me 응답에 없으므로
-// 비밀번호 입력란을 항상 노출하되 optional 처리.
-// 빈 채로 제출 → body 없이 DELETE → 소셜 유저는 BE 통과, 이메일 유저는 PASSWORD_MISMATCH 400.
-export function WithdrawModal() {
+// 소셜 유저: GET /users/me의 hasPassword=false를 기준으로 재인증 입력 없이 탈퇴 요청
+interface WithdrawModalProps {
+    hasPassword: boolean;
+}
+
+export function WithdrawModal({ hasPassword }: WithdrawModalProps) {
     const { close: closeModal } = useModal();
     const withdraw = useWithdraw();
     const [password, setPassword] = useState('');
 
     const handleConfirm = () => {
-        const body = password.trim() ? { password: password.trim() } : undefined;
+        const body = hasPassword && password.trim() ? { password: password.trim() } : undefined;
         withdraw.mutate(body, {
             onSuccess: () => {
                 closeModal();
@@ -43,15 +43,21 @@ export function WithdrawModal() {
             description={
                 <div className="flex flex-col gap-3">
                     <span>지금까지 기록한 소중한 작품들이 모두 사라져요.</span>
-                    <TextInput
-                        id="withdraw-password"
-                        label="비밀번호"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="비밀번호를 입력해주세요 (소셜 로그인은 생략)"
-                        autoComplete="current-password"
-                    />
+                    {hasPassword ? (
+                        <TextInput
+                            id="withdraw-password"
+                            label="비밀번호"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="비밀번호를 입력해주세요"
+                            autoComplete="current-password"
+                        />
+                    ) : (
+                        <span className="text-sm text-foreground-secondary">
+                            소셜 로그인 계정은 비밀번호 재인증 없이 탈퇴할 수 있습니다.
+                        </span>
+                    )}
                 </div>
             }
             cancelLabel="다음에 하기"
