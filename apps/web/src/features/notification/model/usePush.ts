@@ -3,6 +3,8 @@
 import { useCallback } from 'react';
 import { getToken } from 'firebase/messaging';
 
+import { useAuthStore } from '@/features/auth/login';
+
 import { registerNotificationToken } from '../api';
 import { getMessagingIfSupported, VAPID_KEY } from './firebase';
 import { setStoredFcmToken } from './pushToken';
@@ -39,6 +41,8 @@ async function enablePush(): Promise<EnablePushResult> {
 // 이미 권한 허용된 상태에서 토큰 재발급/서버 재등록(토큰 로테이션 대비). 권한 요청 안 함.
 export async function silentReregisterPush(): Promise<void> {
     if (typeof window === 'undefined') return;
+    // 비로그인은 등록할 유저가 없음 → POST /notifications/tokens 401(공개 페이지 로그인 모달) 방지.
+    if (useAuthStore.getState().state !== 'AUTHENTICATED') return;
     if (Notification.permission !== 'granted') return;
     try {
         const messaging = await getMessagingIfSupported();
