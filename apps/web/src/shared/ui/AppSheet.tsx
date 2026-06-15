@@ -2,10 +2,14 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 
+import { useScrollLock } from '../lib/useScrollLock';
 import { useSheetStore } from '../model/sheet';
 
 export function AppSheet() {
     const { isOpen, content, close } = useSheetStore();
+
+    // 열린 동안 배경 스크롤 잠금 (dim 너머 본문 스크롤·모바일 흔들림 방지).
+    useScrollLock(isOpen);
 
     return (
         <AnimatePresence>

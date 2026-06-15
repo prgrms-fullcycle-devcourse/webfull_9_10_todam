@@ -4,6 +4,8 @@ import { phoneSchema, slugSchema } from '@todam/shared';
 import { useEffect, useState } from 'react';
 
 import { StudioInfoFields } from '@/entities/studio';
+import { geocodeAddress, reverseGeocodeRegion } from '@/shared/lib/kakaoGeocode';
+import { useToast } from '@/shared/model';
 import { useStudioEditStore } from '../model/studio';
 import { useSlugAvailability } from '../queries';
 
@@ -24,6 +26,24 @@ export function InfoEditSection({ storeId }: InfoEditSectionProps) {
     const removeExistingImage = useStudioEditStore((s) => s.removeExistingImage);
     const removePendingImage = useStudioEditStore((s) => s.removePendingImage);
     const setSlugDuplicated = useStudioEditStore((s) => s.setSlugDuplicated);
+    const setStoreAddress = useStudioEditStore((s) => s.setStoreAddress);
+    const { push } = useToast();
+
+    // 주소 선택 → Kakao 좌표변환 + 행정구역. 실패 시 좌표 없이 유지(저장은 좌표 있을 때만 전송).
+    const handleResolveAddress = async ({ address }: { postalCode: string; address: string }) => {
+        try {
+            const coords = await geocodeAddress(address);
+            let region: { sido: string; sigungu: string; dong: string } | null = null;
+            try {
+                region = await reverseGeocodeRegion(coords);
+            } catch {
+                /* region 변환 실패 — 좌표는 유지, 지역검색 라벨만 누락 */
+            }
+            setStoreAddress(address, coords.latitude, coords.longitude, region);
+        } catch {
+            push({ message: '주소 좌표를 가져오지 못했어요. 다시 시도해 주세요.' });
+        }
+    };
 
     const slug = form?.store.slug ?? '';
     const initialSlug = initial?.store.slug ?? '';
@@ -91,6 +111,10 @@ export function InfoEditSection({ storeId }: InfoEditSectionProps) {
             phone={store.phone}
             onChangePhone={(v) => patchStudio({ phone: v })}
             phoneError={phoneError}
+            address={store.address}
+            addressDetail={store.addressDetail}
+            onResolveAddress={handleResolveAddress}
+            onChangeAddressDetail={(v) => patchStudio({ addressDetail: v })}
             description={store.description}
             onChangeDescription={(v) => patchStudio({ description: v })}
             descriptionMaxLength={1000}
