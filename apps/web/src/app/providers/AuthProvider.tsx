@@ -79,12 +79,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         let cancelled = false;
         const { setToken, setAuth, clearAuth, setInitialized } = useAuthStore.getState();
 
-        // dev mock 모드(프록시 미경유)에서는 /auth/refresh 핸들러가 없으므로 복원을 건너뛰고
-        // localStorage stopgap 상태를 그대로 신뢰한다. 프록시 경유(prod/mock disabled)에서만 복원.
-        const useMockDirect =
-            process.env.NODE_ENV !== 'production' &&
-            process.env.NEXT_PUBLIC_API_MOCKING !== 'disabled';
-
         async function restoreSession() {
             try {
                 const { accessToken } = await refreshSession();
@@ -109,11 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         }
 
-        if (useMockDirect) {
-            setInitialized();
-        } else {
-            void restoreSession();
-        }
+        void restoreSession();
 
         return () => {
             cancelled = true;

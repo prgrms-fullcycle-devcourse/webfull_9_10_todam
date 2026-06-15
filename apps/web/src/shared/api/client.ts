@@ -2,10 +2,7 @@ import { getAuthToken } from './auth-token';
 import { parseApiResponse } from './parse';
 import { ApiError } from './types';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
-const USE_MOCK_DIRECT =
-    process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_API_MOCKING !== 'disabled';
-
+// 개발 편의: localStorage('todam_dev_api_base') 가 있으면 해당 베이스로 직결(실 dev 백엔드 지정용).
 function resolveDevRuntimeBaseUrl(): string {
     if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
         const devBase = window.localStorage.getItem('todam_dev_api_base');
@@ -18,8 +15,8 @@ function resolveUrl(path: string): string {
     if (path.startsWith('http')) return path;
     const devRuntimeBaseUrl = resolveDevRuntimeBaseUrl();
     if (devRuntimeBaseUrl) return `${devRuntimeBaseUrl}${path}`;
-    if (!USE_MOCK_DIRECT) return `/api/proxy${path}`;
-    return `${BASE_URL}${path}`;
+    // 항상 Next API 프록시 경유(쿠키 전달·CORS 회피).
+    return `/api/proxy${path}`;
 }
 
 export type RequestOptions = Omit<RequestInit, 'body'> & {
