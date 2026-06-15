@@ -25,7 +25,7 @@ export function ReservationCard({ item, onClick }: ReservationCardProps) {
         <button
             type="button"
             onClick={onClick}
-            className="flex w-full flex-col gap-3 rounded-2xl border border-border-subtle bg-surface p-4 text-left"
+            className="flex w-full cursor-pointer flex-col gap-3 rounded-2xl border border-border-subtle bg-surface p-4 text-left"
         >
             <div className="flex flex-col gap-2">
                 {/* 행 1: date·day + 우측 배지 */}
