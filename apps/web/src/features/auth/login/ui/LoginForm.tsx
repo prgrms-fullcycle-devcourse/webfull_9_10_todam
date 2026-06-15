@@ -124,7 +124,7 @@ export function LoginForm({ onForgotPassword, onLoginSuccess }: LoginFormProps) 
                         <div className="flex justify-end">
                             <button
                                 type="button"
-                                className="text-sm font-semibold text-primary"
+                                className="cursor-pointer text-sm font-semibold text-primary"
                                 onClick={onForgotPassword}
                             >
                                 비밀번호를 잊으셨나요?
