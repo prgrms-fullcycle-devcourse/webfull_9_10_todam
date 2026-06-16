@@ -76,9 +76,20 @@ export function StudioEditLayout({ storeId, section, returnTo }: StudioEditLayou
     const valid = isSectionValid(form, section, pendingImages.length);
     const canSave = dirty && valid && !isSaving;
 
+    // 수정 화면은 공방 상세에서 push(시트→edit)로 진입하므로, 이탈은 그 push를 되돌리는
+    // back(pop)이 정상. push로 되돌리면 단수 라우트(/partner/studio)가 중복 누적돼 뒤로가기가
+    // studio↔edit를 핑퐁한다. 직접 진입(히스토리 없음)이면 returnTo replace.
+    const leaveFlow = () => {
+        if (typeof window !== 'undefined' && window.history.length > 1) {
+            router.back();
+        } else {
+            router.replace(backPath);
+        }
+    };
+
     const leave = () => {
         reset();
-        router.push(backPath);
+        leaveFlow();
     };
 
     // 이탈 가드: dirty 시 확인 다이얼로그.
@@ -139,8 +150,8 @@ export function StudioEditLayout({ storeId, section, returnTo }: StudioEditLayou
                 type: 'icon',
                 icon: <ConfirmIcon size={16} />,
             });
-            // 파트너 전용 공방 상세로 이동(slug 공개 URL 아님). storeId 기반.
-            router.push(backPath);
+            // 파트너 전용 공방 상세로 복귀(slug 공개 URL 아님). 진입 push를 되돌리는 back(pop).
+            leaveFlow();
         } catch (err) {
             if (err instanceof ApiError) {
                 if (err.code === StoreEditErrorCode.STORE_SLUG_DUPLICATED) {
