@@ -1,6 +1,12 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { randomBytes } from 'crypto';
-import { DayOfWeek, VerificationStatus, BusinessState, Prisma } from '@prisma/client';
+import {
+    DayOfWeek,
+    PartnerStatus,
+    VerificationStatus,
+    BusinessState,
+    Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { S3Service } from '../../../../common/s3/s3.service';
 import { assertOwnedBusinessDocumentImage } from '../../../../common/s3/business-document.util';
@@ -56,7 +62,20 @@ export class PrismaCreateStoreCommand {
                 data: { userId },
                 select: { id: true, status: true },
             });
-        } else if (partner.status !== 'APPROVED') {
+        } else if (partner.status === PartnerStatus.TERMINATED) {
+            partner = await this.prisma.partner.update({
+                where: { id: partner.id },
+                data: {
+                    status: PartnerStatus.PENDING,
+                    terminatedAt: null,
+                    rejectedReason: null,
+                    suspendedReason: null,
+                    suspendedAt: null,
+                    approvedAt: null,
+                },
+                select: { id: true, status: true },
+            });
+        } else if (partner.status !== PartnerStatus.APPROVED) {
             // 추가 공방 등록은 승인된 파트너만 가능
             throw new BusinessException(
                 'PARTNER_NOT_APPROVED',

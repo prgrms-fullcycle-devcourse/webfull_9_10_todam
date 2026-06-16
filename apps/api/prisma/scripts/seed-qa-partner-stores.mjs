@@ -3,7 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 
 const CONFIRMATION = 'SEED_QA_PARTNER_STORES';
-const TEAM_MEMBERS = ['taeseong', 'yunji', 'eunji', 'seunghun', 'jaehyuk'];
+const TEAM_MEMBERS = ['taeseong', 'yunji', 'eunji', 'seunghun', 'jaehyuk', 'test'];
 
 if (process.env.CONFIRM_SEED !== CONFIRMATION) {
     throw new Error(`Set CONFIRM_SEED=${CONFIRMATION} to create QA partner stores.`);

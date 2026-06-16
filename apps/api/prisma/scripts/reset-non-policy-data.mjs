@@ -5,7 +5,7 @@ import { PrismaClient } from '@prisma/client';
 
 const CONFIRMATION = 'RESET_NON_POLICY_DATA';
 const QA_PASSWORD = 'test1234!';
-const TEAM_MEMBERS = ['taeseong', 'yunji', 'eunji', 'seunghun', 'jaehyuk'];
+const TEAM_MEMBERS = ['taeseong', 'yunji', 'eunji', 'seunghun', 'jaehyuk', 'test'];
 
 if (process.env.CONFIRM_RESET !== CONFIRMATION) {
     throw new Error(`Set CONFIRM_RESET=${CONFIRMATION} to run this destructive reset.`);
