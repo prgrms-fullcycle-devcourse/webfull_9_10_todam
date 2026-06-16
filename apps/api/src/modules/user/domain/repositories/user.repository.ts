@@ -5,9 +5,21 @@ export interface UserProfileRow {
     nickname: string;
     isPartner: boolean;
     hasPassword: boolean;
+    reserverName: string | null;
+    reserverPhone: string | null;
     status: string;
     createdAt: Date;
     updatedAt: Date;
+}
+
+/**
+ * 프로필 부분 수정 입력.
+ * key 미포함=변경 없음 / reserver* 값 null=삭제.
+ */
+export interface UpdateProfileData {
+    nickname?: string;
+    reserverName?: string | null;
+    reserverPhone?: string | null;
 }
 
 /** 회원탈퇴 가능 여부 확인용 최소 필드 */
@@ -27,8 +39,8 @@ export abstract class UserRepository {
      */
     abstract existsByNicknameExceptUser(nickname: string, excludeUserId: string): Promise<boolean>;
 
-    /** 닉네임 수정 후 최신 유저 반환. */
-    abstract updateNickname(userId: string, nickname: string): Promise<UserProfileRow>;
+    /** 프로필(닉네임·예약자 정보) 부분 수정 후 최신 유저 반환. */
+    abstract updateProfile(userId: string, data: UpdateProfileData): Promise<UserProfileRow>;
 
     // ─── 회원탈퇴 ─────────────────────────────────────────────────────────────
 

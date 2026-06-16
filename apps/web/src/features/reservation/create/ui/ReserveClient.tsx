@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import {
     PHONE_REGEX,
@@ -14,6 +14,7 @@ import type { AvailableSlotItem } from '@todam/shared';
 import {
     BottomBar,
     Button,
+    Checkbox,
     DeliveryIcon,
     DescriptionBlock,
     PinIcon,
@@ -23,7 +24,7 @@ import {
 
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
-import { loadSavedReserverInfo, saveReserverInfo } from '@/shared/lib/reserverInfo';
+import { useMyProfile, useUpdateMyProfile } from '@/features/user/profile';
 import { useToast } from '@/shared/model';
 import { ProgressBarWrapper } from '@/shared/ui/ProgressBarWrapper';
 
@@ -108,7 +109,7 @@ export function ReserveClient({
     const [reserverName, setReserverName] = useState('');
     const [reserverPhone, setReserverPhone] = useState('');
 
-    // 예약자 정보 기억/불러오기 — 체크박스 UI는 spec out(주석). mount 자동 프리필 + 제출 저장만 유지.
+    // 예약자 정보 기억/불러오기 체크박스 상태.
     const [rememberInfo, setRememberInfo] = useState(false);
 
     // 수령 방법. 기본 PICKUP. deliverable=false 이면 PICKUP 고정(선택 비노출).
@@ -116,18 +117,34 @@ export function ReserveClient({
         ReservationDeliveryMethod.PICKUP,
     );
 
-    // 저장된 예약자 정보 있으면 → 기본 체크 + 자동 입력("내 정보 불러오기").
+    // 서버에 저장된 예약자 정보(GET /users/me) — 프리필/불러오기 소스.
+    const { data: profileData } = useMyProfile();
+    const reserverNameSaved = profileData?.user.reserverName ?? null;
+    const reserverPhoneSaved = profileData?.user.reserverPhone ?? null;
+    const savedInfo = useMemo(
+        () =>
+            reserverNameSaved || reserverPhoneSaved
+                ? { name: reserverNameSaved ?? '', phone: reserverPhoneSaved ?? '' }
+                : null,
+        [reserverNameSaved, reserverPhoneSaved],
+    );
+
+    // "기억하기" 체크 시 저장에 사용할 뮤테이션.
+    const updateProfile = useUpdateMyProfile();
+
+    // 저장된 예약자 정보 있으면 → 최초 1회 자동 입력 + 기본 체크("내 정보 불러오기").
+    const prefilledRef = useRef(false);
     useEffect(() => {
+        if (prefilledRef.current || !savedInfo) return;
         const timer = window.setTimeout(() => {
-            const saved = loadSavedReserverInfo();
-            if (!saved) return;
-            setReserverName(saved.name);
-            setReserverPhone(saved.phone);
+            setReserverName(savedInfo.name);
+            setReserverPhone(savedInfo.phone);
             setRememberInfo(true);
+            prefilledRef.current = true;
         }, 0);
 
         return () => window.clearTimeout(timer);
-    }, []);
+    }, [savedInfo]);
 
     // 헤더: "{클래스명} 예약하기" + 뒤로가기(2단계면 1단계로, 1단계면 이전 화면).
     useHeaderOverride({
@@ -140,21 +157,21 @@ export function ReserveClient({
         },
     });
 
-    // [spec out] 예약자 정보 기억/불러오기 체크박스 토글. UI 복구 시 함께 살린다.
+    // 예약자 정보 기억/불러오기 체크박스 토글.
     // - 저장 정보 있음("내 정보 불러오기"): 체크 시 저장값 자동입력, 해제 시 입력 초기화.
     // - 저장 정보 없음("입력한 정보 기억하기"): 체크 상태만 기억 → 제출 시 저장.
-    // const handleToggleRemember = (checked: boolean) => {
-    //     setRememberInfo(checked);
-    //     if (savedInfo) {
-    //         if (checked) {
-    //             setReserverName(savedInfo.name);
-    //             setReserverPhone(savedInfo.phone);
-    //         } else {
-    //             setReserverName('');
-    //             setReserverPhone('');
-    //         }
-    //     }
-    // };
+    const handleToggleRemember = (checked: boolean) => {
+        setRememberInfo(checked);
+        if (savedInfo) {
+            if (checked) {
+                setReserverName(savedInfo.name);
+                setReserverPhone(savedInfo.phone);
+            } else {
+                setReserverName('');
+                setReserverPhone('');
+            }
+        }
+    };
 
     // 슬롯 조회
     const {
@@ -182,8 +199,9 @@ export function ReserveClient({
     const handleSubmit = () => {
         if (!selectedSlot || !canSubmit) return;
 
+        // "기억하기" 체크 시 예약자 정보를 내 프로필에 저장(예약 생성과 독립, 실패해도 예약은 진행).
         if (rememberInfo) {
-            saveReserverInfo({ name: reserverName.trim(), phone: reserverPhone });
+            updateProfile.mutate({ reserverName: reserverName.trim(), reserverPhone });
         }
 
         createReservation(
@@ -298,13 +316,29 @@ export function ReserveClient({
                                 }
                             />
 
-                            {/* <label className="flex items-center gap-1 self-start text-sm text-foreground-secondary font-semibold py-2">
+                            {/* 체크박스는 바깥 div 가 클릭을 소유하고 Checkbox 는 pointer-events-none
+                                presentational 로 둔다. label 로 감싸면 inner button 클릭이 이중 토글됨. */}
+                            <div
+                                role="checkbox"
+                                aria-checked={rememberInfo}
+                                tabIndex={0}
+                                onClick={() => handleToggleRemember(!rememberInfo)}
+                                onKeyDown={(e) => {
+                                    if (e.key === ' ' || e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleToggleRemember(!rememberInfo);
+                                    }
+                                }}
+                                className="flex cursor-pointer items-center gap-1 self-start py-2 text-sm font-semibold text-foreground-secondary"
+                            >
                                 <Checkbox
                                     checked={rememberInfo}
-                                    onCheckedChange={handleToggleRemember}
+                                    aria-hidden
+                                    tabIndex={-1}
+                                    className="pointer-events-none"
                                 />
                                 {savedInfo ? '내 정보 불러오기' : '입력한 정보 기억하기'}
-                            </label> */}
+                            </div>
                         </section>
 
                         {/* 수령 방법 — 택배 미지원(deliverable=false)이면 PICKUP 고정이라 섹션 숨김 */}
