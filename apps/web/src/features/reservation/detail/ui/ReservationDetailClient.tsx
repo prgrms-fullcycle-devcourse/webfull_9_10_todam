@@ -108,11 +108,11 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
 
     if (isLoading) {
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     예약 상세를 불러오는 중입니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -126,26 +126,26 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
                   ? '해당 예약에 대한 접근 권한이 없습니다.'
                   : '예약 상세 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.';
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">{message}</p>
-            </main>
+            </div>
         );
     }
 
     if (!reservation) {
         return (
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     예약 정보를 불러오지 못했습니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
     const isDelivery = reservation.deliveryMethod === ReservationDeliveryMethod.DELIVERY;
 
     return (
-        <main className="flex-1 overflow-y-auto px-4 pb-16">
+        <div className="px-4 pb-16">
             <div className="flex flex-col gap-2 py-2">
                 <ReservationInfoCard reservation={reservation} />
                 <ReservationNumberButton reservationId={reservation.id} />
@@ -166,6 +166,6 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
                     <ReviewSection reservation={reservation} />
                 )}
             </div>
-        </main>
+        </div>
     );
 }

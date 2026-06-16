@@ -17,11 +17,13 @@ import { OperatingStep } from './OperatingStep';
 export type ProgramRegistrationFlowProps = {
     storeId: string;
     returnTo?: string;
+    successReturnTo?: string;
 };
 
 export function ProgramRegistrationFlow({
     storeId,
     returnTo = '/partner/classes',
+    successReturnTo = returnTo,
 }: ProgramRegistrationFlowProps) {
     const router = useRouter();
     const step = useProgramRegistrationStore((s) => s.step);
@@ -54,6 +56,11 @@ export function ProgramRegistrationFlow({
         leaveFlow();
     };
 
+    const completeFlow = () => {
+        reset();
+        router.replace(successReturnTo);
+    };
+
     // 작성 중이면 확인 모달, 아니면 즉시 이탈.
     const guardedExit = () => {
         if (!dirty) {
@@ -82,8 +89,7 @@ export function ProgramRegistrationFlow({
         if (!stepValid || isPending) return;
         try {
             const { imageFailed } = await submitRegistration(form);
-            reset();
-            leaveFlow();
+            completeFlow();
             push({
                 message: imageFailed
                     ? '클래스 썸네일 등록에 실패했어요. 이미지를 다시 등록해 주세요.'

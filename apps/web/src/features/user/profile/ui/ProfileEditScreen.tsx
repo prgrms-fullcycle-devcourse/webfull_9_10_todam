@@ -150,8 +150,9 @@ export function ProfileEditScreen() {
     };
 
     return (
-        <div className="flex h-full flex-col">
-            <main className="flex flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4 pt-2">
+        // 스크롤은 AppShell 단일 main 이 소유. BottomBar 는 sticky bottom-0 으로 하단 고정(#396).
+        <>
+            <div className="flex flex-col gap-5 px-4 pb-4 pt-2">
                 {/* 계정 정보 */}
                 <section className="flex flex-col gap-4">
                     <SectionTitle size="md" title="계정 정보" />
@@ -236,7 +237,7 @@ export function ProfileEditScreen() {
                         탈퇴하기
                     </button>
                 </div>
-            </main>
+            </div>
 
             <BottomBar>
                 <Button
@@ -249,6 +250,6 @@ export function ProfileEditScreen() {
                     {updateProfile.isPending ? '저장 중...' : '저장'}
                 </Button>
             </BottomBar>
-        </div>
+        </>
     );
 }

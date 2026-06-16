@@ -225,7 +225,7 @@ export function ReserveClient({
 
     return (
         <>
-            <main className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="px-4 pb-16">
                 <div className="py-2">
                     <ProgressBarWrapper
                         value={step === 'date' ? 50 : 100}
@@ -348,7 +348,7 @@ export function ReserveClient({
                         )}
                     </div>
                 )}
-            </main>
+            </div>
 
             {/* 하단 CTA */}
             <BottomBar>
