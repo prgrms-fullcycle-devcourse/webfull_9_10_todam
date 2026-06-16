@@ -11,6 +11,8 @@ model User {
   nickname             String               @db.VarChar(100)
   email                String               @unique @db.VarChar(255)
   password             String?              @db.VarChar(255)
+  reserverName         String?              @map("reserver_name") @db.VarChar(100)
+  reserverPhone        String?              @map("reserver_phone") @db.VarChar(20)
   isPartner            Boolean              @default(false) @map("is_partner")
   emailVerified        Boolean              @default(false) @map("email_verified") // [S-5]
   status               UserStatus           @default(ACTIVE)

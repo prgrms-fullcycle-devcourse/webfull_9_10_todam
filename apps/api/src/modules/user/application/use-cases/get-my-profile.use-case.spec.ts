@@ -13,6 +13,8 @@ function makeRow(overrides: Partial<UserProfileRow> = {}): UserProfileRow {
         nickname: '토담이',
         isPartner: false,
         hasPassword: true,
+        reserverName: null,
+        reserverPhone: null,
         status: 'ACTIVE',
         createdAt: new Date('2026-05-24T16:55:00.000Z'),
         updatedAt: new Date('2026-05-24T16:55:00.000Z'),
@@ -25,7 +27,7 @@ describe('GetMyProfileUseCase', () => {
     const useCase = new GetMyProfileUseCase({
         findById,
         existsByNicknameExceptUser: jest.fn(),
-        updateNickname: jest.fn(),
+        updateProfile: jest.fn(),
     } as never);
 
     beforeEach(() => {
@@ -45,6 +47,26 @@ describe('GetMyProfileUseCase', () => {
         expect(result.user.createdAt).toBe('2026-05-24T16:55:00.000Z');
         // updatedAt은 응답에 포함되지 않아야 함
         expect((result.user as Record<string, unknown>)['updatedAt']).toBeUndefined();
+    });
+
+    it('200: 저장된 예약자 정보(reserverName/reserverPhone) 반환', async () => {
+        findById.mockResolvedValue(
+            makeRow({ reserverName: '김토담', reserverPhone: '010-1234-5678' }),
+        );
+
+        const result = await useCase.execute(USER_ID);
+
+        expect(result.user.reserverName).toBe('김토담');
+        expect(result.user.reserverPhone).toBe('010-1234-5678');
+    });
+
+    it('200: 예약자 정보 미설정 시 null 반환', async () => {
+        findById.mockResolvedValue(makeRow());
+
+        const result = await useCase.execute(USER_ID);
+
+        expect(result.user.reserverName).toBeNull();
+        expect(result.user.reserverPhone).toBeNull();
     });
 
     it('200: 소셜 유저는 hasPassword=false를 반환한다', async () => {

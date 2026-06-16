@@ -1,6 +1,22 @@
 import { z } from 'zod';
+import { PHONE_REGEX } from '../constants/regex';
 
-// 정본(API명세) 기준. 예약자 필드는 D2 확정(Reservation 모델 소속) — users/me 범위 밖.
+// 정본(API명세) 기준.
+// 예약자 정보(이름/연락처)는 User 모델 소속(reserver_name/reserver_phone).
+// 예약 생성 프리필·개인정보 수정 화면이 같은 값을 공유하며, DB에 영속한다.
+// 둘 다 선택값이라 미설정 시 null.
+
+// 예약자 이름 — 2~20자. 예약 생성/개인정보 수정 폼과 동일 규칙.
+export const reserverNameSchema = z
+    .string()
+    .trim()
+    .min(2, '이름은 2~20자로 입력해 주세요.')
+    .max(20, '이름은 2~20자로 입력해 주세요.');
+
+// 예약자 연락처 — 010-0000-0000 형식.
+export const reserverPhoneSchema = z
+    .string()
+    .regex(PHONE_REGEX, '연락처는 010-0000-0000 형식이어야 합니다.');
 
 export const userProfileSchema = z.object({
     userId: z.string().uuid(),
@@ -19,6 +35,8 @@ export const getMyProfileUserSchema = z.object({
     nickname: z.string(),
     isPartner: z.boolean(),
     hasPassword: z.boolean(),
+    reserverName: z.string().nullable(), // 저장된 예약자 이름(없으면 null)
+    reserverPhone: z.string().nullable(), // 저장된 예약자 연락처(없으면 null)
     createdAt: z.string().datetime(),
 });
 export type GetMyProfileUser = z.infer<typeof getMyProfileUserSchema>;
@@ -29,6 +47,8 @@ export const updateMyProfileUserSchema = z.object({
     email: z.string().email(),
     nickname: z.string(),
     isPartner: z.boolean(),
+    reserverName: z.string().nullable(), // 갱신 후 예약자 이름(없으면 null)
+    reserverPhone: z.string().nullable(), // 갱신 후 예약자 연락처(없으면 null)
     updatedAt: z.string().datetime(),
 });
 export type UpdateMyProfileUser = z.infer<typeof updateMyProfileUserSchema>;
@@ -49,8 +69,15 @@ export const nicknameSchema = z
     .string()
     .regex(/^[가-힣a-zA-Z0-9]{2,10}$/, '닉네임은 한글·영문·숫자 2~10자여야 합니다.');
 
+// PATCH /users/me 요청 body — 변경된 필드만 전송하는 partial 업데이트.
+//   nickname        : 미전송 시 닉네임 변경 없음
+//   reserverName    : 문자열=저장, null=삭제, 미전송=변경 없음
+//   reserverPhone   : 문자열=저장, null=삭제, 미전송=변경 없음
+// 빈 객체({})는 no-op(변경 없이 현재 프로필 반환).
 export const updateMyProfileBodySchema = z.object({
-    nickname: nicknameSchema,
+    nickname: nicknameSchema.optional(),
+    reserverName: reserverNameSchema.nullable().optional(),
+    reserverPhone: reserverPhoneSchema.nullable().optional(),
 });
 export type UpdateMyProfileBody = z.infer<typeof updateMyProfileBodySchema>;
 
