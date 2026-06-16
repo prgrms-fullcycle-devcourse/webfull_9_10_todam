@@ -60,6 +60,7 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
                     title: true,
                     price: true,
                     leadTimeDays: true,
+                    durationMinutes: true,
                     deliverable: true,
                     storeId: true,
                     store: {
@@ -184,7 +185,14 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
             }
 
             return {
-                reservation,
+                reservation: {
+                    ...reservation,
+                    scheduledAt: slot.startAt,
+                    // 종료 시각 = 시작 + 코스 소요 시간(durationMinutes). 슬롯 간격(slot.endAt)과 무관.
+                    scheduledEndAt: new Date(
+                        slot.startAt.getTime() + program.durationMinutes * 60_000,
+                    ),
+                },
                 // 파트너 알림 발송용 파트너 User id. 수동확정(P-1)·자동확정(P-4) 모두 필요해 항상 전달.
                 partnerUserId: program.store.partner.userId,
             };
@@ -213,7 +221,7 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
                 status: true,
                 createdAt: true,
                 store: { select: { name: true } },
-                program: { select: { title: true } },
+                program: { select: { title: true, durationMinutes: true } },
                 artwork: { select: { status: true } },
             },
         });
@@ -223,6 +231,7 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
             storeName: row.store.name,
             programTitle: row.program.title,
             scheduledAt: row.scheduledAt,
+            durationMinutes: row.program.durationMinutes,
             participantCount: row.participantCount,
             status: row.status,
             artworkStatus: row.artwork?.status ?? null,
@@ -254,7 +263,7 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
                     },
                 },
                 program: {
-                    select: { title: true },
+                    select: { title: true, durationMinutes: true },
                 },
                 programSnapshot: {
                     select: { price: true },
@@ -290,6 +299,7 @@ export class PrismaUserReservationRepository extends UserReservationRepository {
             programTitle: row.program.title,
             programSnapshotPrice: row.programSnapshot.price,
             scheduledAt: row.scheduledAt,
+            durationMinutes: row.program.durationMinutes,
             reserverName: row.reserverName,
             reserverPhone: row.reserverPhone,
             participantCount: row.participantCount,

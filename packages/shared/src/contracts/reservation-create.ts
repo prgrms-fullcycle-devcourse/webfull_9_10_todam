@@ -94,6 +94,9 @@ export const createUserReservationResultSchema = z.object({
         id: z.string().meta({ example: 'res-uuid-001' }),
         programId: z.string().meta({ example: 'prog-uuid-001' }),
         slotId: z.string().meta({ example: 'slot-uuid-001' }),
+        scheduledAt: z.string().meta({ example: '2026-06-01T10:00:00.000Z' }), // ISO 8601
+        // 종료 시각 = scheduledAt + Program.durationMinutes (코스 길이). 슬롯 간격과 무관.
+        scheduledEndAt: z.string().meta({ example: '2026-06-01T12:00:00.000Z' }), // ISO 8601
         reserverName: z.string().meta({ example: '김토담' }),
         participantCount: z.number().int().min(1).meta({ example: 2 }),
         status: z.nativeEnum(ReservationStatus).meta({ example: ReservationStatus.PENDING }),

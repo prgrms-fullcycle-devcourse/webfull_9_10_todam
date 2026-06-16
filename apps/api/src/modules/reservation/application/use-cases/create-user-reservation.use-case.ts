@@ -82,6 +82,8 @@ export class CreateUserReservationUseCase {
                 id: reservation.id,
                 programId: reservation.programId,
                 slotId: reservation.storeTimeSlotId,
+                scheduledAt: reservation.scheduledAt.toISOString(),
+                scheduledEndAt: reservation.scheduledEndAt.toISOString(),
                 reserverName: reservation.reserverName,
                 participantCount: reservation.participantCount,
                 status: reservation.status,

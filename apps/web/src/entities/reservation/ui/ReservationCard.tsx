@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { formatScheduled, type ReservationListItem } from '@todam/shared';
+import { formatScheduled, formatScheduledRange, type ReservationListItem } from '@todam/shared';
 
 import { ReservationStatusBadge } from './ReservationStatusBadge';
 
@@ -14,7 +14,8 @@ function hasStatusMessage(item: ReservationListItem): boolean {
 }
 
 export function ReservationCard({ item }: { item: ReservationListItem }) {
-    const { date, day, time } = formatScheduled(item.scheduledAt);
+    const { date, day } = formatScheduled(item.scheduledAt);
+    const timeRange = formatScheduledRange(item.scheduledAt, item.scheduledEndAt);
     const showMessage = hasStatusMessage(item);
 
     return (
@@ -32,11 +33,11 @@ export function ReservationCard({ item }: { item: ReservationListItem }) {
                     <ReservationStatusBadge status={item.status} label={item.displayState.label} />
                 </div>
 
-                {/* 행 2: programTitle + meta(storeName・hh:mm) */}
+                {/* 행 2: programTitle + meta(storeName・시작~종료) */}
                 <div className="flex flex-col gap-1">
                     <p className="text-sm font-semibold text-foreground">{item.programTitle}</p>
                     <p className="text-xs text-foreground-tertiary">
-                        {item.storeName}・{time}
+                        {item.storeName}・{timeRange}
                     </p>
                 </div>
             </div>

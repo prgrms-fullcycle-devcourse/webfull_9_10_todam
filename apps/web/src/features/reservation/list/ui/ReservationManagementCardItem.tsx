@@ -1,8 +1,7 @@
 'use client';
 
-import { ReservationStatus } from '@todam/shared';
+import { formatScheduledRangeParts, ReservationStatus } from '@todam/shared';
 import type { ReservationItem } from '@todam/shared';
-import { format } from 'date-fns';
 import { Badge } from '@todam/ui';
 
 // ─── 상태 라벨·색상 매핑 ───────────────────────────────────────────────────
@@ -47,10 +46,17 @@ export function ReservationManagementCardItem({
     reservation,
     onClick,
 }: ReservationManagementCardItemProps) {
-    const { programTitle, scheduledAt, reserverName, participantCount, status } = reservation;
+    const { programTitle, scheduledAt, durationMinutes, reserverName, participantCount, status } =
+        reservation;
 
-    const startTime = format(new Date(scheduledAt), 'HH:mm');
-    const duration = '2시간';
+    // durationMinutes(코스 길이) 로 종료 시각을 파생 → 시작~종료 12시간제 범위 표시.
+    const scheduledEndAt = new Date(
+        new Date(scheduledAt).getTime() + durationMinutes * 60_000,
+    ).toISOString();
+    const { start: startTime, end: endTime } = formatScheduledRangeParts(
+        scheduledAt,
+        scheduledEndAt,
+    );
     const reservationPerson = reserverName;
     const extraParticipantLabel = participantCount > 1 ? `외 ${participantCount - 1}명` : null;
 
@@ -64,10 +70,14 @@ export function ReservationManagementCardItem({
         >
             <div className="flex h-11 w-full min-w-0 items-start">
                 <div className="flex flex-col gap-1 border-r border-border-subtle pr-4">
-                    <span className="text-lg font-bold leading-6 text-foreground">{startTime}</span>
-                    <span className="text-xs font-normal leading-4 text-foreground-tertiary">
-                        {duration}
+                    <span className="whitespace-nowrap text-lg font-bold leading-6 text-foreground">
+                        {startTime}
                     </span>
+                    {endTime && (
+                        <span className="whitespace-nowrap text-xs font-normal leading-4 text-foreground-tertiary">
+                            ~ {endTime}
+                        </span>
+                    )}
                 </div>
 
                 <div className="flex min-w-0 flex-1 flex-col gap-1 px-4 justify-center h-full">

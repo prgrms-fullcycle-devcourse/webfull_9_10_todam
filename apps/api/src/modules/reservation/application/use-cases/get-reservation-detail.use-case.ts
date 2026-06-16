@@ -71,6 +71,10 @@ export class GetReservationDetailUseCase {
             row.cancelDeadlineDays,
         );
 
+        // 5-1. 종료 시각 = 시작 + 코스 소요 시간(durationMinutes). 슬롯 간격(StoreTimeSlot)과 무관하게
+        // 실제 코스 길이를 노출해 시작~종료 범위 표시에 사용한다.
+        const scheduledEndAt = new Date(row.scheduledAt.getTime() + row.durationMinutes * 60_000);
+
         // 6. artwork 진척 (plan §progressPercent·remainingSteps 계산 규칙 의사코드 그대로)
         const artwork = this.calcArtwork(row.status, row.artworkId, row.artworkStatus);
 
@@ -96,6 +100,7 @@ export class GetReservationDetailUseCase {
                 programId: row.programId,
                 programTitle: row.programTitle,
                 scheduledAt: row.scheduledAt.toISOString(),
+                scheduledEndAt: scheduledEndAt.toISOString(),
                 reserverName: row.reserverName,
                 reserverPhone: row.reserverPhone,
                 participantCount: row.participantCount,

@@ -3,8 +3,8 @@
 import {
     ReservationDeliveryMethod,
     formatPrice,
+    formatScheduledRange,
     formatYmdWithDay,
-    toKSTOffsetISO,
 } from '@todam/shared';
 import type { CreateUserReservationResult } from '@todam/shared';
 import {
@@ -46,7 +46,7 @@ export function ReserveConfirmClient() {
     const params = useParams<{ id: string }>();
     const [payload, setPayload] = useState<ReservationResultPayload | null>(null);
 
-    // 공방명(헤더/요약용) — 응답에 없어 상세에서 파생.
+    // 공방명(헤더/요약용) — 예약 응답에 없어 클래스 상세에서 파생.
     const { data: detail } = usePublicProgramDetail(params.id);
     const storeName = detail?.program?.storeName;
 
@@ -85,16 +85,21 @@ export function ReserveConfirmClient() {
             ? '택배로 받기'
             : '직접 가져가기';
 
+    // 시작·종료 시각은 백엔드 생성 응답 기준(SSOT). 종료 = 시작 + 코스 소요 시간을
+    // 백엔드가 이미 계산해 내려준다. (구버전 sessionStorage 페이로드 호환용 meta 폴백.)
+    const startAt = reservation.scheduledAt ?? meta?.startAt;
+    const endAt = reservation.scheduledEndAt ?? meta?.endAt;
+
     const rows: ResultTableRow[] = [];
-    if (meta?.startAt) {
+    if (startAt) {
         rows.push({
             label: '날짜',
-            value: formatYmdWithDay(meta.startAt),
+            value: formatYmdWithDay(startAt),
             icon: <CalendarIcon size={16} />,
         });
         rows.push({
             label: '시간',
-            value: toKSTOffsetISO(meta.startAt).slice(11, 16),
+            value: formatScheduledRange(startAt, endAt),
             icon: <ClockIcon size={16} />,
         });
     }
