@@ -30,6 +30,7 @@ export type FavoriteStoresQuery = z.infer<typeof favoriteStoresQuerySchema>;
 export const favoriteStoreItemSchema = z.object({
     favoriteId: z.string(),
     storeId: z.string(),
+    slug: z.string(),
     name: z.string(),
     imageUrl: z.string(),
     address: z.string(),
