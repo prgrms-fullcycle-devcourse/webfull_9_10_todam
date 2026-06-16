@@ -232,10 +232,10 @@ function PartnerDeliveryInfoForm({ artworkId, artwork }: { artworkId: string; ar
                         push({ message: '작품을 찾을 수 없어요.' });
                         return;
                     case 409:
+                        // 서버 메시지는 영어('Delivery method is not editable.') 라 노출하지 않고
+                        // 한글 안내로 통일. (발송 등 터미널 상태에서 수령 방식 변경 차단)
                         push({
-                            message:
-                                mutationError.message ||
-                                '이미 발송된 작품의 수령 정보는 수정할 수 없어요.',
+                            message: '이미 발송된 작품의 수령 정보는 수정할 수 없어요.',
                         });
                         return;
                     case 400:
