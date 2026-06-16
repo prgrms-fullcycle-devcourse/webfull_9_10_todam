@@ -88,7 +88,7 @@ export function ProfileEditScreen() {
     };
 
     return (
-        <main className="flex flex-1 flex-col overflow-y-auto px-4 pb-8 pt-6">
+        <div className="flex flex-col px-4 pb-8 pt-6">
             <div className="flex flex-1 flex-col gap-6">
                 {/* 이메일 — 읽기 전용 */}
                 <TextInput
@@ -150,6 +150,6 @@ export function ProfileEditScreen() {
             >
                 {updateProfile.isPending ? '저장 중...' : '저장하기'}
             </Button>
-        </main>
+        </div>
     );
 }

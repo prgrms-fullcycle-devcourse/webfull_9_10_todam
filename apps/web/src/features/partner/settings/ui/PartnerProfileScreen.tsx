@@ -74,7 +74,7 @@ export function PartnerProfileScreen() {
     };
 
     return (
-        <main className="flex flex-1 flex-col overflow-y-auto px-4 pb-16">
+        <div className="flex flex-col px-4 pb-16">
             <section className="flex flex-col gap-4 py-2">
                 <SectionTitle size="md" title="계정 정보" />
 
@@ -115,6 +115,6 @@ export function PartnerProfileScreen() {
                     파트너 해지하기
                 </button>
             </div>
-        </main>
+        </div>
     );
 }

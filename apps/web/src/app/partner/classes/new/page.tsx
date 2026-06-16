@@ -9,5 +9,11 @@ export default function PartnerClassNewPage() {
     if (!storeId) return null;
 
     const returnTo = '/partner/classes';
-    return <ProgramRegistrationFlow storeId={storeId} returnTo={returnTo} />;
+    return (
+        <ProgramRegistrationFlow
+            storeId={storeId}
+            returnTo={returnTo}
+            successReturnTo="/partner/studio"
+        />
+    );
 }

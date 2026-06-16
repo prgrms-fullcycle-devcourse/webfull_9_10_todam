@@ -62,11 +62,11 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
     // 로딩
     if (isLoading) {
         return (
-            <main className="flex-1 overflow-y-auto bg-background px-4 pb-16">
+            <div className="bg-background px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     작품 정보를 불러오는 중입니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -74,7 +74,7 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
     if (isError && error instanceof ApiError) {
         if (error.statusCode === 401) return null;
         return (
-            <main className="flex-1 overflow-y-auto bg-background px-4 pb-16">
+            <div className="bg-background px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     {error.statusCode === 403
                         ? '이 작품에 접근할 권한이 없습니다.'
@@ -82,18 +82,18 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
                           ? '작품을 찾을 수 없습니다.'
                           : '작품 정보를 불러오지 못했습니다.'}
                 </p>
-            </main>
+            </div>
         );
     }
 
     const artwork = data?.artwork;
     if (!artwork) {
         return (
-            <main className="flex-1 overflow-y-auto bg-background px-4 pb-16">
+            <div className="bg-background px-4 pb-16">
                 <p className="py-10 text-center text-sm text-foreground-tertiary">
                     작품 정보를 불러오지 못했습니다.
                 </p>
-            </main>
+            </div>
         );
     }
 
@@ -258,40 +258,38 @@ export function PartnerArtworkDetailClient({ artworkId }: PartnerArtworkDetailCl
 
     return (
         <>
-            <main className="flex-1 overflow-y-auto">
-                <div className="px-4 pb-16">
+            <div className="px-4 pb-16">
+                <section className="flex flex-col gap-2 py-2">
+                    {/* 수령 방식 카드 */}
+                    <div className="rounded-2xl border border-border bg-surface p-4">
+                        <button
+                            type="button"
+                            className="flex w-full cursor-pointer items-center justify-between"
+                            onClick={goToDeliveryInfo}
+                        >
+                            <div className="flex flex-col gap-0.5 text-left">
+                                <span className="text-xs text-foreground-tertiary">
+                                    작품 수령 방식
+                                </span>
+                                <span className="text-base font-semibold text-foreground">
+                                    {deliveryMethodLabel}
+                                </span>
+                            </div>
+                            <RightIcon size={20} className="text-foreground-tertiary" />
+                        </button>
+                    </div>
                     <section className="flex flex-col gap-2 py-2">
-                        {/* 수령 방식 카드 */}
-                        <div className="rounded-2xl border border-border bg-surface p-4">
-                            <button
-                                type="button"
-                                className="flex w-full cursor-pointer items-center justify-between"
-                                onClick={goToDeliveryInfo}
-                            >
-                                <div className="flex flex-col gap-0.5 text-left">
-                                    <span className="text-xs text-foreground-tertiary">
-                                        작품 수령 방식
-                                    </span>
-                                    <span className="text-base font-semibold text-foreground">
-                                        {deliveryMethodLabel}
-                                    </span>
-                                </div>
-                                <RightIcon size={20} className="text-foreground-tertiary" />
-                            </button>
-                        </div>
-                        <section className="flex flex-col gap-2 py-2">
-                            {/* 타임라인 스텝퍼 */}
-                            <PartnerArtworkStepper
-                                rows={timelineRows}
-                                onUpload={(rowKey, logId, files) => {
-                                    void handleUpload(rowKey, logId, files);
-                                }}
-                                onRemovePhoto={handleRemovePhoto}
-                            />
-                        </section>
+                        {/* 타임라인 스텝퍼 */}
+                        <PartnerArtworkStepper
+                            rows={timelineRows}
+                            onUpload={(rowKey, logId, files) => {
+                                void handleUpload(rowKey, logId, files);
+                            }}
+                            onRemovePhoto={handleRemovePhoto}
+                        />
                     </section>
-                </div>
-            </main>
+                </section>
+            </div>
 
             {/* 하단 액션바 (공용 BottomBar) */}
             <BottomBar>

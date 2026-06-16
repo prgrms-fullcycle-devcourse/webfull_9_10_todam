@@ -103,7 +103,7 @@ export function PartnerSettingsHub() {
     ];
 
     return (
-        <main className="flex flex-1 flex-col overflow-y-auto px-4 pb-16">
+        <div className="flex flex-1 flex-col px-4 pb-16">
             {/* 내 정보 섹션 */}
             <section className="flex flex-col gap-1 py-2">
                 <SectionTitle size="md" title="내 정보" />
@@ -145,6 +145,6 @@ export function PartnerSettingsHub() {
                     v1.0.0
                 </span>
             </footer>
-        </main>
+        </div>
     );
 }

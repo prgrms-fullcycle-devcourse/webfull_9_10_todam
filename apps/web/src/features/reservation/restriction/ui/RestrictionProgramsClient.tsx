@@ -151,7 +151,7 @@ export function RestrictionProgramsClient({
 
     return (
         <>
-            <main className="flex-1 overflow-y-auto px-4 pb-28">
+            <div className="px-4 pb-28">
                 <section className="flex flex-col gap-3 py-4">
                     <div className="flex flex-col gap-1">
                         <h1 className="text-2xl font-bold text-foreground">
@@ -239,7 +239,7 @@ export function RestrictionProgramsClient({
                         </>
                     )}
                 </section>
-            </main>
+            </div>
 
             <BottomBar>
                 <Button

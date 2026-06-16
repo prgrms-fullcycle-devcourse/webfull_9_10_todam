@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Toggle } from '@todam/ui';
+import { SectionTitle, Toggle } from '@todam/ui';
 
 import { useEnablePush } from '@/features/notification';
 import { MenuTable } from '@/shared/ui';
@@ -80,18 +80,15 @@ export function MyPageHub({
     ];
 
     return (
-        <main className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 bg-background">
-            {/* 내 정보 섹션 */}
-            <section className="flex flex-col gap-3">
-                <h2 className="text-lg font-semibold text-foreground">내 정보</h2>
+        <div className="flex flex-1 flex-col px-4">
+            <section className="flex flex-col gap-1 py-2">
+                <SectionTitle title="내 정보" size="md" />
                 <MenuTable rows={myInfoRows} />
             </section>
 
-            {/* 알림 설정 섹션 */}
-            <section className="flex flex-col gap-3">
-                <h2 className="text-lg font-semibold text-foreground">알림 설정</h2>
+            <section className="flex flex-col gap-1 py-2">
+                <SectionTitle title="알림 설정" size="md" />
                 <div className="flex flex-col rounded-2xl bg-surface px-4 py-1 w-full">
-                    {/* 푸시 알림 토글 — ON 시 브라우저 권한+토큰 등록. 카테고리 분류·수신자는 서버가 처리 */}
                     <div className="flex items-center justify-between gap-3 py-3">
                         <div className="flex flex-col gap-0.5">
                             <span className="text-xs font-semibold text-foreground">푸시 알림</span>
@@ -109,20 +106,15 @@ export function MyPageHub({
                 </div>
             </section>
 
-            {/* 고객지원 섹션 */}
-            <section className="flex flex-col gap-3">
-                <h2 className="text-lg font-semibold text-foreground">고객지원</h2>
+            <section className="flex flex-col gap-1 py-2">
+                <SectionTitle title="고객지원" size="md" />
                 <MenuTable rows={customerSupportRows} />
             </section>
 
-            {/* Footer — TODAM v1.0.0 한 줄 가로 배치 (시안 Divider) */}
-            <footer className="mt-auto pt-4 pb-2">
-                <div className="h-px w-full bg-border-subtle mb-4" />
-                <div className="flex items-center justify-center gap-1">
-                    <span className="text-xs text-foreground-tertiary">TODAM</span>
-                    <span className="text-xs font-semibold text-foreground-tertiary">v1.0.0</span>
-                </div>
+            <footer className="pt-5 flex justify-center">
+                <span className="text-xs text-foreground-tertiary">TODAM</span>
+                <span className="text-xs font-semibold text-foreground-tertiary">v1.0.0</span>
             </footer>
-        </main>
+        </div>
     );
 }
