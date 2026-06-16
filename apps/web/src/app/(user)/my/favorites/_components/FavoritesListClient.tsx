@@ -126,7 +126,7 @@ export function FavoritesListClient() {
                     {items.map((item) => (
                         <FavoriteStudioCard
                             key={item.favoriteId}
-                            storeId={item.storeId}
+                            slug={item.slug}
                             name={item.name}
                             imageUrl={item.imageUrl}
                             address={item.address}
