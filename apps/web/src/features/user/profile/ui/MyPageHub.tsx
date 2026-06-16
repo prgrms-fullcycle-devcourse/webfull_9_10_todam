@@ -111,9 +111,11 @@ export function MyPageHub({
                 <MenuTable rows={customerSupportRows} />
             </section>
 
-            <footer className="pt-5 flex justify-center">
-                <span className="text-xs text-foreground-tertiary">TODAM</span>
-                <span className="text-xs font-semibold text-foreground-tertiary">v1.0.0</span>
+            <footer className="flex justify-center gap-1 pt-5">
+                <span className="text-xs leading-4 text-foreground-tertiary">TODAM</span>
+                <span className="text-xs font-semibold leading-4 text-foreground-tertiary">
+                    v1.0.0
+                </span>
             </footer>
         </div>
     );
