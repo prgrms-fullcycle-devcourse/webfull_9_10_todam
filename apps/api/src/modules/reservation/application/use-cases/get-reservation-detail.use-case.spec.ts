@@ -28,6 +28,7 @@ function makeRow(overrides: Partial<UserReservationDetailRow> = {}): UserReserva
         programTitle: '물레 체험 기초반',
         programSnapshotPrice: 45000,
         scheduledAt: new Date('2099-12-31T01:00:00.000Z'), // 충분히 먼 미래 (KST=2100-01-01)
+        durationMinutes: 120, // 종료 = 시작 +2h
         reserverName: '김토담',
         reserverPhone: '010-1234-5678',
         participantCount: 2,
@@ -140,6 +141,8 @@ describe('GetReservationDetailUseCase', () => {
             expect(r.requestMemo).toBe('왼손잡이입니다.');
             expect(r.status).toBe(ReservationStatus.CONFIRMED);
             expect(typeof r.scheduledAt).toBe('string'); // ISO
+            // 종료 시각 = 시작 + durationMinutes(120) = +2h.
+            expect(r.scheduledEndAt).toBe('2099-12-31T03:00:00.000Z');
             expect(typeof r.createdAt).toBe('string'); // ISO
         });
     });

@@ -74,6 +74,14 @@ export function PartnerStudioDetailClient() {
     };
     const goBack = () => {
         setReviewStoreId(null);
+        const backTo =
+            typeof window !== 'undefined'
+                ? new URLSearchParams(window.location.search).get('backTo')
+                : null;
+        if (backTo === '/partner/settings') {
+            router.replace('/partner/settings');
+            return;
+        }
         router.back();
     };
     useHeaderOverride({

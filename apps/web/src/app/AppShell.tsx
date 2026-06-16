@@ -43,7 +43,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     // 일반 유저가 파트너센터(/partner/*) 진입 → 온보딩(/apply)으로 리디렉션.
     // 게스트는 onboarding 미조회(status null)라도 여기서 /apply 로 보내지 않는다(RequireAuth 가 로그인 처리).
     const shouldRedirect =
-        isPartnerArea && isAuthenticated && !isLoading && !isError && partnerStatus === null;
+        isPartnerArea &&
+        isAuthenticated &&
+        !isLoading &&
+        !isError &&
+        (partnerStatus === null || partnerStatus === PartnerStatus.TERMINATED);
 
     useEffect(() => {
         if (shouldRedirect) router.replace('/apply');

@@ -21,6 +21,9 @@ export interface CreateCustomerReservationResult {
         id: string;
         programId: string;
         storeTimeSlotId: string;
+        scheduledAt: Date;
+        /** 종료 시각 = scheduledAt + Program.durationMinutes (코스 길이). 슬롯 간격과 무관. */
+        scheduledEndAt: Date;
         reserverName: string;
         participantCount: number;
         status: ReservationStatus;
@@ -36,6 +39,8 @@ export interface UserReservationListRow {
     storeName: string;
     programTitle: string;
     scheduledAt: Date;
+    /** 코스 소요 시간(분). 종료 시각 = scheduledAt + durationMinutes (슬롯 간격과 무관). */
+    durationMinutes: number;
     participantCount: number;
     status: ReservationStatus;
     /** IN_PROGRESS 구간 displayState 계산에 사용. Artwork 없으면 null */
@@ -114,6 +119,8 @@ export interface UserReservationDetailRow {
     /** ProgramSnapshot.price */
     programSnapshotPrice: number;
     scheduledAt: Date;
+    /** 코스 소요 시간(분). 종료 시각 = scheduledAt + durationMinutes (슬롯 간격과 무관). */
+    durationMinutes: number;
     reserverName: string;
     reserverPhone: string;
     participantCount: number;

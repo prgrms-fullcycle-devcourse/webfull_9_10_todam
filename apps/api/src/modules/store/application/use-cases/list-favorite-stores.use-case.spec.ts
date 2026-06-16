@@ -12,6 +12,7 @@ function makeItem(overrides: Partial<FavoriteStoreListItem> = {}): FavoriteStore
     return {
         favoriteId: 'fav-001',
         storeId: 'store-001',
+        slug: 'test-studio',
         name: '테스트 공방',
         imageUrl: 'https://cdn.example.com/img.jpg',
         address: '서울특별시 성동구',

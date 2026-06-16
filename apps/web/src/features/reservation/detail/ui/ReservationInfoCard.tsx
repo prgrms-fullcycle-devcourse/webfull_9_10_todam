@@ -3,7 +3,7 @@
 import { CalendarIcon, ClockIcon, FlagIcon, NametagIcon, UserIcon } from '@todam/ui';
 import {
     formatPrice,
-    formatScheduled,
+    formatScheduledRange,
     formatYmdWithDay,
     ReservationDeliveryMethod,
     type ReservationDetail,
@@ -23,13 +23,13 @@ export type ReservationInfoCardProps = {
 };
 
 export function ReservationInfoCard({ reservation }: ReservationInfoCardProps) {
-    const { time } = formatScheduled(reservation.scheduledAt);
+    const timeRange = formatScheduledRange(reservation.scheduledAt, reservation.scheduledEndAt);
     const dateLine = formatYmdWithDay(reservation.scheduledAt);
     const deliveryLabel = DELIVERY_LABEL[reservation.deliveryMethod];
 
     const rows: ResultTableRow[] = [
         { icon: <CalendarIcon size={16} />, label: '날짜', value: dateLine },
-        { icon: <ClockIcon size={16} />, label: '시간', value: time },
+        { icon: <ClockIcon size={16} />, label: '시간', value: timeRange },
         { icon: <UserIcon size={16} />, label: '인원', value: `${reservation.participantCount}명` },
         {
             icon: <NametagIcon size={16} />,

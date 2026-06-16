@@ -215,6 +215,7 @@ export interface ListFavoriteStoresQuery {
 export interface FavoriteStoreListItem {
     favoriteId: string;
     storeId: string;
+    slug: string;
     name: string;
     imageUrl: string;
     address: string;

@@ -38,6 +38,7 @@ type FavoriteStoreRow = Prisma.FavoriteStoreGetPayload<{
         store: {
             select: {
                 id: true;
+                slug: true;
                 name: true;
                 address: true;
                 images: {
@@ -58,6 +59,7 @@ const FAVORITE_STORE_SELECT = {
     store: {
         select: {
             id: true,
+            slug: true,
             name: true,
             address: true,
             images: {
@@ -147,6 +149,7 @@ export class PrismaFavoriteStoresReader {
         return {
             favoriteId: row.id,
             storeId: row.store.id,
+            slug: row.store.slug,
             name: row.store.name ?? '',
             imageUrl: this.toImageUrl(row.store.images),
             address: row.store.address ?? '',
