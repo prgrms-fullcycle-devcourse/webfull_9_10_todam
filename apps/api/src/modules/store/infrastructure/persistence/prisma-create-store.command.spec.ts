@@ -28,7 +28,7 @@ describe('PrismaCreateStoreCommand — 진위확인 저장 분기', () => {
     let command: PrismaCreateStoreCommand;
     let prisma: {
         store: { findUnique: jest.Mock; create: jest.Mock };
-        partner: { findUnique: jest.Mock; create: jest.Mock };
+        partner: { findUnique: jest.Mock; create: jest.Mock; update: jest.Mock };
     };
     let nts: jest.Mocked<NtsService>;
 
@@ -74,6 +74,7 @@ describe('PrismaCreateStoreCommand — 진위확인 저장 분기', () => {
             partner: {
                 findUnique: jest.fn().mockResolvedValue({ id: 'p1', status: 'APPROVED' }),
                 create: jest.fn(),
+                update: jest.fn(),
             },
         };
         nts = { validate: jest.fn(), getStatus: jest.fn() } as unknown as jest.Mocked<NtsService>;
@@ -144,5 +145,26 @@ describe('PrismaCreateStoreCommand — 진위확인 저장 분기', () => {
         expect(doc.verificationCheckedAt).toBeInstanceOf(Date);
         expect(doc.verifiedAt).toBeNull();
         expect(doc.businessState).toBeNull();
+    });
+
+    it('reactivates a terminated partner as pending before creating a draft store', async () => {
+        prisma.partner.findUnique.mockResolvedValue({ id: 'p1', status: 'TERMINATED' });
+        prisma.partner.update.mockResolvedValue({ id: 'p1', status: 'PENDING' });
+
+        await command.execute('user-1', baseDto(undefined) as never);
+
+        expect(prisma.partner.update).toHaveBeenCalledWith({
+            where: { id: 'p1' },
+            data: {
+                status: 'PENDING',
+                terminatedAt: null,
+                rejectedReason: null,
+                suspendedReason: null,
+                suspendedAt: null,
+                approvedAt: null,
+            },
+            select: { id: true, status: true },
+        });
+        expect(prisma.store.create).toHaveBeenCalled();
     });
 });
