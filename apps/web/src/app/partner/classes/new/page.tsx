@@ -13,7 +13,7 @@ export default function PartnerClassNewPage() {
         <ProgramRegistrationFlow
             storeId={storeId}
             returnTo={returnTo}
-            successReturnTo="/partner/studio"
+            successReturnTo="/partner/studio?backTo=/partner/settings"
         />
     );
 }
