@@ -119,7 +119,7 @@ export function ReserveConfirmClient() {
 
     return (
         <>
-            <>
+            <div className="flex flex-1 flex-col">
                 {/* 히어로 */}
                 <section
                     className="relative flex flex-col items-center gap-7 px-4 pb-2 pt-20"
@@ -158,7 +158,7 @@ export function ReserveConfirmClient() {
                         rows={rows}
                     />
                 </div>
-            </>
+            </div>
 
             <BottomBar>
                 <div className="flex w-full gap-2">

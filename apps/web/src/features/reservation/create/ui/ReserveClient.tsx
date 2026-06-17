@@ -243,7 +243,7 @@ export function ReserveClient({
 
     return (
         <>
-            <div className="px-4 pb-16">
+            <div className="flex flex-1 flex-col px-4 pb-16">
                 <div className="py-2">
                     <ProgressBarWrapper
                         value={step === 'date' ? 50 : 100}

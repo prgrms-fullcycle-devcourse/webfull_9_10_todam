@@ -133,14 +133,11 @@ export function ProfileEditScreen() {
     };
 
     return (
-        // 스크롤은 AppShell 단일 main 이 소유. BottomBar 는 sticky bottom-0 으로 하단 고정(#396).
         <>
-            <div className="flex flex-col gap-5 px-4 pb-4 pt-2">
-                {/* 계정 정보 */}
-                <section className="flex flex-col gap-4">
+            <div className="flex flex-1 flex-col gap-5 px-4 pb-4">
+                <section className="flex flex-col gap-4 py-2">
                     <SectionTitle size="md" title="계정 정보" />
 
-                    {/* 계정(이메일) — 읽기 전용 */}
                     <TextInput
                         id="profile-email"
                         label="계정"
@@ -151,8 +148,7 @@ export function ProfileEditScreen() {
                         placeholder="로딩 중..."
                     />
 
-                    {/* 비밀번호 재설정 — 재설정 요청 시트 (파트너 설정과 동일 패턴) */}
-                    <div className="-mt-2 flex justify-end">
+                    <div className="flex justify-end">
                         <button
                             type="button"
                             onClick={() => openSheet(<ResetRequestSheet initialEmail={email} />)}
@@ -162,7 +158,6 @@ export function ProfileEditScreen() {
                         </button>
                     </div>
 
-                    {/* 닉네임 */}
                     <TextInput
                         id="profile-nickname"
                         label="닉네임"
