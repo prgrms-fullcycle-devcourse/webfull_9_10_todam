@@ -168,11 +168,7 @@ reservation · artwork · review · notification · policy · admin
 
 ## 🗄️ Database Schema
 
-<!-- TODO: ERD 이미지를 추가하세요. -->
-<p align="center">
-  <!-- <img src="docs/assets/erd.png" width="90%" alt="todam ERD" /> -->
-  <em>ERD 다이어그램 자리</em>
-</p>
+<img width="3757" height="2445" alt="todam (9)" src="https://github.com/user-attachments/assets/fd3a40b8-c035-4299-98db-c953383ed283" />
 
 주요 엔티티는 다음과 같습니다.
 
