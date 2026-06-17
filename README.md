@@ -10,7 +10,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 도자기, 가죽공예처럼 오프라인 원데이 클래스를 운영하는 공방과<br />
-클래스를 찾고 예약하는 수강생을 연결하는 서비스입니다.
+클래스를 찾고 예약하는 사용자를 연결하는 서비스입니다.
 
 </div>
 
@@ -18,26 +18,21 @@
 
 ## 🧩 Quick Link
 
-- 🏠 [서비스 바로가기](https://todam.app) <!-- TODO: 배포 URL 연결 -->
-- 🎬 [데모 영상](#) 
+- 🏠 [서비스 바로가기](https://todam.app)
+- 🎬 [데모 영상](#)
 - 📚 [전체 문서 보기](#-documents)
 
 <br />
 
 ## 👋 Introduction
 
-<!-- TODO: 서비스 화면 스크린샷 3~4장을 추가하세요. -->
 <p align="center">
-  <!-- <img src="docs/assets/screen-home.png" width="23%" alt="홈 화면" /> -->
-  <!-- <img src="docs/assets/screen-reservation.png" width="23%" alt="예약 화면" /> -->
-  <!-- <img src="docs/assets/screen-partner.png" width="23%" alt="파트너 관리 화면" /> -->
-  <!-- <img src="docs/assets/screen-admin.png" width="23%" alt="관리자 화면" /> -->
-  <em>서비스 주요 화면 스크린샷 자리</em>
+  <em>서비스 주요 화면은 추후 업데이트 예정입니다.</em>
 </p>
 
-todam은 수강생, 파트너, 운영자를 위한 세 가지 흐름을 제공합니다.
+todam은 공방 원데이 클래스를 찾고 예약하는 사용자, 공방을 운영하는 파트너, 서비스를 관리하는 운영자를 위한 흐름을 제공합니다.
 
-- **수강생**: 공방 및 클래스 탐색, 예약 신청, 작품 진행 상황 조회, 리뷰 작성
+- **사용자**: 공방 및 클래스 탐색, 예약 신청, 작품 진행 상황 조회, 리뷰 작성
 - **파트너**: 공방 및 클래스 등록, 예약/일정 관리, 작품 진행 관리, 사업자 인증
 - **운영자**: 파트너 승인, 공방 검수, 신고 처리, 서비스 운영 관리
 
@@ -46,46 +41,13 @@ todam은 수강생, 파트너, 운영자를 위한 세 가지 흐름을 제공�
 
 <br />
 
-## 📚 Documents
-
-- [기능 요구사항](docs/requirements.md)
-- [API 명세](docs/api/apispec.md)
-- [시스템 아키텍처](ARCHITECTURE.md)
-- [UI/디자인 규칙](DESIGN.md)
-- [코드/환경 컨벤션](docs/conventions/README.md)
-
-<br />
-
 ## 🏛️ Architecture
 
 <img width="1594" height="1110" alt="diagram-export-2026 -6 -17 -오후-2_04_41" src="https://github.com/user-attachments/assets/c605de96-3490-4d08-ab5b-b4215ec4dfbf" />
 
-
 - `web(Next.js)`은 클래스 참여자/파트너 화면을 제공하고, `api(NestJS)`는 인증·예약·작품·공방·알림 도메인을 처리합니다.
 - 데이터는 `RDS(PostgreSQL)`, 큐와 인증 코드는 `Redis`, 이미지는 `S3 presigned URL` 기반 업로드로 관리합니다.
 - 메일은 `AWS SES`, 웹 푸시는 `FCM`으로 발송하며, 배포는 GitHub Actions → ECR → EC2 흐름으로 진행합니다.
-
-<br />
-
-## 📂 Directory Structure
-
-```text
-todam/
-├── apps/
-│   ├── api/        # NestJS 백엔드
-│   ├── web/        # Next.js 클래스 참여자·파트너 서비스
-│   ├── admin/      # Vite 운영자 서비스
-│   └── storybook/  # 공통 UI 문서화
-├── packages/
-│   ├── shared/             # 공통 enum, type, schema, 상태 계산
-│   ├── ui/                 # web/admin 공통 UI 컴포넌트
-│   ├── config/             # 환경변수 검증
-│   ├── eslint-config/      # 공유 ESLint 설정
-│   └── typescript-config/  # 공유 TypeScript 설정
-├── docs/          # 요구사항, API, 실행 계획, 컨벤션 문서
-├── docker/        # 로컬/배포 인프라 구성
-└── scripts/       # 개발 보조 스크립트
-```
 
 <br />
 
@@ -156,12 +118,44 @@ todam/
 
 <br />
 
+## 📂 Directory Structure
+
+```text
+todam/
+├── apps/
+│   ├── api/        # NestJS 백엔드
+│   ├── web/        # Next.js 클래스 참여자·파트너 서비스
+│   ├── admin/      # Vite 운영자 서비스
+│   └── storybook/  # 공통 UI 문서화
+├── packages/
+│   ├── shared/             # 공통 enum, type, schema, 상태 계산
+│   ├── ui/                 # web/admin 공통 UI 컴포넌트
+│   ├── config/             # 환경변수 검증
+│   ├── eslint-config/      # 공유 ESLint 설정
+│   └── typescript-config/  # 공유 TypeScript 설정
+├── docs/          # 요구사항, API, 실행 계획, 컨벤션 문서
+├── docker/        # 로컬/배포 인프라 구성
+└── scripts/       # 개발 보조 스크립트
+```
+
+<br />
+
 ## 🗄️ Database Schema
 
 <img width="3757" height="2445" alt="todam (9)" src="https://github.com/user-attachments/assets/fd3a40b8-c035-4299-98db-c953383ed283" />
 
 > 사용자는 공방과 클래스를 탐색해 예약을 생성하고, 예약 이후 작품 제작 상태, 배송, 리뷰, 알림 데이터가 연결됩니다.  
 > 파트너는 공방과 클래스 운영 정보, 예약 가능 시간, 사업자 인증 정보, 작품 제작 진행 상태를 관리합니다.
+
+<br />
+
+## 📚 Documents
+
+- [기능 요구사항](docs/requirements.md)
+- [API 명세](docs/api/apispec.md)
+- [시스템 아키텍처](ARCHITECTURE.md)
+- [UI/디자인 규칙](DESIGN.md)
+- [코드/환경 컨벤션](docs/conventions/README.md)
 
 <br />
 
