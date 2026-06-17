@@ -62,9 +62,9 @@ todam은 수강생, 파트너, 운영자를 위한 세 가지 흐름을 제공�
 <img width="1594" height="1110" alt="diagram-export-2026 -6 -17 -오후-2_04_41" src="https://github.com/user-attachments/assets/c605de96-3490-4d08-ab5b-b4215ec4dfbf" />
 
 
-- 같은 트랜잭션에서 함께 성공해야 하는 작업은 `api`에서 동기 처리합니다.
-- 알림, 이미지 후처리, 외부 API 호출처럼 실패 재시도와 지연 처리가 필요한 작업은 BullMQ 기반 큐로 분리합니다.
-- 예약과 작품의 상태 전이는 도메인 레이어에서만 수행하고, 프론트엔드는 백엔드가 계산한 `displayState`를 사용합니다.
+- `web(Next.js)`은 클래스 참여자/파트너 화면을 제공하고, `api(NestJS)`는 인증·예약·작품·공방·알림 도메인을 처리합니다.
+- 데이터는 `RDS(PostgreSQL)`, 큐와 인증 코드는 `Redis`, 이미지는 `S3 presigned URL` 기반 업로드로 관리합니다.
+- 메일은 `AWS SES`, 웹 푸시는 `FCM`으로 발송하며, 배포는 GitHub Actions → ECR → EC2 흐름으로 진행합니다.
 
 <br />
 
