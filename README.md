@@ -191,11 +191,10 @@ pre-commit에서는 ESLint와 Prettier를 실행하고, pre-push에서는 전체
 
 ## 👥 Contributors
 
-<!-- TODO: 팀원 GitHub 아이디, 이름, 담당 영역으로 교체하세요. -->
 | Profile | Name | Role | Contributions |
-| --- | --- | --- | --- |
-| <img src="https://github.com/ID1.png" width="56" alt="ID1 profile" /> | [이름1](https://github.com/ID1) | Backend | 인증/토큰(JWT, refresh), OAuth, capability 기반 접근 제어 |
-| <img src="https://github.com/ID2.png" width="56" alt="ID2 profile" /> | [이름2](https://github.com/ID2) | Backend | 예약/작품 도메인, 상태 전이, QR 토큰, 알림 큐(BullMQ) |
-| <img src="https://github.com/ID3.png" width="56" alt="ID3 profile" /> | [이름3](https://github.com/ID3) | Frontend | 공방/클래스 탐색, 예약 캘린더, 작품 진행 조회 화면 |
-| <img src="https://github.com/ID4.png" width="56" alt="ID4 profile" /> | [이름4](https://github.com/ID4) | Frontend | 공통 UI/디자인 시스템(Storybook), 파트너/운영자 화면 |
-| <img src="https://github.com/ID5.png" width="56" alt="ID5 profile" /> | [이름5](https://github.com/ID5) | TODO: 파트 | TODO: 담당 도메인 · 주요 기여 |
+| --- | --- | :---: | --- |
+| <img src="https://github.com/nogglee.png" width="56" alt="nogglee profile" /> | [이은지](https://github.com/nogglee) | FE | 디자인 시스템 · FSD 설계 · 파트너 전용 기능 · 인증 · 온보딩 게이트 · 알림 FCM · PWA · CI/CD · AI 자동화 |
+| <img src="https://github.com/codingguri.png" width="56" alt="codingguri profile" /> | [이승훈](https://github.com/codingguri) | FE | 공통 폼 · 인터랙션 UI · 로그인 · OAuth 플로우 · 온보딩 바텀시트 · 예약 시간 표기 |
+| <img src="https://github.com/yundlab.png" width="56" alt="yundlab profile" /> | [한윤지](https://github.com/yundlab) | FE | 공통 UI · FSD 정합 · 인증 · 공방 · 예약 FE · 작품 · 리뷰 · 마이 FE · MSW→실 BE 전환 주도 |
+| <img src="https://github.com/taesongxxxx.png" width="56" alt="taesongxxxx profile" /> | [최태성](https://github.com/taesongxxxx) | BE | DB 스키마 · 마이그레이션 · 파트너 도메인 API 전체 · 타임슬롯 · 상태 전이 · OCR · 진위확인 게이트 · BE AWS 배포 |
+| <img src="https://github.com/chocofanta01.png" width="56" alt="chocofanta01 profile" /> | [이재혁](https://github.com/chocofanta01) | BE | API 계약 · 정합 문서화 · 회원 인증 · 소셜 OAuth · 공방 · 예약 · 작품 BE · 알림 BE 파이프라인 | |
