@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { SectionTitle, TextInput, Button, BottomBar } from '@todam/ui';
+import { SectionTitle, TextInput, Button, BottomBar, AtsignIcon } from '@todam/ui';
 import { nicknameSchema, PHONE_REGEX, formatPhone, type UpdateMyProfileBody } from '@todam/shared';
 
 import { useToast, useModal, useSheet } from '@/shared/model';
@@ -146,6 +146,8 @@ export function ProfileEditScreen() {
                         readOnly
                         disabled
                         placeholder="로딩 중..."
+                        icon={<AtsignIcon size={20} />}
+                        iconPosition="leading"
                     />
 
                     <div className="flex justify-end">

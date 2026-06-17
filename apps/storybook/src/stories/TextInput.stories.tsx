@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
-import { TextInput, SearchIcon } from "@todam/ui";
+import { TextInput, SearchIcon, AtsignIcon } from "@todam/ui";
 
 const meta: Meta<typeof TextInput> = {
   title: "Components/Form/TextInput",
@@ -89,6 +89,21 @@ export const WithIcon: Story = {
   name: "icon",
   render: () => (
     <TextInput label="검색" placeholder="text" icon={<SearchIcon size={16} />} />
+  ),
+};
+
+export const WithLeadingIcon: Story = {
+  name: "icon (leading)",
+  render: () => (
+    <TextInput
+      label="계정"
+      type="email"
+      value="user@todam.com"
+      readOnly
+      disabled
+      icon={<AtsignIcon size={20} />}
+      iconPosition="leading"
+    />
   ),
 };
 
