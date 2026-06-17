@@ -7,6 +7,8 @@ export type TextInputProps = {
   helperText?: ReactNode;
   error?: boolean;
   icon?: ReactElement<{ size?: number }>;
+  // 아이콘 위치. 기본 trailing(우측, 기존 동작 유지). leading=좌측.
+  iconPosition?: "leading" | "trailing";
 } & InputHTMLAttributes<HTMLInputElement>;
 
 export function TextInput({
@@ -15,11 +17,14 @@ export function TextInput({
   helperText,
   error,
   icon,
+  iconPosition = "trailing",
   className,
   disabled,
   id,
   ...props
 }: TextInputProps) {
+  const leading = Boolean(icon) && iconPosition === "leading";
+  const trailing = Boolean(icon) && iconPosition === "trailing";
   return (
     <div className="flex w-full flex-col gap-2">
       {label && (
@@ -42,7 +47,8 @@ export function TextInput({
             "focus:border-primary focus:shadow-[0_0_20px_rgba(59,69,84,0.04)]",
             "disabled:cursor-not-allowed disabled:bg-muted disabled:text-foreground-secondary",
             error ? "border-danger" : "border-border-subtle",
-            icon ? "pr-11" : "",
+            trailing ? "pr-11" : "",
+            leading ? "pl-11" : "",
             className,
           ]
             .filter(Boolean)
@@ -50,7 +56,12 @@ export function TextInput({
           {...props}
         />
         {icon && (
-          <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-foreground-tertiary">
+          <span
+            className={[
+              "pointer-events-none absolute top-1/2 -translate-y-1/2 text-foreground-tertiary",
+              leading ? "left-4" : "right-4",
+            ].join(" ")}
+          >
             {icon}
           </span>
         )}
