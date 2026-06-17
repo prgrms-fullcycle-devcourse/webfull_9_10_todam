@@ -59,10 +59,8 @@ todam은 수강생, 파트너, 운영자를 위한 세 가지 흐름을 제공�
 
 ## 🏛️ Architecture
 
-<p align="center">
-  <!-- <img src="docs/assets/erd.png" width="90%" alt="todam ERD" /> -->
-  <em>아키텍처 자리</em>
-</p>
+<img width="1594" height="1110" alt="diagram-export-2026 -6 -17 -오후-2_04_41" src="https://github.com/user-attachments/assets/c605de96-3490-4d08-ab5b-b4215ec4dfbf" />
+
 
 - 같은 트랜잭션에서 함께 성공해야 하는 작업은 `api`에서 동기 처리합니다.
 - 알림, 이미지 후처리, 외부 API 호출처럼 실패 재시도와 지연 처리가 필요한 작업은 BullMQ 기반 큐로 분리합니다.
@@ -122,50 +120,6 @@ reservation · artwork · review · notification · policy · admin
 ### 🪪 4. 사업자 인증 게이트
 
 파트너 가입 시 사업자등록증 이미지를 Google Vision OCR로 읽고, 국세청 진위확인 API를 통해 사업자 정보를 검증합니다.
-
-<br />
-
-## 🚀 Dependency and Quick Start
-
-### 📦 Dependency
-
-- Node.js 22+
-- pnpm 9+
-- Docker Desktop
-- PostgreSQL
-- Redis
-- MinIO
-
-### ▶️ Quick Start
-
-```bash
-# 1. 클론 및 의존성 설치
-git clone https://github.com/prgrms-fullcycle-devcourse/todam.git
-cd todam
-pnpm install
-
-# 2. 환경변수 설정
-# 각 앱의 .env.example을 참고해 .env 파일을 생성합니다.
-
-# 3. 로컬 인프라 실행
-docker compose -f docker/compose/local.yml up -d
-
-# 4. 앱 실행
-pnpm api        # API       -> http://localhost:4000
-pnpm web        # Web       -> http://localhost:3000
-pnpm admin      # Admin     -> http://localhost:3001
-pnpm storybook  # Storybook -> http://localhost:6006
-```
-
-### 🛠️ Development Commands
-
-```bash
-pnpm build      # 전체 빌드
-pnpm lint       # 린트
-pnpm test       # 테스트
-pnpm typecheck  # 타입 체크
-pnpm format     # 포맷팅
-```
 
 <br />
 
