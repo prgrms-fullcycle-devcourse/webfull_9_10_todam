@@ -18,8 +18,8 @@
 
 ## 🧩 Quick Link
 
-- 🏠 [서비스 바로가기](#) <!-- TODO: 배포 URL 연결 -->
-- 🎬 [데모 영상](#) <!-- TODO: 시연 영상/노션 링크 (없으면 줄 삭제) -->
+- 🏠 [서비스 바로가기](#https://todam.app) <!-- TODO: 배포 URL 연결 -->
+- 🎬 [데모 영상](#) 
 - 📚 [전체 문서 보기](#-documents)
 
 <br />
@@ -52,8 +52,6 @@ todam은 수강생, 파트너, 운영자를 위한 세 가지 흐름을 제공�
 - [API 명세](docs/api/apispec.md)
 - [시스템 아키텍처](ARCHITECTURE.md)
 - [UI/디자인 규칙](DESIGN.md)
-- [코드/환경 컨벤션](docs/conventions/README.md)
-- [푸시 알림 정책](docs/push-notification-policy.md)
 
 <br />
 
