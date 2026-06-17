@@ -15,6 +15,8 @@ function makeRow(overrides: Partial<UserProfileRow> = {}): UserProfileRow {
         nickname: '토담이',
         isPartner: false,
         hasPassword: true,
+        reserverName: null,
+        reserverPhone: null,
         status: 'ACTIVE',
         createdAt: new Date('2026-05-24T16:55:00.000Z'),
         updatedAt: new Date('2026-05-24T18:10:00.000Z'),
@@ -25,50 +27,91 @@ function makeRow(overrides: Partial<UserProfileRow> = {}): UserProfileRow {
 describe('UpdateMyProfileUseCase', () => {
     const findById = jest.fn();
     const existsByNicknameExceptUser = jest.fn();
-    const updateNickname = jest.fn();
+    const updateProfile = jest.fn();
 
     const useCase = new UpdateMyProfileUseCase({
         findById,
         existsByNicknameExceptUser,
-        updateNickname,
+        updateProfile,
     } as never);
 
     beforeEach(() => {
         findById.mockReset();
         existsByNicknameExceptUser.mockReset();
-        updateNickname.mockReset();
+        updateProfile.mockReset();
     });
 
     it('200: 정상 닉네임 수정 — userId/email/nickname/isPartner/updatedAt 포함', async () => {
         findById.mockResolvedValue(makeRow());
         existsByNicknameExceptUser.mockResolvedValue(false);
-        updateNickname.mockResolvedValue(makeRow({ nickname: '새로운토담이' }));
+        updateProfile.mockResolvedValue(makeRow({ nickname: '새로운토담이' }));
 
-        const result = await useCase.execute(USER_ID, '새로운토담이');
+        const result = await useCase.execute(USER_ID, { nickname: '새로운토담이' });
 
         expect(result.user.userId).toBe(USER_ID);
         expect(result.user.nickname).toBe('새로운토담이');
         expect(result.user.updatedAt).toBe('2026-05-24T18:10:00.000Z');
         // createdAt은 응답에 포함되지 않아야 함
         expect((result.user as Record<string, unknown>)['createdAt']).toBeUndefined();
+        expect(updateProfile).toHaveBeenCalledWith(USER_ID, { nickname: '새로운토담이' });
     });
 
     it('200: 본인 현재 닉네임과 동일 — existsByNicknameExceptUser false → 통과', async () => {
         findById.mockResolvedValue(makeRow({ nickname: '토담이' }));
         existsByNicknameExceptUser.mockResolvedValue(false);
-        updateNickname.mockResolvedValue(makeRow({ nickname: '토담이' }));
+        updateProfile.mockResolvedValue(makeRow({ nickname: '토담이' }));
 
-        const result = await useCase.execute(USER_ID, '토담이');
+        const result = await useCase.execute(USER_ID, { nickname: '토담이' });
 
         expect(result.user.nickname).toBe('토담이');
-        expect(updateNickname).toHaveBeenCalledWith(USER_ID, '토담이');
+        expect(updateProfile).toHaveBeenCalledWith(USER_ID, { nickname: '토담이' });
+    });
+
+    it('200: 예약자 정보만 저장 — 닉네임 중복검사 건너뛰고 reserver* 갱신', async () => {
+        findById.mockResolvedValue(makeRow());
+        updateProfile.mockResolvedValue(
+            makeRow({ reserverName: '김토담', reserverPhone: '010-1234-5678' }),
+        );
+
+        const result = await useCase.execute(USER_ID, {
+            reserverName: '김토담',
+            reserverPhone: '010-1234-5678',
+        });
+
+        // 닉네임 미전송 → 중복 검사 미호출
+        expect(existsByNicknameExceptUser).not.toHaveBeenCalled();
+        expect(updateProfile).toHaveBeenCalledWith(USER_ID, {
+            reserverName: '김토담',
+            reserverPhone: '010-1234-5678',
+        });
+        expect(result.user.reserverName).toBe('김토담');
+        expect(result.user.reserverPhone).toBe('010-1234-5678');
+    });
+
+    it('200: 예약자 정보 삭제 — null 전달이 그대로 repo에 전달', async () => {
+        findById.mockResolvedValue(makeRow({ reserverName: '김토담' }));
+        updateProfile.mockResolvedValue(makeRow({ reserverName: null, reserverPhone: null }));
+
+        const result = await useCase.execute(USER_ID, {
+            reserverName: null,
+            reserverPhone: null,
+        });
+
+        expect(updateProfile).toHaveBeenCalledWith(USER_ID, {
+            reserverName: null,
+            reserverPhone: null,
+        });
+        expect(result.user.reserverName).toBeNull();
+        expect(result.user.reserverPhone).toBeNull();
     });
 
     it('409: 다른 유저가 동일 닉네임 사용 중 → NICKNAME_ALREADY_EXISTS', async () => {
         findById.mockResolvedValue(makeRow());
         existsByNicknameExceptUser.mockResolvedValue(true);
 
-        const err = await useCase.execute(USER_ID, '중복닉네임').catch((e: BusinessException) => e);
+        const err = await useCase
+            .execute(USER_ID, { nickname: '중복닉네임' })
+            .catch((e: BusinessException) => e);
 
         expect((err as BusinessException).errorCode).toBe('NICKNAME_ALREADY_EXISTS');
         expect((err as BusinessException).getStatus()).toBe(HttpStatus.CONFLICT);
@@ -77,7 +120,9 @@ describe('UpdateMyProfileUseCase', () => {
     it('404: 유저 없음 → USER_NOT_FOUND', async () => {
         findById.mockResolvedValue(null);
 
-        const err = await useCase.execute(USER_ID, '닉네임').catch((e: BusinessException) => e);
+        const err = await useCase
+            .execute(USER_ID, { nickname: '닉네임' })
+            .catch((e: BusinessException) => e);
 
         expect((err as BusinessException).errorCode).toBe('USER_NOT_FOUND');
         expect((err as BusinessException).getStatus()).toBe(HttpStatus.NOT_FOUND);
@@ -86,7 +131,9 @@ describe('UpdateMyProfileUseCase', () => {
     it('404: WITHDRAWN 유저 → USER_NOT_FOUND', async () => {
         findById.mockResolvedValue(makeRow({ status: 'WITHDRAWN' }));
 
-        const err = await useCase.execute(USER_ID, '닉네임').catch((e: BusinessException) => e);
+        const err = await useCase
+            .execute(USER_ID, { nickname: '닉네임' })
+            .catch((e: BusinessException) => e);
 
         expect((err as BusinessException).errorCode).toBe('USER_NOT_FOUND');
         expect((err as BusinessException).getStatus()).toBe(HttpStatus.NOT_FOUND);

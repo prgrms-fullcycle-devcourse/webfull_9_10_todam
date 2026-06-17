@@ -73,7 +73,7 @@ export class UserController {
         @Body(new BodyZodValidationPipe(updateMyProfileBodySchema))
         dto: UpdateMyProfileBody,
     ): Promise<UpdateMyProfileResponseDto> {
-        return this.updateMyProfile.execute(user.id, dto.nickname);
+        return this.updateMyProfile.execute(user.id, dto);
     }
 
     @Delete('users/me')

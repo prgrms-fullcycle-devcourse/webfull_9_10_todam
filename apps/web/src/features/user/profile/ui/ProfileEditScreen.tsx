@@ -1,14 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SectionTitle, TextInput, Button, BottomBar } from '@todam/ui';
-import { nicknameSchema, PHONE_REGEX, formatPhone } from '@todam/shared';
+import { nicknameSchema, PHONE_REGEX, formatPhone, type UpdateMyProfileBody } from '@todam/shared';
 
 import { useToast, useModal, useSheet } from '@/shared/model';
 import { ApiError } from '@/shared/api';
 import { useHeaderOverride } from '@/shared/lib/useHeaderOverride';
-import { loadSavedReserverInfo, saveReserverInfo } from '@/shared/lib/reserverInfo';
 import { ResetRequestSheet } from '@/features/auth/reset-password';
 import { useMyProfile, useUpdateMyProfile } from '../queries';
 import { WithdrawModal } from './WithdrawModal';
@@ -38,24 +37,16 @@ export function ProfileEditScreen() {
     const displayNickname = nickname ?? currentNickname;
 
     // ─── 예약자 정보(이름/연락처) ─────────────────────────────────────────
-    // 예약 생성 화면과 같은 localStorage('todam_reserver_info')를 공유한다.
-    // 저장된 값이 있으면 출력, 없으면 빈값으로 시작.
-    const [reserverName, setReserverName] = useState('');
-    const [reserverPhone, setReserverPhone] = useState('');
-    const [savedReserver, setSavedReserver] = useState({ name: '', phone: '' });
+    // 서버(GET /users/me)에 저장된 예약자 정보를 SSOT로 삼는다.
+    // input state는 null=미수정(저장값 표시), 문자열=사용자 입력값.
+    const savedReserverName = profileData?.user.reserverName ?? '';
+    const savedReserverPhone = profileData?.user.reserverPhone ?? '';
 
-    // 저장된 예약자 정보 프리필 — 초기 렌더 후(타이머) 주입해 hydration 불일치/캐스케이드 방지.
-    useEffect(() => {
-        const timer = window.setTimeout(() => {
-            const saved = loadSavedReserverInfo();
-            if (!saved) return;
-            setReserverName(saved.name);
-            setReserverPhone(saved.phone);
-            setSavedReserver({ name: saved.name, phone: saved.phone });
-        }, 0);
+    const [reserverNameInput, setReserverNameInput] = useState<string | null>(null);
+    const [reserverPhoneInput, setReserverPhoneInput] = useState<string | null>(null);
 
-        return () => window.clearTimeout(timer);
-    }, []);
+    const reserverName = reserverNameInput ?? savedReserverName;
+    const reserverPhone = reserverPhoneInput ?? savedReserverPhone;
 
     const handleNicknameChange = (value: string) => {
         setNickname(value);
@@ -63,13 +54,13 @@ export function ProfileEditScreen() {
     };
 
     const handlePhoneChange = (value: string) => {
-        setReserverPhone(formatPhone(value));
+        setReserverPhoneInput(formatPhone(value));
     };
 
     // ─── 변경 감지(isDirty) ───────────────────────────────────────────────
     const nicknameDirty = displayNickname.trim() !== currentNickname;
     const reserverDirty =
-        reserverName !== savedReserver.name || reserverPhone !== savedReserver.phone;
+        reserverName !== savedReserverName || reserverPhone !== savedReserverPhone;
     const isDirty = nicknameDirty || reserverDirty;
 
     // 예약자 정보 유효성 — 비우면 통과(선택), 입력 시에만 형식 검사.
@@ -81,20 +72,15 @@ export function ProfileEditScreen() {
     // 변경사항이 있고, 진행 중/로딩이 아닐 때만 저장 활성화.
     const canSave = isDirty && !updateProfile.isPending && !isLoading;
 
-    const persistReserver = () => {
-        if (!reserverDirty) return;
-        const next = { name: reserverName.trim(), phone: reserverPhone };
-        saveReserverInfo(next);
-        setSavedReserver(next);
-    };
-
     const handleSave = () => {
         if (!nameValid || !phoneValid) {
             toast.push({ message: '예약자 정보를 형식에 맞게 입력해주세요.' });
             return;
         }
 
-        // 닉네임 변경 시: 검증 후 API 저장. 성공 시 예약자 정보도 함께 저장.
+        // 변경된 필드만 모아 PATCH /users/me 단일 호출로 저장.
+        const body: UpdateMyProfileBody = {};
+
         if (nicknameDirty) {
             const trimmed = displayNickname.trim();
             // D5 확정 SSOT: nicknameSchema (/^[가-힣a-zA-Z0-9]{2,10}$/)
@@ -105,44 +91,41 @@ export function ProfileEditScreen() {
                 );
                 return;
             }
-
-            updateProfile.mutate(
-                { nickname: trimmed },
-                {
-                    onSuccess: () => {
-                        persistReserver();
-                        toast.push({ message: '저장되었습니다.' });
-                        router.back();
-                    },
-                    onError: (err) => {
-                        if (err instanceof ApiError) {
-                            if (err.code === 'NICKNAME_ALREADY_EXISTS') {
-                                setNicknameError(
-                                    '이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.',
-                                );
-                            } else if (err.code === 'INVALID_REQUEST') {
-                                // contract D5 확정 문구
-                                setNicknameError('닉네임은 한글·영문·숫자 2~10자여야 합니다.');
-                            } else {
-                                toast.push({
-                                    message: '저장 중 오류가 발생했습니다. 다시 시도해주세요.',
-                                });
-                            }
-                        } else {
-                            toast.push({
-                                message: '저장 중 오류가 발생했습니다. 다시 시도해주세요.',
-                            });
-                        }
-                    },
-                },
-            );
-            return;
+            body.nickname = trimmed;
         }
 
-        // 예약자 정보만 변경된 경우 — 로컬 저장 후 종료.
-        persistReserver();
-        toast.push({ message: '저장되었습니다.' });
-        router.back();
+        if (reserverDirty) {
+            // 빈 값이면 null 로 전송해 저장된 예약자 정보를 삭제한다.
+            body.reserverName = reserverName.trim() ? reserverName.trim() : null;
+            body.reserverPhone = reserverPhone.trim() ? reserverPhone : null;
+        }
+
+        updateProfile.mutate(body, {
+            onSuccess: () => {
+                toast.push({ message: '저장되었습니다.' });
+                router.back();
+            },
+            onError: (err) => {
+                if (err instanceof ApiError) {
+                    if (err.code === 'NICKNAME_ALREADY_EXISTS') {
+                        setNicknameError(
+                            '이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.',
+                        );
+                    } else if (err.code === 'INVALID_REQUEST') {
+                        // contract D5 확정 문구
+                        setNicknameError('닉네임은 한글·영문·숫자 2~10자여야 합니다.');
+                    } else {
+                        toast.push({
+                            message: '저장 중 오류가 발생했습니다. 다시 시도해주세요.',
+                        });
+                    }
+                } else {
+                    toast.push({
+                        message: '저장 중 오류가 발생했습니다. 다시 시도해주세요.',
+                    });
+                }
+            },
+        });
     };
 
     const handleWithdraw = () => {
@@ -150,14 +133,11 @@ export function ProfileEditScreen() {
     };
 
     return (
-        // 스크롤은 AppShell 단일 main 이 소유. BottomBar 는 sticky bottom-0 으로 하단 고정(#396).
         <>
-            <div className="flex flex-col gap-5 px-4 pb-4 pt-2">
-                {/* 계정 정보 */}
-                <section className="flex flex-col gap-4">
+            <div className="flex flex-1 flex-col gap-5 px-4 pb-4">
+                <section className="flex flex-col gap-4 py-2">
                     <SectionTitle size="md" title="계정 정보" />
 
-                    {/* 계정(이메일) — 읽기 전용 */}
                     <TextInput
                         id="profile-email"
                         label="계정"
@@ -168,8 +148,7 @@ export function ProfileEditScreen() {
                         placeholder="로딩 중..."
                     />
 
-                    {/* 비밀번호 재설정 — 재설정 요청 시트 (파트너 설정과 동일 패턴) */}
-                    <div className="-mt-2 flex justify-end">
+                    <div className="flex justify-end">
                         <button
                             type="button"
                             onClick={() => openSheet(<ResetRequestSheet initialEmail={email} />)}
@@ -179,7 +158,6 @@ export function ProfileEditScreen() {
                         </button>
                     </div>
 
-                    {/* 닉네임 */}
                     <TextInput
                         id="profile-nickname"
                         label="닉네임"
@@ -202,7 +180,7 @@ export function ProfileEditScreen() {
                         label="이름"
                         type="text"
                         value={reserverName}
-                        onChange={(e) => setReserverName(e.target.value)}
+                        onChange={(e) => setReserverNameInput(e.target.value)}
                         placeholder="방문하실 분 성함을 입력해 주세요"
                         maxLength={20}
                         error={!nameValid}

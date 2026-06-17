@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
 import {
+    UpdateProfileData,
     UserProfileRow,
     UserRepository,
     WithdrawTargetRow,
@@ -13,10 +14,39 @@ const USER_PROFILE_SELECT = {
     nickname: true,
     isPartner: true,
     password: true,
+    reserverName: true,
+    reserverPhone: true,
     status: true,
     createdAt: true,
     updatedAt: true,
 } as const;
+
+// Prisma select 결과 → 도메인 행 매핑(password는 hasPassword 로 환산하고 노출하지 않음).
+function toProfileRow(user: {
+    id: string;
+    email: string;
+    nickname: string;
+    isPartner: boolean;
+    password: string | null;
+    reserverName: string | null;
+    reserverPhone: string | null;
+    status: string;
+    createdAt: Date;
+    updatedAt: Date;
+}): UserProfileRow {
+    return {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        isPartner: user.isPartner,
+        hasPassword: user.password !== null,
+        reserverName: user.reserverName,
+        reserverPhone: user.reserverPhone,
+        status: user.status,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+    };
+}
 
 @Injectable()
 export class PrismaUserRepository extends UserRepository {
@@ -32,16 +62,7 @@ export class PrismaUserRepository extends UserRepository {
 
         if (!user) return null;
 
-        return {
-            id: user.id,
-            email: user.email,
-            nickname: user.nickname,
-            isPartner: user.isPartner,
-            hasPassword: user.password !== null,
-            status: user.status,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-        };
+        return toProfileRow(user);
     }
 
     async existsByNicknameExceptUser(nickname: string, excludeUserId: string): Promise<boolean> {
@@ -55,23 +76,19 @@ export class PrismaUserRepository extends UserRepository {
         return count > 0;
     }
 
-    async updateNickname(userId: string, nickname: string): Promise<UserProfileRow> {
+    async updateProfile(userId: string, data: UpdateProfileData): Promise<UserProfileRow> {
+        // 전달된 key만 갱신(undefined 필드는 Prisma가 무시) → partial 업데이트.
         const user = await this.prisma.user.update({
             where: { id: userId },
-            data: { nickname },
+            data: {
+                nickname: data.nickname,
+                reserverName: data.reserverName,
+                reserverPhone: data.reserverPhone,
+            },
             select: USER_PROFILE_SELECT,
         });
 
-        return {
-            id: user.id,
-            email: user.email,
-            nickname: user.nickname,
-            isPartner: user.isPartner,
-            hasPassword: user.password !== null,
-            status: user.status,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-        };
+        return toProfileRow(user);
     }
 
     // ─── 회원탈퇴 ─────────────────────────────────────────────────────────────

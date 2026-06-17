@@ -14,6 +14,7 @@ import { BottomBar, Button } from '@todam/ui';
 
 import { useReservationDetail } from '@/entities/reservation';
 import { ApiError } from '@/shared/api';
+import { useMyProfile } from '@/features/user/profile';
 import { useToast } from '@/shared/model';
 
 import { useUpdateReservationDelivery } from '../queries';
@@ -133,6 +134,16 @@ function DeliveryEditForm({ reservationId, reservation }: DeliveryEditFormProps)
     const { push: pushToast } = useToast();
     const updateMutation = useUpdateReservationDelivery(reservationId);
 
+    // 내 프로필에 저장된 예약자 정보 → "내 정보 불러오기" 소스. 없으면 체크박스 미노출.
+    const { data: profileData } = useMyProfile();
+    const myInfo =
+        profileData?.user.reserverName || profileData?.user.reserverPhone
+            ? {
+                  name: profileData.user.reserverName ?? '',
+                  phone: profileData.user.reserverPhone ?? '',
+              }
+            : null;
+
     const [values, setValues] = useState<DeliveryEditRequest>(() =>
         buildInitialFormState(reservation),
     );
@@ -246,6 +257,7 @@ function DeliveryEditForm({ reservationId, reservation }: DeliveryEditFormProps)
                     onChange={handleChange}
                     onAddressResolved={handleAddressResolved}
                     disabled={updateMutation.isPending}
+                    myInfo={myInfo}
                 />
             </div>
             <BottomBar>
