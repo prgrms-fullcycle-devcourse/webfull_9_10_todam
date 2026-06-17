@@ -172,8 +172,8 @@ export default function SignupPage() {
     useHeaderOverride({ title: '회원가입', onBack: handleBack, hideRightAction: true });
 
     return (
-        <>
-            <div className="flex flex-col gap-3 bg-background px-4 py-2">
+        <div className="flex flex-1 flex-col overflow-hidden bg-background">
+            <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-2">
                 {step === 'email' && (
                     <TextInput
                         label="이메일"
@@ -267,6 +267,6 @@ export default function SignupPage() {
                     {STEP_CTA[step]}
                 </Button>
             </BottomBar>
-        </>
+        </div>
     );
 }
