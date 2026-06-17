@@ -170,12 +170,8 @@ reservation · artwork · review · notification · policy · admin
 
 <img width="3757" height="2445" alt="todam (9)" src="https://github.com/user-attachments/assets/fd3a40b8-c035-4299-98db-c953383ed283" />
 
-주요 엔티티는 다음과 같습니다.
-
-```text
-User · Partner · Store · Program · StoreTimeSlot
-Reservation · Artwork · Review · Notification
-```
+> 사용자는 공방과 클래스를 탐색해 예약을 생성하고, 예약 이후 작품 제작 상태, 배송, 리뷰, 알림 데이터가 연결됩니다.  
+> 파트너는 공방과 클래스 운영 정보, 예약 가능 시간, 사업자 인증 정보, 작품 제작 진행 상태를 관리합니다.
 
 <br />
 
