@@ -167,10 +167,41 @@ todam/
 
 ## 👥 Contributors
 
-| Profile | Name | Role | Contributions |
-| --- | --- | :---: | --- |
-| <img src="https://github.com/nogglee.png" width="56" alt="nogglee profile" /> | <a href="https://github.com/nogglee"><nobr>이은지</nobr></a> | FE | 디자인 시스템 · FSD 설계 · 파트너 전용 기능 · 인증 · 온보딩 게이트 · 알림 FCM · PWA · CI/CD · AI 자동화 |
-| <img src="https://github.com/codingguri.png" width="56" alt="codingguri profile" /> | <a href="https://github.com/codingguri"><nobr>이승훈</nobr></a> | FE | 공통 폼 · 인터랙션 UI · 로그인 · OAuth 플로우 · 온보딩 바텀시트 · 예약 시간 표기 |
-| <img src="https://github.com/yundlab.png" width="56" alt="yundlab profile" /> | <a href="https://github.com/yundlab"><nobr>한윤지</nobr></a> | FE | 공통 UI · FSD 정합 · 인증 · 공방 · 예약 FE · 작품 · 리뷰 · 마이 FE · MSW→실 BE 전환 주도 |
-| <img src="https://github.com/taesongxxxx.png" width="56" alt="taesongxxxx profile" /> | <a href="https://github.com/taesongxxxx"><nobr>최태성</nobr></a> | BE | DB 스키마 · 마이그레이션 · 파트너 도메인 API 전체 · 타임슬롯 · 상태 전이 · OCR · 진위확인 게이트 · BE AWS 배포 |
-| <img src="https://github.com/chocofanta01.png" width="56" alt="chocofanta01 profile" /> | <a href="https://github.com/chocofanta01"><nobr>이재혁</nobr></a> | BE | API 계약 · 정합 문서화 · 회원 인증 · 소셜 OAuth · 공방 · 예약 · 작품 BE · 알림 BE 파이프라인 |
+<table>
+  <tr>
+    <th>Profile</th>
+    <th width="72">Name</th>
+    <th>Role</th>
+    <th>Contributions</th>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/nogglee.png" width="56" alt="nogglee profile" /></td>
+    <td><a href="https://github.com/nogglee">이은지</a></td>
+    <td align="center">FE</td>
+    <td>디자인 시스템 · FSD 설계 · 파트너 전용 기능 · 인증 · 온보딩 게이트 · 알림 FCM · PWA · CI/CD · AI 자동화</td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/codingguri.png" width="56" alt="codingguri profile" /></td>
+    <td><a href="https://github.com/codingguri">이승훈</a></td>
+    <td align="center">FE</td>
+    <td>공통 폼 · 인터랙션 UI · 로그인 · OAuth 플로우 · 온보딩 바텀시트 · 예약 시간 표기</td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/yundlab.png" width="56" alt="yundlab profile" /></td>
+    <td><a href="https://github.com/yundlab">한윤지</a></td>
+    <td align="center">FE</td>
+    <td>공통 UI · FSD 정합 · 인증 · 공방 · 예약 FE · 작품 · 리뷰 · 마이 FE · MSW→실 BE 전환 주도</td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/taesongxxxx.png" width="56" alt="taesongxxxx profile" /></td>
+    <td><a href="https://github.com/taesongxxxx">최태성</a></td>
+    <td align="center">BE</td>
+    <td>DB 스키마 · 마이그레이션 · 파트너 도메인 API 전체 · 타임슬롯 · 상태 전이 · OCR · 진위확인 게이트 · BE AWS 배포</td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/chocofanta01.png" width="56" alt="chocofanta01 profile" /></td>
+    <td><a href="https://github.com/chocofanta01">이재혁</a></td>
+    <td align="center">BE</td>
+    <td>API 계약 · 정합 문서화 · 회원 인증 · 소셜 OAuth · 공방 · 예약 · 작품 BE · 알림 BE 파이프라인</td>
+  </tr>
+</table>
