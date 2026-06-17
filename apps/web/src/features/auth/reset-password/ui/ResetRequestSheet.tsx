@@ -13,6 +13,21 @@ import { requestPasswordReset } from '../api';
 // 링크 방식: 메일의 재설정 링크 클릭 → /reset-password?email=&code= 진입(별도 페이지).
 const RESEND_COOLDOWN_SECONDS = 180;
 
+const FALLBACK_ERROR_MESSAGE = '메일 전송 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.';
+
+// err.code 기반 한글 매핑. BE raw 메시지("Validation failed" 등)를 사용자에게 노출하지 않는다.
+const RESET_REQUEST_ERROR_MESSAGES: Record<string, string> = {
+    INVALID_REQUEST: '이메일 형식이 아닙니다.',
+    ACCOUNT_NOT_FOUND: '가입 이력이 없습니다.',
+};
+
+function getResetRequestErrorMessage(err: unknown): string {
+    if (err instanceof ApiError) {
+        return RESET_REQUEST_ERROR_MESSAGES[err.code] ?? FALLBACK_ERROR_MESSAGE;
+    }
+    return FALLBACK_ERROR_MESSAGE;
+}
+
 export type ResetRequestSheetProps = {
     onClose?: () => void;
     /**
@@ -84,11 +99,11 @@ export function ResetRequestSheet({ onClose, initialEmail }: ResetRequestSheetPr
             setSent(true);
             startCooldown();
         } catch (err) {
-            const message =
-                err instanceof ApiError
-                    ? err.message
-                    : '메일 전송 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.';
-            push({ type: 'icon', icon: <InformationIcon />, message });
+            push({
+                type: 'icon',
+                icon: <InformationIcon />,
+                message: getResetRequestErrorMessage(err),
+            });
         } finally {
             setPending(false);
         }
@@ -101,11 +116,11 @@ export function ResetRequestSheet({ onClose, initialEmail }: ResetRequestSheetPr
             await requestPasswordReset(email);
             startCooldown();
         } catch (err) {
-            const message =
-                err instanceof ApiError
-                    ? err.message
-                    : '메일 전송 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.';
-            push({ type: 'icon', icon: <InformationIcon />, message });
+            push({
+                type: 'icon',
+                icon: <InformationIcon />,
+                message: getResetRequestErrorMessage(err),
+            });
         } finally {
             setPending(false);
         }

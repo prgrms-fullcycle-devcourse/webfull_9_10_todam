@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { BusinessException } from '../../../../common/exceptions/business.exception';
 import { RedisService } from '../../../../redis/redis.service';
 import { UserRepository } from '../../domain/repositories/user.repository';
 import { EmailService } from '../../infrastructure/email/email.service';
@@ -20,9 +21,16 @@ export class ResetPasswordRequestUseCase {
     async execute(email: string): Promise<void> {
         const user = await this.users.findByEmail(email);
 
-        // 가입되지 않은 이메일이거나 소셜 전용 계정이면 조용히 종료
-        // (이메일 존재 여부를 응답으로 노출하지 않음 - 이메일 열거 공격 방지)
-        if (!user || !user.passwordHash) return;
+        // 비밀번호 로그인 계정이 아니면(미가입·소셜 전용) 가입 이력 없음으로 안내한다.
+        // QA-요구(2026-06-17 팀 결정): 미가입/잘못된 계정은 "가입 이력이 없습니다." 노출 —
+        // 이메일 열거 방지보다 재설정 UX의 명확성을 우선한다.
+        if (!user || !user.passwordHash) {
+            throw new BusinessException(
+                'ACCOUNT_NOT_FOUND',
+                '가입 이력이 없습니다.',
+                HttpStatus.NOT_FOUND,
+            );
+        }
 
         const code = generateCode();
         await this.redis.set(`password:reset:${email}`, code, RESET_CODE_TTL_SECONDS);
