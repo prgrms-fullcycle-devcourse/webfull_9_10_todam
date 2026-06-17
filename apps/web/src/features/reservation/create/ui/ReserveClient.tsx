@@ -270,6 +270,7 @@ export function ReserveClient({
                                 month={month}
                                 slots={slotsData?.slots ?? []}
                                 selectedSlotKey={selectedSlot?.slotKey ?? null}
+                                participantCount={participantCount}
                                 onMonthChange={(y, m) => {
                                     setYear(y);
                                     setMonth(m);

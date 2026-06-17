@@ -191,6 +191,8 @@ export interface SlotCalendarViewProps {
     month: number;
     slots: AvailableSlotItem[];
     selectedSlotKey: string | null;
+    /** 예약 인원 — 잔여 정원이 이보다 적은 슬롯은 마감 처리(비활성). */
+    participantCount: number;
     onMonthChange: (year: number, month: number) => void;
     onSlotSelect: (slot: AvailableSlotItem) => void;
 }
@@ -200,6 +202,7 @@ export function SlotCalendarView({
     month,
     slots,
     selectedSlotKey,
+    participantCount,
     onMonthChange,
     onSlotSelect,
 }: SlotCalendarViewProps) {
@@ -300,16 +303,21 @@ export function SlotCalendarView({
                     </p>
                 ) : (
                     <div className="grid grid-cols-3 gap-3">
-                        {slotsForDate.map((slot) => (
-                            <Slot
-                                key={slot.slotKey}
-                                selected={selectedSlotKey === slot.slotKey}
-                                disabled={!slot.isAvailable}
-                                onClick={() => onSlotSelect(slot)}
-                            >
-                                {slotKstTime(slot.startAt)}
-                            </Slot>
-                        ))}
+                        {slotsForDate.map((slot) => {
+                            // 마감: 슬롯 자체가 예약 불가(닫힘/정원 0)이거나, 잔여 정원이 예약 인원보다 적은 경우.
+                            const full =
+                                !slot.isAvailable || slot.remainingCount < participantCount;
+                            return (
+                                <Slot
+                                    key={slot.slotKey}
+                                    selected={selectedSlotKey === slot.slotKey}
+                                    disabled={full}
+                                    onClick={() => onSlotSelect(slot)}
+                                >
+                                    {slotKstTime(slot.startAt)}
+                                </Slot>
+                            );
+                        })}
                     </div>
                 )}
             </div>
