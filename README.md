@@ -91,25 +91,25 @@ todam/
 
 ## 🧠 Key Design Points
 
-### 🔐 1. 인증과 소유권 기반 접근 제어
+### 🔐 1. 역할별 접근 흐름 분리
 
-파트너 API는 인증 여부와 파트너 승인 상태를 먼저 확인하고, 공방·예약·작품 같은 리소스는 대상 소유권을 별도로 검증합니다. 이를 통해 다른 파트너의 공방 데이터에 접근하는 권한 상승을 방지합니다.
+사용자, 파트너, 운영자 흐름을 분리하고 각 화면에서 필요한 권한만 노출합니다. 서버에서는 인증 상태, 파트너 승인 여부, 리소스 소유권을 함께 검증해 권한 상승을 방지합니다.
 
-### 📅 2. 운영시간 기반 예약 슬롯 계산
+### 📅 2. 예약 시점 타임슬롯 자동 생성
 
-타임슬롯을 미리 모두 생성하지 않고, 공방 운영시간·예약 간격·예약 제한·기존 예약 수를 기준으로 조회/예약 시점에 슬롯 가능 여부를 계산합니다. 예약 생성 시에는 트랜잭션 안에서 슬롯을 materialize하고 정원을 갱신합니다.
+공방 운영시간, 예약 간격, 예약 제한, 기존 예약 수를 기준으로 예약 가능한 시간을 계산합니다. 프론트엔드는 가능한 시간만 선택지로 보여주고, 서버는 예약 생성 시점에 타임슬롯을 생성한 뒤 다시 검증해 동시 예약 시에도 정원 초과 없이 처리합니다.
 
-### 🔄 3. 예약·작품 상태 표시의 백엔드 집중
+### 🔄 3. 예약·작품 상태의 단일 기준
 
-예약 상태와 작품 제작 단계의 `displayState`는 백엔드에서 계산해 내려줍니다. 프론트엔드는 상태 문구를 추측하지 않고 API 응답을 그대로 렌더링해 화면별 상태 불일치를 줄입니다.
+예약 상태와 작품 제작 단계는 서버에서 `displayState`로 계산해 내려줍니다. 예를 들어 제작 중 구간은 건조·초벌·유약·재벌 단계까지 서버가 결정하고, 프론트엔드는 같은 응답 값을 사용자 화면, 마이페이지, 파트너 화면에서 일관되게 렌더링합니다.
 
-### 🔔 4. 알림 발송의 비동기 분리
+### 🔔 4. 알림과 사용자 피드백
 
-인앱 알림은 DB에 먼저 기록하고, 웹 푸시는 BullMQ 큐를 통해 FCM으로 발송합니다. 알림 발송 실패가 예약 확정, 취소, 작품 상태 변경 같은 핵심 도메인 흐름을 막지 않도록 분리했습니다.
+예약 확정, 취소, 작품 상태 변경 같은 이벤트는 인앱 알림과 웹 푸시로 전달합니다. 알림 발송은 비동기로 분리해 핵심 예약·작품 흐름이 외부 발송 실패에 영향을 받지 않도록 했습니다.
 
-### 🪪 5. 사업자 인증과 이미지 업로드 흐름
+### 🪪 5. 파트너 등록과 이미지 업로드
 
-이미지는 API가 발급한 S3 presigned URL로 클라이언트가 직접 업로드합니다. 사업자등록증은 S3 객체를 기반으로 Google Vision OCR과 국세청 진위확인 API를 거쳐 검증합니다.
+파트너는 사업자등록증과 공방 이미지를 업로드해 공방 등록을 진행합니다. 이미지는 S3 presigned URL로 직접 업로드하고, 사업자등록증은 OCR과 진위확인 API를 통해 검증합니다.
 
 <br />
 
@@ -169,8 +169,8 @@ todam/
 
 | Profile | Name | Role | Contributions |
 | --- | --- | :---: | --- |
-| <img src="https://github.com/nogglee.png" width="56" alt="nogglee profile" /> | [이은지](https://github.com/nogglee) | FE | 디자인 시스템 · FSD 설계 · 파트너 전용 기능 · 인증 · 온보딩 게이트 · 알림 FCM · PWA · CI/CD · AI 자동화 |
-| <img src="https://github.com/codingguri.png" width="56" alt="codingguri profile" /> | [이승훈](https://github.com/codingguri) | FE | 공통 폼 · 인터랙션 UI · 로그인 · OAuth 플로우 · 온보딩 바텀시트 · 예약 시간 표기 |
-| <img src="https://github.com/yundlab.png" width="56" alt="yundlab profile" /> | [한윤지](https://github.com/yundlab) | FE | 공통 UI · FSD 정합 · 인증 · 공방 · 예약 FE · 작품 · 리뷰 · 마이 FE · MSW→실 BE 전환 주도 |
-| <img src="https://github.com/taesongxxxx.png" width="56" alt="taesongxxxx profile" /> | [최태성](https://github.com/taesongxxxx) | BE | DB 스키마 · 마이그레이션 · 파트너 도메인 API 전체 · 타임슬롯 · 상태 전이 · OCR · 진위확인 게이트 · BE AWS 배포 |
-| <img src="https://github.com/chocofanta01.png" width="56" alt="chocofanta01 profile" /> | [이재혁](https://github.com/chocofanta01) | BE | API 계약 · 정합 문서화 · 회원 인증 · 소셜 OAuth · 공방 · 예약 · 작품 BE · 알림 BE 파이프라인 | |
+| <img src="https://github.com/nogglee.png" width="56" alt="nogglee profile" /> | <a href="https://github.com/nogglee"><nobr>이은지</nobr></a> | FE | 디자인 시스템 · FSD 설계 · 파트너 전용 기능 · 인증 · 온보딩 게이트 · 알림 FCM · PWA · CI/CD · AI 자동화 |
+| <img src="https://github.com/codingguri.png" width="56" alt="codingguri profile" /> | <a href="https://github.com/codingguri"><nobr>이승훈</nobr></a> | FE | 공통 폼 · 인터랙션 UI · 로그인 · OAuth 플로우 · 온보딩 바텀시트 · 예약 시간 표기 |
+| <img src="https://github.com/yundlab.png" width="56" alt="yundlab profile" /> | <a href="https://github.com/yundlab"><nobr>한윤지</nobr></a> | FE | 공통 UI · FSD 정합 · 인증 · 공방 · 예약 FE · 작품 · 리뷰 · 마이 FE · MSW→실 BE 전환 주도 |
+| <img src="https://github.com/taesongxxxx.png" width="56" alt="taesongxxxx profile" /> | <a href="https://github.com/taesongxxxx"><nobr>최태성</nobr></a> | BE | DB 스키마 · 마이그레이션 · 파트너 도메인 API 전체 · 타임슬롯 · 상태 전이 · OCR · 진위확인 게이트 · BE AWS 배포 |
+| <img src="https://github.com/chocofanta01.png" width="56" alt="chocofanta01 profile" /> | <a href="https://github.com/chocofanta01"><nobr>이재혁</nobr></a> | BE | API 계약 · 정합 문서화 · 회원 인증 · 소셜 OAuth · 공방 · 예약 · 작품 BE · 알림 BE 파이프라인 |
