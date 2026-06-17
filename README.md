@@ -52,6 +52,7 @@ todam은 수강생, 파트너, 운영자를 위한 세 가지 흐름을 제공�
 - [API 명세](docs/api/apispec.md)
 - [시스템 아키텍처](ARCHITECTURE.md)
 - [UI/디자인 규칙](DESIGN.md)
+- [코드/환경 컨벤션](docs/conventions/README.md)
 
 <br />
 
@@ -72,8 +73,8 @@ todam은 수강생, 파트너, 운영자를 위한 세 가지 흐름을 제공�
 todam/
 ├── apps/
 │   ├── api/        # NestJS 백엔드
-│   ├── web/        # Next.js 수강생 서비스
-│   ├── admin/      # Next.js 운영자 서비스
+│   ├── web/        # Next.js 클래스 참여자·파트너 서비스
+│   ├── admin/      # Vite 운영자 서비스
 │   └── storybook/  # 공통 UI 문서화
 ├── packages/
 │   ├── shared/             # 공통 enum, type, schema, 상태 계산
@@ -82,15 +83,8 @@ todam/
 │   ├── eslint-config/      # 공유 ESLint 설정
 │   └── typescript-config/  # 공유 TypeScript 설정
 ├── docs/          # 요구사항, API, 실행 계획, 컨벤션 문서
-├── docker/        # 로컬 인프라 구성
+├── docker/        # 로컬/배포 인프라 구성
 └── scripts/       # 개발 보조 스크립트
-```
-
-`apps/api`는 도메인 단위 모듈로 나뉩니다.
-
-```text
-auth · user · partner · store · program · timeslot
-reservation · artwork · review · notification · policy · admin
 ```
 
 <br />
@@ -170,20 +164,6 @@ reservation · artwork · review · notification · policy · admin
 
 > 사용자는 공방과 클래스를 탐색해 예약을 생성하고, 예약 이후 작품 제작 상태, 배송, 리뷰, 알림 데이터가 연결됩니다.  
 > 파트너는 공방과 클래스 운영 정보, 예약 가능 시간, 사업자 인증 정보, 작품 제작 진행 상태를 관리합니다.
-
-<br />
-
-## 🌿 Collaboration
-
-```text
-feature/* -> dev -> main
-```
-
-- `feature/*`: 기능 개발 브랜치입니다. Pull Request는 `dev` 브랜치로 올립니다.
-- `dev`: 통합 브랜치입니다. CI에서 lint, typecheck, test를 검증합니다.
-- `main`: 프로덕션 브랜치입니다. 머지 후 배포가 진행됩니다.
-
-pre-commit에서는 ESLint와 Prettier를 실행하고, pre-push에서는 전체 타입 체크를 수행합니다.
 
 <br />
 
