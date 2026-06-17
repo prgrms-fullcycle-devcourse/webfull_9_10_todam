@@ -18,7 +18,7 @@
 
 ## 🧩 Quick Link
 
-- 🏠 [서비스 바로가기](#https://todam.app) <!-- TODO: 배포 URL 연결 -->
+- 🏠 [서비스 바로가기](https://todam.app) <!-- TODO: 배포 URL 연결 -->
 - 🎬 [데모 영상](#) 
 - 📚 [전체 문서 보기](#-documents)
 
