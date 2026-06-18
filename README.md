@@ -1,13 +1,13 @@
 <img width="1680" height="320" alt="NotionCover" src="https://github.com/user-attachments/assets/3bb70bc7-6f13-41d3-990f-e7fed0705569" />
 
-<div align="left">
-
-<h1>
-  <img src="https://github.com/user-attachments/assets/6634b73f-a5eb-4a1b-9b86-75089a4bde5b" width="72" alt="todam logo" align="center" />
-  토담 - <strong>공방 원데이 클래스 예약 플랫폼</strong>
-</h1>
+# 토담 - 공방 원데이 클래스 예약 플랫폼 <img alt="todam_logo" src="https://github.com/user-attachments/assets/4da1b0e6-9337-4124-9447-97ab7ccc4182"  margin-right="10" align="left" width="100"/></a>
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
+
+
+
+<div align="left" margin-left="200">
+
 
 토담은 사용자가 공방의 클래스를 탐색하고 예약하며,<br /> 파트너는 공방, 클래스, 예약, 작품의 진행 상태를 유저에게 안내하고 관리할 수 있는 공방/예약 운영 플랫폼입니다.
 
@@ -18,7 +18,7 @@
 ## 🧩 Quick Link
 
 - 🏠 [서비스 바로가기](https://todam.app)
-- 🎬 [데모 영상](#)
+- 🎬 [데모 영상](https://youtu.be/gK5Zry9Wcy4)
 - 📚 [전체 문서 보기](#-documents)
 
 <br />
@@ -26,7 +26,10 @@
 ## 👋 Introduction
 
 <p align="center">
-  <em>서비스 주요 화면은 추후 업데이트 예정입니다.</em>
+  <img width="1920" height="1080" alt="1" src="https://github.com/user-attachments/assets/f789e958-b483-4667-a53a-feaf20d97611" />
+  <img width="1920" height="1080" alt="2" src="https://github.com/user-attachments/assets/e7276a29-6adc-4511-9341-70f7943080ad" />
+  <img width="1920" height="1080" alt="3" src="https://github.com/user-attachments/assets/9768aa3f-1d2a-4d7b-b620-291d874d4927" />
+  <img width="1920" height="1080" alt="4" src="https://github.com/user-attachments/assets/8c980e2b-c5eb-4703-88e4-3764dbf90133" />
 </p>
 
 todam은 공방 원데이 클래스를 찾고 예약하는 사용자, 공방을 운영하는 파트너, 서비스를 관리하는 운영자를 위한 흐름을 제공합니다.
