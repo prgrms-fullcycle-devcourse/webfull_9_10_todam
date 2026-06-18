@@ -17,6 +17,7 @@ function invalidateReview(qc: ReturnType<typeof useQueryClient>, reservationId: 
 }
 
 // 작성/수정 공통 에러 토스트 분기. 401 → /login.
+// 화면 이동(성공·409 복귀)은 leave-guard sentinel 보정을 위해 호출 측(ReviewFormInner)이 담당한다.
 function handleWriteError(
     error: unknown,
     router: ReturnType<typeof useRouter>,
@@ -29,9 +30,8 @@ function handleWriteError(
             return;
         }
         // contract 메시지를 그대로 노출(봉투 message). 없으면 fallback.
+        // 409(이미 작성한 예약) 복귀 이동은 호출 측에서 처리.
         push({ message: error.message || fallback });
-        // 이미 작성한 예약(409) → 작성 화면에서 빠져나가 상세 복귀.
-        if (error.statusCode === 409) router.back();
         return;
     }
     push({ message: fallback });
@@ -49,9 +49,7 @@ export function useCreateReviewMutation(reservationId: string) {
         onSuccess: () => {
             push({ message: '리뷰가 등록되었어요.' });
             invalidateReview(qc, reservationId);
-            // 작성폼은 push 로 진입했으므로 back 으로 해당 엔트리를 pop(상세 복귀).
-            // push 로 상세를 다시 쌓으면 히스토리에 작성폼이 남아 뒤로가기 시 재오픈됨(수정 onSuccess 와 정합).
-            router.back();
+            // 화면 이동은 ReviewFormInner.handleSubmit 의 confirmLeave 가 담당(sentinel 보정).
         },
         onError: (error) =>
             handleWriteError(
@@ -64,7 +62,7 @@ export function useCreateReviewMutation(reservationId: string) {
 }
 
 // 리뷰 수정 mutation. PATCH 응답 shape(D15)에 의존하지 않고 invalidate+GET 재조회로 갱신.
-// onSuccess: 토스트 + invalidate + router.back() (리뷰 상세 복귀, plan §B-5).
+// onSuccess: 토스트 + invalidate. 화면 이동은 호출 측 confirmLeave 가 담당(plan §B-5 복귀).
 export function useUpdateReviewMutation(reviewId: string, reservationId: string) {
     const qc = useQueryClient();
     const router = useRouter();
@@ -75,7 +73,7 @@ export function useUpdateReviewMutation(reviewId: string, reservationId: string)
         onSuccess: () => {
             push({ message: '리뷰가 수정되었어요.' });
             invalidateReview(qc, reservationId);
-            router.back();
+            // 화면 이동은 ReviewFormInner.handleSubmit 의 confirmLeave 가 담당(sentinel 보정).
         },
         onError: (error) =>
             handleWriteError(
