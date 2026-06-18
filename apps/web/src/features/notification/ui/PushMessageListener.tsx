@@ -1,25 +1,20 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { onMessage } from 'firebase/messaging';
-import { NotiIcon } from '@todam/ui';
-
-import { useToast } from '@/shared/model/toast';
 
 import { getMessagingIfSupported } from '../model/firebase';
 import { silentReregisterPush } from '../model/usePush';
 
 /**
- * 포그라운드(앱 열려있을 때) FCM 메시지 → 토스트로 표시.
- * 백그라운드 알림은 SW(firebase-messaging-sw.js)가 처리하므로 여기선 포그라운드만.
+ * 포그라운드(앱 열려있을 때) FCM 메시지 → 시스템 푸시 알림으로 표시.
+ * 백그라운드는 notification 페이로드를 브라우저가 자동 표시(SW는 클릭만 처리).
+ * 포그라운드는 자동 표시되지 않으므로 SW registration.showNotification으로 직접 띄운다.
+ * 클릭 이동은 SW notificationclick이 data.deepLink로 처리.
  * 추가로 마운트 시 권한 허용 상태면 토큰 silent 재등록(로테이션 대비).
  * 화면 출력 없음 — return null.
  */
 export function PushMessageListener() {
-    const { push } = useToast();
-    const router = useRouter();
-
     useEffect(() => {
         let unsubscribe: (() => void) | undefined;
 
@@ -30,20 +25,22 @@ export function PushMessageListener() {
             await silentReregisterPush();
 
             unsubscribe = onMessage(messaging, (payload) => {
-                const message = payload.notification?.title ?? payload.data?.title ?? '새 알림';
-                push({
-                    type: 'button',
-                    message,
-                    icon: <NotiIcon />,
-                    actionLabel: '바로가기',
-                    onAction: () => router.push('/notifications'),
-                    duration: 5000,
-                });
+                void (async () => {
+                    if (Notification.permission !== 'granted') return;
+                    const registration = await navigator.serviceWorker.ready;
+                    const title = payload.notification?.title ?? payload.data?.title ?? '새 알림';
+                    await registration.showNotification(title, {
+                        body: payload.notification?.body ?? payload.data?.body ?? '',
+                        icon: '/icons/icon-192x192.png',
+                        badge: '/icons/icon-192x192.png',
+                        data: { deepLink: payload.data?.deepLink ?? '/notifications' },
+                    });
+                })();
             });
         })();
 
         return () => unsubscribe?.();
-    }, [push, router]);
+    }, []);
 
     return null;
 }

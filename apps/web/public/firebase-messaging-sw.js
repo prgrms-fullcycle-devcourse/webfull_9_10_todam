@@ -15,19 +15,10 @@ firebase.initializeApp({
     appId: '1:194347941618:web:56847ed14fe880cebfda6b',
 });
 
-const messaging = firebase.messaging();
-
-// 앱이 백그라운드/종료 상태일 때 수신. data 페이로드 기준으로 알림 표시.
-messaging.onBackgroundMessage((payload) => {
-    const title = payload.notification?.title ?? payload.data?.title ?? 'todam';
-    const options = {
-        body: payload.notification?.body ?? payload.data?.body ?? '',
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-192x192.png',
-        data: { deepLink: payload.data?.deepLink ?? '/' },
-    };
-    self.registration.showNotification(title, options);
-});
+// notification 페이로드는 백그라운드에서 브라우저/FCM SDK가 자동 1회 표시한다.
+// 여기서 onBackgroundMessage로 showNotification을 또 호출하면 알림이 2번 떠서 두지 않는다.
+// (messaging 인스턴스는 SDK의 백그라운드 수신/자동 표시 활성화를 위해 생성만 유지.)
+firebase.messaging();
 
 // 알림 클릭 → deepLink로 이동(이미 열린 탭 있으면 포커스).
 self.addEventListener('notificationclick', (event) => {
