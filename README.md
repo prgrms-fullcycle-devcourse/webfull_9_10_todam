@@ -9,8 +9,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-도자기, 가죽공예처럼 오프라인 원데이 클래스를 운영하는 공방과<br />
-클래스를 찾고 예약하는 사용자를 연결하는 서비스입니다.
+토담은 사용자가 공방의 클래스를 탐색하고 예약하며,<br /> 파트너는 공방, 클래스, 예약, 작품의 진행 상태를 유저에게 안내하고 관리할 수 있는 공방/예약 운영 플랫폼입니다.
 
 </div>
 
@@ -43,7 +42,7 @@ todam은 공방 원데이 클래스를 찾고 예약하는 사용자, 공방을 
 
 ## 🏛️ Architecture
 
-<img width="1594" height="1110" alt="diagram-export-2026 -6 -17 -오후-2_04_41" src="https://github.com/user-attachments/assets/c605de96-3490-4d08-ab5b-b4215ec4dfbf" />
+<img width="1563" height="1006" alt="system architecture (1)" src="https://github.com/user-attachments/assets/76a8f3c3-53ae-4e7c-a13f-d390dd4eb079" />
 
 - `web(Next.js)`은 클래스 참여자/파트너 화면을 제공하고, `api(NestJS)`는 인증·예약·작품·공방·알림 도메인을 처리합니다.
 - 데이터는 `RDS(PostgreSQL)`, 큐와 인증 코드는 `Redis`, 이미지는 `S3 presigned URL` 기반 업로드로 관리합니다.
