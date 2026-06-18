@@ -104,9 +104,14 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
     };
 
     // ─── 이탈 가드 ───────────────────────────────────────────────
-    // 폼은 router.push 로 진입(상세→작성폼)하므로 닫기는 back 으로 그 엔트리를 pop 한다.
-    // push 로 상세 URL 을 다시 쌓으면 히스토리에 작성폼이 남아 상세에서 뒤로가기 시 폼이 재오픈됨.
-    const leave = () => router.back();
+    // 이탈/제출 후에는 결정적 목적지로 replace 이동한다(작성→예약 상세, 수정→리뷰 상세).
+    // router.back() 은 leave-guard 가 dirty 일 때 쌓는 sentinel 엔트리만 소비해 폼에 머물고,
+    // 그 과정의 popstate 가 가드 모달을 재발동시킨다. replace 는 popstate 를 발생시키지 않아
+    // 모달 없이 안전하게 화면을 전환한다.
+    const exitTo = isEdit
+        ? `/my/reservations/${reservationId}/review`
+        : `/my/reservations/${reservationId}`;
+    const leave = () => router.replace(exitTo);
     const handleClose = () => {
         if (!dirty) {
             leave();
@@ -171,10 +176,15 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
             } else {
                 await createMutation.mutateAsync(body);
             }
-            // 성공 시 mutation onSuccess 가 toast + invalidate + 다음 화면 이동 처리.
+            // 성공: mutation onSuccess 가 toast + invalidate. 화면 이동은 여기서 replace 로 처리.
+            leave();
         } catch (err) {
-            // mutation onError 가 ApiError 토스트 처리. presigned/S3 단계 실패만 별도 안내.
-            if (!(err instanceof ApiError)) {
+            // mutation onError 가 ApiError 토스트/401 처리. 여기선 후처리만.
+            if (err instanceof ApiError) {
+                // 이미 작성한 예약(409) → 작성 화면에서 빠져나가 상세 복귀.
+                if (err.statusCode === 409) leave();
+            } else {
+                // presigned/S3 단계 실패만 별도 안내.
                 push({ message: '사진 업로드 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.' });
             }
         } finally {
