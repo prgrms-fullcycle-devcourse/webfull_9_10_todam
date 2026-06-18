@@ -423,7 +423,7 @@ function TimeStep({
     }
 
     return (
-        <div role="radiogroup" className="flex flex-col gap-3">
+        <div role="radiogroup" className="flex flex-1 flex-col gap-3">
             {slots.map((slot) => (
                 <RadioInput
                     key={slot.slotKey}
@@ -471,7 +471,7 @@ function ProgramStep({
     }
 
     return (
-        <div role="radiogroup" className="flex flex-col gap-3">
+        <div role="radiogroup" className="flex flex-1 flex-col gap-3">
             {programs.map((program) => (
                 <RadioInput
                     key={program.id}
@@ -515,7 +515,7 @@ function FormStep({
     onChangeMemo: (value: string) => void;
 }) {
     return (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-1 flex-col gap-5">
             <TextInput
                 id="manual-reserver-name"
                 label="이름"
