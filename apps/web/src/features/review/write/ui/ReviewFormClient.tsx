@@ -104,7 +104,9 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
     };
 
     // ─── 이탈 가드 ───────────────────────────────────────────────
-    const leave = () => router.push(`/my/reservations/${reservationId}`);
+    // 폼은 router.push 로 진입(상세→작성폼)하므로 닫기는 back 으로 그 엔트리를 pop 한다.
+    // push 로 상세 URL 을 다시 쌓으면 히스토리에 작성폼이 남아 상세에서 뒤로가기 시 폼이 재오픈됨.
+    const leave = () => router.back();
     const handleClose = () => {
         if (!dirty) {
             leave();

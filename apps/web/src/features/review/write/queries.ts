@@ -49,7 +49,9 @@ export function useCreateReviewMutation(reservationId: string) {
         onSuccess: () => {
             push({ message: '리뷰가 등록되었어요.' });
             invalidateReview(qc, reservationId);
-            router.push(`/my/reservations/${reservationId}`);
+            // 작성폼은 push 로 진입했으므로 back 으로 해당 엔트리를 pop(상세 복귀).
+            // push 로 상세를 다시 쌓으면 히스토리에 작성폼이 남아 뒤로가기 시 재오픈됨(수정 onSuccess 와 정합).
+            router.back();
         },
         onError: (error) =>
             handleWriteError(
