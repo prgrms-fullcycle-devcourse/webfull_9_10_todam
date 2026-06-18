@@ -25,7 +25,6 @@ export function StudioSearchCard({
         distance,
         representativeClass,
         matchedClass,
-        isOperating,
     } = store;
 
     // 카드에 표시할 클래스 정보 결정
@@ -54,15 +53,10 @@ export function StudioSearchCard({
             href={`/studio/${encodeURIComponent(slug)}`}
             className="flex w-full items-center gap-3"
         >
-            {/* 썸네일 (준비 중이면 딤 오버레이 + 라벨) */}
+            {/* 썸네일 */}
             <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted">
                 {imageUrl && (
                     <Image src={imageUrl} alt={name} fill sizes="80px" className="object-cover" />
-                )}
-                {!isOperating && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-foreground/60">
-                        <span className="text-sm text-surface">준비 중</span>
-                    </div>
                 )}
             </div>
 
