@@ -28,6 +28,7 @@ export function ArtworkStageCard({ reservation }: ArtworkStageCardProps) {
                     <ReservationStatusBadge
                         status={reservation.status}
                         label={reservation.displayState.subLabel ?? reservation.displayState.label}
+                        className="w-fit"
                     />
                     <p className="text-base font-semibold leading-5 text-foreground">
                         {reservation.displayState.description}
