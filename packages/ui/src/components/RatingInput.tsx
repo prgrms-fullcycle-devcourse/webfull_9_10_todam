@@ -32,11 +32,15 @@ export function RatingInput({
   const [hovered, setHovered] = useState<number | null>(null);
   const buttonsRef = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // 프리뷰 우선순위: hover/focus 중인 별 > 확정값.
+  // 프리뷰 우선순위: 마우스 hover 중인 별 > 확정값.
   const activeCount = hovered ?? value;
 
   const select = (next: number) => {
-    if (!disabled) onChange(next);
+    if (disabled) return;
+    // 확정(클릭/키보드) 시 프리뷰를 즉시 비워 표시값이 확정값(value)을 따르게 한다.
+    // 별 사이를 옮길 때 mouseenter/blur 가 엇갈려 채워진 별 수가 깜빡이는 현상 방지.
+    setHovered(null);
+    onChange(next);
   };
 
   const focusStar = (star: number) => {
@@ -101,8 +105,6 @@ export function RatingInput({
             style={{ width: size, height: size }}
             onClick={() => select(star)}
             onMouseEnter={() => !disabled && setHovered(star)}
-            onFocus={() => !disabled && setHovered(star)}
-            onBlur={() => setHovered(null)}
             onKeyDown={(e) => handleKeyDown(e, star)}
           >
             <Icon
