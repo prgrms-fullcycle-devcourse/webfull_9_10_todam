@@ -137,7 +137,8 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @ApiBody({ type: PasswordResetRequestDto })
     @ApiOkResponse({
-        description: '비밀번호 재설정 이메일 발송 (이메일 존재 여부와 무관하게 200 반환)',
+        description:
+            '비밀번호 재설정 이메일 발송. 미가입·비밀번호 없는 계정은 404 ACCOUNT_NOT_FOUND("가입 이력이 없습니다.")',
     })
     async resetPasswordRequest(
         @Body(new ZodValidationPipe(passwordResetRequestSchema)) dto: PasswordResetRequest,

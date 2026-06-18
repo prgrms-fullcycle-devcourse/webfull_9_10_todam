@@ -116,6 +116,18 @@ export type VerifyCodeRequest = z.infer<typeof verifyCodeRequestSchema>;
 export const passwordResetRequestSchema = z.object({ email: emailSchema }).strict();
 export type PasswordResetRequest = z.infer<typeof passwordResetRequestSchema>;
 
+// POST /auth/password/reset-request 에러코드 (contract 기준)
+//   INVALID_REQUEST       : 이메일 형식 오류(zod 검증 실패)
+//   ACCOUNT_NOT_FOUND     : 미가입·비밀번호 없는 계정(가입 이력 없음) — 2026-06-17 팀 결정으로 노출
+//   INTERNAL_SERVER_ERROR : 메일 발송 등 서버 오류
+export const PasswordResetRequestErrorCode = {
+    INVALID_REQUEST: 'INVALID_REQUEST',
+    ACCOUNT_NOT_FOUND: 'ACCOUNT_NOT_FOUND',
+    INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
+} as const;
+export type PasswordResetRequestErrorCode =
+    (typeof PasswordResetRequestErrorCode)[keyof typeof PasswordResetRequestErrorCode];
+
 // ───────────── 비밀번호 재설정 (POST /auth/password/reset) ─────────────
 export const passwordResetSchema = z
     .object({

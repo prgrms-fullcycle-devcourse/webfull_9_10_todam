@@ -27,6 +27,9 @@ export function PartnerProfileScreen() {
 
     const { data: profileData, isLoading } = useMyProfile();
     const email = profileData?.user.email ?? '';
+    // 소셜 전용 계정(hasPassword=false)은 비밀번호 로그인이 불가하므로 재설정 진입점 숨김 (QA-75).
+    // 구버전 API 응답/캐시에 hasPassword가 없으면 숨김(false) 처리.
+    const hasPassword = profileData?.user.hasPassword ?? false;
 
     const terminate = useTerminatePartner();
 
@@ -89,16 +92,18 @@ export function PartnerProfileScreen() {
                     placeholder="로딩 중..."
                 />
 
-                {/* 비밀번호 재설정 — 재설정 요청 시트 */}
-                <div className="flex justify-end">
-                    <button
-                        type="button"
-                        onClick={() => openSheet(<ResetRequestSheet initialEmail={email} />)}
-                        className="cursor-pointer text-xs font-semibold text-primary"
-                    >
-                        비밀번호 재설정
-                    </button>
-                </div>
+                {/* 비밀번호 재설정 — 재설정 요청 시트. 소셜 전용 계정은 숨김(QA-75). */}
+                {hasPassword && (
+                    <div className="flex justify-end">
+                        <button
+                            type="button"
+                            onClick={() => openSheet(<ResetRequestSheet initialEmail={email} />)}
+                            className="cursor-pointer text-xs font-semibold text-primary"
+                        >
+                            비밀번호 재설정
+                        </button>
+                    </div>
+                )}
             </section>
 
             {/* 파트너 해지 진입 */}
