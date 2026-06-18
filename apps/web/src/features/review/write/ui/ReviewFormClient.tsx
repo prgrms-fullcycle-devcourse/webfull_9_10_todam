@@ -183,9 +183,9 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
     const scheduled = reservation ? formatScheduled(reservation.scheduledAt) : null;
 
     return (
-        // 스크롤은 AppShell 단일 main 이 소유. BottomBar 는 sticky bottom-0 으로 하단 고정(#396).
-        <>
-            <div className="flex flex-col gap-6 px-4 pb-24 pt-2">
+        // 래퍼가 main 높이를 채우고(flex-1) 콘텐츠가 grow → sticky BottomBar 하단 고정(#434 패턴).
+        <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-24 pt-2">
                 {/* 작품 정보 헤더 */}
                 {reservation && (
                     <div className="flex flex-col">
@@ -241,6 +241,6 @@ function ReviewFormInner({ reservationId, isEdit, initialReview }: ReviewFormInn
                           : '리뷰 등록'}
                 </Button>
             </BottomBar>
-        </>
+        </div>
     );
 }

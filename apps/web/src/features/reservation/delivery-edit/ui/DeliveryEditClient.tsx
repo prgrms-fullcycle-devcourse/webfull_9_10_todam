@@ -248,9 +248,9 @@ function DeliveryEditForm({ reservationId, reservation }: DeliveryEditFormProps)
     };
 
     return (
-        // 스크롤은 AppShell 단일 main 이 소유. BottomBar 는 sticky bottom-0 으로 하단 고정(#396).
-        <>
-            <div className="flex flex-col gap-2 px-4 py-2">
+        // 래퍼가 main 높이를 채우고(flex-1) 콘텐츠가 grow → sticky BottomBar 하단 고정(#434 패턴).
+        <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4 py-2">
                 <DeliveryForm
                     values={values}
                     errors={errors}
@@ -272,6 +272,6 @@ function DeliveryEditForm({ reservationId, reservation }: DeliveryEditFormProps)
                     {updateMutation.isPending ? '저장 중…' : '저장'}
                 </Button>
             </BottomBar>
-        </>
+        </div>
     );
 }
