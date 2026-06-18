@@ -78,18 +78,19 @@ export class FcmService implements OnModuleInit {
         }
 
         try {
-            // data-only 페이로드로 발송한다.
-            // notification 블록을 함께 보내면 웹에서 FCM SDK가 알림을 자동 표시하고,
-            // SW(firebase-messaging-sw.js)의 onBackgroundMessage가 또 표시해 알림이 2번 뜬다.
-            // data만 보내면 표시는 전적으로 SW가 1회 담당한다(클릭 deepLink도 SW가 처리).
+            // notification 블록으로 발송한다.
+            // 백그라운드: 브라우저/FCM SDK가 notification을 자동 1회 표시(SW는 클릭만 처리).
+            // 포그라운드: 자동 표시되지 않으므로 클라(PushMessageListener)가 직접 push로 띄운다.
+            // deepLink: 자동 표시 클릭은 webpush.fcmOptions.link, 포그라운드/SW 클릭은 data.deepLink.
             // 주의: FCM data 값은 모두 문자열이어야 한다.
             const message: Message = {
                 token,
-                data: {
+                notification: {
                     title: payload.title,
                     body: payload.body,
-                    ...(payload.deepLink ? { deepLink: payload.deepLink } : {}),
                 },
+                data: payload.deepLink ? { deepLink: payload.deepLink } : {},
+                webpush: payload.deepLink ? { fcmOptions: { link: payload.deepLink } } : undefined,
             };
 
             const messageId = await getMessaging().send(message);
