@@ -98,12 +98,15 @@ export function ReservationDetailClient({ reservationId }: ReservationDetailClie
         );
     };
 
-    // 라우트 헤더(예약 자세히보기) 우측 more 메뉴. 메뉴 항목 없으면 미노출(기본값 유지).
+    // 라우트 헤더(예약 자세히보기) 우측 more 메뉴.
+    // 취소 가능 → more 버튼, 취소 불가(canCancel=false)·로딩 → 우측 액션 자체 숨김.
+    // (rightAction=undefined 면 hook 이 기본 noti 벨을 노출하므로 hideRightAction 으로 명시 숨김.)
     useHeaderOverride({
         rightAction:
             showMoreMenu && reservation ? (
                 <MoreMenu reservation={reservation} onCancel={handleCancelClick} />
             ) : undefined,
+        hideRightAction: !showMoreMenu,
     });
 
     if (isLoading) {
