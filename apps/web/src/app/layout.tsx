@@ -79,7 +79,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
     return (
         <html lang="ko">
             {GA_ID ? <GoogleAnalytics gaId={GA_ID} /> : null}
-            <body className="relative flex h-dvh justify-center bg-[#efe9dd] text-foreground">
+            {/* 모바일: body 배경을 앱 패널(크림 #fbf8f3)과 동일하게 맞춰 iOS 스탠드얼론 상태바
+                safe-area 색을 일치시킨다. sm↑: 패널을 가운데 띄울 때 양옆 여백으로 탄색(#efe9dd) 노출. */}
+            <body className="relative flex h-dvh justify-center bg-background text-foreground sm:bg-[#efe9dd]">
                 {/* 와이드 화면 전역 브랜드 그래픽 — 패널 박스 경계 넘어 뷰포트 배경 전체 사용 */}
                 <div
                     aria-hidden
