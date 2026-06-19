@@ -90,6 +90,13 @@ export default function SignupPage() {
     const errMessage = (err: unknown, fallback: string) =>
         err instanceof ApiError ? err.message : fallback;
 
+    const sendCodeErrMessage = (err: unknown) => {
+        if (err instanceof ApiError && err.message === 'EMAIL_SEND_FAILED') {
+            return '현재는 AWS에 인증된 이메일 계정만 회원가입이 가능합니다.';
+        }
+        return errMessage(err, '인증번호 전송 중 오류가 발생했습니다.');
+    };
+
     const sendCode = async (): Promise<boolean> => {
         try {
             await sendEmailCode(email);
@@ -99,7 +106,7 @@ export default function SignupPage() {
             toast('입력하신 이메일로 인증번호를 전송했어요.');
             return true;
         } catch (err) {
-            toast(errMessage(err, '인증번호 전송 중 오류가 발생했습니다.'));
+            toast(sendCodeErrMessage(err));
             return false;
         }
     };
